@@ -1,29 +1,26 @@
 {
 module Ferry.Front.Data.Language where
-	
+    
 import Ferry.Front.Data.Meta
 
-data BinOp = Add -- +
-           | Sub -- -
-           | Mul -- *
-           | Div -- /
-           | Mod -- %
-           | Pow -- ^
-
 data Const = CInt Integer
-		   | CFloat Double
-		   | CBool Bool
-		   | CString String
+           | CFloat Double
+           | CBool Bool
+           | CString String
     deriving (Show, Eq)
 }
 
+data Op
+    | Op  m::{Meta} s::String
+
 data Expr
-    | Op           m::{Meta} o::BinOp
+    | UnOp         m::{Meta} o::Op e::Expr
+    | BinOp        m::{Meta} o::Op e1::Expr e2::Expr
     | Const        m::{Meta} c::Const
     | Var          m::{Meta} x::String
-	| PrimFn       m::{Meta} f::String
-	| Abstr        m::{Meta} x::Pattern e::Expr
-    | App	       m::{Meta} e1::Expr e2::Expr
+    | PrimFn       m::{Meta} f::String
+    | Abstr        m::{Meta} x::Pattern e::Expr
+    | App          m::{Meta} e1::Expr e2::Expr
     | If           m::{Meta} e1::Expr e2::Expr e3::Expr
     | Record       m::{Meta} els::RecElems
     | Paren        m::{Meta} e::Expr
@@ -32,7 +29,7 @@ data Expr
     | Let          m::{Meta} bs::Bindings e::Expr
     | Table        m::{Meta} n::String cs::Columns ks::Keys
     | Relationship m::{Meta} a1::Arity e1::Expr a2::Arity e2::Expr k1::Key k2::Key
-	| For          m::{Meta} p::Pattern e1::Expr bd::ForElems er::Expr
+    | For          m::{Meta} p::Pattern e1::Expr bd::ForElems er::Expr
 
 data ForElem
     | FLet   m::{Meta} x::String e::Expr
@@ -41,16 +38,16 @@ data ForElem
     | FOrder m::{Meta} es::ExprOrders
 
 data ExprOrder
-	| ExprOrder m::{Meta} e::Expr o::Order
+    | ExprOrder m::{Meta} e::Expr o::Order
 
 data Pattern
     | PVar  m::{Meta} x::String
-	| PPat  m::{Meta} xs::{[String]}
+    | PPat  m::{Meta} xs::{[String]}
 
 data Order
     | Ascending m::{Meta}
     | Descending m::{Meta}
-	
+    
 data Arity
     | One m::{Meta}
     | Many m::{Meta}
@@ -76,5 +73,29 @@ type Keys = [Key]
 type ExprOrders = [ExprOrder]
 type ForElems = [ForElem]
 
+deriving Op Expr ForElem ExprOrder Pattern Order Arity Key Column Binding RecElem Type : Show
+
 data Type
-	| Int m::{Meta}
+    | Int m::{Meta}
+    | Float m::{Meta}
+    | String m::{Meta}
+    | Bool m::{Meta} 
+{   
+instance HasMeta Expr where              
+    getMeta (UnOp         m _ _)         = m
+    getMeta (BinOp        m _ _ _)       = m
+    getMeta (Const        m _)           = m
+    getMeta (Var          m _)           = m
+    getMeta (PrimFn       m _)           = m
+    getMeta (Abstr        m _ _)         = m
+    getMeta (App          m _ _)         = m
+    getMeta (If           m _ _ _)       = m
+    getMeta (Record       m _)           = m
+    getMeta (Paren        m _)           = m
+    getMeta (List         m _)           = m
+    getMeta (Elem         m _)           = m
+    getMeta (Let          m _ _)         = m
+    getMeta (Table        m _ _ _)       = m
+    getMeta (Relationship m _ _ _ _ _ _) = m 
+    getMeta (For          m _ _ _ _)     = m
+}                                        

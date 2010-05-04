@@ -53,6 +53,8 @@ main =
 compile :: Config -> String -> IO ()
 compile opts file = do
                         src <- readFile file
-                        parseFerry file src
+                        let ast = parseFerry file src
+                        putStrLn $ show ast
+                        return ()
                         --putStrLn (show $ length tokens)  
 
