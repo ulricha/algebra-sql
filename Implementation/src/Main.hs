@@ -2,7 +2,6 @@ module Main where
 
 import System.Console.GetOpt
 import System.Environment
-import Ferry.Front.Parser.Scanner
 import Ferry.Front.Parser.Parser
 
 
@@ -54,6 +53,6 @@ main =
 compile :: Config -> String -> IO ()
 compile opts file = do
                         src <- readFile file
-                        let tokens = scan file src
-                        putStrLn (show $ length tokens)  
+                        parseFerry file src
+                        --putStrLn (show $ length tokens)  
 

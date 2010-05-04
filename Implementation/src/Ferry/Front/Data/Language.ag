@@ -10,10 +10,11 @@ data BinOp = Add -- +
            | Mod -- %
            | Pow -- ^
 
-data Const = CInt Int
-		   | CFloat Float
+data Const = CInt Integer
+		   | CFloat Double
 		   | CBool Bool
 		   | CString String
+    deriving (Show, Eq)
 }
 
 data Expr
@@ -73,6 +74,7 @@ type Bindings = [Binding]
 type Columns = [Column]
 type Keys = [Key]
 type ExprOrders = [ExprOrder]
+type ForElems = [ForElem]
 
 data Type
 	| Int m::{Meta}
