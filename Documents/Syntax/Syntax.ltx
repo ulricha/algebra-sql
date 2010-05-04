@@ -1,0 +1,103 @@
+\section{Ferry Language Syntax}
+
+\begin{sets}%
+  \declareset{Types\enspace,}{|Types|}{|t|}%
+  \declareset{Identifiers\enspace,}{|Ident|}{|id|}%
+  \declareset{Constants\enspace,}{|Const|}{|c|}%
+  \declareset{Natural numbers\enspace,}{|Nat|}{|n|}%
+  \declareset{Integers\enspace,}{|Ints|}{|i|}%
+  \declareset{Floats\enspace,}{|Floats|}{|fl|}%
+  \declareset{Strings \enspace,}{|CStrings|}{|s|}%
+  \declareset{booleans\enspace,}{|Bools|}{|boo|}%
+  \declareset{expressions \enspace,}{|Exp|}{|e|}%
+  \declareset{variables\enspace,}{|Var|}{|x|}%
+  \declareset{binary operators\enspace,}{|Op|}{|op|}%
+  \declareset{Orderings\enspace,}{|Ord|}{|o|}%
+  \declareset{Arities\enspace,}{|Arr|}{|arr|}%
+  \declareset{Primitive functions \enspace,}{|Prim|}{|f|}%
+  \declareset{Patterns\enspace,}{|Pat|}{|p|}%
+  \declareset{Column names\enspace,}{|Columns|}{|col|}%
+  \declareset{Table names}{|Tables|}{|R|}
+\end{sets}
+
+
+\begin{syntaxdefs}%
+	\syntaxdef{|o|}
+		\alt{|ascending|}
+		\alt{|descending|}
+	\syntaxdef{|arr|}
+		\alt{|many|}
+		\alt{|one|}
+	\syntaxdef{|op|}
+		\alt{|+|}
+		\alt{|-|}
+		\alt{|/|}
+		\alt{|*|}
+		\alt{|%|}
+		\alt{|...|}
+	\syntaxdef{|c|}
+		\alt{|i|}
+		\alt{|fl|}
+		\alt{|boo|}
+		\alt{|"s"|}
+	\syntaxdef{|i|}
+		\alt{|...|}
+		\alt{|-2|}
+		\alt{|-1|}
+		\alt{|0|}
+		\alt{|1|}
+		\alt{|2|}
+		\alt{|...|}
+	\syntaxdef{|n|}
+			\alt{|1|}
+			\alt{|2|}
+			\alt{|...|}
+	\syntaxdef{|boo|}
+		\alt{|True|}
+		\alt{|False|}
+	\syntaxdef{|x|}
+		\alt{|id|}
+	\syntaxdef{|p|}
+		\alt{|x|}
+		\alt{|(x1, ...,xn)|}
+	\syntaxdef{|l|}
+		\alt{|n|}
+		\alt{|x|}
+	\syntaxdef{|k|}
+		\alt{|(col1, ..., coln)|}
+  	\syntaxdef{|e|}
+		\alt{|c|}
+  		\alt{|x|}
+		\\
+ 		\alt{|f|}
+		\alt{|f e1 ... en|}
+		\alt{|(x -> e)|}
+		\\
+		\alt{|e1 op e2|}
+		\alt{|if e0 then e1 else e2|}
+		\\
+		\alt{|(e1, ..., en)|}
+		\alt{|(e)|}
+		\\
+		\alt{|{x1 = e1, ..., xn = en}|}
+		\\
+		\alt{|[]|}
+		\alt{|[e1, ..., en]|}
+		\alt{|e <.> l|}
+		\\
+		\alt{|let p1 = e1, ..., pn = en|}
+		\\
+		\alt{|table R (col1 t1, ..., col2 tn) with keys (k1, ..., kn)|}
+		\\
+		\alt{|relationship from arr e1 to arr e2 by k1 eq k2|}
+		\\
+		\alt{|
+		  	   for  p in e1 
+			        binds [where e] 
+				    binds [group by e1 ... en] 
+				    binds [order by e1 [o1], ..., en [on]] 
+				    binds return er 
+			|}
+	\syntaxdef{|bind|}
+		\alt{|let p = e|}
+\end{syntaxdefs}
