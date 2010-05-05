@@ -211,14 +211,19 @@ app :: Parser Expr
 app = chainl1 atom (return (\e1 e2 -> App (Meta $ getPos e1) e1 e2))
 
 atom :: Parser Expr
-atom = choice [ try abstract, 
-                try tuple,
-                record,
-                list,
-                table,
-                constParser, 
-                parenExpr, 
-                variable]
+atom = do 
+        e <- choice [ try abstract, 
+                      try tuple,
+                      record,
+                      list,
+                      table,
+                      constParser, 
+                      parenExpr, 
+                      variable]
+        el <- many element
+        return $ case el of
+                  [] -> e
+                  _  -> foldl (\l r -> Elem (Meta $ getPos e) l r) e el  
 
 parenExpr :: Parser Expr
 parenExpr = do
@@ -231,6 +236,19 @@ variable = do
             pos <- getPosition
             x <- identifier
             return $ Var (Meta pos) x
+            
+element :: Parser (Either String Integer)
+element = do 
+            symbol "."
+            i <- choice [
+                          try $ do 
+                                  n <- natural
+                                  return $ Right n
+                        , try $ do
+                                  i <- identifier
+                                  return $ Left i
+                        ]
+            return i
 
 tableName :: Parser String
 tableName = choice [try qualifiedTableName, simpleTableName]

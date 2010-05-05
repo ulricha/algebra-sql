@@ -25,7 +25,7 @@ data Expr
     | Record       m::{Meta} els::RecElems
     | Paren        m::{Meta} e::Expr
     | List         m::{Meta} es::Exprs
-    | Elem         m::{Meta} i::{Either String Int}
+    | Elem         m::{Meta} e::Expr i::{Either String Integer}
     | Let          m::{Meta} bs::Bindings e::Expr
     | Table        m::{Meta} n::String cs::Columns ks::Keys
     | Relationship m::{Meta} a1::Cardinality e1::Expr a2::Cardinality e2::Expr k1::Key k2::Key
@@ -93,7 +93,7 @@ instance HasMeta Expr where
     getMeta (Record       m _)           = m
     getMeta (Paren        m _)           = m
     getMeta (List         m _)           = m
-    getMeta (Elem         m _)           = m
+    getMeta (Elem         m _ _)         = m
     getMeta (Let          m _ _)         = m
     getMeta (Table        m _ _ _)       = m
     getMeta (Relationship m _ _ _ _ _ _) = m 
