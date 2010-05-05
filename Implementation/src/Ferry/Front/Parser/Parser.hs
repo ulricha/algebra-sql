@@ -347,7 +347,7 @@ type FParser a = Parser (a, SourcePos)
 intParser :: FParser Const
 intParser = do 
              pos <- getPosition
-             v <- integer
+             v <- natural
              return (CInt v, pos)
              
 floatParser :: FParser Const
