@@ -7,19 +7,25 @@ import Ferry.Front.Parser.Parser
 
 data Config = Config {
               mode :: Mode,
+              input :: Input,
               debug :: Bool
             }
 
 data Mode = Echo | Parse | Pretty
+data Input = File | Arg
 
 defaultConfig :: Config
 defaultConfig = Config {
                 mode        = Parse,
+                input       = File,
                 debug       = False
               }
 
 options :: [OptDescr (Config -> Config)]
-options = [ Option ['e'] ["echo"]
+options = [ Option ['i'] ["input"]
+                   (NoArg (\o -> o {input = Arg}))
+                   "Input through stdin"                   
+          , Option ['e'] ["echo"]
                    (NoArg (\o -> o {mode = Echo}))
                    "Print program to screen."
           , Option ['p'] ["parse"]
@@ -47,12 +53,17 @@ main =
     do
         args <- getArgs
         progName <- getProgName
-        (opts, fileNames) <- processArgs progName args
-        compile opts (head fileNames)
+        (opts, inp) <- processArgs progName args
+        compile opts inp
 
-compile :: Config -> String -> IO ()
-compile opts file = do
-                        src <- readFile file
+compile :: Config -> [String] -> IO ()
+compile opts inp = do
+                        src <- case (input opts) of
+                                File -> readFile $ head inp
+                                Arg  -> return $ unlines inp
+                        let file = case (input opts) of
+                                    File -> head inp
+                                    Arg  -> "StdIn"
                         let ast = parseFerry file src
                         putStrLn $ show ast
                         return ()
