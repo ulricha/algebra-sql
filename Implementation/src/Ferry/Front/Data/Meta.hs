@@ -4,6 +4,10 @@ import Text.ParserCombinators.Parsec.Pos
 
 data Meta = Meta {startPos::SourcePos}
 
+
+emptyPos :: SourcePos
+emptyPos = initialPos ""
+
 instance Show Meta where
     show _ = ""
 

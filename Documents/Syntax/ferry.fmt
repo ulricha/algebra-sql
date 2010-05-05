@@ -25,6 +25,7 @@
 %format let = "\textbf{let}"
 %format in = "\textbf{in}"
 %format return = "\textbf{return}"
+%format group = "\textbf{group}"
 
 %format True = "\textbf{True}"
 %format False = "\textbf{False}"

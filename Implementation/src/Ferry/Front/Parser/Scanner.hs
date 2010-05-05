@@ -15,7 +15,7 @@ ferryDef  = P.LanguageDef
             , P.identLetter    = alphaNum <|> oneOf "_"
             , P.opStart        = P.opLetter ferryDef
             , P.opLetter       = oneOf (concat (P.reservedOpNames ferryDef))
-            , P.reservedOpNames= [ "\"", "%", "^", "<", "<=", ">", ">=", "==", "+", "*", "-", "/", "and", "or", "not", "contains", "."]
+            , P.reservedOpNames= [ "\"", "%", "^", "<", "<=", ">", ">=", "==", "+", "*", "-", "/", "and", "or", "not", "contains", ".", "->"]
             , P.reservedNames  = ["ascending", "descending", "many", "one", "True", "False"
                                    , "if", "then", "else", "let", "in", "table", "with", "keys"
                                    , "relationship", "from", "to", "by", "eq", "for", "where"
@@ -41,6 +41,7 @@ float           = P.float lexer
 natural         = P.natural lexer    
 charLiteral     = P.charLiteral lexer    
 stringLiteral   = P.stringLiteral lexer
+comma           = P.comma lexer
 
 --scanFile :: String -> String -> [Token]
 --scanFile = scan

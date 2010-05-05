@@ -13,7 +13,7 @@
   \declareset{variables\enspace,}{|Var|}{|x|}%
   \declareset{binary operators\enspace,}{|Op|}{|op|}%
   \declareset{Orderings\enspace,}{|Ord|}{|o|}%
-  \declareset{Arities\enspace,}{|Arr|}{|arr|}%
+  \declareset{Cardinality\enspace,}{|Car|}{|car|}%
   \declareset{Primitive functions \enspace,}{|Prim|}{|f|}%
   \declareset{Patterns\enspace,}{|Pat|}{|p|}%
   \declareset{Column names\enspace,}{|Columns|}{|col|}%
@@ -25,7 +25,7 @@
 	\syntaxdef{|o|}
 		\alt{|ascending|}
 		\alt{|descending|}
-	\syntaxdef{|arr|}
+	\syntaxdef{|car|}
 		\alt{|many|}
 		\alt{|one|}
 	\syntaxdef{|op|}
@@ -85,7 +85,7 @@
 		\alt{|[e1, ..., en]|}
 		\alt{|e <.> l|}
 		\\
-		\alt{|let p1 = e1, ..., pn = en|}
+		\alt{|let p1 = e1, ..., pn = en in e|}
 		\\
 		\alt{|table R (col1 t1, ..., col2 tn) with keys (k1, ..., kn)|}
 		\\
@@ -94,7 +94,7 @@
 		\alt{|
 		  	   for  p in e1 
 			        binds [where e] 
-				    binds [group by e1 ... en] 
+				    binds [group by e1, ..., en] 
 				    binds [order by e1 [o1], ..., en [on]] 
 				    binds return er 
 			|}

@@ -28,13 +28,13 @@ data Expr
     | Elem         m::{Meta} i::{Either String Int}
     | Let          m::{Meta} bs::Bindings e::Expr
     | Table        m::{Meta} n::String cs::Columns ks::Keys
-    | Relationship m::{Meta} a1::Arity e1::Expr a2::Arity e2::Expr k1::Key k2::Key
+    | Relationship m::{Meta} a1::Cardinality e1::Expr a2::Cardinality e2::Expr k1::Key k2::Key
     | For          m::{Meta} p::Pattern e1::Expr bd::ForElems er::Expr
 
 data ForElem
-    | FLet   m::{Meta} x::String e::Expr
+    | FLet   m::{Meta} p::Pattern e::Expr
     | FWhere m::{Meta} e::Expr
-    | Fgroup m::{Meta} es::Exprs
+    | FGroup m::{Meta} es::Exprs
     | FOrder m::{Meta} es::ExprOrders
 
 data ExprOrder
@@ -48,7 +48,7 @@ data Order
     | Ascending m::{Meta}
     | Descending m::{Meta}
     
-data Arity
+data Cardinality
     | One m::{Meta}
     | Many m::{Meta}
 
@@ -73,13 +73,13 @@ type Keys = [Key]
 type ExprOrders = [ExprOrder]
 type ForElems = [ForElem]
 
-deriving Op Expr ForElem ExprOrder Pattern Order Arity Key Column Binding RecElem Type : Show
+deriving Op Expr ForElem ExprOrder Pattern Order Cardinality Key Column Binding RecElem Type : Show
 
 data Type
-    | Int m::{Meta}
-    | Float m::{Meta}
-    | String m::{Meta}
-    | Bool m::{Meta} 
+    | TInt m::{Meta}
+    | TFloat m::{Meta}
+    | TString m::{Meta}
+    | TBool m::{Meta} 
 {   
 instance HasMeta Expr where              
     getMeta (UnOp         m _ _)         = m
