@@ -162,7 +162,7 @@ for = do
         l5 <- many forLet
         l6 <- option [] forWhere
         l7 <- many forLet
-        l8 <- option [] forGroup
+        l8 <- option [] forOrder
         l9 <- many forLet
         reserved "return"
         er <- expr

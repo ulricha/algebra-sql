@@ -73,7 +73,7 @@ type Keys = [Key]
 type ExprOrders = [ExprOrder]
 type ForElems = [ForElem]
 
-deriving Op Expr ForElem ExprOrder Pattern Order Cardinality Key Column Binding RecElem Type : Show
+deriving Op Expr ForElem ExprOrder Pattern Order Cardinality Key Column Binding RecElem Type : Show, Eq
 
 data Type
     | TInt m::{Meta}
