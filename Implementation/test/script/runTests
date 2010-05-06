@@ -1,10 +1,10 @@
 #!/bin/sh
 
 ERRORS=0
-for f in ./Parser/*.ferry
+for f in ./$1/*.ferry
 do
     echo  $f #${f%.ferry} 
-    /bin/sh compileParse $f > result.txt 
+    $2 $3 $f > result.txt 
     diff -b result.txt ${f%.ferry}.out
     ERRORS=$[$ERRORS+$?] 
     rm result.txt

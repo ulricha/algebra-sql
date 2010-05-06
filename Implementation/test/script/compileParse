@@ -1,2 +1,0 @@
-#!/bin/sh
-../../bin/ferryc -p $1

@@ -2,9 +2,14 @@
 
 clear
 echo Running ferry tests...
+FERRYC=../../bin/ferryc
 
-/bin/sh runParseTests  ; X1=$?
 
+##########################################
+#### Adding a group of tests
+#### call bin/sh runTests <FOLDERWITHTESTS> $FERRYC <FERRYCFLAGS> 
+##########################################
+/bin/sh runTests Parser $FERRYC -p ; X1=$?
 
 TOTAL=$[$X1]
 echo "Test failures: $TOTAL"
