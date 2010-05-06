@@ -3,6 +3,8 @@ module Ferry.Front.Data.Language where
     
 import Ferry.Front.Data.Meta
 
+type Identifier = String
+
 data Const = CInt Integer
            | CFloat Double
            | CBool Bool
@@ -17,8 +19,8 @@ data Expr
     | UnOp         m::{Meta} o::Op e::Expr
     | BinOp        m::{Meta} o::Op e1::Expr e2::Expr
     | Const        m::{Meta} c::Const
-    | Var          m::{Meta} x::String
-    | PrimFn       m::{Meta} f::String
+    | Var          m::{Meta} x::Identifier
+--    | PrimFn       m::{Meta} f::String
     | Abstr        m::{Meta} x::Pattern e::Expr
     | App          m::{Meta} e1::Expr e2::Expr
     | If           m::{Meta} e1::Expr e2::Expr e3::Expr
@@ -86,7 +88,7 @@ instance HasMeta Expr where
     getMeta (BinOp        m _ _ _)       = m
     getMeta (Const        m _)           = m
     getMeta (Var          m _)           = m
-    getMeta (PrimFn       m _)           = m
+--    getMeta (PrimFn       m _)           = m
     getMeta (Abstr        m _ _)         = m
     getMeta (App          m _ _)         = m
     getMeta (If           m _ _ _)       = m
