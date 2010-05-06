@@ -17,4 +17,5 @@ clean:
 
 test: language all
 	ghc --make ../test/Main.hs -i../test -i../src -i../bin -outputdir ../bin -o ../bin/tests
+	./runShellTests
 	../bin/tests

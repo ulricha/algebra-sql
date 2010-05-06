@@ -1,19 +1,14 @@
 #!/bin/sh
-
 clear
 echo Running ferry tests...
 FERRYC=../../bin/ferryc
-
-
 ##########################################
 #### Adding a group of tests
 #### call bin/sh runTests <FOLDERWITHTESTS> $FERRYC <FERRYCFLAGS> 
 ##########################################
 /bin/sh runTests Parser $FERRYC -p ; X1=$?
-
 TOTAL=$[$X1]
 echo "Test failures: $TOTAL"
-
 if [ "$TOTAL" = "0" ];
 then exit 0
 else exit 1

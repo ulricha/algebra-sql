@@ -1,5 +1,4 @@
 #!/bin/sh
-
 ERRORS=0
 for f in ./$1/*.ferry
 do
