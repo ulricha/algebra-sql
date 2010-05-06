@@ -1,0 +1,12 @@
+#!/bin/sh
+
+ERRORS=0
+for f in ./Parser/*.ferry
+do
+    echo  $f #${f%.ferry} 
+    /bin/sh compileParse $f > result.txt 
+    diff -b result.txt ${f%.ferry}.out
+    ERRORS=$[$ERRORS+$?] 
+    rm result.txt
+done
+exit $ERRORS

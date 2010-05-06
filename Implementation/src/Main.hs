@@ -4,6 +4,7 @@ module Main where
 import System.Console.GetOpt
 import System.Environment
 import Ferry.Front.Parser.Parser
+import System.FilePath.Posix(takeFileName)
 
 -- | The config datatype is used to store program flags given by the user 
 --   The compiler can be put in a 'Mode' that determines what sort of
@@ -82,7 +83,7 @@ compile opts inp = do
                                 File -> readFile $ head inp
                                 Arg  -> return $ unlines inp
                         let file = case (input opts) of
-                                    File -> head inp
+                                    File -> takeFileName $ head inp
                                     Arg  -> "StdIn"
                         let ast = parseFerry file src
                         putStrLn $ show ast
