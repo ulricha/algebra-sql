@@ -1,6 +1,6 @@
 hsFiles :=$(wildcard *.hs) 
 
-all: language $(hsFiles) bin
+all: language $(hsFiles) bin haddock
 	ghc --make Main.hs -i../bin -outputdir ../bin -o ../bin/ferryc
 
 language: ./Ferry/Front/Data/Language.ag bin
@@ -12,10 +12,17 @@ bin:
 	sh -c 'mkdir ../bin/Ferry/Front || true'
 	sh -c 'mkdir ../bin/Ferry/Front/Data || true'
 
+doc:
+	sh -c 'mkdir ../doc || true'
+
 clean:
 	rm -r ../bin
+	rm -r ../doc
 
 test: language all
 	ghc --make ../test/Main.hs -i../test -i../src -i../bin -outputdir ../bin -o ../bin/tests
 	./runShellTests
 	../bin/tests
+
+haddock: language doc
+	haddock Main.hs -o../doc/ --optghc=-i../bin/ -h --hoogle --source-base=../src/ --source-module=../src/%F -t "Ferry 2.0 Compiler" -w

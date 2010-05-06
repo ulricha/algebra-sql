@@ -32,9 +32,12 @@ data Input  = File -- ^ File mode, the program is read from a file
 -- | The default configuration for the compiler
 defaultConfig :: Config
 defaultConfig = Config {
-                mode        = Parse, -- ^ Standard 'Mode' is set to Parse
-                input       = File,  -- ^ By default the program is given through a File
-                debug       = False  -- ^ Debug turned of by default
+                --  Standard 'Mode' is set to Parse
+                mode        = Parse, 
+                --  By default the program is given through a File
+                input       = File, 
+                --  Debug turned of by default
+                debug       = False 
               }
 
 -- | Description of the options for the compiler 'Mode'
