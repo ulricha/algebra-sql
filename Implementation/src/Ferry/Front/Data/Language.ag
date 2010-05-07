@@ -31,7 +31,13 @@ data Expr
     | Let          m::{Meta} bs::Bindings e::Expr
     | Table        m::{Meta} n::String cs::Columns ks::Keys
     | Relationship m::{Meta} a1::Cardinality e1::Expr a2::Cardinality e2::Expr k1::Key k2::Key
-    | For          m::{Meta} p::Pattern e1::Expr bd::ForElems er::Expr
+--    | For          m::{Meta} p::Pattern e1::Expr bd::ForElems er::Expr
+    | QComp        m::{Meta} q::QCompr
+    
+data QCompr
+    | FerryCompr   m::{Meta} p::Pattern e1::Expr bd::ForElems er::Expr
+    | LINQCompr    m::{Meta}
+    | HaskellCompr m::{Meta}
 
 data ForElem
     | FLet   m::{Meta} p::Pattern e::Expr
@@ -75,7 +81,7 @@ type Keys = [Key]
 type ExprOrders = [ExprOrder]
 type ForElems = [ForElem]
 
-deriving Op Expr ForElem ExprOrder Pattern Order Cardinality Key Column Binding RecElem Type : Show, Eq
+deriving Op Expr ForElem ExprOrder Pattern Order Cardinality Key Column Binding RecElem Type QCompr : Show, Eq
 
 data Type
     | TInt m::{Meta}
@@ -99,5 +105,6 @@ instance HasMeta Expr where
     getMeta (Let          m _ _)         = m
     getMeta (Table        m _ _ _)       = m
     getMeta (Relationship m _ _ _ _ _ _) = m 
-    getMeta (For          m _ _ _ _)     = m
+    getMeta (QComp        m _)           = m
+--    getMeta (For          m _ _ _ _)     = m
 }                                        

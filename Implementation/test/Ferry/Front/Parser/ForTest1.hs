@@ -14,7 +14,7 @@ pos = newPos "test" 1 1
 
 forTests :: [ParserTest]
 forTests = [ ("for (x1, x2) in [(1,2)] return [x1, x2]"
-                                        ,  Right (For (Meta pos) 
+                                        ,  Right (QComp (Meta pos) $ FerryCompr (Meta pos) 
                                                     (PPat (Meta $ newPos "test" 1 5) ["x1","x2"]) 
                                                     (List (Meta $ newPos "test" 1 17) 
                                                         [Record (Meta $ newPos "test" 1 18) 

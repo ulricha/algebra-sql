@@ -1,6 +1,8 @@
 hsFiles :=$(wildcard *.hs) 
 
-all: language $(hsFiles) bin haddock
+all: ferryc haddock
+
+ferryc: language $(hsFiles) bin
 	ghc --make Main.hs -i../bin -outputdir ../bin -o ../bin/ferryc
 
 language: ./Ferry/Front/Data/Language.ag bin
@@ -19,7 +21,7 @@ clean:
 	rm -r ../bin
 	rm -r ../doc
 
-test: language all
+test: language ferryc
 	ghc --make ../test/Main.hs -i../test -i../src -i../bin -outputdir ../bin -o ../bin/tests
 	./runShellTests
 	../bin/tests

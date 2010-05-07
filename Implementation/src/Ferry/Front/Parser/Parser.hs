@@ -166,7 +166,7 @@ for = do
         l9 <- many forLet
         reserved "return"
         er <- expr
-        return $ For (Meta pos) p e (concat [l1, l2, l3, l4, l5, l6, l7, l8, l9]) er
+        return $ QComp (Meta pos) $ FerryCompr (Meta pos) p e (concat [l1, l2, l3, l4, l5, l6, l7, l8, l9]) er
         
 forLet :: Parser ForElem
 forLet = do
