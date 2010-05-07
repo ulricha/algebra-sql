@@ -123,3 +123,6 @@
 %format ... = "\ldots "
 %format <.> = "\bullet"
 %format binds = "bind^{*}"
+%format SQBR(x) = "\texttt{[}" x "\texttt{]}"
+%format PAREN(x) = "\texttt{(}" x "\texttt{)}"
+%format CURL(x) = "\texttt{\{}" x "\texttt{\}}"

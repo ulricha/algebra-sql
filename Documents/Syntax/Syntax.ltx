@@ -20,7 +20,9 @@
   \declareset{Table names}{|Tables|}{|R|}
 \end{sets}
 
+Notational conventions:
 
+We write | [e] | to denote an option, | {e} | to denote zero or more repetitions.
 \begin{syntaxdefs}%
 	\syntaxdef{|ordering|}
 		\alt{|ascending|}
@@ -59,12 +61,12 @@
 		\alt{|id|}
 	\syntaxdef{|pattern|}
 		\alt{|x|}
-		\alt{|(x1, ...,xn)| \quad |where n >= 2| }
+		\alt{|PAREN(x1, ...,xn)| \quad |where n >= 2| }
 	\syntaxdef{|l|}
 		\alt{|n|}
 		\alt{|x|}
 	\syntaxdef{|k|}
-		\alt{|(col1, ..., coln)| \quad |where n >= 1|}
+		\alt{|PAREN(col1, ..., coln)| \quad |where n >= 1|}
   	\syntaxdef{|e|}
 		\alt{|c|}
   		\alt{|x|}
@@ -72,24 +74,24 @@
  		\alt{|f|}
 		\alt{|f e1 ... en|\quad |where n >= 1|}
 		\\
-		\alt{|(pattern -> e)|}
+		\alt{|PAREN(pattern -> e)|}
 		\\
 		\alt{|e1 op e2|}
 		\alt{|if e0 then e1 else e2|}
 		\\
-		\alt{|(e1, ..., en)| \quad |where n >= 2|}
+		\alt{|PAREN(e1, ..., en)| \quad |where n >= 2|}
 		\\
-		\alt{|(e)|}
+		\alt{|PAREN(e)|}
 		\\
-		\alt{|{x1 = e1, ..., xn = en}| \quad |where n >= 1|}
+		\alt{|CURL(x1 = e1, ..., xn = en)| \quad |where n >= 1|}
 		\\
-		\alt{|[e1, ..., en]| \quad |where n >= 0|}
+		\alt{|SQBR(e1, ..., en)| \quad |where n >= 0|}
 		\\
 		\alt{|e <.> l|}
 		\\
 		\alt{|let pattern1 = e1, ..., patternn = en in e| \quad |where n >= 1|}
 		\\
-		\alt{|table R (col1 t1, ..., coln tn) with keys (k1, ..., km)| \quad |where n >= 1 & m >= 1|}
+		\alt{|table R| |PAREN(col1 t1, ..., coln tn) with keys| |PAREN(k1, ..., km) | \quad |where n >= 1 & m >= 1|}
 		\\
 		\alt{|relationship from cardinality e1 to cardinality e2 by k1 eq k2|}
 		\\
@@ -116,12 +118,12 @@
 
 \begin{syntaxdefs}
 	\syntaxdef{|LINQCompr|}
-		\alt{|from identifier in e [query-body-clauses] select-or-group-clause [into   identifier   query-body]|}
+		\alt{|from pattern in e [query-body-clauses] select-or-group-clause [into pattern query-body]|}
 	\syntaxdef{|query-body-clauses|}
 		\alt{|query-body-clause|}
 		\alt{|query-body-clauses query-body-clause|}
 	\syntaxdef{|query-body-clause|}
-		\alt{|from identifier in e [query-body-clauses]|}
+		\alt{|from pattern in e [query-body-clauses]|}
 		\alt{|let i = e|}
 		\alt{|where e|}
 		\alt{|order by orderings|}
