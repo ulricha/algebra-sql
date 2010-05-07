@@ -22,19 +22,19 @@
 
 
 \begin{syntaxdefs}%
-	\syntaxdef{|o|}
+	\syntaxdef{|ordering|}
 		\alt{|ascending|}
 		\alt{|descending|}
-	\syntaxdef{|car|}
+	\syntaxdef{|cardinality|}
 		\alt{|many|}
 		\alt{|one|}
 	\syntaxdef{|op|}
-		\alt{|+|}
+		\alt{|+|} 
 		\alt{|-|}
 		\alt{|/|}
 		\alt{|*|}
-		\alt{|%|}
-		\alt{|...|}
+		\alt{|%|} 
+		\alt{|...|} 
 	\syntaxdef{|c|}
 		\alt{|i|}
 		\alt{|fl|}
@@ -57,47 +57,82 @@
 		\alt{|False|}
 	\syntaxdef{|x|}
 		\alt{|id|}
-	\syntaxdef{|p|}
+	\syntaxdef{|pattern|}
 		\alt{|x|}
-		\alt{|(x1, ...,xn)|}
+		\alt{|(x1, ...,xn)| \quad |where n >= 2| }
 	\syntaxdef{|l|}
 		\alt{|n|}
 		\alt{|x|}
 	\syntaxdef{|k|}
-		\alt{|(col1, ..., coln)|}
+		\alt{|(col1, ..., coln)| \quad |where n >= 1|}
   	\syntaxdef{|e|}
 		\alt{|c|}
   		\alt{|x|}
 		\\
  		\alt{|f|}
-		\alt{|f e1 ... en|}
-		\alt{|(x -> e)|}
+		\alt{|f e1 ... en|\quad |where n >= 1|}
+		\\
+		\alt{|(pattern -> e)|}
 		\\
 		\alt{|e1 op e2|}
 		\alt{|if e0 then e1 else e2|}
 		\\
-		\alt{|(e1, ..., en)|}
+		\alt{|(e1, ..., en)| \quad |where n >= 2|}
+		\\
 		\alt{|(e)|}
 		\\
-		\alt{|{x1 = e1, ..., xn = en}|}
+		\alt{|{x1 = e1, ..., xn = en}| \quad |where n >= 1|}
 		\\
-		\alt{|[]|}
-		\alt{|[e1, ..., en]|}
+		\alt{|[e1, ..., en]| \quad |where n >= 0|}
+		\\
 		\alt{|e <.> l|}
 		\\
-		\alt{|let p1 = e1, ..., pn = en in e|}
+		\alt{|let pattern1 = e1, ..., patternn = en in e| \quad |where n >= 1|}
 		\\
-		\alt{|table R (col1 t1, ..., col2 tn) with keys (k1, ..., kn)|}
+		\alt{|table R (col1 t1, ..., coln tn) with keys (k1, ..., km)| \quad |where n >= 1 & m >= 1|}
 		\\
-		\alt{|relationship from arr e1 to arr e2 by k1 eq k2|}
+		\alt{|relationship from cardinality e1 to cardinality e2 by k1 eq k2|}
 		\\
-		\alt{|
-		  	   for  p in e1 
-			        binds [where e] 
-				    binds [group by e1, ..., en] 
-				    binds [order by e1 [o1], ..., en [on]] 
-				    binds return er 
-			|}
-	\syntaxdef{|bind|}
-		\alt{|let p = e|}
+		\alt{|ferryCompr|}
+		\alt{|LINQCompr|}
 \end{syntaxdefs}
+
+\begin{syntaxdefs}
+	\syntaxdef{|ferryCompr|}
+	\alt{|
+	  	   for  pattern in e1 
+		       fwhere fgroupBy forderBy			    
+			    binds return er 
+		|}
+	\syntaxdef{|bind|}
+		\alt{|let pattern = e|}
+	\syntaxdef{|fwhere|}
+		\alt{| binds [where e] |}
+	\syntaxdef{|fgroupby|}
+		\alt {|binds [group by e1, ..., en]|}
+	\syntaxdef{|forderBy|}
+		\alt{|binds [order by e1 [ordering1], ..., en [orderingn]] |}
+\end{syntaxdefs}
+
+\begin{syntaxdefs}
+	\syntaxdef{|LINQCompr|}
+		\alt{|from identifier in e [query-body-clauses] select-or-group-clause [into   identifier   query-body]|}
+	\syntaxdef{|query-body-clauses|}
+		\alt{|query-body-clause|}
+		\alt{|query-body-clauses query-body-clause|}
+	\syntaxdef{|query-body-clause|}
+		\alt{|from identifier in e [query-body-clauses]|}
+		\alt{|let i = e|}
+		\alt{|where e|}
+		\alt{|order by orderings|}
+	\syntaxdef{|orderings|}
+		\alt{|Lordering|}
+		\alt{|orderings   ,   Lordering|}
+	\syntaxdef{|Lordering|}
+		\alt{|e [ordering]|}
+	\syntaxdef{|select-or-group-clause|}
+		\alt{|select e|}
+		\alt{|group e by e|}
+		\alt{|group e with e|}
+\end{syntaxdefs}
+

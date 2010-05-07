@@ -101,12 +101,20 @@
 %format k3 = "k_3"
 %format k4 = "k_4"
 %format kn = "k_n"
+%format km = "k_m"
 
 %format col1 = "col_1"
 %format col2 = "col_2"
 %format col3 = "col_3"
 %format col4 = "col_4"
 %format coln = "col_n"
+
+%format pattern1 = "pattern_1"
+%format patternn = "pattern_n"
+%format cardinality1 = "cardinality_1"
+%format cardinalityn = "cardinality_n"
+%format ordering1 = "ordering_1"
+%format orderingn = "ordering_n"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Misc

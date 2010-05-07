@@ -60,14 +60,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>19</integer>
+				<integer>32</integer>
 				<key>line</key>
-				<integer>101</integer>
+				<integer>96</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>67</integer>
 		</dict>
 		<key>Syntax/SyntaxDoc.ltx</key>
 		<dict>
@@ -88,14 +88,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>17</integer>
+				<integer>30</integer>
 				<key>line</key>
-				<integer>72</integer>
+				<integer>27</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>68</integer>
+			<integer>2</integer>
 		</dict>
 		<key>Template/basicformatting.fmt</key>
 		<dict>
@@ -123,6 +123,6 @@
 	<key>showFileHierarchyDrawer</key>
 	<true/>
 	<key>windowFrame</key>
-	<string>{{68, 299}, {894, 687}}</string>
+	<string>{{62, 315}, {894, 687}}</string>
 </dict>
 </plist>
