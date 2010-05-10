@@ -28,6 +28,9 @@ parseInput = do
 expr :: Parser Expr
 expr = opExpr
 
+-- | The highest level of bindings or operator bindings. The parser created by the builder will parse as many
+--   parts of an arithmatic, logical expression as possible. If there is no expression it will parse at least
+--   one 'simpleExpr'.
 opExpr :: Parser Expr
 opExpr = buildExpressionParser operators simpleExpr
   where
@@ -51,56 +54,18 @@ opExpr = buildExpressionParser operators simpleExpr
                                      pos <- getPosition
                                      reservedOp name
                                      return (\e -> UnOp (Meta pos) (Op (Meta pos) name) e)
-                                      
+
+-- | A simpleExpr is an if, let, relationship, list comprehension or application.                                      
 simpleExpr :: Parser Expr
 simpleExpr = choice [ ifExpr,
                       letExpr,
                       relationship,
-                      for,
-                      app
+                      app,
+                      for                      
                     ]
-
-abstract :: Parser Expr
-abstract = do 
-            pos <- getPosition
-            a <- parens $ do 
-                            pat <- pattern
-                            symbol "->"
-                            e <- expr
-                            return (\p -> Abstr (Meta p) pat e)
-            return $ a pos
-
-tuple :: Parser Expr
-tuple = do
-          pos <- getPosition
-          t <- parens $ do
-                          e <- expr
-                          comma
-                          es <- commaSep1 expr
-                          return (\p -> Record (Meta p) $ listToRecElem (e:es) [1..])
-          return $ t pos
-    where 
-        listToRecElem :: [Expr] -> [Int] -> [RecElem]
-        listToRecElem (e:es) (i:is) = (:) (TuplRec (Meta $ getPos e) i e) $ listToRecElem es is
-        listToRecElem []     _      = []
-        
-record :: Parser Expr
-record = do
-           pos <- getPosition
-           r <- braces $ commaSep1 $ do 
-                                       pos <- getPosition
-                                       i <- identifier
-                                       symbol "="
-                                       e <- expr
-                                       return $ TrueRec (Meta pos) i e
-           return $ Record (Meta pos) r
-           
-list :: Parser Expr
-list = do 
-        pos <- getPosition
-        el <- squares $ commaSep expr
-        return $ List (Meta pos) el                               
-             
+                        
+-- | Parser for if then else contructs. The expression contained in the conditional and branches are
+--   regular top level expression 'expr'.                    
 ifExpr :: Parser Expr
 ifExpr = do
             pos <- getPosition
@@ -111,7 +76,8 @@ ifExpr = do
             reserved "else"
             e3 <- expr
             return $ If (Meta pos) e1 e2 e3
-            
+
+-- | Parser for let bindings.             
 letExpr :: Parser Expr
 letExpr = do
             pos <- getPosition
@@ -120,18 +86,8 @@ letExpr = do
             reserved "in"
             e <- expr
             return $ Let (Meta pos) bs e
-            
-table :: Parser Expr
-table = do 
-          pos <- getPosition
-          reserved "table"
-          n <- tableName
-          cs <- parens $ commaSep1 column
-          reserved "with"
-          reserved "keys"
-          keys <- parens $ commaSep1 key
-          return $ Table (Meta pos) n cs keys
-          
+
+-- | Parser for relationship contruct.             
 relationship :: Parser Expr
 relationship = do 
                 pos <- getPosition
@@ -148,6 +104,13 @@ relationship = do
                 k2 <- key
                 return $ Relationship (Meta pos) c1 e1 c2 e2 k1 k2
                 
+-- | Parser for function application. Parse an atomic expression followed by as much
+--   atomic expressions as possible.If there is no application then parse at least
+--   one atomic expression 'atom'.
+app :: Parser Expr
+app = chainl1 atom (return (\e1 e2 -> App (Meta $ getPos e1) e1 e2))
+
+-- | Parser for Ferry list comprehensions. 
 for :: Parser Expr
 for = do 
         pos <- getPosition
@@ -206,37 +169,107 @@ forOrder = do
                  e <- expr
                  o <- option (Ascending $ Meta emptyPos) ordering
                  return $ ExprOrder (Meta pos) e o
-            
-app :: Parser Expr
-app = chainl1 atom (return (\e1 e2 -> App (Meta $ getPos e1) e1 e2))
 
+-- | Parser atomic values.
 atom :: Parser Expr
 atom = do 
-        e <- choice [ try abstract, 
-                      try tuple,
-                      record,
-                      list,
-                      table,
-                      constParser, 
-                      parenExpr, 
-                      variable]
-        el <- many element
-        return $ case el of
-                  [] -> e
-                  _  -> foldl (\l r -> Elem (Meta $ getPos e) l r) e el  
+     e <- choice [ try abstract, 
+                   try tuple,
+                   record,
+                   list,
+                   table,
+                   constParser, 
+                   parenExpr, 
+                   variable]
+     el <- many element
+     return $ case el of
+               [] -> e
+               _  -> foldl (\l r -> Elem (Meta $ getPos e) l r) e el
+-- | Parse function abstraction                                   
+abstract :: Parser Expr
+abstract = do 
+            pos <- getPosition
+            a <- parens $ do 
+                            pat <- pattern
+                            symbol "->"
+                            e <- expr
+                            return (\p -> Abstr (Meta p) pat e)
+            return $ a pos
 
+-- | Parse a tuple. A tuple contains at least two elements.
+tuple :: Parser Expr
+tuple = do
+          pos <- getPosition
+          t <- parens $ do
+                          e <- expr
+                          comma
+                          es <- commaSep1 expr
+                          return (\p -> Record (Meta p) $ listToRecElem (e:es) [1..])
+          return $ t pos
+    where 
+        listToRecElem :: [Expr] -> [Int] -> [RecElem]
+        listToRecElem (e:es) (i:is) = (:) (TuplRec (Meta $ getPos e) i e) $ listToRecElem es is
+        listToRecElem []     _      = []
+
+-- | Parse a record.        
+record :: Parser Expr
+record = do
+           pos <- getPosition
+           r <- braces $ commaSep1 $ do 
+                                       pos <- getPosition
+                                       i <- identifier
+                                       symbol "="
+                                       e <- expr
+                                       return $ TrueRec (Meta pos) i e
+           return $ Record (Meta pos) r
+
+-- | Parse a list.           
+list :: Parser Expr
+list = do 
+        pos <- getPosition
+        el <- squares $ commaSep expr
+        return $ List (Meta pos) el                               
+             
+-- | Parse a table declaration.            
+table :: Parser Expr
+table = do 
+          pos <- getPosition
+          reserved "table"
+          n <- tableName
+          cs <- parens $ commaSep1 column
+          reserved "with"
+          reserved "keys"
+          keys <- parens $ commaSep1 key
+          return $ Table (Meta pos) n cs keys
+
+-- | Parse constant values. A constant is either a float, integer, string or boolean value.          
+constParser :: Parser Expr
+constParser = do  
+             (c, p) <- choice [
+                              try floatParser,
+                              try intParser,
+                              try stringParser,
+                              try boolParser                      
+                              ]
+             return $ Const (Meta p) c
+
+-- | Parse a parenthesised expression. This is just an expression 'expr' surrounded by "( ... )"
 parenExpr :: Parser Expr
 parenExpr = do
               pos <- getPosition
               e <- parens expr
               return $ Paren (Meta pos) e
-              
+
+-- | Parse a variable.              
 variable :: Parser Expr
 variable = do
             pos <- getPosition
             x <- identifier
             return $ Var (Meta pos) x
             
+-- The following parser are auxiliry parsers.
+
+-- | Parse element lookup.            
 element :: Parser (Either String Integer)
 element = do 
             symbol "."
@@ -250,6 +283,7 @@ element = do
                         ]
             return i
 
+-- | Parse the name of a database table. Either qualified or unqualified.
 tableName :: Parser String
 tableName = choice [try qualifiedTableName, simpleTableName]
 
@@ -265,7 +299,7 @@ simpleTableName = do
                     name <- identifier
                     return name
         
-
+-- | Parse a binding
 binding :: Parser Binding
 binding = do
             pos <- getPosition
@@ -289,6 +323,7 @@ pattern = choice [
                    return $ PPat (Meta pos) vars
                  ]
 
+-- | Parse primitive types
 primType :: Parser Type
 primType = choice [typeParser n c | (n, c) <- types] 
     where typeParser n c = do
@@ -296,7 +331,8 @@ primType = choice [typeParser n c | (n, c) <- types]
                             reserved n
                             return $ c (Meta pos)
           types = [("String", TString), ("Bool", TBool), ("Int", TInt), ("Float", TFloat)]
-          
+
+-- | Parse a database column declaration          
 column :: Parser Column
 column = do
             pos <- getPosition
@@ -304,6 +340,7 @@ column = do
             t <- primType
             return $ Column (Meta pos) n t
 
+-- | Parse a table key
 key :: Parser Key
 key = do
         pos <- getPosition
@@ -350,30 +387,25 @@ descending = do
  Parsing primitive values
 -}
 
-constParser :: Parser Expr
-constParser = do  
-               (c, p) <- choice [
-                                try floatParser,
-                                try intParser,
-                                try stringParser,
-                                try boolParser                      
-                                ]
-               return $ Const (Meta p) c 
 
+-- | Type FParser is used to parse primitive values.
 type FParser a = Parser (a, SourcePos)
 
+-- | Parse an integer, currently only positive ints are allowed
 intParser :: FParser Const
 intParser = do 
              pos <- getPosition
              v <- natural
              return (CInt v, pos)
-             
+
+-- | Parse a float, currently only positive floats are allowed             
 floatParser :: FParser Const
 floatParser = do
                 pos <- getPosition
                 f <- float
                 return (CFloat f, pos)
-                
+
+-- | Parse a string, a string is anything surrounded by " ... "                
 stringParser :: FParser Const
 stringParser = do
                  pos <- getPosition
@@ -381,7 +413,8 @@ stringParser = do
                  s <- many (noneOf "\"")
                  symbol "\""
                  return (CString s, pos)
-                 
+
+-- | Parse a boolean value                 
 boolParser :: FParser Const
 boolParser = try trueParser
                 <|> falseParser

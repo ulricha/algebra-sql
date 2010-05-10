@@ -19,7 +19,8 @@ ferryDef  = P.LanguageDef
             , P.reservedNames  = ["ascending", "descending", "many", "one", "True", "False"
                                    , "if", "then", "else", "let", "in", "table", "with", "keys"
                                    , "relationship", "from", "to", "by", "eq", "for", "where"
-                                   , "group", "order", "return", "String", "Bool", "Int", "Float"]
+                                   , "group", "order", "return", "String", "Bool", "Int", "Float"
+                                   , "from", "with"]
             , P.caseSensitive  = True   
            }
 
