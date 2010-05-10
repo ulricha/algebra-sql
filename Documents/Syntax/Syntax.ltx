@@ -119,8 +119,10 @@ We write (e) to denote a grouping
 
 \begin{syntaxdefs}
 	\syntaxdef{|LINQCompr|}
-		\alt{|from pattern in e {LINQbody} selectGroup [into pattern LINQbody]|}
+		\alt{|from pattern in e LINQbody|}
 	\syntaxdef{|LINQbody|}
+		\alt{|LINQbodyClause selectGroup [into pattern LINQbody]|}
+	\syntaxdef{|LINQbodyClause|}
 		\alt{|from pattern in e|}
 		\alt{|let i = e|}
 		\\

@@ -27,6 +27,7 @@
 %format return = "\textbf{return}"
 %format group = "\textbf{group}"
 %format select = "\textbf{select}"
+%format into = "\textbf{into}"
 
 %format True = "\textbf{True}"
 %format False = "\textbf{False}"
