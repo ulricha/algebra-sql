@@ -1,0 +1,27 @@
+\section{Ferry Core Syntax}
+
+\begin{syntaxdefs}
+	\syntaxdef{|expr|}
+		\alt{|e1 op e2|}
+		\alt{|uo e|}
+		\\
+		\alt{|f p1 ... pn|\quad |where n >= 1|}
+		\\
+		\alt{|let id = e1 in e2|}
+		\alt{|c|}
+		\\
+		\alt{|CURL(x1 = e1, ..., xn = en)|\quad|where n >= 1|}
+		\\
+		\alt{|SQBR(e1, ..., en)|\quad|where n>= 0|}
+		\\
+		\alt{|e.id|}
+		\\
+		\alt{|table R| |PAREN(col1 t1, ..., coln tn) with keys| |PAREN(k1, ..., km) | \quad |where n >= 1 & m >= 1|}
+	\syntaxdef{|p|}
+		\alt{|e|}
+		\alt{|PAREN(pat -> e)|}
+	\syntaxdef{|pat|}
+		\alt{|x|}
+		\alt{|PAREN(x1,...,xn)|\quad|where n>= 2|}
+\end{syntaxdefs}
+

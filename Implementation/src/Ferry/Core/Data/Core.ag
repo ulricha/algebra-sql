@@ -1,0 +1,50 @@
+{
+module Ferry.Core.Data.Core where
+
+import Ferry.Front.Data.Base
+
+}
+
+data Op
+    | Op o::String
+
+data CoreExpr
+    | BinOp op::Op e1::CoreExpr e2::CoreExpr
+    | UnaOp op::Op e::CoreExpr
+    | Constant c::Const
+    | Var x::String
+    | App e1::CoreExpr args::Params
+    | Let x::String e1::CoreExpr e2::CoreExpr
+    | Rec es::RecElems
+    | List es::CoreExprs
+    | Elem e1::CoreExpr s::String
+    | Table n::String cs::Columns ks::Keys
+
+data RecElem
+    | RecElem x::String e::CoreExpr
+    
+data Param
+    | ParExpr
+    | ParAbstr
+    
+data Pattern
+    | Var x::String
+    | Pattern xs::{[String]}
+    
+data Column
+    | Column n::String t::Type
+    
+data Type
+    | TInt 
+    | TFloat 
+    | TString 
+    | TBool
+    
+data Key
+    | Key s::{[String]}
+    
+type CoreExprs = [CoreExpr]
+type RecElems = [RecElem]
+type Columns = [Column]
+type Keys = [Key]
+type Params = [Param]

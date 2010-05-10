@@ -10,6 +10,8 @@ import Text.ParserCombinators.Parsec.Expr
 import Ferry.Front.Parser.Scanner
 import Ferry.Front.Data.Language
 import Ferry.Front.Data.Meta
+import Ferry.Front.Data.Instances
+import Ferry.Front.Data.Base
 
 parseFerry :: SourceName -> [Char] -> Either ParseError Expr
 parseFerry file src = parse parseInput file src
