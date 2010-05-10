@@ -1,0 +1,131 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Keywords
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%format ascending = "\textbf{ascending}"
+%format descending = "\textbf{descending}"
+
+%format one = "\textbf{one}"
+%format many = "\textbf{many}"
+
+%format if = "\textbf{if}"
+%format then = "\textbf{then}"
+%format else = "\textbf{else}"
+
+%format table = "\textbf{table}"
+%format with = "\textbf{with}"
+%format keys = "\textbf{keys}"
+%format order = "\textbf{order}"
+%format relationship = "\textbf{relationship}"
+%format from = "\textbf{from}"
+%format to = "\textbf{to}"
+%format by = "\textbf{by}"
+%format eq = "\textbf{eq}"
+%format for = "\textbf{for}"
+%format let = "\textbf{let}"
+%format in = "\textbf{in}"
+%format return = "\textbf{return}"
+%format group = "\textbf{group}"
+%format select = "\textbf{select}"
+%format into = "\textbf{into}"
+
+%format True = "\textbf{True}"
+%format False = "\textbf{False}"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Categories
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%format Types = "\textbf{Types}"
+%format Ident = "\textbf{Ident}"
+%format Nat = "\textbf{Nat}"
+%format Columns = "\textbf{Columns}"
+%format Tables = "\textbf{Tables}"
+%format Const = "\textbf{Const}"
+%format Ints = "\textbf{Ints}"
+%format Floats = "\textbf{Floats}"
+%format CStrings = "\textbf{Strings}"
+%format Bools = "\textbf{Bools}"
+%format Exp = "\textbf{Exp}"
+%format Var = "\textbf{Var}"
+%format Op = "\textbf{Op}"
+%format Ord = "\textbf{Ord}"
+%format Arr = "\textbf{Arr}"
+%format Prim = "\textbf{Prim}"
+%format Pat = "'\textbf{Pat}"
+
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Synctactic category variables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%format arr = "a"
+%format boo = "b"
+%format op = "\oplus"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Variables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%format e0 = "e_{0} "
+%format e1 = "e_{1} "
+%format e2 = "e_{2} "
+%format e3 = "e_{3} "
+%format e4 = "e_{4} "
+%format en = "e_{n} "
+%format em = "e_{m} "
+%format er = "e_r"
+%format enp1 = "e_{n+1} "
+
+%format e11 = "e_{11}"
+%format e1n = "e_{1n}"
+%format en1 = "e_{n1}"
+%format enn = "e_{nn}"
+
+%format x1 = "x_1"
+%format x2 = "x_2"
+%format x3 = "x_3"
+%format x4 = "x_4"
+%format xn = "x_n"
+
+%format x11 = "x_{11}"
+%format x1n = "x_{1n}"
+%format xn1 = "x_{n1}"
+%format xnn = "x_{nn}"
+
+%format p1 = "p_1"
+%format p2 = "p_2"
+%format p3 = "p_3"
+%format p4 = "p_4"
+%format pn = "p_n"
+
+%format k1 = "k_1"
+%format k2 = "k_2"
+%format k3 = "k_3"
+%format k4 = "k_4"
+%format kn = "k_n"
+%format km = "k_m"
+
+%format col1 = "col_1"
+%format col2 = "col_2"
+%format col3 = "col_3"
+%format col4 = "col_4"
+%format coln = "col_n"
+
+%format pattern1 = "pattern_1"
+%format patternn = "pattern_n"
+%format cardinality1 = "cardinality_1"
+%format cardinalityn = "cardinality_n"
+%format ordering1 = "ordering_1"
+%format orderingn = "ordering_n"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Misc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%format ... = "\ldots "
+%format <.> = "\bullet"
+%format binds = "bind^{*}"
+%format SQBR(x) = "\texttt{[}" x "\texttt{]}"
+%format PAREN(x) = "\texttt{(}" x "\texttt{)}"
+%format CURL(x) = "\texttt{\{}" x "\texttt{\}}"
