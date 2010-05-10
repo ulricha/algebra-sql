@@ -200,12 +200,30 @@ linqCompr = do
             p <- pattern
             reserved "in"
             e <- expr
-            b <- many linqBody
-            s <- selectGroup
-            return $ LINQCompr (Meta pos) p e b s
+            b <- linqBody
+            return $ LINQCompr (Meta pos) p e b
 
-linqBody :: Parser ComprElem
-linqBody = choice [forWhere, forLet, forFrom, forOrder]
+linqBody :: Parser LINQBody
+linqBody = do
+            pos <- getPosition
+            b <- many linqBodyClause
+            s <- selectGroup
+            c <- linqContinuation
+            return $ LINQBody (Meta pos) b s c
+
+linqContinuation :: Parser MaybeContinuation
+linqContinuation = choice [
+                      do
+                        pos <- getPosition
+                        reserved "into"
+                        p <- pattern
+                        b <- linqBody
+                        return $ Just $ Continuation (Meta pos) p b
+                    , return Nothing]
+                    
+
+linqBodyClause :: Parser ComprElem
+linqBodyClause = choice [forWhere, forLet, forFrom, forOrder]
 
 selectGroup :: Parser LINQResult
 selectGroup = choice [try groupBy, try groupWith, select]

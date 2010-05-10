@@ -36,8 +36,14 @@ data Expr
     
 data QCompr
     | FerryCompr   m::{Meta} p::Pattern e1::Expr bd::ComprElems er::Expr
-    | LINQCompr    m::{Meta} p::Pattern e1::Expr bd::ComprElems r::LINQResult
+    | LINQCompr    m::{Meta} p::Pattern e1::Expr b::LINQBody
     | HaskellCompr m::{Meta}
+    
+data LINQBody 
+    | LINQBody     m::{Meta} bd::ComprElems r::LINQResult c::MaybeContinuation
+    
+data Continuation 
+    | Continuation m::{Meta} p::Pattern b::LINQBody
 
 data ComprElem
     | CLet   m::{Meta} p::Pattern e::Expr
@@ -86,8 +92,9 @@ type Columns = [Column]
 type Keys = [Key]
 type ExprOrders = [ExprOrder]
 type ComprElems = [ComprElem]
+type MaybeContinuation = (Maybe Continuation)
 
-deriving Op Expr ComprElem ExprOrder Pattern Order Cardinality Key Column Binding RecElem Type QCompr LINQResult : Show, Eq
+deriving Continuation Op Expr ComprElem ExprOrder Pattern Order Cardinality Key Column Binding RecElem Type QCompr LINQBody LINQResult : Show, Eq
 
 data Type
     | TInt m::{Meta}
@@ -116,6 +123,6 @@ instance HasMeta Expr where
 
 instance HasMeta QCompr where
     getMeta (FerryCompr m _ _ _ _) = m
-    getMeta (LINQCompr m _ _ _ _)  = m
+    getMeta (LINQCompr m _ _ _)  = m
     getMeta (HaskellCompr m)       = m
 }                                        
