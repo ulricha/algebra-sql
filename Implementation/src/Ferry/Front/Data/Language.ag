@@ -28,6 +28,7 @@ data Expr
     | Paren        m::{Meta} e::Expr
     | List         m::{Meta} es::Exprs
     | Elem         m::{Meta} e::Expr i::{Either String Integer}
+    | Lookup       m::{Meta} e1::Expr e2::Expr 
     | Let          m::{Meta} bs::Bindings e::Expr
     | Table        m::{Meta} n::String cs::Columns ks::Keys
     | Relationship m::{Meta} a1::Cardinality e1::Expr a2::Cardinality e2::Expr k1::Key k2::Key

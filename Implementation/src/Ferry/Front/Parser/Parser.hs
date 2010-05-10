@@ -221,7 +221,6 @@ linqContinuation = choice [
                         return $ Just $ Continuation (Meta pos) p b
                     , return Nothing]
                     
-
 linqBodyClause :: Parser ComprElem
 linqBodyClause = choice [forWhere, forLet, forFrom, forOrder]
 
@@ -273,10 +272,21 @@ atom = do
                    constParser, 
                    parenExpr, 
                    variable]
-     el <- many element
+     el <- many lookupListRec
      return $ case el of
                [] -> e
-               _  -> foldl (\l r -> Elem (Meta $ getPos e) l r) e el
+               _  -> foldl (\l r -> case r of 
+                                     Left e' -> Elem (Meta $ getPos e) l e'
+                                     Right e' -> Lookup (Meta $ getPos e) l e') e el
+               
+lookupListRec :: Parser (Either (Either String Integer) Expr)
+lookupListRec = choice [ do
+                            e <- element
+                            return $ Left e
+                       , do
+                            e <- listLookup
+                            return $ Right e]
+               
 -- | Parse function abstraction                                   
 abstract :: Parser Expr
 abstract = do 
@@ -358,6 +368,11 @@ variable = do
             pos <- getPosition
             x <- identifier
             return $ Var (Meta pos) x
+            
+listLookup :: Parser Expr
+listLookup = do
+              e <- braces expr
+              return e
             
 -- The following parser are auxiliry parsers.
 
