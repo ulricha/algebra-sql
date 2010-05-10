@@ -23,6 +23,7 @@
 Notational conventions:
 
 We write | [e] | to denote an option, | {e} | to denote zero or more repetitions.
+We write (e) to denote a grouping
 \begin{syntaxdefs}%
 	\syntaxdef{|ordering|}
 		\alt{|ascending|}
@@ -118,21 +119,16 @@ We write | [e] | to denote an option, | {e} | to denote zero or more repetitions
 
 \begin{syntaxdefs}
 	\syntaxdef{|LINQCompr|}
-		\alt{|from pattern in e [query-body-clauses] select-or-group-clause [into pattern query-body]|}
-	\syntaxdef{|query-body-clauses|}
-		\alt{|query-body-clause|}
-		\alt{|query-body-clauses query-body-clause|}
-	\syntaxdef{|query-body-clause|}
-		\alt{|from pattern in e [query-body-clauses]|}
+		\alt{|from pattern in e {LINQbody} selectGroup [into pattern LINQbody]|}
+	\syntaxdef{|LINQbody|}
+		\alt{|from pattern in e {LINQbody}|}
 		\alt{|let i = e|}
+		\\
 		\alt{|where e|}
-		\alt{|order by orderings|}
-	\syntaxdef{|orderings|}
-		\alt{|Lordering|}
-		\alt{|orderings   ,   Lordering|}
-	\syntaxdef{|Lordering|}
+		\alt{|order by (ordening1, ..., ordeningn)|\quad |where n >= 1|}
+	\syntaxdef{|ordening|}
 		\alt{|e [ordering]|}
-	\syntaxdef{|select-or-group-clause|}
+	\syntaxdef{|selectGroup|}
 		\alt{|select e|}
 		\alt{|group e by e|}
 		\alt{|group e with e|}
