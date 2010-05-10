@@ -8,7 +8,7 @@ ferryc: language core $(hsFiles) bin
 core: ./Ferry/Core/Data/Core.ag bin
 	uuagc -cdfswH --self ./Ferry/Core/Data/Core.ag -o ../bin/Ferry/Core/Data/Core.hs   
 
-language: ./Ferry/Front/Data/Language.ag bin
+language: ./Ferry/Front/Data/Language.ag ./Ferry/Front/Data/AST.ag bin
 	uuagc -cdfswH --self ./Ferry/Front/Data/Language.ag -o ../bin/Ferry/Front/Data/Language.hs
 
 bin:

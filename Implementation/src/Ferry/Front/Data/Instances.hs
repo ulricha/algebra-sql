@@ -24,3 +24,9 @@ instance HasMeta QCompr where
     getMeta (FerryCompr m _ _ _ _) = m
     getMeta (LINQCompr m _ _ _)  = m
     getMeta (HaskellCompr m)       = m
+    
+instance Pretty Const where
+    pretty (CInt i) = (show i)
+    pretty (CFloat d) = (show d)
+    pretty (CBool b) = (show b)
+    pretty (CString s) = "\"" ++ s ++ "\""
