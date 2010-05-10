@@ -35,15 +35,21 @@ data Expr
     | QComp        m::{Meta} q::QCompr
     
 data QCompr
-    | FerryCompr   m::{Meta} p::Pattern e1::Expr bd::ForElems er::Expr
-    | LINQCompr    m::{Meta}
+    | FerryCompr   m::{Meta} p::Pattern e1::Expr bd::ComprElems er::Expr
+    | LINQCompr    m::{Meta} p::Pattern e1::Expr bd::ComprElems r::LINQResult
     | HaskellCompr m::{Meta}
 
-data ForElem
-    | FLet   m::{Meta} p::Pattern e::Expr
-    | FWhere m::{Meta} e::Expr
-    | FGroup m::{Meta} es::Exprs
-    | FOrder m::{Meta} es::ExprOrders
+data ComprElem
+    | CLet   m::{Meta} p::Pattern e::Expr
+    | CWhere m::{Meta} e::Expr
+    | CGroup m::{Meta} es::Exprs
+    | COrder m::{Meta} es::ExprOrders
+    | CFrom  m::{Meta} p::Pattern e::Expr
+
+data LINQResult
+    | Select m::{Meta} e::Expr
+    | GroupBy m::{Meta} e1::Expr e2::Expr
+    | GroupWith m::{Meta} e1::Expr e2::Expr
 
 data ExprOrder
     | ExprOrder m::{Meta} e::Expr o::Order
@@ -79,9 +85,9 @@ type Bindings = [Binding]
 type Columns = [Column]
 type Keys = [Key]
 type ExprOrders = [ExprOrder]
-type ForElems = [ForElem]
+type ComprElems = [ComprElem]
 
-deriving Op Expr ForElem ExprOrder Pattern Order Cardinality Key Column Binding RecElem Type QCompr : Show, Eq
+deriving Op Expr ComprElem ExprOrder Pattern Order Cardinality Key Column Binding RecElem Type QCompr LINQResult : Show, Eq
 
 data Type
     | TInt m::{Meta}
@@ -107,4 +113,9 @@ instance HasMeta Expr where
     getMeta (Relationship m _ _ _ _ _ _) = m 
     getMeta (QComp        m _)           = m
 --    getMeta (For          m _ _ _ _)     = m
+
+instance HasMeta QCompr where
+    getMeta (FerryCompr m _ _ _ _) = m
+    getMeta (LINQCompr m _ _ _ _)  = m
+    getMeta (HaskellCompr m)       = m
 }                                        

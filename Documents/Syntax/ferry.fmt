@@ -26,6 +26,7 @@
 %format in = "\textbf{in}"
 %format return = "\textbf{return}"
 %format group = "\textbf{group}"
+%format select = "\textbf{select}"
 
 %format True = "\textbf{True}"
 %format False = "\textbf{False}"
@@ -51,6 +52,7 @@
 %format Arr = "\textbf{Arr}"
 %format Prim = "\textbf{Prim}"
 %format Pat = "'\textbf{Pat}"
+
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Synctactic category variables

@@ -20,7 +20,7 @@ ferryDef  = P.LanguageDef
                                    , "if", "then", "else", "let", "in", "table", "with", "keys"
                                    , "relationship", "from", "to", "by", "eq", "for", "where"
                                    , "group", "order", "return", "String", "Bool", "Int", "Float"
-                                   , "from", "with"]
+                                   , "from", "with", "select"]
             , P.caseSensitive  = True   
            }
 

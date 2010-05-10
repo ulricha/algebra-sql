@@ -61,7 +61,7 @@ simpleExpr = choice [ ifExpr,
                       letExpr,
                       relationship,
                       app,
-                      for                      
+                      queryComprehension                      
                     ]
                         
 -- | Parser for if then else contructs. The expression contained in the conditional and branches are
@@ -110,58 +110,80 @@ relationship = do
 app :: Parser Expr
 app = chainl1 atom (return (\e1 e2 -> App (Meta $ getPos e1) e1 e2))
 
+queryComprehension :: Parser Expr
+queryComprehension = do
+                        c <- choice [ferryCompr, linqCompr]
+                        return $ QComp (Meta $ getPos c) c
+
+-- Parse query comprehensions
+
 -- | Parser for Ferry list comprehensions. 
-for :: Parser Expr
-for = do 
+ferryCompr :: Parser QCompr
+ferryCompr = do 
         pos <- getPosition
         reserved "for"
         p <- pattern
         reserved "in"
         e <- expr
         l1 <- many forLet
-        l2 <- option [] forWhere
+        l2 <- option [] forWheres
         l3 <- many forLet
-        l4 <- option [] forGroup
+        l4 <- option [] forGroups
         l5 <- many forLet
-        l6 <- option [] forWhere
+        l6 <- option [] forWheres
         l7 <- many forLet
-        l8 <- option [] forOrder
+        l8 <- option [] forOrders
         l9 <- many forLet
         reserved "return"
         er <- expr
-        return $ QComp (Meta pos) $ FerryCompr (Meta pos) p e (concat [l1, l2, l3, l4, l5, l6, l7, l8, l9]) er
+        return $ FerryCompr (Meta pos) p e (concat [l1, l2, l3, l4, l5, l6, l7, l8, l9]) er
         
-forLet :: Parser ForElem
+forLet :: Parser ComprElem
 forLet = do
             pos <- getPosition
             reserved "let"
             p <- pattern
             symbol "="
             e <- expr
-            return $ FLet (Meta pos) p e
-            
-forWhere :: Parser [ForElem]
+            return $ CLet (Meta pos) p e
+
+forWheres :: Parser [ComprElem]
+forWheres = do
+              e <- forWhere
+              return [e]
+              
+forWhere :: Parser ComprElem
 forWhere = do
             pos <- getPosition
             reserved "where"
             e <- expr
-            return $ [FWhere (Meta pos) e]
-            
-forGroup :: Parser [ForElem]
+            return $ CWhere (Meta pos) e
+
+forGroups :: Parser [ComprElem]
+forGroups = do
+                e <- forGroup
+                return [e]
+                
+forGroup :: Parser ComprElem
 forGroup = do
             pos <- getPosition
             reserved "group"
             reserved "by"
             groups <- commaSep1 expr
-            return $ [FGroup (Meta pos) groups]
+            return $ CGroup (Meta pos) groups
             
-forOrder :: Parser [ForElem]
+forOrders :: Parser [ComprElem]
+forOrders = do
+                e <- forOrder
+                return [e]
+            
+forOrder :: Parser ComprElem
 forOrder = do
             pos <- getPosition
             reserved "order"
             reserved "by"
             ords <- commaSep1 elem
-            return $ [FOrder (Meta pos) ords]
+            return $ COrder (Meta pos) ords
     where
         elem :: Parser ExprOrder
         elem = do 
@@ -169,7 +191,59 @@ forOrder = do
                  e <- expr
                  o <- option (Ascending $ Meta emptyPos) ordering
                  return $ ExprOrder (Meta pos) e o
+                 
+-- | LINQ comprehension parser
+linqCompr :: Parser QCompr
+linqCompr = do
+            pos <- getPosition
+            reserved "from"
+            p <- pattern
+            reserved "in"
+            e <- expr
+            b <- many linqBody
+            s <- selectGroup
+            return $ LINQCompr (Meta pos) p e b s
 
+linqBody :: Parser ComprElem
+linqBody = choice [forWhere, forLet, forFrom, forOrder]
+
+selectGroup :: Parser LINQResult
+selectGroup = choice [try groupBy, try groupWith, select]
+
+select :: Parser LINQResult
+select = do
+            pos <- getPosition
+            reserved "select"
+            e <- expr
+            return $ Select (Meta pos) e
+            
+groupBy :: Parser LINQResult
+groupBy = do
+            pos <- getPosition
+            reserved "group"
+            e1 <- expr
+            reserved "in"
+            e2 <- expr
+            return $ GroupBy (Meta pos) e1 e2
+            
+groupWith :: Parser LINQResult
+groupWith = do
+              pos <- getPosition
+              reserved "group"
+              e1 <- expr
+              reserved "with"
+              e2 <- expr
+              return $ GroupWith (Meta pos) e1 e2
+
+forFrom :: Parser ComprElem
+forFrom = do
+            pos <- getPosition
+            reserved "from"
+            p <- pattern
+            reserved "in"
+            e <- expr
+            return $ CFrom (Meta pos) p e
+            
 -- | Parser atomic values.
 atom :: Parser Expr
 atom = do 
