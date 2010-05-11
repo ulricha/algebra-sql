@@ -1,0 +1,122 @@
+\section{Ferry Language Syntax}
+
+\begin{sets}%
+  \declareset{Types\enspace,}{|Types|}{|t|}%
+  \declareset{Identifiers\enspace,}{|Ident|}{|id|}%
+  \declareset{Constants\enspace,}{|Const|}{|c|}%
+  \declareset{Natural numbers\enspace,}{|Nat|}{|n|}%
+  \declareset{Integers\enspace,}{|Ints|}{|i|}%
+  \declareset{Floats\enspace,}{|Floats|}{|fl|}%
+  \declareset{Strings \enspace,}{|CStrings|}{|s|}%
+  \declareset{booleans\enspace,}{|Bools|}{|boo|}%
+  \declareset{expressions \enspace,}{|Exp|}{|e|}%
+  \declareset{variables\enspace,}{|Var|}{|x|}%
+  \declareset{binary operators\enspace,}{|Op|}{|op|}%
+  \declareset{Orderings\enspace,}{|Ord|}{|o|}%
+  \declareset{Cardinality\enspace,}{|Car|}{|car|}%
+  \declareset{Primitive functions \enspace,}{|Prim|}{|f|}%
+  \declareset{Patterns\enspace,}{|Pat|}{|p|}%
+  \declareset{Column names\enspace,}{|Columns|}{|col|}%
+  \declareset{Table names}{|Tables|}{|R|}
+\end{sets}
+
+Notational conventions:
+
+We write | [e] | to denote an option, | {e} | to denote zero or more repetitions.
+We write (e) to denote a grouping
+\begin{syntaxdefs}%
+	\syntaxdef{|ordering|}
+		\alt{|ascending|}
+		\alt{|descending|}
+	\syntaxdef{|cardinality|}
+		\alt{|many|}
+		\alt{|one|}
+	\syntaxdef{|op|}
+		\alt{|+|} 
+		\alt{|-|}
+		\alt{|/|}
+		\alt{|*|}
+		\alt{|%|} 
+		\alt{|...|} 
+	\syntaxdef{|c|}
+		\alt{|i|}
+		\alt{|fl|}
+		\alt{|boo|}
+		\alt{|"s"|}
+	\syntaxdef{|i|}
+		\alt{|...|}
+		\alt{|-2|}
+		\alt{|-1|}
+		\alt{|0|}
+		\alt{|1|}
+		\alt{|2|}
+		\alt{|...|}
+	\syntaxdef{|n|}
+			\alt{|1|}
+			\alt{|2|}
+			\alt{|...|}
+	\syntaxdef{|boo|}
+		\alt{|True|}
+		\alt{|False|}
+	\syntaxdef{|x|}
+		\alt{|id|}
+	\syntaxdef{|pattern|}
+		\alt{|x|}
+		\alt{|PAREN(x1, ...,xn)| \quad |where n >= 2| }
+	\syntaxdef{|l|}
+		\alt{|n|}
+		\alt{|x|}
+	\syntaxdef{|k|}
+		\alt{|PAREN(col1, ..., coln)| \quad |where n >= 1|}
+  	\syntaxdef{|e|}
+		\alt{|c|}
+  		\alt{|x|}
+		\\
+ 		\alt{|f|}
+		\alt{|f e1 ... en|\quad |where n >= 1|}
+		\\
+		\alt{|PAREN(pattern -> e)|}
+		\\
+		\alt{|e1 op e2|}
+		\alt{|if e0 then e1 else e2|}
+		\\
+		\alt{|PAREN(e1, ..., en)| \quad |where n >= 2|}
+		\\
+		\alt{|PAREN(e)|}
+		\\
+		\alt{|CURL(x1 = e1, ..., xn = en)| \quad |where n >= 1|}
+		\\
+		\alt{|SQBR(e1, ..., en)| \quad |where n >= 0|}
+		\\
+		\alt{|e <.> l|}
+		\alt{|e| |CURL(e)|}
+		\\
+		\alt{|let pattern1 = e1, ..., patternn = en in e| \quad |where n >= 1|}
+		\\
+		\alt{|table R| |PAREN(col1 t1, ..., coln tn) with keys| |PAREN(k1, ..., km) | \quad |where n >= 1 & m >= 1|}
+		\\
+		\alt{|relationship from cardinality e1 to cardinality e2 by k1 eq k2|}
+		\\
+		\alt{|ferryCompr|}
+\end{syntaxdefs}
+
+\begin{syntaxdefs}
+	\syntaxdef{|ferryCompr|}
+		\alt{|forClause {bodyClause} returnClause |}
+	\syntaxdef{|forClause|}
+		\alt{|for pattern in e {, pattern in e}|}
+	\syntaxdef{|bodyClause|}
+		\alt{|forClause|}\\
+		\alt{|where e|}\\
+		\alt{|let x = e {, x = e}|}\\
+		\alt{|order by [ordering] e {,[ordering] e}|}\\
+		\alt{|groupClause|}
+	\syntaxdef{|groupClause|}
+		\alt{|group by e [into pattern]|}\\
+		\alt{|group e by e into pattern|}\\
+		\alt{|group [e] with e [into pattern]|}
+	\syntaxdef{|returnClause|}
+		\alt{|return e|}
+\end{syntaxdefs}
+
+

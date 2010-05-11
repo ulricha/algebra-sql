@@ -1,0 +1,11 @@
+# ignore latex artefacts
+.*.aux
+.*.log
+.*.bbl
+.*.pdf
+
+# ignore the swp files created by vim
+.*.swp
+
+# ignore mac specific files
+.DS_Store
