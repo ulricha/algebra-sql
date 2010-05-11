@@ -41,14 +41,6 @@ data BodyElem where
     AltGroupBy :: Meta -> Expr -> Expr -> Pattern -> BodyElem
     GroupWith :: Meta -> Maybe Expr -> Expr -> Maybe Pattern -> BodyElem
      deriving (Show, Eq)
-              
-data ComprElem where
-    CLet   :: Meta -> Pattern -> Expr -> ComprElem
-    CWhere :: Meta -> Expr -> ComprElem
-    CGroup :: Meta -> [Expr] -> ComprElem
-    COrder :: Meta -> [ExprOrder] -> ComprElem
-    CFrom  :: Meta -> Pattern -> Expr -> ComprElem
-     deriving (Show, Eq)
 
 data ExprOrder where
     ExprOrder :: Meta -> Expr -> Order -> ExprOrder
@@ -86,18 +78,6 @@ data RecElem where
     TuplRec :: Meta -> Int -> Expr -> RecElem
      deriving (Show, Eq)
      
-{-
-type RecElems = [RecElem]
-type Exprs = [Expr]
-type Bindings = [Binding]
-type Columns = [Column]
-type Keys = [Key]
-type ExprOrders = [ExprOrder]
-type ComprElems = [ComprElem]
-type MaybeContinuation = (Maybe Continuation)
-
-deriving Continuation Op Expr ComprElem ExprOrder Pattern Order Cardinality Key Column Binding RecElem Type QCompr LINQBody LINQResult : Show, Eq
--}
 data Type where
      TInt    :: Meta -> Type
      TFloat  :: Meta -> Type

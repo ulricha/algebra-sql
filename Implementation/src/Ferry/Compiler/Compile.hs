@@ -2,7 +2,7 @@ module Ferry.Compiler.Compile where
     
 import Ferry.Compiler.Types
 import Ferry.Front.Parser.Parser
--- import Ferry.Front.Render.PrettyFerry
+import Ferry.Front.Render.Pretty
 
 import System.FilePath.Posix(takeFileName)
 
@@ -19,7 +19,7 @@ compile opts inp = do
                         let ast = parseFerry file src
                         case ast of
                             (Left e) -> putStrLn $ show e
-                            (Right a) -> putStrLn $ show a
+                            (Right a) -> putStrLn $ prettyAST a
                         --let pretty = prettyAST ast 
                         --putStrLn pretty -- $ show ast
                         return ()
