@@ -98,42 +98,25 @@ We write (e) to denote a grouping
 		\alt{|relationship from cardinality e1 to cardinality e2 by k1 eq k2|}
 		\\
 		\alt{|ferryCompr|}
-		\alt{|LINQCompr|}
 \end{syntaxdefs}
 
 \begin{syntaxdefs}
 	\syntaxdef{|ferryCompr|}
-	\alt{|
-	  	   for  pattern in e1 
-		       fwhere fgroupBy forderBy			    
-			    binds return er 
-		|}
-	\syntaxdef{|bind|}
-		\alt{|let pattern = e|}
-	\syntaxdef{|fwhere|}
-		\alt{| binds [where e] |}
-	\syntaxdef{|fgroupby|}
-		\alt {|binds [group by e1, ..., en]|}
-	\syntaxdef{|forderBy|}
-		\alt{|binds [order by e1 [ordering1], ..., en [orderingn]] |}
+		\alt{|forClause {bodyClause} returnClause |}
+	\syntaxdef{|forClause|}
+		\alt{|for pattern in e {, pattern in e}|}
+	\syntaxdef{|bodyClause|}
+		\alt{|forClause|}\\
+		\alt{|where e|}\\
+		\alt{|let x = e {, x = e}|}\\
+		\alt{|order by [ordering] e {,[ordering] e}|}\\
+		\alt{|groupClause|}
+	\syntaxdef{|groupClause|}
+		\alt{|group by e [into pattern]|}\\
+		\alt{|group e by e into pattern|}\\
+		\alt{|group [e] with e [into pattern]|}
+	\syntaxdef{|returnClause|}
+		\alt{|return e|}
 \end{syntaxdefs}
 
-\begin{syntaxdefs}
-	\syntaxdef{|LINQCompr|}
-		\alt{|from pattern in e LINQbody|}
-	\syntaxdef{|LINQbody|}
-		\alt{|LINQbodyClause selectGroup [into pattern LINQbody]|}
-	\syntaxdef{|LINQbodyClause|}
-		\alt{|from pattern in e|}
-		\alt{|let i = e|}
-		\\
-		\alt{|where e|}
-		\alt{|order by (ordening1, ..., ordeningn)|\quad |where n >= 1|}
-	\syntaxdef{|ordening|}
-		\alt{|e [ordering]|}
-	\syntaxdef{|selectGroup|}
-		\alt{|select e|}
-		\alt{|group e by e|}
-		\alt{|group e with e|}
-\end{syntaxdefs}
 
