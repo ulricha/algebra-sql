@@ -1,8 +1,0 @@
-{
-module Ferry.Front.Data.Language where
-    
-import Ferry.Front.Data.Meta
-import Ferry.Front.Data.Base
-}
-
-include "Ferry/Front/Data/AST.ag"                 

@@ -2,6 +2,7 @@ module Ferry.Front.Data.Instances where
     
 import Ferry.Front.Data.Language
 import Ferry.Front.Data.Meta
+import Ferry.Front.Data.Base
 
 instance HasMeta Expr where              
     getMeta (UnOp         m _ _)         = m
@@ -21,8 +22,7 @@ instance HasMeta Expr where
     getMeta (QComp        m _)           = m
 
 instance HasMeta QCompr where
-    getMeta (FerryCompr m _ _ _ _) = m
-    getMeta (LINQCompr m _ _ _)  = m
+    getMeta (FerryCompr m _ _ _) = m
     getMeta (HaskellCompr m)       = m
     
 instance Pretty Const where
