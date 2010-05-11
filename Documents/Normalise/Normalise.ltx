@@ -1,122 +1,38 @@
-\section{Ferry Language Syntax}
+\section{Ferry Front language normalisation}
 
-\begin{sets}%
-  \declareset{Types\enspace,}{|Types|}{|t|}%
-  \declareset{Identifiers\enspace,}{|Ident|}{|id|}%
-  \declareset{Constants\enspace,}{|Const|}{|c|}%
-  \declareset{Natural numbers\enspace,}{|Nat|}{|n|}%
-  \declareset{Integers\enspace,}{|Ints|}{|i|}%
-  \declareset{Floats\enspace,}{|Floats|}{|fl|}%
-  \declareset{Strings \enspace,}{|CStrings|}{|s|}%
-  \declareset{booleans\enspace,}{|Bools|}{|boo|}%
-  \declareset{expressions \enspace,}{|Exp|}{|e|}%
-  \declareset{variables\enspace,}{|Var|}{|x|}%
-  \declareset{binary operators\enspace,}{|Op|}{|op|}%
-  \declareset{Orderings\enspace,}{|Ord|}{|o|}%
-  \declareset{Cardinality\enspace,}{|Car|}{|car|}%
-  \declareset{Primitive functions \enspace,}{|Prim|}{|f|}%
-  \declareset{Patterns\enspace,}{|Pat|}{|p|}%
-  \declareset{Column names\enspace,}{|Columns|}{|col|}%
-  \declareset{Table names}{|Tables|}{|R|}
-\end{sets}
+\begin{code}
+    normalise(  for p1 in e1, p2 in e2, ..., pn in en body )                   
+                        =  normalise (for * in  concatMap  e1 (p1 -> e2) ((p1, p2) -> {p1, p2}),
+                                                ..., pn in en [p1 +-> *.p1, p2 +-> *.p2] body)
+    normalise(  for p1 in e1 for p2 in e2 body)
+                        =  normalise (for p1 in e1, p2 in e2 body)
+    normalise(  for p in e1 where e2 body)       
+                        =  normalise (for p in filter (p -> e2) e1 body)
+    normalise(  for p in e1 let v = e2 body)     
+                        =  normalise (for * in map (p -> {p1, v=e2}) e1 [p +-> *.p, v +-> *.v] body)
+    normalise(  for p in eb let v1 = e1, ..., vn = en body )
+                        =  normalise  (for * in  (map (p -> {p, v1 = e1, ..., vn = en}) eb) 
+                                      [p +-> *.p, v1 +-> *.v1, ..., vn +-> *.vn] body)
+    normalise(  for p in eb order by  e1 descending, e2 ascending body)
+                        =  normalise  (for  p in thenbyascending (p -> e2) (orderbydescending (p -> e1) eb)
+                                      body)
+    normalise(  for  p in e1 group by eg body)
+                        =  normalise (for  p in (groupby (p -> eg) e1) body)
+    normalise(  for  p1 in e1 group by eg into p2 body)
+                        =  normalise (for  p2 in (groupby (p1 -> eg) e1) body)
+    normalise(  for  p1 in e1 group e2 by eg into p2 body)
+                        =  normalise (for  p2 in (groupby (p1 -> e2) (p1 -> eg) e1) body)
+    normalise(  for  p1 in e1 group with eg body)
+                        =  normalise (for  p1 in (groupwith (p1 -> eg) e1) body)
+    normalise(  for  p1 in e1 group e2 with eg body)
+                        =  normalise (for  p1 in (groupwith (p1 -> e2)(p1 -> eg) e1) body)
+    normalise(  for  p1 in e1 group with eg into p2 body)
+                        =  normalise (for  p2 in (groupWith (p1 -> eg) e1) body)
+    normalise(  for  p1 in e1 group e2 with eg into p2 body)
+                        =  normalise (for  p2 in (groupWith (p1 -> e2) (p1 -> eg) e1) body)
+    normalise(  for p in e1 return p)            
+                        =  e1
+    normalise(  for p in e1 return e2)
+                        =  map (p -> e2) e1
 
-Notational conventions:
-
-We write | [e] | to denote an option, | {e} | to denote zero or more repetitions.
-We write (e) to denote a grouping
-\begin{syntaxdefs}%
-	\syntaxdef{|ordering|}
-		\alt{|ascending|}
-		\alt{|descending|}
-	\syntaxdef{|cardinality|}
-		\alt{|many|}
-		\alt{|one|}
-	\syntaxdef{|op|}
-		\alt{|+|} 
-		\alt{|-|}
-		\alt{|/|}
-		\alt{|*|}
-		\alt{|%|} 
-		\alt{|...|} 
-	\syntaxdef{|c|}
-		\alt{|i|}
-		\alt{|fl|}
-		\alt{|boo|}
-		\alt{|"s"|}
-	\syntaxdef{|i|}
-		\alt{|...|}
-		\alt{|-2|}
-		\alt{|-1|}
-		\alt{|0|}
-		\alt{|1|}
-		\alt{|2|}
-		\alt{|...|}
-	\syntaxdef{|n|}
-			\alt{|1|}
-			\alt{|2|}
-			\alt{|...|}
-	\syntaxdef{|boo|}
-		\alt{|True|}
-		\alt{|False|}
-	\syntaxdef{|x|}
-		\alt{|id|}
-	\syntaxdef{|pattern|}
-		\alt{|x|}
-		\alt{|PAREN(x1, ...,xn)| \quad |where n >= 2| }
-	\syntaxdef{|l|}
-		\alt{|n|}
-		\alt{|x|}
-	\syntaxdef{|k|}
-		\alt{|PAREN(col1, ..., coln)| \quad |where n >= 1|}
-  	\syntaxdef{|e|}
-		\alt{|c|}
-  		\alt{|x|}
-		\\
- 		\alt{|f|}
-		\alt{|f e1 ... en|\quad |where n >= 1|}
-		\\
-		\alt{|PAREN(pattern -> e)|}
-		\\
-		\alt{|e1 op e2|}
-		\alt{|if e0 then e1 else e2|}
-		\\
-		\alt{|PAREN(e1, ..., en)| \quad |where n >= 2|}
-		\\
-		\alt{|PAREN(e)|}
-		\\
-		\alt{|CURL(x1 = e1, ..., xn = en)| \quad |where n >= 1|}
-		\\
-		\alt{|SQBR(e1, ..., en)| \quad |where n >= 0|}
-		\\
-		\alt{|e <.> l|}
-		\alt{|e| |CURL(e)|}
-		\\
-		\alt{|let pattern1 = e1, ..., patternn = en in e| \quad |where n >= 1|}
-		\\
-		\alt{|table R| |PAREN(col1 t1, ..., coln tn) with keys| |PAREN(k1, ..., km) | \quad |where n >= 1 & m >= 1|}
-		\\
-		\alt{|relationship from cardinality e1 to cardinality e2 by k1 eq k2|}
-		\\
-		\alt{|ferryCompr|}
-\end{syntaxdefs}
-
-\begin{syntaxdefs}
-	\syntaxdef{|ferryCompr|}
-		\alt{|forClause {bodyClause} returnClause |}
-	\syntaxdef{|forClause|}
-		\alt{|for pattern in e {, pattern in e}|}
-	\syntaxdef{|bodyClause|}
-		\alt{|forClause|}\\
-		\alt{|where e|}\\
-		\alt{|let x = e {, x = e}|}\\
-		\alt{|order by [ordering] e {,[ordering] e}|}\\
-		\alt{|groupClause|}
-	\syntaxdef{|groupClause|}
-		\alt{|group by e [into pattern]|}\\
-		\alt{|group e by e into pattern|}\\
-		\alt{|group [e] with e [into pattern]|}
-	\syntaxdef{|returnClause|}
-		\alt{|return e|}
-\end{syntaxdefs}
-
-
+\end{code}
