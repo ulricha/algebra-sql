@@ -1,11 +1,14 @@
-# ignore latex artefacts
-.*.aux
-.*.log
-.*.bbl
-.*.pdf
+# ignore TextMate's project files
+*.tmproj
+
+# ignore LaTeX artefacts
+*.aux
+*.log
+*.bbl
+*.pdf
 
 # ignore the swp files created by vim
-.*.swp
+*.swp
 
 # ignore mac specific files
 .DS_Store
