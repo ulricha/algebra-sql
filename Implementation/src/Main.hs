@@ -14,7 +14,21 @@ stopSelect "3"  = Normalise
 stopSelect "10" = Transform
 stopSelect _    = Full
 
-                 
+type Logo = [String]
+
+logo :: Logo
+logo = [
+        "     _/_/_/_/                                              _/_/          _/    ",
+        "    _/        _/_/    _/  _/_/  _/  _/_/  _/    _/      _/    _/      _/  _/   ",
+        "   _/_/_/  _/_/_/_/  _/_/      _/_/      _/    _/          _/        _/  _/    ",
+        "  _/      _/        _/        _/        _/    _/        _/          _/  _/     ",
+        " _/        _/_/_/  _/        _/          _/_/_/      _/_/_/_/  _/    _/        ",
+        "                                            _/                                 ",
+        "                                       _/_/                                    ",
+        " Ferry 2.0 Compiler",
+        " Developed at Universität Tübingen"
+       ]
+                                        
 -- | Description of the options for the compiler 'Mode'
 options :: [OptDescr (Config -> Config)]
 options = [ Option ['s'] ["stop"]
@@ -68,7 +82,7 @@ processArgs progName args =
     (oargs, nonopts, []    ) -> return (foldl (flip ($)) defaultConfig oargs, nonopts)
     (_    , _      , errors) -> ioError $ userError $ "\n" ++ (concat errors) ++ usageInfo header options
   where
-    header = "\nUsage: " ++ progName
+    header = "\n" ++ unlines logo ++ "\nUsage: " ++ progName
              ++ " [OPTION...] [FILE], with the following options:"
 
 -- | Main thread

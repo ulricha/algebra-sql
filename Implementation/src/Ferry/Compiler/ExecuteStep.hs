@@ -8,6 +8,7 @@ import System.IO
 import Ferry.Compiler.Types
 import Ferry.Compiler.Error.Error
 
+
 executeStep :: Config -> CompilationStep a b -> a -> PhaseResult b
 executeStep opts step i = do
                             phaseHeader (stageName step) (stageMode step) opts
@@ -29,6 +30,7 @@ createArtefacts opts i (a, e, f) = do
                                                   (Just file) -> liftIO $ openFile (file ++ "." ++ e) WriteMode 
                                          logMsg "Creating artefact"
                                          f h i
+                                         liftIO $ hFlush h
                                          logMsg "Artefact creation done"
                                          logMsg line
                                          return ()
@@ -43,5 +45,6 @@ phaseHeader n s c = do
                      logMsg $ "Compiler stage: " ++ (show s)
                      logMsg $ "Stage name: " ++ n
                      logMsg "Compiling with the following options:"
+                     logMsg $ show c
                      logMsg line
                      return ()

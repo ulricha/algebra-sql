@@ -9,6 +9,7 @@ import Ferry.Front.Data.Language
 import Ferry.Front.Render.Pretty
 
 import Text.ParserCombinators.Parsec (ParseError(..))
+import System.IO
 
 parsePhase :: Config -> String -> PhaseResult Expr
 parsePhase c s = executeStep c parseStage s
@@ -25,4 +26,4 @@ parseStage = CompilationStep "Parse"  Parse step artefacts
                          in case pr of
                              Left err -> newError $ ParserError err
                              Right expr -> return expr
-        artefacts = [(PrettyAST, "ferry", \h s -> intoArtefact $ putStrLn $  prettyPrint s)]
+        artefacts = [(PrettyAST, "ferry", \h s -> intoArtefact $ hPutStr h $  prettyPrint s)]

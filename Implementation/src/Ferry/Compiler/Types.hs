@@ -22,6 +22,7 @@ data Config = Config {
               artefact :: [Artefact],
               debug :: Bool
             }
+            deriving Show
 
 -- | The modes that are supported by the compiler.
 --   run ferryc -h to see a list of all options
@@ -56,14 +57,14 @@ defaultConfig = Config {
                 --  By default the program is given through a File
                 input       = Arg,
                 -- Standard output is the empty list, denoting regular compilation proces
-                artefact    = [Echo, Algebra], 
+                artefact    = [Algebra], 
                 --  Debug turned of by default
                 debug       = False 
               }
               
 type PhaseResult r = ErrorT FerryError (WriterT Log IO) r
 
-type CreateArtefact = WriterT Log IO () 
+type CreateArtefact = WriterT Log IO ()
 
 data CompilationStep a b  = CompilationStep { 
                                 stageName :: Name, 

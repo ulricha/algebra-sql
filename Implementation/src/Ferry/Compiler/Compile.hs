@@ -15,19 +15,21 @@ compile :: Config -> [String] -> IO ()
 compile opts inp = do
                         src <- case (input opts) of
                                 File f -> readFile f
-                                Arg  -> return $ unlines inp
+                                Arg  -> do
+                                            src <- getLine
+                                            return src
                         let file = case (input opts) of
                                     File f -> takeFileName f
                                     Arg  -> "StdIn"
                         (r, l) <- runPhase $ pipeline opts src            
-                        putStrLn $ unlines l
+                        if (debug opts)
+                            then putStrLn $ unlines l
+                            else return ()
                         case r of
                             (Left e) -> putStrLn $ show e
                             (Right ()) -> return ()
-                        --let pretty = prettyAST ast 
-                        --putStrLn pretty -- $ show ast
                         return ()
-                        --putStrLn (show $ length tokens)
+
                         
 pipeline :: Config -> String -> PhaseResult ()
 pipeline c src = readPhase c src >>=
