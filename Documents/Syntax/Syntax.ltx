@@ -68,17 +68,12 @@ We write (e) to denote a grouping
 		\alt{|x|}
 	\syntaxdef{|k|}
 		\alt{|PAREN(col1, ..., coln)| \quad |where n >= 1|}
-  	\syntaxdef{|e|}
-		\alt{|c|}
+  	\syntaxdef{|arg|}
+  	    \alt{|atom|}
+  	    \alt{|(pat -> e)|}
+  	\syntaxdef{|atom|}
+  	    \alt{|c|}
   		\alt{|x|}
-		\\
- 		\alt{|f|}
-		\alt{|f e1 ... en|\quad |where n >= 1|}
-		\\
-		\alt{|PAREN(pattern -> e)|}
-		\\
-		\alt{|e1 op e2|}
-		\alt{|if e0 then e1 else e2|}
 		\\
 		\alt{|PAREN(e1, ..., en)| \quad |where n >= 2|}
 		\\
@@ -88,16 +83,22 @@ We write (e) to denote a grouping
 		\\
 		\alt{|SQBR(e1, ..., en)| \quad |where n >= 0|}
 		\\
-		\alt{|e <.> l|}
-		\alt{|e| |CURL(e)|}
+		\alt{|atom <.> l|}
+		\alt{|atom| |CURL(e)|}
+  	\syntaxdef{|e|}
+		\alt{|f arg1 ... argn|\quad |where n >= 1|}
 		\\
-		\alt{|let pattern1 = e1, ..., patternn = en in e| \quad |where n >= 1|}
+		\alt{|e1 op e2|}
+		\alt{|if e0 then e1 else e2|}
+		\\
+		\alt{|let x1 = e1, ..., xn = en in e| \quad |where n >= 1|}
 		\\
 		\alt{|table R| |PAREN(col1 t1, ..., coln tn) with keys| |PAREN(k1, ..., km) | \quad |where n >= 1 & m >= 1|}
 		\\
 		\alt{|relationship from cardinality e1 to cardinality e2 by k1 eq k2|}
 		\\
 		\alt{|ferryCompr|}
+		\alt{|atom|}
 \end{syntaxdefs}
 
 \begin{syntaxdefs}
@@ -112,11 +113,9 @@ We write (e) to denote a grouping
 		\alt{|order by [ordering] e {,[ordering] e}|}\\
 		\alt{|groupClause|}
 	\syntaxdef{|groupClause|}
-		\alt{|group by e [into pattern]|}\\
-		\alt{|group e by e into pattern|}\\
-		\alt{|group [e] with e [into pattern]|}
+		\alt{|group [e] (by || with) e {, en} [into pattern]|}
 	\syntaxdef{|returnClause|}
-		\alt{|return e|}
+		\alt{|return e [into pat {bodyClause} returnClause]|}
 \end{syntaxdefs}
 
 
