@@ -8,15 +8,12 @@ import Ferry.Compiler.Types
 import Ferry.Compiler.Compile
 
 stopSelect :: String -> Mode
-stopSelect n = if n == "1"
-                 then Read
-                 else if n == "2"
-                 then Parse
-                 else if n == "3"
-                 then Normalise
-                 else if n == "10"
-                 then Transform
-                 else Full
+stopSelect "1"  = Read
+stopSelect "2"  = Parse
+stopSelect "3"  = Normalise
+stopSelect "10" = Transform
+stopSelect _    = Full
+
                  
 -- | Description of the options for the compiler 'Mode'
 options :: [OptDescr (Config -> Config)]
