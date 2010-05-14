@@ -9,7 +9,6 @@ instance HasMeta Expr where
     getMeta (BinOp        m _ _ _)       = m
     getMeta (Const        m _)           = m
     getMeta (Var          m _)           = m
-    getMeta (Abstr        m _ _)         = m
     getMeta (App          m _ _)         = m
     getMeta (If           m _ _ _)       = m
     getMeta (Record       m _)           = m

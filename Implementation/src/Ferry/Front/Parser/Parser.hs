@@ -4,7 +4,7 @@ import Text.ParserCombinators.Parsec (parse, getPosition, (<|>), try,
                                       noneOf, many, SourcePos(..), 
                                       Parser(..), choice, chainl1,
                                       ParseError(..),SourceName(..),
-                                      option, eof)
+                                      option, eof, many1)
 import Text.ParserCombinators.Parsec.Expr
 
 import Ferry.Front.Parser.Scanner
@@ -62,8 +62,9 @@ simpleExpr :: Parser Expr
 simpleExpr = choice [ ifExpr,
                       letExpr,
                       relationship,
-                      app,
-                      queryComprehension                      
+                      try app,
+                      queryComprehension,
+                      atom                      
                     ]
                         
 -- | Parser for if then else contructs. The expression contained in the conditional and branches are
@@ -105,12 +106,34 @@ relationship = do
                 reserved "eq"
                 k2 <- key
                 return $ Relationship (Meta pos) c1 e1 c2 e2 k1 k2
-                
+
+arg :: Parser Arg
+arg = choice [do
+                pos <- getPosition
+                e <- atom
+                return $AExpr (Meta pos) e, 
+              abstract]
+
+-- | Parse function abstraction                                   
+abstract :: Parser Arg
+abstract = do 
+            pos <- getPosition
+            a <- parens $ do 
+                            pat <- pattern
+                            symbol "->"
+                            e <- expr
+                            return (\p -> AAbstr (Meta p) pat e)
+            return $ a pos
+                            
 -- | Parser for function application. Parse an atomic expression followed by as much
 --   atomic expressions as possible.If there is no application then parse at least
 --   one atomic expression 'atom'.
 app :: Parser Expr
-app = chainl1 atom (return (\e1 e2 -> App (Meta $ getPos e1) e1 e2))
+app = do
+        pos <- getPosition 
+        v <- variable
+        args <- many1 arg
+        return $ App (Meta pos) v args
 
 queryComprehension :: Parser Expr
 queryComprehension = do
@@ -182,31 +205,23 @@ orderByClause = do
                      return $ ExprOrder (Meta pos) e o
                      
 groupClause :: Parser BodyElem
-groupClause = choice [try groupBy, try altGroupBy, try groupWith]
+groupClause = choice [try groupBy, try groupWith]
     
 groupBy :: Parser BodyElem
 groupBy = do
             pos <- getPosition
             reserved "group"
+            e1 <- option Nothing $ do
+                                    e <- expr
+                                    return $ Just e            
             reserved "by"
-            e <- expr
+            es <- commaSep1 expr
             i <- option Nothing $ do
                                     reserved "into"
                                     p <- pattern
                                     return $ Just p
-            return $ GroupBy (Meta pos) e i
+            return $ GroupBy (Meta pos) e1 es i
             
-altGroupBy :: Parser BodyElem
-altGroupBy = do
-                pos <- getPosition
-                reserved "group"
-                e1 <- expr
-                reserved "by"
-                e2 <- expr
-                reserved "into"
-                p <- pattern
-                return $ AltGroupBy (Meta pos) e1 e2 p
-                
 groupWith :: Parser BodyElem
 groupWith = do
              pos <- getPosition
@@ -215,24 +230,30 @@ groupWith = do
                                      e <- expr
                                      return $ Just e
              reserved "with"
-             e2 <- expr
+             e2 <- commaSep1 expr
              i <- option Nothing $ do
                                     reserved "into"
                                     p <- pattern
                                     return $ Just p
              return $ GroupWith (Meta pos) e1 e2 i
                  
-returnClause :: Parser Expr
+returnClause :: Parser ReturnElem
 returnClause = do
+                pos <- getPosition
                 reserved "return"
                 e <- expr
-                return e
+                c <- option Nothing $ do
+                                        reserved "into"
+                                        p <- pattern
+                                        bs <- many bodyClause
+                                        r <- returnClause
+                                        return $ Just (p, bs, r) 
+                return $ Return (Meta pos) e c
                          
 -- | Parser atomic values.
 atom :: Parser Expr
 atom = do 
-     e <- choice [ try abstract, 
-                   try tuple,
+     e <- choice [ try tuple,
                    record,
                    list,
                    table,
@@ -254,17 +275,6 @@ lookupListRec = choice [ do
                             e <- listLookup
                             return $ Right e]
                
--- | Parse function abstraction                                   
-abstract :: Parser Expr
-abstract = do 
-            pos <- getPosition
-            a <- parens $ do 
-                            pat <- pattern
-                            symbol "->"
-                            e <- expr
-                            return (\p -> Abstr (Meta p) pat e)
-            return $ a pos
-
 -- | Parse a tuple. A tuple contains at least two elements.
 tuple :: Parser Expr
 tuple = do

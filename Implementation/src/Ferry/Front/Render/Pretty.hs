@@ -19,7 +19,6 @@ instance Pretty Expr where
     pretty (BinOp        _ o e1 e2)           i = (pretty e1 i) ++ " " ++ (pretty o i) ++ " " ++ (pretty e2 i)
     pretty (Const        _ c)                 i = pretty c i
     pretty (Var          _ i)                 _ = i
-    pretty (Abstr        _ p e)               i = "(" ++ pretty p i ++ " -> " ++ pretty e i ++ ")"
     pretty (App          _ e1 e2)             i = (pretty e1 i) ++ " " ++ (pretty e2 i)
     pretty (If           _ e1 e2 e3)          i = "if " ++ pretty e1 i ++
                                                     (newLine $ i + 3) ++ "then " ++ (pretty e2 $ i + 8) ++
@@ -41,6 +40,14 @@ instance Pretty Expr where
                                                     newLine (i+15) ++ "by " ++ pretty k1 (i + 18) ++ " eq " ++ pretty k2 (i + 18)
     pretty (QComp        _ comp)              i = pretty comp i
 
+instance Pretty a => Pretty [a] where
+    pretty (x:xs) i = pretty x i ++ " " ++ pretty xs i
+    pretty [] i = ""
+    
+instance Pretty Arg where
+    pretty (AExpr _ e) i = pretty e i
+    pretty (AAbstr _ x e) i = "(" ++ pretty x i ++ " ->" ++ pretty e i ++ ")"
+    
 newLine :: Int -> String
 newLine n = "\n" ++ (take n $ repeat ' ')
 
@@ -91,6 +98,14 @@ instance Pretty QCompr where
                                              newLine i ++ "return " ++ pretty r (i + 7)
     pretty (HaskellCompr _) _ = error "HaskellCompr cannot be pretty printed"
 
+instance Pretty ReturnElem where
+    pretty (Return _ e c) i = "return " ++ pretty e (i + 7) ++
+                                case c of
+                                    Nothing -> ""
+                                    Just (p, l, r) -> " into " ++ pretty p (i + 7) ++ newLine (i + 7) ++ 
+                                                        mapIntersperseConcat (flip pretty (i + 7)) (newLine $ i + 7) l ++
+                                                        newLine (i + 7) ++ "return " ++ pretty r (i + 14)
+
 binds :: Int -> (Pattern, Expr) -> String
 binds i (p, e) = pretty p i ++ " in " ++ pretty e (i+ (length (pretty p 0)) + 4)
 
@@ -102,19 +117,21 @@ instance Pretty BodyElem where
     pretty (ForLet _ ps) i = "let " ++ mapIntersperseConcat (lets i) ((:) ',' $ newLine (i + 4)) ps
     pretty (ForWhere _ e) i = "where " ++ pretty e (i+6)
     pretty (ForOrder _ os) i = "order by " ++ mapIntersperseConcat (flip pretty (i+9)) ", " os
-    pretty (GroupBy _ e p) i = "group by " ++ pretty e (i+9) ++
+    pretty (GroupBy _ e es p) i = "group " ++ (case e of
+                                                Nothing -> ""
+                                                Just e -> pretty e (i+6) ++ " ") ++ "by " ++ intersperseComma es (i+9) ++
                                  case p of
                                     Nothing -> ""
                                     Just p  -> newLine (i+4) ++ "into " ++ pretty p (i+9)
-    pretty (AltGroupBy _ e1 e2 p) i = "group " ++ pretty e1 (i+6) ++ newLine (i+3) ++
-                                       "by "++ pretty e2 (i+6) ++ newLine (i+1) ++
-                                       "into " ++ pretty p (i+6)
     pretty (GroupWith _ e1 e2 p) i = "group " ++ (case e1 of
                                                     Nothing -> ""
                                                     Just e1 -> pretty e1 (i+6) ++ newLine (i+1) ) ++ "with "
                                                     ++ pretty e2 (i+6) ++ case p of
                                                                             Nothing -> ""
                                                                             Just p -> newLine (i+1) ++ "into " ++ pretty p (i+6)
+
+intersperseComma :: Pretty a => [a] -> Int -> String
+intersperseComma xs i = concat $ L.intersperse ", " $ map (flip pretty i) xs 
 
 instance Pretty Const where
     pretty (CInt i) _ = (show i)

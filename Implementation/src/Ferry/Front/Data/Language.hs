@@ -13,8 +13,7 @@ data Expr where
      BinOp        :: Meta -> Op -> Expr -> Expr -> Expr
      Const        :: Meta -> Const -> Expr
      Var          :: Meta -> Identifier -> Expr
-     Abstr        :: Meta -> Pattern -> Expr -> Expr
-     App          :: Meta -> Expr -> Expr -> Expr
+     App          :: Meta -> Expr -> [Arg] -> Expr
      If           :: Meta -> Expr -> Expr -> Expr -> Expr
      Record       :: Meta -> [RecElem] -> Expr
      Paren        :: Meta -> Expr -> Expr
@@ -28,7 +27,7 @@ data Expr where
      deriving (Show, Eq)
     
 data QCompr where
-    FerryCompr     :: Meta -> [(Pattern, Expr)] -> [BodyElem] -> Expr -> QCompr
+    FerryCompr     :: Meta -> [(Pattern, Expr)] -> [BodyElem] -> ReturnElem -> QCompr
     HaskellCompr :: Meta -> QCompr
      deriving (Show, Eq)
 
@@ -37,10 +36,13 @@ data BodyElem where
     ForLet :: Meta -> [(Pattern, Expr)] -> BodyElem
     ForWhere :: Meta -> Expr -> BodyElem
     ForOrder :: Meta -> [ExprOrder] -> BodyElem 
-    GroupBy :: Meta -> Expr -> Maybe Pattern -> BodyElem
-    AltGroupBy :: Meta -> Expr -> Expr -> Pattern -> BodyElem
-    GroupWith :: Meta -> Maybe Expr -> Expr -> Maybe Pattern -> BodyElem
+    GroupBy :: Meta -> Maybe Expr -> [Expr] -> Maybe Pattern -> BodyElem
+    GroupWith :: Meta -> Maybe Expr -> [Expr] -> Maybe Pattern -> BodyElem
      deriving (Show, Eq)
+     
+data ReturnElem where
+    Return :: Meta -> Expr -> Maybe (Pattern, [BodyElem], ReturnElem) -> ReturnElem
+    deriving (Show, Eq)
 
 data ExprOrder where
     ExprOrder :: Meta -> Expr -> Order -> ExprOrder
@@ -84,3 +86,8 @@ data Type where
      TString :: Meta -> Type
      TBool   :: Meta -> Type 
      deriving (Show, Eq)
+     
+data Arg where
+    AExpr  :: Meta -> Expr -> Arg
+    AAbstr :: Meta -> Pattern -> Expr -> Arg
+ deriving (Show, Eq)
