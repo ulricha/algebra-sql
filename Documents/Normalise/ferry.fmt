@@ -129,3 +129,6 @@
 %format SQBR(x) = "\texttt{[}" x "\texttt{]}"
 %format PAREN(x) = "\texttt{(}" x "\texttt{)}"
 %format CURL(x) = "\texttt{\{}" x "\texttt{\}}"
+
+%format norm(x) = "\llbracket" x "\rrbracket"
+%format normb(x) = "\guillemotleft" x "\guillemotright"

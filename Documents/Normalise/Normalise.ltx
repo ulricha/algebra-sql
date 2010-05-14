@@ -1,38 +1,21 @@
 \section{Ferry Front language normalisation}
 
 \begin{code}
-    normalise(  for p1 in e1, p2 in e2, ..., pn in en body )                   
-                        =  normalise (for * in  concatMap  e1 (p1 -> e2) ((p1, p2) -> {p1, p2}),
-                                                ..., pn in en [p1 +-> *.p1, p2 +-> *.p2] body)
-    normalise(  for p1 in e1 for p2 in e2 body)
-                        =  normalise (for p1 in e1, p2 in e2 body)
-    normalise(  for p in e1 where e2 body)       
-                        =  normalise (for p in filter (p -> e2) e1 body)
-    normalise(  for p in e1 let v = e2 body)     
-                        =  normalise (for * in map (p -> {p1, v=e2}) e1 [p +-> *.p, v +-> *.v] body)
-    normalise(  for p in eb let v1 = e1, ..., vn = en body )
-                        =  normalise  (for * in  (map (p -> {p, v1 = e1, ..., vn = en}) eb) 
-                                      [p +-> *.p, v1 +-> *.v1, ..., vn +-> *.vn] body)
-    normalise(  for p in eb order by  e1 descending, e2 ascending body)
-                        =  normalise  (for  p in thenbyascending (p -> e2) (orderbydescending (p -> e1) eb)
-                                      body)
-    normalise(  for  p in e1 group by eg body)
-                        =  normalise (for  p in (groupby (p -> eg) e1) body)
-    normalise(  for  p1 in e1 group by eg into p2 body)
-                        =  normalise (for  p2 in (groupby (p1 -> eg) e1) body)
-    normalise(  for  p1 in e1 group e2 by eg into p2 body)
-                        =  normalise (for  p2 in (groupby (p1 -> e2) (p1 -> eg) e1) body)
-    normalise(  for  p1 in e1 group with eg body)
-                        =  normalise (for  p1 in (groupwith (p1 -> eg) e1) body)
-    normalise(  for  p1 in e1 group e2 with eg body)
-                        =  normalise (for  p1 in (groupwith (p1 -> e2)(p1 -> eg) e1) body)
-    normalise(  for  p1 in e1 group with eg into p2 body)
-                        =  normalise (for  p2 in (groupWith (p1 -> eg) e1) body)
-    normalise(  for  p1 in e1 group e2 with eg into p2 body)
-                        =  normalise (for  p2 in (groupWith (p1 -> e2) (p1 -> eg) e1) body)
-    normalise(  for p in e1 return p)            
-                        =  e1
-    normalise(  for p in e1 return e2)
-                        =  map (p -> e2) e1
+ norm(c)              =  c
+ norm((e1,..., en))   =  ( norm(e1) , ..., norm(e2) )
+ norm({b1,..., bn})   =  {normb(b1) , ..., normb(bn)}
+ norm([e1, ..., en])  =  [norm(e1) , ..., norm(en)]
+ norm(table T (col1, ..., coln) with keys (k1, ..., k2)) 
+                      =  table T (col1, ..., coln) with keys (k1, ..., k2)
+ norm(e.p)            =  norm(e).p
+ norm(e.n)            =  norm(e).n
+ norm(e1(e2))         =  norm(lookup e2 e1)
+ norm(e1 op e2)       =  norm(e1) op norm(e2)
+ norm(op e1)          =  op norm(e1)
+\end{code}
 
+\begin{code}
+    normb(v = e)  =  v = norm(e)
+    normb(v)      =  v = v
+    normb(e.v)    =  v = norm(e.v)
 \end{code}
