@@ -18,15 +18,15 @@ type Logo = [String]
 
 logo :: Logo
 logo = [
-        "     _/_/_/_/                                              _/_/          _/    ",
-        "    _/        _/_/    _/  _/_/  _/  _/_/  _/    _/      _/    _/      _/  _/   ",
-        "   _/_/_/  _/_/_/_/  _/_/      _/_/      _/    _/          _/        _/  _/    ",
-        "  _/      _/        _/        _/        _/    _/        _/          _/  _/     ",
-        " _/        _/_/_/  _/        _/          _/_/_/      _/_/_/_/  _/    _/        ",
-        "                                            _/                                 ",
-        "                                       _/_/                                    ",
+        "     _/_/_/_/                                       ",
+        "    _/        _/_/    _/  _/_/  _/  _/_/  _/    _/  ",
+        "   _/_/_/  _/_/_/_/  _/_/      _/_/      _/    _/   ",
+        "  _/      _/        _/        _/        _/    _/    ",
+        " _/        _/_/_/  _/        _/          _/_/_/     ",
+        "                                            _/      ",
+        "                                       _/_/         ",
         " Ferry 2.0 Compiler",
-        " Developed at Universität Tübingen"
+        " Developed at Universitaet Tuebingen"
        ]
                                         
 -- | Description of the options for the compiler 'Mode'
