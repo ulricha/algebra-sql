@@ -52,7 +52,8 @@
 %format Ord = "\textbf{Ord}"
 %format Arr = "\textbf{Arr}"
 %format Prim = "\textbf{Prim}"
-%format Pat = "'\textbf{Pat}"
+%format Pat = "\textbf{Pat}"
+%format Car = "\textbf{Car}"
 
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

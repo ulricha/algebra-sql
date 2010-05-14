@@ -21,9 +21,17 @@
 \end{sets}
 
 Notational conventions:
+We write ...
+\begin{itemize}
+    \item | [e] | to denote an option.
+    \item | {e} | to denote zero or more repetitions
+    \item |(e)| to denote a grouping
+    \item | || | to denote an alternative
+    \item | PAREN() | to denote syntactical parentheses
+    \item | SQBR() | to denote syntactical brackets
+    \item | CURL() | to denote syntactical braces
+\end{itemize}
 
-We write | [e] | to denote an option, | {e} | to denote zero or more repetitions.
-We write (e) to denote a grouping
 \begin{syntaxdefs}%
 	\syntaxdef{|ordering|}
 		\alt{|ascending|}
@@ -31,6 +39,11 @@ We write (e) to denote a grouping
 	\syntaxdef{|cardinality|}
 		\alt{|many|}
 		\alt{|one|}
+	\syntaxdef{|t|}
+	    \alt{|Int|}
+	    \alt{|Float|}
+	    \alt{|String|}
+	    \alt{|Bool|}
 	\syntaxdef{|op|}
 		\alt{|+|} 
 		\alt{|-|}
@@ -70,7 +83,7 @@ We write (e) to denote a grouping
 		\alt{|PAREN(col1, ..., coln)| \quad |where n >= 1|}
   	\syntaxdef{|arg|}
   	    \alt{|atom|}
-  	    \alt{|(pat -> e)|}
+  	    \alt{|PAREN(pat -> e)|}
   	\syntaxdef{|atom|}
   	    \alt{|c|}
   		\alt{|x|}
