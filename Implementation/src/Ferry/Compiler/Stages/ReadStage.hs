@@ -1,12 +1,16 @@
-module Ferry.Compiler.Stages.ReadStage where
+module Ferry.Compiler.Stages.ReadStage (readPhase) where
     
 import Ferry.Compiler.Types
 import Ferry.Compiler.Error.Error
+import Ferry.Compiler.ExecuteStep
 
-readStage :: CompilationStep String String FerryError
+readPhase :: Config -> String -> PhaseResult String
+readPhase c s = executeStep c readStage s
+
+readStage :: CompilationStep String String
 readStage = CompilationStep "Read"  Read step artefacts
     where
-        step :: Config -> String -> PhaseResult FerryError String
-        step opts arg = arg
-        artefacts = [(Echo, \s -> putStrLn s)]
+        step :: Config -> String -> PhaseResult String
+        step opts arg = return arg
+        artefacts = [(Echo, "echo", \h s -> intoArtefact $ putStrLn s)]
         

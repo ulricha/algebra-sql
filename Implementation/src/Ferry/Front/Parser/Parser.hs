@@ -200,12 +200,12 @@ altGroupBy :: Parser BodyElem
 altGroupBy = do
                 pos <- getPosition
                 reserved "group"
-                e <- expr
+                e1 <- expr
                 reserved "by"
-                e <- expr
+                e2 <- expr
                 reserved "into"
                 p <- pattern
-                return $ AltGroupBy (Meta pos) e e p
+                return $ AltGroupBy (Meta pos) e1 e2 p
                 
 groupWith :: Parser BodyElem
 groupWith = do

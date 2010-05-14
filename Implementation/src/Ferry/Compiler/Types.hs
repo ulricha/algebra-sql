@@ -42,7 +42,7 @@ data Artefact = Echo   -- ^ Echo mode prints the given input to the console
 
 allArtefacts = [Echo, PrettyAST, PrettyCore, DotAST, DotCore, Algebra]
 -- | The input mode determines whether the source program is given through a file or via stdin
-data Input  = File -- ^ File mode, the program is read from a file 
+data Input  = File String-- ^ File mode, the program is read from a file 
             | Arg  -- ^ Argument mode, the program is given as input directly
     deriving (Show, Eq)
 
@@ -54,7 +54,7 @@ defaultConfig = Config {
                 logFile     = Nothing,
                 output      = Nothing, 
                 --  By default the program is given through a File
-                input       = File,
+                input       = Arg,
                 -- Standard output is the empty list, denoting regular compilation proces
                 artefact    = [Echo, Algebra], 
                 --  Debug turned of by default
@@ -80,9 +80,14 @@ type Log = [String]
 getLog :: PhaseResult r -> IO Log
 getLog n = liftM snd $ runPhase n
             
+artefactToPhase :: CreateArtefact -> PhaseResult ()
+artefactToPhase a = lift a
 
 intoPhase :: IO a -> PhaseResult a
-intoPhase m = liftIO m
+intoPhase = liftIO
+
+intoArtefact :: IO () -> CreateArtefact
+intoArtefact = liftIO
 
 runPhase :: PhaseResult r -> IO (Either FerryError r, Log)
 runPhase n = runWriterT $ runErrorT n

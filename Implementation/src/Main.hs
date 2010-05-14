@@ -59,6 +59,9 @@ options = [ Option ['s'] ["stop"]
           , Option ['n'] ["prettyAst"]
                     (NoArg (\o -> o {artefact = PrettyAST : (artefact o)}))
                        "Parse program, pretty print AST."
+          , Option ['f']["file"]
+                   (ReqArg (\s o -> o {input = File s}) "File")
+                   "Source file input"
           ]
 
 -- | Process the arguments given to the compiler

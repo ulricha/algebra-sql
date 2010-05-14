@@ -5,6 +5,9 @@ import Ferry.Front.Data.Language
 
 import qualified Data.List as L
 
+prettyPrint :: Pretty a => a -> String
+prettyPrint a = pretty a 0 
+
 class Pretty a where
     pretty :: a -> Int -> String
     
@@ -91,9 +94,12 @@ instance Pretty QCompr where
 binds :: Int -> (Pattern, Expr) -> String
 binds i (p, e) = pretty p i ++ " in " ++ pretty e (i+ (length (pretty p 0)) + 4)
 
+lets :: Int -> (Pattern, Expr) -> String
+lets i (p, e) = pretty p i ++ " = " ++ pretty e (i+ (length (pretty p 0)) + 3)
+
 instance Pretty BodyElem where
     pretty (For _ ps) i = "for " ++ mapIntersperseConcat (binds i) ((:) ',' $ newLine (i + 4)) ps
-    pretty (ForLet _ ps) i = "let " ++ mapIntersperseConcat (binds i) ((:) ',' $ newLine (i + 4)) ps
+    pretty (ForLet _ ps) i = "let " ++ mapIntersperseConcat (lets i) ((:) ',' $ newLine (i + 4)) ps
     pretty (ForWhere _ e) i = "where " ++ pretty e (i+6)
     pretty (ForOrder _ os) i = "order by " ++ mapIntersperseConcat (flip pretty (i+9)) ", " os
     pretty (GroupBy _ e p) i = "group by " ++ pretty e (i+9) ++

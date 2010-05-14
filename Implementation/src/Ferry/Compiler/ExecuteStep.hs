@@ -12,7 +12,8 @@ executeStep :: Config -> CompilationStep a b -> a -> PhaseResult b
 executeStep opts step i = do
                             phaseHeader (stageName step) (stageMode step) opts
                             b <- (stageStep step) opts i
-                            return $ mapM_ (createArtefacts opts b) $ stageArtefacts step
+                            artefactToPhase $ mapM_ (createArtefacts opts b) $ stageArtefacts step
+                            -- map logMsg results
                             if (mode opts == stageMode step)
                              then endProcess
                              else return b
