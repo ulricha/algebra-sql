@@ -32,6 +32,11 @@
 %format True = "\textbf{True}"
 %format False = "\textbf{False}"
 
+%format FString = "\textbf{String}"
+%format FInt = "\textbf{Int}"
+%format FFloat = "\textbf{Float}"
+%format FBool = "\textbf{Bool}"
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Categories
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
