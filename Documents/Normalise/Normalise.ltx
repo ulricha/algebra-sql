@@ -1,12 +1,14 @@
 \section{Ferry Front language normalisation}
 
+The |sort| function orders record fields in alphabetical order
+
 \begin{code}
  norm c               =  c
  norm (e1,..., en)    =  ( norm(e1) , ..., norm(e2) )
- norm {b1,..., bn}    =  {normb b1 , ..., normb bn }
+ norm {b1,..., bn}    =  sort {normb b1 , ..., normb bn }
  norm [e1, ..., en]   =  [norm e1 , ..., norm en]
  (norm (table T (col1, ..., coln) with keys (k1, ..., k2)))
-                      =  table T (col1, ..., coln) with keys (k1, ..., k2)
+                      =  table T (sort ((col1, ..., coln))) with keys (k1, ..., k2)
  norm(e.p)            =  norm(e).p
  norm(e.n)            =  norm(e).n
  norm(e1(e2))         =  norm(lookup e2 e1)
