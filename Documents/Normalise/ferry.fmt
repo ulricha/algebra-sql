@@ -86,6 +86,7 @@
 %format enn = "e_{nn}"
 %format ek = "e_k"
 %format ev = "e_v"
+%format eo = "e_o"
 
 %format x1 = "x_1"
 %format x2 = "x_2"
@@ -140,10 +141,19 @@
 %format ordering1 = "ordering_1"
 %format orderingn = "ordering_n"
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Substitution stuff
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%format subst = "\textcolor{red}{\theta}"
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%format In = "\in"
+%format NotIn = "\notin"
 %format ... = "\ldots "
 %format <.> = "\bullet"
 %format binds = "bind^{*}"
