@@ -67,6 +67,9 @@
 %% Variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%format odn = "od_n"
+%format od1 = "od_1"
+
 %format e0 = "e_{0} "
 %format e1 = "e_{1} "
 %format e2 = "e_{2} "
@@ -81,12 +84,30 @@
 %format e1n = "e_{1n}"
 %format en1 = "e_{n1}"
 %format enn = "e_{nn}"
+%format ek = "e_k"
+%format ev = "e_v"
 
 %format x1 = "x_1"
 %format x2 = "x_2"
 %format x3 = "x_3"
 %format x4 = "x_4"
 %format xn = "x_n"
+%format xm = "x_m"
+
+%format c1 = "c_1"
+%format cn = "c_n"
+%format d1 = "d_1"
+%format dn = "d_n"
+
+%format b1 = "b_1"
+%format bn = "b_n"
+
+%format v1 = "v_1"
+%format v2 = "v_2"
+%format v3 = "v_3"
+%format vn = "v_n"
+%format vn1 = "v_{n+1}"
+%format vm = "v_m"
 
 %format x11 = "x_{11}"
 %format x1n = "x_{1n}"
@@ -130,5 +151,12 @@
 %format PAREN(x) = "\texttt{(}" x "\texttt{)}"
 %format CURL(x) = "\texttt{\{}" x "\texttt{\}}"
 
-%format norm(x) = "\llbracket" x "\rrbracket"
-%format normb(x) = "\guillemotleft" x "\guillemotright"
+%format norm x = "\llbracket " x "\rrbracket "
+%format normb x = "\ll " x "\gg "
+%format normp x = "\lessdot " x "\gtrdot "
+
+
+%format `op` = op
+
+%format ord0 x = "|" x "|^0"
+%format ordt x = "|" x "|^t"
