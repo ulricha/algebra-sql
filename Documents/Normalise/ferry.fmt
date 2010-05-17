@@ -151,9 +151,10 @@
 %format PAREN(x) = "\texttt{(}" x "\texttt{)}"
 %format CURL(x) = "\texttt{\{}" x "\texttt{\}}"
 
-%format norm x = "\llbracket " x "\rrbracket "
-%format normb x = "\ll " x "\gg "
-%format normp x = "\lessdot " x "\gtrdot "
+%format (norm (x)) = "\llbracket " x "\rrbracket "
+% format norm x = "\llbracket " x "\rrbracket "
+%format (normb (x)) = "\ll " x "\gg "
+%format (normp (x)) = "\lessdot " x "\gtrdot "
 
 
 %format `op` = op

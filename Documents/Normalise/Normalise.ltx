@@ -4,8 +4,8 @@
  norm c               =  c
  norm (e1,..., en)    =  ( norm(e1) , ..., norm(e2) )
  norm {b1,..., bn}    =  {normb b1 , ..., normb bn }
- norm [e1, ..., en]   =  [norm(e1) , ..., norm(en)]
- norm (table T (col1, ..., coln) with keys (k1, ..., k2))
+ norm [e1, ..., en]   =  [norm e1 , ..., norm en]
+ (norm (table T (col1, ..., coln) with keys (k1, ..., k2)))
                       =  table T (col1, ..., coln) with keys (k1, ..., k2)
  norm(e.p)            =  norm(e).p
  norm(e.n)            =  norm(e).n
@@ -19,7 +19,7 @@
                       =  norm (let x1 = e1 in let x2 = e2 in .... let xn = en in er)
  norm (let x = e1 in e2)
                       =  let x = norm e1 in norm e2
- norm (e)             =  norm e
+ norm ((e))           =  norm e
  norm (if e1 then e2 else e3)
                       =  if norm e1 then norm e2 else norm e3
  norm (relationship from one e1 to one e2 by k1 eq k2)
@@ -42,7 +42,7 @@
  norm (for p in e order by e1 od1, ..., en odn rest)
                       =  norm (for p in ordt odn (p -> en)(...(ord0 od1 (p -> e1) e)) rest)
  norm (for p1 in e1 group [ev] (by|with) ek1, ..., ekn [into p2] rest)
-                      =  norm  (p1 in e1 group [ev] (by|with) (ek1, ..., ekn) [into p2] rest)
+                      =  norm  (for p1 in e1 group [ev] (by|with) (ek1, ..., ekn) [into p2] rest)
 \end{code}
 
 \begin{code}
