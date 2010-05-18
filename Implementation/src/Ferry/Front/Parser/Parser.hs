@@ -102,97 +102,40 @@ letClause :: Parser BodyElem
 letClause = ForLet <$> pMeta <* reserved "let" <*> commaSep1 ((,) <$> pattern <* symbol "=" <*> expr)
 
 whereClause :: Parser BodyElem
-whereClause = do
-                pos <- getPosition
-                reserved "where"
-                e <- expr
-                return $ ForWhere (Meta pos) e
+whereClause = ForWhere <$> pMeta <* reserved "where" <*> expr
 
 orderByClause :: Parser BodyElem
-orderByClause = do
-                 pos <- getPosition
-                 reserved "order"
-                 reserved "by"
-                 os <- commaSep1 elem
-                 return $ ForOrder (Meta pos) os
+orderByClause = ForOrder <$> pMeta <* reserved "order" <* reserved "by" <*> commaSep1 elem
         where
             elem :: Parser ExprOrder
-            elem = do
-                     pos <- getPosition
-                     e <- expr
-                     o <- option (Ascending $ Meta emptyPos) ordering
-                     return $ ExprOrder (Meta pos) e o
+            elem = ExprOrder <$> pMeta <*> expr <*> option (Ascending $ Meta emptyPos) ordering
 
 groupClause :: Parser BodyElem
-groupClause = choice [try groupBy, try groupWith]
+groupClause = try groupBy <|> try groupWith
 
 groupBy :: Parser BodyElem
-groupBy = do
-            pos <- getPosition
-            reserved "group"
-            e1 <- option Nothing $ do
-                                    e <- expr
-                                    return $ Just e
-            reserved "by"
-            es <- commaSep1 expr
-            i <- option Nothing $ do
-                                    reserved "into"
-                                    p <- pattern
-                                    return $ Just p
-            return $ GroupBy (Meta pos) e1 es i
+groupBy = GroupBy <$> pMeta <* reserved "group" <*> option Nothing (Just <$> expr) 
+            <* reserved "by" <*> commaSep1 expr <*> option Nothing (Just <$ reserved "into" <*> pattern)
 
 groupWith :: Parser BodyElem
-groupWith = do
-             pos <- getPosition
-             reserved "group"
-             e1 <- option Nothing $ do
-                                     e <- expr
-                                     return $ Just e
-             reserved "with"
-             e2 <- commaSep1 expr
-             i <- option Nothing $ do
-                                    reserved "into"
-                                    p <- pattern
-                                    return $ Just p
-             return $ GroupWith (Meta pos) e1 e2 i
+groupWith = GroupWith <$> pMeta <* reserved "group" <*> option Nothing (Just <$> expr) <* reserved "with"
+             <*> commaSep1 expr <*> option Nothing (Just <$ reserved "into" <*> pattern)
 
 returnClause :: Parser ReturnElem
-returnClause = do
-                pos <- getPosition
-                reserved "return"
-                e <- expr
-                c <- option Nothing $ do
-                                        reserved "into"
-                                        p <- pattern
-                                        bs <- many bodyClause
-                                        r <- returnClause
-                                        return $ Just (p, bs, r)
-                return $ Return (Meta pos) e c
+returnClause = Return <$> pMeta <* reserved "return" <*> expr
+                <*> option Nothing ((\p bs r -> Just (p, bs, r)) <$ reserved "into" <*> pattern <*> many bodyClause <*> returnClause )
 
 -- | Parser atomic values.
 atom :: Parser Expr
-atom = do
-     e <- choice [ try tuple,
-                   record,
-                   list,
-                   table,
-                   constParser,
-                   parenExpr,
-                   variable]
-     el <- many lookupListRec
-     return $ case el of
-               [] -> e
-               _  -> foldl (\l r -> case r of
-                                     Left e' -> Elem (Meta $ getPos e) l e'
-                                     Right e' -> Lookup (Meta $ getPos e) l e') e el
+atom = process <$> (try tuple <|> record <|> list <|> table <|> constParser <|> parenExpr <|> variable) <*> many lookupListRec
+     where process e el = case el of
+                           [] -> e
+                           _  -> foldl (\l r -> case r of
+                                                 Left e' -> Elem (Meta $ getPos e) l e'
+                                                 Right e' -> Lookup (Meta $ getPos e) l e') e el 
 
 lookupListRec :: Parser (Either (Either String Integer) Expr)
-lookupListRec = choice [ do
-                            e <- element
-                            return $ Left e
-                       , do
-                            e <- listLookup
-                            return $ Right e]
+lookupListRec = Left <$> element <|> Right <$> listLookup
 
 -- | Parse a tuple. A tuple contains at least two elements.
 tuple :: Parser Expr
