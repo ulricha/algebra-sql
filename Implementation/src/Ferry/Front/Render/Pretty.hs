@@ -58,7 +58,11 @@ instance Pretty Op where
     pretty (Op _ o) _ = o
     
 instance Pretty RecElem where
-    pretty (TrueRec _ n e) i = n ++ " = " ++ pretty e i
+    pretty (TrueRec _ n e) i = case n of
+                                Left ex -> pretty ex i
+                                Right s -> s ++ case e of
+                                                    Nothing -> ""
+                                                    Just e ->  " = " ++ pretty e i
     pretty (TuplRec _ _ e) i = pretty e i
     
 instance Pretty Type where

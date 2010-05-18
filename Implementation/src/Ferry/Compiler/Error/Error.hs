@@ -1,10 +1,12 @@
 module Ferry.Compiler.Error.Error where
 
 import Control.Monad.Error
+import Ferry.Front.Data.Language
 import Text.ParserCombinators.Parsec (ParseError(..))
 
 data FerryError = NoSuchFile String
                 | ParserError ParseError
+                | IllegalRecSyntax RecElem 
                 | ProcessComplete
         deriving Show
                 

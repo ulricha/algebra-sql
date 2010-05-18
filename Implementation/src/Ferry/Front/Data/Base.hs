@@ -7,3 +7,6 @@ data Const = CInt Integer
            | CBool Bool
            | CString String
     deriving (Show, Eq)
+
+class VarContainer a where
+    vars :: a -> [Identifier]
