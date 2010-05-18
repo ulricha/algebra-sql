@@ -101,20 +101,13 @@ instance Normalise Arg where
 instance Normalise RecElem where
     normalise r@(TrueRec m s e) = 
                                 case (s, e) of
-                                 (Right i, Just ex) -> do
-                                                        e' <- normalise ex
-                                                        return $ TrueRec m s $ Just e'
-                                 (Right i, Nothing) -> do
-                                                        return $ TrueRec m s $ Just (Var m i)
+                                 (Right i, Just ex) -> (\e' -> TrueRec m s $ Just e') <$> normalise ex
+                                 (Right i, Nothing) -> pure $ TrueRec m s $ Just (Var m i)
                                  (Left i, Nothing) -> case i of
-                                                        (Elem m e (Left x)) -> do
-                                                                                 i' <- normalise i
-                                                                                 return $ TrueRec m (Right x) $ Just i'
-                                                        (_)                  ->  throwError $ IllegalRecSyntax r
+                                                        (Elem m e (Left x)) -> (\i' -> TrueRec m (Right x) $ Just i') <$> normalise i
+                                                        (_)                 ->  throwError $ IllegalRecSyntax r
                                  (_) -> throwError $ IllegalRecSyntax r
-    normalise (TuplRec m i e) = do
-                                 e' <- normalise e
-                                 return $ TuplRec m i e'
+    normalise (TuplRec m i e) = TuplRec m i <$> normalise e
 
 instance Normalise Binding where
     normalise (Binding m s e) = do
@@ -126,45 +119,22 @@ instance Normalise Expr where
     normalise c@(Const _ _) = return c
     normalise (UnOp m o e) = UnOp m o <$> normalise e
     normalise (BinOp m o e1 e2) = BinOp m o <$> normalise e1 <*> normalise e2
-    normalise (Var m i) = do
-                            i' <- applySubstitution i
-                            return $ Var m i'
-    normalise (App m e a) = do
-                             e' <- normalise e
-                             a' <- mapM normalise a
-                             return $ App m e' a'
+    normalise (Var m i) = Var m <$> applySubstitution i
+    normalise (App m e a) = App m <$> normalise e <*> mapM normalise a
     normalise (If m e1 e2 e3) =  If m <$> normalise e1 <*> normalise e2 <*> normalise e3
     normalise (Record  m els) = case (head els) of
                                  (TrueRec _ _ _) ->
-                                        do
-                                          els' <- mapM normalise els
-                                          return $ Record m $ L.sortBy sortElem els'
-                                 (TuplRec _ _ _) ->
-                                        do
-                                          els' <- mapM normalise els
-                                          return $ Record m els'
+                                    (\e -> Record m $ L.sortBy sortElem e) <$>  mapM normalise els
+                                 (TuplRec _ _ _) -> Record m <$> mapM normalise els
     normalise (Paren _ e) = normalise e
-    normalise (List m es) = do
-                             es' <- mapM normalise es
-                             return $ List m es'
-    normalise (Elem m e i) = do
-                              e' <- normalise e
-                              return $ Elem m e' i
+    normalise (List m es) = List m <$> mapM normalise es
+    normalise (Elem m e i) = Elem m <$> normalise e <*> return i
     normalise (Lookup m e1 e2) = normalise $ App m (Var m "lookup") [AExpr (getMeta e2) e2, AExpr (getMeta e1) e1]
-    normalise (Let m bs e) = case bs of
-                                [b] -> do
-                                        (_, s) <- get
-                                        b' <- normalise b
-                                        e' <- normalise e
-                                        (c, _) <- get
-                                        put (c, s)
-                                        return $ Let m [b'] e'
-                                (b:bss) -> do
-                                            b' <- normalise b
-                                            let nb = Let m bss e
-                                            tl <- normalise nb
-                                            return $ Let m [b'] tl
-    normalise (Table m s cs ks) = return $ Table m s (L.sortBy sortColumn cs) ks
+    normalise (Let m bs e) = restoreState $ 
+                              case bs of
+                                [b] -> (\b' n -> Let m [b'] n) <$> normalise b <*> normalise e
+                                (b:bss) -> (\b' tl -> Let m [b'] tl) <$> normalise b <*> (normalise $ Let m bss e)
+    normalise (Table m s cs ks) = pure $ Table m s (L.sortBy sortColumn cs) ks
     normalise (Relationship m c1 e1 c2 e2 k1 k2) =
                     case (c1, c2) of
                         (One _, One _) -> undefined
