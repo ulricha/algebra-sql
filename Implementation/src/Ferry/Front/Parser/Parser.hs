@@ -1,7 +1,7 @@
 module Ferry.Front.Parser.Parser where
 
-import Text.ParserCombinators.Parsec (parse, getPosition, (<|>), try, 
-                                      noneOf, many, SourcePos(..), 
+import Text.ParserCombinators.Parsec (parse, getPosition, (<|>), try,
+                                      noneOf, many, SourcePos(..),
                                       Parser(..), choice, chainl1,
                                       ParseError(..),SourceName(..),
                                       option, eof, many1)
@@ -51,24 +51,24 @@ opExpr = buildExpressionParser operators simpleExpr
           binop name assoc   = flip Infix assoc $ do
                                                     pos <- getPosition
                                                     reservedOp name
-                                                    return (\e1 e2 -> BinOp (Meta $ getPos e1) (Op (Meta pos) name) e1 e2) 
+                                                    return (\e1 e2 -> BinOp (Meta $ getPos e1) (Op (Meta pos) name) e1 e2)
           unop name     = Prefix  $ do
                                      pos <- getPosition
                                      reservedOp name
                                      return (\e -> UnOp (Meta pos) (Op (Meta pos) name) e)
 
--- | A simpleExpr is an if, let, relationship, list comprehension or application.                                      
+-- | A simpleExpr is an if, let, relationship, list comprehension or application.
 simpleExpr :: Parser Expr
 simpleExpr = choice [ ifExpr,
                       letExpr,
                       relationship,
                       try app,
                       queryComprehension,
-                      atom                      
+                      atom
                     ]
-                        
+
 -- | Parser for if then else contructs. The expression contained in the conditional and branches are
---   regular top level expression 'expr'.                    
+--   regular top level expression 'expr'.
 ifExpr :: Parser Expr
 ifExpr = do
             pos <- getPosition
@@ -80,7 +80,7 @@ ifExpr = do
             e3 <- expr
             return $ If (Meta pos) e1 e2 e3
 
--- | Parser for let bindings.             
+-- | Parser for let bindings.
 letExpr :: Parser Expr
 letExpr = do
             pos <- getPosition
@@ -90,9 +90,9 @@ letExpr = do
             e <- expr
             return $ Let (Meta pos) bs e
 
--- | Parser for relationship contruct.             
+-- | Parser for relationship contruct.
 relationship :: Parser Expr
-relationship = do 
+relationship = do
                 pos <- getPosition
                 reserved "relationship"
                 reserved "from"
@@ -111,26 +111,26 @@ arg :: Parser Arg
 arg = choice [do
                 pos <- getPosition
                 e <- atom
-                return $AExpr (Meta pos) e, 
+                return $AExpr (Meta pos) e,
               abstract]
 
--- | Parse function abstraction                                   
+-- | Parse function abstraction
 abstract :: Parser Arg
-abstract = do 
+abstract = do
             pos <- getPosition
-            a <- parens $ do 
+            a <- parens $ do
                             pat <- pattern
                             symbol "->"
                             e <- expr
                             return (\p -> AAbstr (Meta p) pat e)
             return $ a pos
-                            
+
 -- | Parser for function application. Parse an atomic expression followed by as much
 --   atomic expressions as possible.If there is no application then parse at least
 --   one atomic expression 'atom'.
 app :: Parser Expr
 app = do
-        pos <- getPosition 
+        pos <- getPosition
         v <- variable
         args <- many1 arg
         return $ App (Meta pos) v args
@@ -142,34 +142,34 @@ queryComprehension = do
 
 -- Parse query comprehensions
 
--- | Parser for Ferry list comprehensions. 
+-- | Parser for Ferry list comprehensions.
 ferryCompr :: Parser QCompr
-ferryCompr = do 
+ferryCompr = do
         pos <- getPosition
         (For _ ps) <- forClause
         body <- many bodyClause
         r <- returnClause
         return $ FerryCompr (Meta pos) ps body r
- 
+
 forClause :: Parser BodyElem
 forClause = do
               pos <- getPosition
               reserved "for"
-              ps <- commaSep1 $ 
+              ps <- commaSep1 $
                     do
                         p <- pattern
                         reserved "in"
                         e <- expr
                         return (p, e)
-              return $ For (Meta pos) ps 
-              
+              return $ For (Meta pos) ps
+
 bodyClause :: Parser BodyElem
 bodyClause = choice [forClause,
                      whereClause,
                      letClause,
                      orderByClause,
-                     groupClause]                              
-        
+                     groupClause]
+
 letClause :: Parser BodyElem
 letClause = do
             pos <- getPosition
@@ -198,22 +198,22 @@ orderByClause = do
                  return $ ForOrder (Meta pos) os
         where
             elem :: Parser ExprOrder
-            elem = do 
+            elem = do
                      pos <- getPosition
                      e <- expr
                      o <- option (Ascending $ Meta emptyPos) ordering
                      return $ ExprOrder (Meta pos) e o
-                     
+
 groupClause :: Parser BodyElem
 groupClause = choice [try groupBy, try groupWith]
-    
+
 groupBy :: Parser BodyElem
 groupBy = do
             pos <- getPosition
             reserved "group"
             e1 <- option Nothing $ do
                                     e <- expr
-                                    return $ Just e            
+                                    return $ Just e
             reserved "by"
             es <- commaSep1 expr
             i <- option Nothing $ do
@@ -221,7 +221,7 @@ groupBy = do
                                     p <- pattern
                                     return $ Just p
             return $ GroupBy (Meta pos) e1 es i
-            
+
 groupWith :: Parser BodyElem
 groupWith = do
              pos <- getPosition
@@ -236,7 +236,7 @@ groupWith = do
                                     p <- pattern
                                     return $ Just p
              return $ GroupWith (Meta pos) e1 e2 i
-                 
+
 returnClause :: Parser ReturnElem
 returnClause = do
                 pos <- getPosition
@@ -247,26 +247,26 @@ returnClause = do
                                         p <- pattern
                                         bs <- many bodyClause
                                         r <- returnClause
-                                        return $ Just (p, bs, r) 
+                                        return $ Just (p, bs, r)
                 return $ Return (Meta pos) e c
-                         
+
 -- | Parser atomic values.
 atom :: Parser Expr
-atom = do 
+atom = do
      e <- choice [ try tuple,
                    record,
                    list,
                    table,
-                   constParser, 
-                   parenExpr, 
+                   constParser,
+                   parenExpr,
                    variable]
      el <- many lookupListRec
      return $ case el of
                [] -> e
-               _  -> foldl (\l r -> case r of 
+               _  -> foldl (\l r -> case r of
                                      Left e' -> Elem (Meta $ getPos e) l e'
                                      Right e' -> Lookup (Meta $ getPos e) l e') e el
-               
+
 lookupListRec :: Parser (Either (Either String Integer) Expr)
 lookupListRec = choice [ do
                             e <- element
@@ -274,7 +274,7 @@ lookupListRec = choice [ do
                        , do
                             e <- listLookup
                             return $ Right e]
-               
+
 -- | Parse a tuple. A tuple contains at least two elements.
 tuple :: Parser Expr
 tuple = do
@@ -285,33 +285,44 @@ tuple = do
                           es <- commaSep1 expr
                           return (\p -> Record (Meta p) $ listToRecElem (e:es) [1..])
           return $ t pos
-    where 
+    where
         listToRecElem :: [Expr] -> [Int] -> [RecElem]
         listToRecElem (e:es) (i:is) = (:) (TuplRec (Meta $ getPos e) i e) $ listToRecElem es is
         listToRecElem []     _      = []
 
--- | Parse a record.        
+-- | Parse a record.
 record :: Parser Expr
 record = do
            pos <- getPosition
-           r <- braces $ commaSep1 $ do 
-                                       pos <- getPosition
-                                       i <- identifier
-                                       symbol "="
-                                       e <- expr
-                                       return $ TrueRec (Meta pos) i e
+           r <- braces $ commaSep1 recElem
            return $ Record (Meta pos) r
 
--- | Parse a list.           
+recElem :: Parser RecElem
+recElem = choice [try $ do
+                         pos <- getPosition
+                         i <- identifier
+                         symbol "="
+                         e <- expr
+                         return $ TrueRec (Meta pos) (Right i) $ Just e,
+                  try $ do
+                         pos <- getPosition
+                         i <- identifier
+                         return $ TrueRec (Meta pos) (Right i) Nothing,
+                  try $ do
+                         pos <- getPosition
+                         e <- atom
+                         return $ TrueRec (Meta pos) (Left e) Nothing                  
+                    ]
+-- | Parse a list.
 list :: Parser Expr
-list = do 
+list = do
         pos <- getPosition
         el <- squares $ commaSep expr
-        return $ List (Meta pos) el                               
-             
--- | Parse a table declaration.            
+        return $ List (Meta pos) el
+
+-- | Parse a table declaration.
 table :: Parser Expr
-table = do 
+table = do
           pos <- getPosition
           reserved "table"
           n <- tableName
@@ -321,14 +332,14 @@ table = do
           keys <- parens $ commaSep1 key
           return $ Table (Meta pos) n cs keys
 
--- | Parse constant values. A constant is either a float, integer, string or boolean value.          
+-- | Parse constant values. A constant is either a float, integer, string or boolean value.
 constParser :: Parser Expr
-constParser = do  
+constParser = do
              (c, p) <- choice [
                               try floatParser,
                               try intParser,
                               try stringParser,
-                              try boolParser                      
+                              try boolParser
                               ]
              return $ Const (Meta p) c
 
@@ -339,26 +350,26 @@ parenExpr = do
               e <- parens expr
               return $ Paren (Meta pos) e
 
--- | Parse a variable.              
+-- | Parse a variable.
 variable :: Parser Expr
 variable = do
             pos <- getPosition
             x <- identifier
             return $ Var (Meta pos) x
-            
+
 listLookup :: Parser Expr
 listLookup = do
               e <- braces expr
               return e
-            
+
 -- The following parser are auxiliry parsers.
 
--- | Parse element lookup.            
+-- | Parse element lookup.
 element :: Parser (Either String Integer)
-element = do 
+element = do
             symbol "."
             i <- choice [
-                          try $ do 
+                          try $ do
                                   n <- natural
                                   return $ Right n
                         , try $ do
@@ -377,12 +388,12 @@ qualifiedTableName = do
                  symbol "."
                  name <- identifier
                  return $ schema ++ "." ++ name
-                 
+
 simpleTableName :: Parser String
-simpleTableName = do 
+simpleTableName = do
                     name <- identifier
                     return name
-        
+
 -- | Parse a binding
 binding :: Parser Binding
 binding = do
@@ -394,7 +405,7 @@ binding = do
 
 -- | Parse a pattern
 --
--- A pattern is either a single identifier x, or a serie of identifiers (x1, ..., xn)            
+-- A pattern is either a single identifier x, or a serie of identifiers (x1, ..., xn)
 pattern :: Parser Pattern
 pattern = choice [
                   do
@@ -409,14 +420,14 @@ pattern = choice [
 
 -- | Parse primitive types
 primType :: Parser Type
-primType = choice [typeParser n c | (n, c) <- types] 
+primType = choice [typeParser n c | (n, c) <- types]
     where typeParser n c = do
                             pos <- getPosition
                             reserved n
                             return $ c (Meta pos)
           types = [("String", TString), ("Bool", TBool), ("Int", TInt), ("Float", TFloat)]
 
--- | Parse a database column declaration          
+-- | Parse a database column declaration
 column :: Parser Column
 column = do
             pos <- getPosition
@@ -429,8 +440,8 @@ key :: Parser Key
 key = do
         pos <- getPosition
         cs <- parens $ commaSep1 identifier
-        return $ Key (Meta pos) cs 
-                 
+        return $ Key (Meta pos) cs
+
 -- | Parse cardinality
 --
 -- Cardinality is used in relationships and can either be one or many
@@ -442,7 +453,7 @@ cOne = do
         pos <- getPosition
         reserved "one"
         return $ One $ Meta pos
-        
+
 cMany :: Parser Cardinality
 cMany = do
          pos <- getPosition
@@ -451,22 +462,22 @@ cMany = do
 
 -- | Parse ordening
 --
--- An ordering can be used in the order by clause in a list comprehension                 
+-- An ordering can be used in the order by clause in a list comprehension
 ordering :: Parser Order
 ordering = choice [ascending, descending]
 
 ascending :: Parser Order
-ascending = do 
+ascending = do
               pos <- getPosition
               reserved "ascending"
               return $ Ascending $ Meta pos
-              
+
 descending :: Parser Order
 descending = do
                pos <- getPosition
                reserved "descending"
                return $ Descending $ Meta pos
-                
+
 {-
  Parsing primitive values
 -}
@@ -477,19 +488,19 @@ type FParser a = Parser (a, SourcePos)
 
 -- | Parse an integer, currently only positive ints are allowed
 intParser :: FParser Const
-intParser = do 
+intParser = do
              pos <- getPosition
              v <- natural
              return (CInt v, pos)
 
--- | Parse a float, currently only positive floats are allowed             
+-- | Parse a float, currently only positive floats are allowed
 floatParser :: FParser Const
 floatParser = do
                 pos <- getPosition
                 f <- float
                 return (CFloat f, pos)
 
--- | Parse a string, a string is anything surrounded by " ... "                
+-- | Parse a string, a string is anything surrounded by " ... "
 stringParser :: FParser Const
 stringParser = do
                  pos <- getPosition
@@ -498,11 +509,11 @@ stringParser = do
                  symbol "\""
                  return (CString s, pos)
 
--- | Parse a boolean value                 
+-- | Parse a boolean value
 boolParser :: FParser Const
 boolParser = try trueParser
                 <|> falseParser
-             
+
 trueParser :: FParser Const
 trueParser = do
                pos <- getPosition

@@ -76,7 +76,7 @@ data Binding where
      deriving (Show, Eq)
      
 data RecElem where
-    TrueRec :: Meta -> String -> Expr -> RecElem
+    TrueRec :: Meta -> Either Expr String -> Maybe Expr -> RecElem
     TuplRec :: Meta -> Int -> Expr -> RecElem
      deriving (Show, Eq)
      
