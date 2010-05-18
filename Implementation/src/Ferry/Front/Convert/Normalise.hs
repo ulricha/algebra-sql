@@ -18,7 +18,7 @@ class Normalise a where
     normalise :: a -> Transformation a
     
 -- Substitutions are stored in a map, a variable name is always substituted by a new one
-type Substitution = M.Map Identifier Identifier
+type Substitution = M.Map Identifier Expr
 
 -- The transformation monad
 -- The outcome is a pair of the outcome or an error and a state.
@@ -29,17 +29,6 @@ instance Applicative Transformation where
     (<*>) = ap
     pure = return
     
-{- infixl 4 <->
-(<->) :: Transformation (a -> b) -> Transformation a -> Transformation b
-e1 <-> e2 = do
-              (_, m) <- get
-              e1' <- e1
-              (s, _) <- get
-              put (s, m)
-              e2' <- e2
-              put (s, m)
-              return $ e1' e2' -}
-              
 restoreState :: Transformation a -> Transformation a
 restoreState e = do
                     (_, s) <- get
@@ -51,16 +40,16 @@ restoreState e = do
 -- Convenience function for operations on the monad
 
 -- Add a substitution
-addSubstitution :: Identifier -> Identifier -> Transformation ()
+addSubstitution :: Identifier -> Expr -> Transformation ()
 addSubstitution i n = do
                         modify (\(v, m) ->  (v, M.insert i n m))
 
 -- Apply a substitution to the given identifier
-applySubstitution :: Identifier -> Transformation Identifier
-applySubstitution i = do
+applySubstitution :: Expr -> Transformation Expr
+applySubstitution v@(Var _ i) = do
                         (_,m) <- get
                         case M.lookup i m of
-                            Nothing -> return i
+                            Nothing -> return v
                             Just i' -> return i'
 
 -- Remove the list of given identifiers from the substitution list
@@ -119,7 +108,7 @@ instance Normalise Expr where
     normalise c@(Const _ _) = return c
     normalise (UnOp m o e) = UnOp m o <$> normalise e
     normalise (BinOp m o e1 e2) = BinOp m o <$> normalise e1 <*> normalise e2
-    normalise (Var m i) = Var m <$> applySubstitution i
+    normalise v@(Var m i) = applySubstitution v
     normalise (App m e a) = do 
                              v <- getFreshIdentifier 
                              case e of
@@ -191,5 +180,49 @@ sortElem _                        _                        = error "illegal inpu
 
 
 instance Normalise QCompr where
-    normalise = undefined
+    normalise (FerryCompr m bs bd r) = restoreState $ if length bs > 1
+                                                        then undefined
+                                                        else undefined
+                                        
+    normalise (HaskellCompr _) = error "Not implemented HaskellCompr"
+
+
+normalise' :: (Pattern, Expr) -> (Pattern, Expr) -> Transformation (Pattern, Expr)
+normalise' (p1, e1) (p2, e2) = do
+                                 star <- getFreshIdentifier
+                                 pure $ (PVar m star, rExpr)                                 
+    where m = Meta emptyPos
+          v1s = case p1 of
+                 PVar _ s -> [s]
+                 PPat _ vs -> vs
+          v2s = case p2 of
+                 PVar _ s -> [s]
+                 PPat _ vs -> vs
+          rExpr = App m (Var m "concatMap" ) [arg1, arg2, arg3]
+          arg1 = AAbstr m p1 e2
+          arg2 = undefined
+          arg3 = undefined
+                    
+{-
+
+PVar :: Meta -> String -> Pattern
+PPat :: Meta -> [String] -> Pattern
+data QCompr where
+    FerryCompr     :: Meta -> [(Pattern, Expr)] -> [BodyElem] -> ReturnElem -> QCompr
+    HaskellCompr :: Meta -> QCompr
+     deriving (Show, Eq)
+
+data BodyElem where
+    For :: Meta -> [(Pattern, Expr)] -> BodyElem
+    ForLet :: Meta -> [(Pattern, Expr)] -> BodyElem
+    ForWhere :: Meta -> Expr -> BodyElem
+    ForOrder :: Meta -> [ExprOrder] -> BodyElem 
+    GroupBy :: Meta -> Maybe Expr -> [Expr] -> Maybe Pattern -> BodyElem
+    GroupWith :: Meta -> Maybe Expr -> [Expr] -> Maybe Pattern -> BodyElem
+     deriving (Show, Eq)
+     
+data ReturnElem where
+    Return :: Meta -> Expr -> Maybe (Pattern, [BodyElem], ReturnElem) -> ReturnElem
+    deriving (Show, Eq)
+-}
 

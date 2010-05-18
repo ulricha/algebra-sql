@@ -1,12 +1,9 @@
 module Ferry.Front.Parser.Parser where
 
-import Text.ParserCombinators.Parsec (parse, getPosition, (<|>), try,
-                                      noneOf, many, SourcePos(..),
-                                      Parser(..), choice, chainl1,
-                                      ParseError(..),SourceName(..),
-                                      option, eof, many1)
+
 import Text.ParserCombinators.Parsec.Expr
 
+import Ferry.Front.Parser.Applicative hiding (Const, Column)
 import Ferry.Front.Parser.Scanner
 import Ferry.Front.Data.Language
 import Ferry.Front.Data.Meta
@@ -17,11 +14,7 @@ parseFerry :: SourceName -> [Char] -> Either ParseError Expr
 parseFerry file src = parse parseInput file src
 
 parseInput :: Parser Expr
-parseInput = do
-                whiteSpace
-                e <- expr
-                eof
-                return e
+parseInput = whiteSpace *> expr <* eof
 
 {-
  Parsing expressions
@@ -59,128 +52,54 @@ opExpr = buildExpressionParser operators simpleExpr
 
 -- | A simpleExpr is an if, let, relationship, list comprehension or application.
 simpleExpr :: Parser Expr
-simpleExpr = choice [ ifExpr,
-                      letExpr,
-                      relationship,
-                      try app,
-                      queryComprehension,
-                      atom
-                    ]
+simpleExpr = ifExpr <|> letExpr <|> relationship <|>  try app <|>  queryComprehension <|>  atom
 
 -- | Parser for if then else contructs. The expression contained in the conditional and branches are
 --   regular top level expression 'expr'.
 ifExpr :: Parser Expr
-ifExpr = do
-            pos <- getPosition
-            reserved "if"
-            e1 <- expr
-            reserved "then"
-            e2 <- expr
-            reserved "else"
-            e3 <- expr
-            return $ If (Meta pos) e1 e2 e3
+ifExpr = If <$> pMeta <* reserved "if" <*> expr <* reserved "then" <*> expr <* reserved "else" <*> expr
 
 -- | Parser for let bindings.
 letExpr :: Parser Expr
-letExpr = do
-            pos <- getPosition
-            reserved "let"
-            bs <- commaSep1 binding
-            reserved "in"
-            e <- expr
-            return $ Let (Meta pos) bs e
+letExpr = Let <$> pMeta <* reserved "let" <*> commaSep1 binding <* reserved "in" <*> expr
 
 -- | Parser for relationship contruct.
 relationship :: Parser Expr
-relationship = do
-                pos <- getPosition
-                reserved "relationship"
-                reserved "from"
-                c1 <- cardinality
-                e1 <- expr
-                reserved "to"
-                c2 <- cardinality
-                e2 <- expr
-                reserved "by"
-                k1 <- key
-                reserved "eq"
-                k2 <- key
-                return $ Relationship (Meta pos) c1 e1 c2 e2 k1 k2
+relationship = Relationship <$> pMeta <* reserved "relationship" <* reserved "from" <*> cardinality
+                <*> expr <* reserved "to" <*> cardinality <*> expr <* reserved "by" 
+                <*> key <* reserved "eq" <*> key
 
 arg :: Parser Arg
-arg = choice [do
-                pos <- getPosition
-                e <- atom
-                return $AExpr (Meta pos) e,
-              abstract]
+arg = AExpr <$> pMeta <*> atom
+        <|> abstract
 
 -- | Parse function abstraction
 abstract :: Parser Arg
-abstract = do
-            pos <- getPosition
-            a <- parens $ do
-                            pat <- pattern
-                            symbol "->"
-                            e <- expr
-                            return (\p -> AAbstr (Meta p) pat e)
-            return $ a pos
+abstract = (\m (p, e) -> AAbstr m p e) <$> pMeta <*> parens ((\p e -> (p, e)) <$> pattern <* symbol "->" <*> expr) 
 
 -- | Parser for function application. Parse an atomic expression followed by as much
 --   atomic expressions as possible.If there is no application then parse at least
 --   one atomic expression 'atom'.
 app :: Parser Expr
-app = do
-        pos <- getPosition
-        v <- variable
-        args <- many1 arg
-        return $ App (Meta pos) v args
+app = App <$> pMeta <*> variable <*> many1 arg
 
 queryComprehension :: Parser Expr
-queryComprehension = do
-                        c <- choice [ferryCompr]
-                        return $ QComp (Meta $ getPos c) c
+queryComprehension = QComp <$> pMeta <*> ferryCompr
 
 -- Parse query comprehensions
 
 -- | Parser for Ferry list comprehensions.
 ferryCompr :: Parser QCompr
-ferryCompr = do
-        pos <- getPosition
-        (For _ ps) <- forClause
-        body <- many bodyClause
-        r <- returnClause
-        return $ FerryCompr (Meta pos) ps body r
+ferryCompr = (\m (For _ ps) b r -> FerryCompr m ps b r) <$> pMeta <*> forClause <*> many bodyClause <*> returnClause
 
 forClause :: Parser BodyElem
-forClause = do
-              pos <- getPosition
-              reserved "for"
-              ps <- commaSep1 $
-                    do
-                        p <- pattern
-                        reserved "in"
-                        e <- expr
-                        return (p, e)
-              return $ For (Meta pos) ps
+forClause = For <$> pMeta <* reserved "for" <*> commaSep1 ((,) <$> pattern <* reserved "in" <*> expr)
 
 bodyClause :: Parser BodyElem
-bodyClause = choice [forClause,
-                     whereClause,
-                     letClause,
-                     orderByClause,
-                     groupClause]
+bodyClause =  forClause <|> whereClause <|> letClause <|> orderByClause <|> groupClause
 
 letClause :: Parser BodyElem
-letClause = do
-            pos <- getPosition
-            reserved "let"
-            ps <- commaSep1 $
-                do
-                    p <- pattern
-                    symbol "="
-                    e <- expr
-                    return (p, e)
-            return $ ForLet (Meta pos) ps
+letClause = ForLet <$> pMeta <* reserved "let" <*> commaSep1 ((,) <$> pattern <* symbol "=" <*> expr)
 
 whereClause :: Parser BodyElem
 whereClause = do
