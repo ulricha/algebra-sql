@@ -120,7 +120,20 @@ instance Normalise Expr where
     normalise (UnOp m o e) = UnOp m o <$> normalise e
     normalise (BinOp m o e1 e2) = BinOp m o <$> normalise e1 <*> normalise e2
     normalise (Var m i) = Var m <$> applySubstitution i
-    normalise (App m e a) = App m <$> normalise e <*> mapM normalise a
+    normalise (App m e a) = do 
+                             v <- getFreshIdentifier 
+                             case e of
+                              (Var m "lookup") -> normalise $ Elem m ex $ Right 2                                                 
+                               where
+                                   ex = App m (Var m "single") [AExpr m filterApp]
+                                   filterApp = App m (Var m "filter") [AAbstr m (PVar m v) comp, AExpr m el]
+                                   comp = BinOp m (Op m "==") (Elem m (Var m v) $ Right 1) ek
+                                   [e1, e2] = a 
+                                   el = case e2 of
+                                         AExpr _ e' -> e'
+                                   ek = case e1 of
+                                         AExpr _ e' -> e'
+                              _ -> App m <$> normalise e <*> mapM normalise a
     normalise (If m e1 e2 e3) =  If m <$> normalise e1 <*> normalise e2 <*> normalise e3
     normalise (Record  m els) = case (head els) of
                                  (TrueRec _ _ _) ->
@@ -135,11 +148,40 @@ instance Normalise Expr where
                                 [b] -> (\b' n -> Let m [b'] n) <$> normalise b <*> normalise e
                                 (b:bss) -> (\b' tl -> Let m [b'] tl) <$> normalise b <*> (normalise $ Let m bss e)
     normalise (Table m s cs ks) = pure $ Table m s (L.sortBy sortColumn cs) ks
-    normalise (Relationship m c1 e1 c2 e2 k1 k2) =
+    normalise (Relationship m c1 e1 c2 e2 k1 k2) = do
+                    v1 <- getFreshIdentifier
+                    v2 <- getFreshIdentifier
+                    cg <- compgen v1 v2 k1 k2
+                    let filterF = AAbstr m (PVar m v2) cg
+                    let filterApp = App m (Var m "filter") [filterF, AExpr m e2]
                     case (c1, c2) of
-                        (One _, One _) -> undefined
+                        (One _, One _) -> do                                            
+                                            let single = App m (Var m "single") [AExpr m filterApp]  
+                                            normalise $ App m (Var m "map") [ AAbstr m (PVar m v1) 
+                                                                                       (Record m [ TuplRec m 1 (Var m v1)
+                                                                                                 , TuplRec m 2 single
+                                                                                                 ])
+                                                                            , AExpr m e1]
+                        (One _, Many _) -> do
+                                             normalise $ App m (Var m "map") [ AAbstr m (PVar m v1) 
+                                                                                        (Record m [ TuplRec m 1 (Var m v1)
+                                                                                                  , TuplRec m 2 filterApp
+                                                                                                  ])
+                                                                             , AExpr m e1]
+    normalise (QComp m q) = QComp m <$> normalise q
     
-    
+compgen :: String -> String -> Key -> Key -> Transformation Expr
+compgen v1 v2 k1@(Key m1 ks1) k2@(Key m2 ks2) = if (length ks1 == length ks2)
+                                                 then pure $ foldl1 ands $ zipWith equal v1s v2s
+                                                 else throwError $ IncompatableKeys k1 k2
+    where
+        ands = (\e1 e2 -> BinOp m1 (Op m1 "and") e1 e2)
+        equal = (\e1 e2 -> BinOp m1 (Op m1 "==") e1 e2)
+        rec1 = (\f -> Elem m1 (Var m1 v1) $ Left f)
+        v1s = [rec1 k | k <- ks1]
+        rec2 = (\f -> Elem m2 (Var m2 v2) $ Left f)
+        v2s = [rec2 k | k <- ks2]
+        
 sortColumn :: Column -> Column -> Ordering
 sortColumn (Column _ s1 _) (Column _ s2 _) = compare s1 s2
 
@@ -148,10 +190,6 @@ sortElem (TrueRec _ (Right i1) _) (TrueRec _ (Right i2) _) = compare i1 i2
 sortElem _                        _                        = error "illegal input to sortElem Normalise.hs"
 
 
+instance Normalise QCompr where
+    normalise = undefined
 
-
-{-
-Table        :: Meta -> String -> [Column] -> [Key] -> Expr
-Relationship :: Meta -> Cardinality -> Expr -> Cardinality -> Expr -> Key -> Key -> Expr
-QComp        :: Meta -> QCompr -> Expr
--}
