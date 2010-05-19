@@ -114,6 +114,11 @@
 %format x1n = "x_{1n}"
 %format xn1 = "x_{n1}"
 %format xnn = "x_{nn}"
+%format xm1 = "x_{m1}"
+%format xmn = "x_{mn}"
+
+%format s1 = "*_1"
+%format sm = "*_m"
 
 %format p1 = "p_1"
 %format p2 = "p_2"

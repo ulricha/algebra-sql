@@ -38,7 +38,8 @@ The |sort| function orders record fields in alphabetical order
  norm (for p1 in e let v1 = e1,..., vn = en let vn1 =en1, ..., vm = em rest)
                       =  norm (for p1 in e let v1 = e1, ..., vn, vn1 = en1, ..., vm = em rest)
  norm (for (x1, ..., xm) in e let v1 = e1, ..., vn = en rest)
-                      =  norm (for * map ((x1, ..., xm) -> {x1, ..., xm, v1 = e1, ..., vn = en}) e [x1 +-> *.x1, ..., xn +-> *.xn, v1 +-> *.v1, ..., vn +-> *.vn] rest)
+                      =  norm (for * map ((x1, ..., xm) -> {x1, ..., xm, v1 = e1, ..., vn = en}) e 
+                         [x1 +-> *.x1, ..., xn +-> *.xn, v1 +-> *.v1, ..., vn +-> *.vn] rest)
  norm (for p1 in e1 order by ..., e2, ... rest)
                       =  norm (for p1 in e1 order by ..., e2 ascending, ... rest)
  norm (for p in e order by e1 od1, ..., en odn rest)
@@ -76,7 +77,9 @@ The |sort| function orders record fields in alphabetical order
 
 \begin{code}
     normp e           =  norm e
-    normp (pat -> e)  =  (pat -> norm e)
+    normp ((x11, ..., x1n), ..., (xm1, ..., xmn) -> e)  =  (s1, ..., sm -> norm 
+                                                           [x11 +-> s1.1, ..., xn1 +-> s1.n, ...,
+                                                           xm1 +-> sm.1, ..., xmn +-> sm.n] e)
 \end{code}
 
 \begin{code}
