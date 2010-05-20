@@ -22,13 +22,13 @@ type Substitution = M.Map Identifier Expr
 -- The transformation monad
 -- The outcome is a pair of the outcome or an error and a state.
 -- The state contains substitutions and a supply of fresh variables
-type Transformation = ErrorT FerryError (State (Int, Substitution))
+type Normalisation = ErrorT FerryError (State (Int, Substitution))
 
-instance Applicative Transformation where
+instance Applicative Normalisation where
     (<*>) = ap
     pure = return
     
-restoreState :: Transformation a -> Transformation a
+restoreState :: Normalisation a -> Normalisation a
 restoreState e = do
                     (_, s) <- get
                     e' <- e
@@ -39,12 +39,12 @@ restoreState e = do
 -- Convenience function for operations on the monad
 
 -- Add a substitution
-addSubstitution :: Identifier -> Expr -> Transformation ()
+addSubstitution :: Identifier -> Expr -> Normalisation ()
 addSubstitution i n = do
                         modify (\(v, m) ->  (v, M.insert i n m))
 
 -- Apply a substitution to the given identifier
-applySubstitution :: Expr -> Transformation Expr
+applySubstitution :: Expr -> Normalisation Expr
 applySubstitution v@(Var _ i) = do
                         (_,m) <- get
                         case M.lookup i m of
@@ -52,19 +52,19 @@ applySubstitution v@(Var _ i) = do
                             Just i' -> return i'
 
 -- Remove the list of given identifiers from the substitution list
-removeSubstitution :: [Identifier] -> Transformation ()
+removeSubstitution :: [Identifier] -> Normalisation ()
 removeSubstitution is = do
                          modify (\(v, m) -> (v, foldr M.delete m is))
 
 -- Retrieve a fresh variable name from the monad, the state is updated accordingly                         
-getFreshIdentifier :: Transformation String
+getFreshIdentifier :: Normalisation String
 getFreshIdentifier = do
                         (n, subst) <- get
                         put (n + 1, subst)
                         return $ "_v" ++ show n
 
 -- Retrieve a fresh variable from the monad                        
-getFreshVariable :: Transformation Expr
+getFreshVariable :: Normalisation Expr
 getFreshVariable = do
                     n <- getFreshIdentifier
                     return $ Var (Meta emptyPos) n
@@ -75,7 +75,7 @@ runNormalisation x = fst $ flip runState (0, M.empty) $ runErrorT $ (normalise x
 
 -- Instances of the normalise class
 
-normaliseArg :: Arg -> Transformation Arg
+normaliseArg :: Arg -> Normalisation Arg
 normaliseArg (AExpr m e) = do
                          e' <- normalise e
                          return $ AExpr m e'
@@ -88,14 +88,19 @@ normaliseArg (AAbstr m p e) = restoreState $
                              removeSubstitution vss
                              mapM (\(i, ex) -> addSubstitution i ex) newSubsts
                              e' <- normalise e
-                             return $ AAbstr m p e'
-                                 
+                             let p' = replacePattern p ns
+                             return $ AAbstr m [p'] e'
+
+replacePattern :: [Pattern] -> [Identifier] -> Pattern
+replacePattern [p] [v] = PVar emptyMeta v
+replacePattern ps vs = PPat emptyMeta vs     
+                            
 makeSubstitution :: Identifier -> [Identifier] -> [(Identifier, Expr)]
 makeSubstitution f vs = if length vs == 1 
                          then [(v, Var emptyMeta f) | v <- vs]
                          else [(v, Elem emptyMeta (Var emptyMeta f) $ Right i) | (v, i) <- zip vs [1..]]
 
-normaliseRec :: RecElem -> Transformation RecElem
+normaliseRec :: RecElem -> Normalisation RecElem
 normaliseRec r@(TrueRec m s e) = 
                             case (s, e) of
                              (Right i, Just ex) -> (\e' -> TrueRec m s $ Just e') <$> normalise ex
@@ -106,13 +111,13 @@ normaliseRec r@(TrueRec m s e) =
                              (_) -> throwError $ IllegalRecSyntax r
 normaliseRec (TuplRec m i e) = TuplRec m i <$> normalise e
 
-normaliseBinding :: Binding -> Transformation Binding
+normaliseBinding :: Binding -> Normalisation Binding
 normaliseBinding (Binding m s e) = do
                                     e' <- normalise e
                                     removeSubstitution [s]
                                     return $ Binding m s e'
 
-normalise :: Expr -> Transformation Expr
+normalise :: Expr -> Normalisation Expr
 normalise c@(Const _ _) = return c
 normalise (UnOp m o e) = UnOp m o <$> normalise e
 normalise (BinOp m o e1 e2) = BinOp m o <$> normalise e1 <*> normalise e2
@@ -130,7 +135,10 @@ normalise (App m e a) = do
                                      AExpr _ e' -> e'
                                ek = case e1 of
                                      AExpr _ e' -> e'
-                          _ -> App m <$> normalise e <*> mapM normaliseArg a
+                          _ -> do
+                                e' <- restoreState $ normalise e
+                                as <- mapM normaliseArg a
+                                return $ App m e' as 
 normalise (If m e1 e2 e3) =  If m <$> normalise e1 <*> normalise e2 <*> normalise e3
 normalise (Record  m els) = case (head els) of
                              (TrueRec _ _ _) ->
@@ -167,7 +175,7 @@ normalise (Relationship m c1 e1 c2 e2 k1 k2) = do
                                                                          , AExpr m e1]
 normalise (QComp m q) = normaliseQCompr q
     
-compgen :: String -> String -> Key -> Key -> Transformation Expr
+compgen :: String -> String -> Key -> Key -> Normalisation Expr
 compgen v1 v2 k1@(Key m1 ks1) k2@(Key m2 ks2) = if (length ks1 == length ks2)
                                                  then pure $ foldl1 ands $ zipWith equal v1s v2s
                                                  else throwError $ IncompatableKeys k1 k2
@@ -187,13 +195,12 @@ sortElem (TrueRec _ (Right i1) _) (TrueRec _ (Right i2) _) = compare i1 i2
 sortElem _                        _                        = error "illegal input to sortElem Normalise.hs"
 
 
-normaliseQCompr :: QCompr -> Transformation Expr
+normaliseQCompr :: QCompr -> Normalisation Expr
 normaliseQCompr (FerryCompr m bs bd r) = 
     restoreState $ do 
         bs' <- F.foldlM normaliseCompr (head bs) (tail bs)
         case bd of
-            [] -> case r of
-                    Return m' er minto -> undefined
+            [] -> normaliseReturn m bs' r
             (For _ b):bd' -> normaliseQCompr $ FerryCompr m (bs':b) bd' r
             (ForWhere _ e):bd' -> normaliseWhere m e bs' bd' r
             (ForLet m' b):(ForLet _ b'):bd' -> normaliseQCompr $ FerryCompr m [bs'] ((ForLet m' $ b ++ b'):bd') r
@@ -206,13 +213,13 @@ normaliseQCompr (FerryCompr m bs bd r) =
                                                   gb = Group m' g me [(Record m' [TuplRec m' i e | (e, i) <- (zip es [1..])])] mp                                                                                    
 normaliseQCompr (HaskellCompr _) = error "Not implemented HaskellCompr"
 
-normaliseReturn :: Meta -> (Pattern, Expr) -> ReturnElem -> Transformation Expr
+normaliseReturn :: Meta -> (Pattern, Expr) -> ReturnElem -> Normalisation Expr
 normaliseReturn m (p1,e1) (Return m' e2 mi) = case mi of
                                              Nothing -> normalise $ App m (Var emptyMeta "map") [AAbstr emptyMeta [p1] e2, AExpr emptyMeta e1]
                                              Just (p2, bd, r) -> let eIn = QComp m $ FerryCompr m [(p1,e1)] [] (Return m' e2 Nothing)  
                                                                   in normaliseQCompr $ FerryCompr m' [(p2, eIn)] bd r 
 
-normaliseGroup :: Meta -> (Pattern, Expr) -> BodyElem -> [BodyElem] -> ReturnElem -> Transformation Expr
+normaliseGroup :: Meta -> (Pattern, Expr) -> BodyElem -> [BodyElem] -> ReturnElem -> Normalisation Expr
 normaliseGroup m (p, e) (Group _ g me [eg] mi) bd r = 
     do
       let f = case g of {GBy -> "groupBy"; GWith -> "groupWith"} 
@@ -226,7 +233,7 @@ normaliseGroup m (p, e) (Group _ g me [eg] mi) bd r =
       normaliseQCompr $ FerryCompr m [(pr, eb)] bd r
 
 
-normaliseOrder :: Meta -> (Pattern, Expr) -> [ExprOrder] -> [BodyElem] -> ReturnElem -> Transformation Expr
+normaliseOrder :: Meta -> (Pattern, Expr) -> [ExprOrder] -> [BodyElem] -> ReturnElem -> Normalisation Expr
 normaliseOrder m (p, e) ords bd r = (\(AExpr _ app) -> normaliseQCompr $ FerryCompr m [(p, app)] bd r) 
                                      $ foldr f (AExpr emptyMeta e) $ (ordToFn1 $ head ords):(map ordToFn $ tail ords)
   where    
@@ -239,7 +246,7 @@ normaliseOrder m (p, e) ords bd r = (\(AExpr _ app) -> normaliseQCompr $ FerryCo
                                            Ascending _ -> "orderBy"
                                            Descending _ -> "orderByDescending", e)
     
-normaliseLet :: Meta -> (Pattern, Expr) -> [(Pattern, Expr)] -> [BodyElem] -> ReturnElem -> Transformation Expr
+normaliseLet :: Meta -> (Pattern, Expr) -> [(Pattern, Expr)] -> [BodyElem] -> ReturnElem -> Normalisation Expr
 normaliseLet m (p, e) letB bd r = do
                                     star <- getFreshIdentifier
                                     mapM (\(i, ex) -> addSubstitution i ex) substs
@@ -255,12 +262,12 @@ normaliseLet m (p, e) letB bd r = do
     splitBinds []                  = []
     
     
-normaliseWhere :: Meta -> Expr -> (Pattern, Expr) -> [BodyElem] -> ReturnElem -> Transformation Expr
+normaliseWhere :: Meta -> Expr -> (Pattern, Expr) -> [BodyElem] -> ReturnElem -> Normalisation Expr
 normaliseWhere m f (p1, e1) bd r = normaliseQCompr $ FerryCompr m [(p1, e1')] bd r
   where
     e1' = App emptyMeta (Var emptyMeta "filter") [AAbstr emptyMeta [p1] f, AExpr emptyMeta e1] 
 
-normaliseCompr :: (Pattern, Expr) -> (Pattern, Expr) -> Transformation (Pattern, Expr)
+normaliseCompr :: (Pattern, Expr) -> (Pattern, Expr) -> Normalisation (Pattern, Expr)
 normaliseCompr (p1, e1) (p2, e2) = do
                                  star <- getFreshIdentifier
                                  e1' <- normalise e1

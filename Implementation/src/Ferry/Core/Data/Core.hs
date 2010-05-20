@@ -15,7 +15,7 @@ data CoreExpr where
     Rec :: [RecElem] -> CoreExpr
     List :: [CoreExpr] -> CoreExpr
     Elem :: CoreExpr -> String -> CoreExpr
-    Table :: String -> [Columns] -> [Key] -> CoreExpr
+    Table :: String -> [Column] -> [Key] -> CoreExpr
     If :: CoreExpr -> CoreExpr -> CoreExpr
 
 data RecElem where

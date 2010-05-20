@@ -99,7 +99,7 @@ instance Pretty QCompr where
     pretty (FerryCompr _ bs bd r) i = "for " ++ mapIntersperseConcat (binds i) ((:) ',' $ newLine (i + 4)) bs
                                              ++ (newLine $ i + 4) ++
                                              mapIntersperseConcat (flip pretty (i + 4)) (newLine $ i + 4) bd ++
-                                             newLine i ++ "return " ++ pretty r (i + 7)
+                                             newLine i ++ pretty r (i + 7)
     pretty (HaskellCompr _) _ = error "HaskellCompr cannot be pretty printed"
 
 instance Pretty ReturnElem where
