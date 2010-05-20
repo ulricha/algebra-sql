@@ -35,6 +35,7 @@ data Mode = Read
           
 data Artefact = Echo   -- ^ Echo mode prints the given input to the console
               | PrettyAST -- ^ Pretty mode parses the given input and pretty prints the result
+              | PrettyNormalAST
               | PrettyCore
               | DotAST
               | DotCore

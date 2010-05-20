@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeSynonymInstances#-}
-module Ferry.Front.Convert.Normalise where
+module Ferry.Front.Convert.Normalise (runNormalisation) where
 
 import Ferry.Front.Data.Language
 import Ferry.Front.Data.Base
@@ -70,8 +70,8 @@ getFreshVariable = do
                     return $ Var (Meta emptyPos) n
 
 -- Transform the given expression
-runTransformation :: Expr -> Either FerryError Expr
-runTransformation x = fst $ flip runState (0, M.empty) $ runErrorT $ (normalise x)
+runNormalisation :: Expr -> Either FerryError Expr
+runNormalisation x = fst $ flip runState (0, M.empty) $ runErrorT $ (normalise x)
 
 -- Instances of the normalise class
 
