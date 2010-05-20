@@ -57,8 +57,6 @@ The |sort| function orders record fields in alphabetical order
                       =  norm (for p2 in (groupBy|groupWith) (* -> *) (p1 -> ek) e rest)
  norm (for p1 in e group ev (by|with) ek into p2 rest)
                       =  norm (for p2 in (groupBy|groupWith) (p1 -> ev) (p1 -> ek) e rest)
- norm (for p in e return p)
-                      =  norm e
  norm (for p in e1 return e2)
                       =  norm (map (p -> e2) e1)
  norm (for p1 in e1 return e2 into p2 rest)
