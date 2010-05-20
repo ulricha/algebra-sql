@@ -38,7 +38,7 @@ The |sort| function orders record fields in alphabetical order
  norm (for p1 in e let v1 = e1,..., vn = en let vn1 =en1, ..., vm = em rest)
                       =  norm (for p1 in e let v1 = e1, ..., vn, vn1 = en1, ..., vm = em rest)
  norm (for (x1, ..., xm) in e let v1 = e1, ..., vn = en rest)
-                      =  norm (for * map ((x1, ..., xm) -> {x1, ..., xm, v1 = e1, ..., vn = en}) e 
+                      =  norm (for * in map ((x1, ..., xm) -> {x1, ..., xm, v1 = e1, ..., vn = en}) e 
                          [x1 +-> *.x1, ..., xn +-> *.xn, v1 +-> *.v1, ..., vn +-> *.vn] rest)
  norm (for p1 in e1 order by ..., e2, ... rest)
                       =  norm (for p1 in e1 order by ..., e2 ascending, ... rest)
@@ -50,15 +50,11 @@ The |sort| function orders record fields in alphabetical order
 
 \begin{code}
  norm (for p in e group (by|with) ek rest)
-                      =  norm (for p in (groupBy|groupWith) (p -> ek) e rest)
- norm (for p in e group p (by|with) ek rest)
-                      =  norm (for p in (groupBy|groupWith) (p -> ek) e rest)
+                      =  norm (for p in (groupBy|groupWith) (* -> *) (p -> ek) e rest)
  norm (for p in e group ev (by|with) ek rest)
                       =  norm (for p in e (groupBy|groupWith) (p -> ev) (p -> ek) e rest)
  norm (for p1 in e group (by|with) ek into p2 rest)
-                      =  norm (for p2 in (groupBy|groupWith) (p1 -> ek) e rest)
- norm (for p1 in e group p1 (by|with) ek into p2 rest)
-                      =  norm (for p2 in (groupBy|groupWith) (p1 -> ek) e rest)
+                      =  norm (for p2 in (groupBy|groupWith) (* -> *) (p1 -> ek) e rest)
  norm (for p1 in e group ev (by|with) ek into p2 rest)
                       =  norm (for p2 in (groupBy|groupWith) (p1 -> ev) (p1 -> ek) e rest)
  norm (for p in e return p)
