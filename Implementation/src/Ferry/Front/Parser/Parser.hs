@@ -75,7 +75,7 @@ arg = AExpr <$> pMeta <*> atom
 
 -- | Parse function abstraction
 abstract :: Parser Arg
-abstract = (\m (p, e) -> AAbstr m p e) <$> pMeta <*> parens ((\p e -> (p, e)) <$> pattern <* symbol "->" <*> expr) 
+abstract = (\m (p, e) -> AAbstr m p e) <$> pMeta <*> parens ((\p e -> (p, e)) <$> commaSep1 pattern <* symbol "->" <*> expr) 
 
 -- | Parser for function application. Parse an atomic expression followed by as much
 --   atomic expressions as possible.If there is no application then parse at least
@@ -114,11 +114,11 @@ groupClause :: Parser BodyElem
 groupClause = try groupBy <|> try groupWith
 
 groupBy :: Parser BodyElem
-groupBy = GroupBy <$> pMeta <* reserved "group" <*> option Nothing (Just <$> expr) 
+groupBy = (\m -> Group m GBy) <$> pMeta <* reserved "group" <*> option Nothing (Just <$> expr) 
             <* reserved "by" <*> commaSep1 expr <*> option Nothing (Just <$ reserved "into" <*> pattern)
 
 groupWith :: Parser BodyElem
-groupWith = GroupWith <$> pMeta <* reserved "group" <*> option Nothing (Just <$> expr) <* reserved "with"
+groupWith = (\m ->Group m GWith) <$> pMeta <* reserved "group" <*> option Nothing (Just <$> expr) <* reserved "with"
              <*> commaSep1 expr <*> option Nothing (Just <$ reserved "into" <*> pattern)
 
 returnClause :: Parser ReturnElem

@@ -121,18 +121,16 @@ instance Pretty BodyElem where
     pretty (ForLet _ ps) i = "let " ++ mapIntersperseConcat (lets i) ((:) ',' $ newLine (i + 4)) ps
     pretty (ForWhere _ e) i = "where " ++ pretty e (i+6)
     pretty (ForOrder _ os) i = "order by " ++ mapIntersperseConcat (flip pretty (i+9)) ", " os
-    pretty (GroupBy _ e es p) i = "group " ++ (case e of
+    pretty (Group _ g e es p) i = let mid = case g of
+                                                GBy -> "by "
+                                                GWith -> "with "
+                                      into = case p of
+                                                   Nothing -> ""
+                                                   Just p  -> newLine (i+4) ++ "into " ++ pretty p (i+9)
+                                   in
+                                    "group " ++ (case e of
                                                 Nothing -> ""
-                                                Just e -> pretty e (i+6) ++ " ") ++ "by " ++ intersperseComma es (i+9) ++
-                                 case p of
-                                    Nothing -> ""
-                                    Just p  -> newLine (i+4) ++ "into " ++ pretty p (i+9)
-    pretty (GroupWith _ e1 e2 p) i = "group " ++ (case e1 of
-                                                    Nothing -> ""
-                                                    Just e1 -> pretty e1 (i+6) ++ newLine (i+1) ) ++ "with "
-                                                    ++ pretty e2 (i+6) ++ case p of
-                                                                            Nothing -> ""
-                                                                            Just p -> newLine (i+1) ++ "into " ++ pretty p (i+6)
+                                                Just e -> pretty e (i+6) ++ newLine(i+1))  ++ mid ++ intersperseComma es (i+9) ++ into
 
 intersperseComma :: Pretty a => [a] -> Int -> String
 intersperseComma xs i = concat $ L.intersperse ", " $ map (flip pretty i) xs 

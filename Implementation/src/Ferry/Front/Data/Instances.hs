@@ -27,3 +27,11 @@ instance HasMeta QCompr where
 instance VarContainer Pattern where
     vars (PVar _ v)  = [v]
     vars (PPat _ vs) = vs
+    
+instance VarContainer BodyElem where
+    vars (For _ b)    = concatMap vars $ map fst b
+    vars (ForLet _ b) = concatMap vars $ map fst b
+    vars (ForWhere _ _) = []
+    vars (ForOrder _ _) = []
+    vars (Group _ _ _ _ _) = []
+

@@ -36,10 +36,13 @@ data BodyElem where
     ForLet :: Meta -> [(Pattern, Expr)] -> BodyElem
     ForWhere :: Meta -> Expr -> BodyElem
     ForOrder :: Meta -> [ExprOrder] -> BodyElem 
-    GroupBy :: Meta -> Maybe Expr -> [Expr] -> Maybe Pattern -> BodyElem
-    GroupWith :: Meta -> Maybe Expr -> [Expr] -> Maybe Pattern -> BodyElem
+    Group :: Meta -> Group -> Maybe Expr -> [Expr] -> Maybe Pattern -> BodyElem
      deriving (Show, Eq)
-     
+
+data Group where
+    GBy :: Group
+    GWith :: Group
+     deriving (Show, Eq)
 data ReturnElem where
     Return :: Meta -> Expr -> Maybe (Pattern, [BodyElem], ReturnElem) -> ReturnElem
     deriving (Show, Eq)
@@ -89,5 +92,5 @@ data Type where
      
 data Arg where
     AExpr  :: Meta -> Expr -> Arg
-    AAbstr :: Meta -> Pattern -> Expr -> Arg
+    AAbstr :: Meta -> [Pattern] -> Expr -> Arg
  deriving (Show, Eq)
