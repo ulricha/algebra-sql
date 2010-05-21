@@ -83,22 +83,25 @@ normaliseArg (AAbstr m p e) = restoreState $
                             do
                              let vss = concatMap vars p
                              let vs = map vars p
-                             ns <- liftM (replicate $ length vs) getFreshIdentifier
-                             let newSubsts = concat $ zipWith makeSubstitution ns vs 
+                             ns <- normIdent p
+                             let newSubsts = concat $ map makeSubstitution ns
                              removeSubstitution vss
                              mapM (\(i, ex) -> addSubstitution i ex) newSubsts
                              e' <- normalise e
-                             let p' = replacePattern p ns
+                             let p' = replacePattern p $ map snd ns
                              return $ AAbstr m [p'] e'
+
+normIdent :: [Pattern] -> Normalisation [(Pattern, Identifier)]
+normIdent [] = return []
+normIdent (x:xs) = (\y ys -> (x, y):ys) <$> getFreshIdentifier <*> normIdent xs
 
 replacePattern :: [Pattern] -> [Identifier] -> Pattern
 replacePattern [p] [v] = PVar emptyMeta v
 replacePattern ps vs = PPat emptyMeta vs     
                             
-makeSubstitution :: Identifier -> [Identifier] -> [(Identifier, Expr)]
-makeSubstitution f vs = if length vs == 1 
-                         then [(v, Var emptyMeta f) | v <- vs]
-                         else [(v, Elem emptyMeta (Var emptyMeta f) $ Right i) | (v, i) <- zip vs [1..]]
+makeSubstitution :: (Pattern, Identifier) -> [(Identifier, Expr)]
+makeSubstitution ((PVar m i), f) = [(i, Var m f)]
+makeSubstitution ((PPat m vs), f) = [(v, Elem emptyMeta (Var emptyMeta f) $ Right i) | (v, i) <- zip vs [1..]]
 
 normaliseRec :: RecElem -> Normalisation RecElem
 normaliseRec r@(TrueRec m s e) = 
@@ -197,20 +200,31 @@ sortElem _                        _                        = error "illegal inpu
 
 normaliseQCompr :: QCompr -> Normalisation Expr
 normaliseQCompr (FerryCompr m bs bd r) = 
-    restoreState $ do 
-        bs' <- F.foldlM normaliseCompr (head bs) (tail bs)
-        case bd of
-            [] -> normaliseReturn m bs' r
-            (For _ b):bd' -> normaliseQCompr $ FerryCompr m (bs':b) bd' r
-            (ForWhere _ e):bd' -> normaliseWhere m e bs' bd' r
-            (ForLet m' b):(ForLet _ b'):bd' -> normaliseQCompr $ FerryCompr m [bs'] ((ForLet m' $ b ++ b'):bd') r
-            (ForLet _ b):bd' -> normaliseLet m bs' b bd r
-            (ForOrder _ os):bd' -> normaliseOrder m bs' os bd' r
-            b@(Group m' g me es mp):bd' -> case length es of
-                                              1 -> normaliseGroup m bs' b bd' r
-                                              _ -> normaliseQCompr $ FerryCompr m [bs'] (gb:bd') r
-                                               where
-                                                  gb = Group m' g me [(Record m' [TuplRec m' i e | (e, i) <- (zip es [1..])])] mp                                                                                    
+    restoreState $ case bs of
+                    [bs'] ->
+                     case bd of
+                         [] -> normaliseReturn m bs' r
+                         (For _ b):bd' -> normaliseQCompr $ FerryCompr m (bs':b) bd' r
+                         (ForWhere _ e):bd' -> normaliseWhere m e bs' bd' r
+                         (ForLet m' b):(ForLet _ b'):bd' -> normaliseQCompr $ FerryCompr m [bs'] ((ForLet m' $ b ++ b'):bd') r
+                         (ForLet _ b):bd' -> normaliseLet m bs' b bd r
+                         (ForOrder _ os):bd' -> normaliseOrder m bs' os bd' r
+                         b@(Group m' g me es mp):bd' -> case length es of
+                                                           1 -> normaliseGroup m bs' b bd' r
+                                                           _ -> normaliseQCompr $ FerryCompr m [bs'] (gb:bd') r
+                                                            where
+                                                               gb = Group m' g me [(Record m' [TuplRec m' i e | (e, i) <- (zip es [1..])])] mp
+                    bs    -> do
+                              let b1 = head bs
+                              let b2 = head $ tail bs
+                              let bt = tail $ tail bs
+                              bs' <- normaliseCompr b1 b2
+                              r' <- case r of
+                                      (Return m' e mi) -> do 
+                                                            e' <- normalise e
+                                                            return $ Return m' e' mi 
+                              normaliseQCompr $ FerryCompr m (bs':bt) bd r'
+                                                                                
 normaliseQCompr (HaskellCompr _) = error "Not implemented HaskellCompr"
 
 normaliseReturn :: Meta -> (Pattern, Expr) -> ReturnElem -> Normalisation Expr
@@ -270,10 +284,10 @@ normaliseWhere m f (p1, e1) bd r = normaliseQCompr $ FerryCompr m [(p1, e1')] bd
 normaliseCompr :: (Pattern, Expr) -> (Pattern, Expr) -> Normalisation (Pattern, Expr)
 normaliseCompr (p1, e1) (p2, e2) = do
                                  star <- getFreshIdentifier
-                                 e1' <- normalise e1
-                                 e2' <- normalise e2
                                  let newSubst = [(v, Elem emptyMeta (Var emptyMeta star) $ Left v) | v <- vars p1 ++ vars p2 ]
                                  mapM (\(i, ex) -> addSubstitution i ex) newSubst
+                                 e1' <- normalise e1
+                                 e2' <- normalise e2
                                  pure $ (PVar m star, rExpr e1' e2')
     where m = Meta emptyPos
           v1s = case p1 of
