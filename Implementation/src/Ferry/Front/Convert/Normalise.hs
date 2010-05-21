@@ -16,7 +16,6 @@ import qualified Data.Foldable as F
 import qualified Data.List as L
 import Data.Maybe (fromJust)
 
-import System.IO.Unsafe
 
 -- Substitutions are stored in a map, a variable name is always substituted by a new one
 type Substitution = M.Map Identifier Expr
@@ -34,16 +33,15 @@ restoreState :: Normalisation a -> Normalisation a
 restoreState e = do
                     (_, s) <- get
                     e' <- e
-                    (c, s') <- get
+                    (c, _) <- get
                     put (c, s)
-                    let void = unsafePerformIO $ putStrLn (show s')
-                    return $ seq void e'
+                    return e'
     
 -- Convenience function for operations on the monad
 
 -- Add a substitution
 addSubstitution :: Identifier -> Expr -> Normalisation ()
-addSubstitution i n = do
+addSubstitution i n = do 
                         modify (\(v, m) ->  (v, M.insert i n m))
 
 -- Apply a substitution to the given identifier
@@ -52,7 +50,7 @@ applySubstitution v@(Var _ i) = do
                         (_,m) <- get
                         case M.lookup i m of
                             Nothing -> return v
-                            Just i' -> return i'
+                            Just i' -> normalise i'
 
 -- Remove the list of given identifiers from the substitution list
 removeSubstitution :: [Identifier] -> Normalisation ()
@@ -93,7 +91,7 @@ normaliseArg (AAbstr m p e) = restoreState $
                              e' <- normalise e
                              let p' = replacePattern p $ map snd ns
                              return $ AAbstr m [p'] e'
-
+--FIX
 normIdent :: [Pattern] -> Normalisation [(Pattern, Identifier)]
 normIdent [] = return []
 normIdent (x:xs) = (\y ys -> (x, y):ys) <$> getFreshIdentifier <*> normIdent xs
@@ -152,7 +150,10 @@ normalise (Record  m els) = case (head els) of
                              (TuplRec _ _ _) -> Record m <$> mapM normaliseRec els
 normalise (Paren _ e) = normalise e
 normalise (List m es) = List m <$> mapM normalise es
-normalise (Elem m e i) = Elem m <$> normalise e <*> return i
+normalise (Elem m e i) = do 
+                           e' <- normalise e
+                           (_, s) <- get
+                           seq (putStrLn $ "hello " ++ show s) $ return $ Elem m e' i -- <$> normalise e <*> return i
 normalise (Lookup m e1 e2) = normalise $ App m (Var m "lookup") [AExpr (getMeta e2) e2, AExpr (getMeta e1) e1]
 normalise (Let m bs e) = restoreState $ 
                           case bs of
@@ -267,7 +268,6 @@ normaliseLet :: Meta -> (Pattern, Expr) -> [(Pattern, Expr)] -> [BodyElem] -> Re
 normaliseLet m (p, e) letB bd r = do
                                     star <- getFreshIdentifier
                                     mapM (\(i, ex) -> addSubstitution i ex) (substs star)
-                                    -- app' <- normalise app
                                     normaliseQCompr $ FerryCompr m [(PVar emptyMeta star, app)] bd r
   where 
     app = App emptyMeta (Var emptyMeta "map") [arg1, arg2]
