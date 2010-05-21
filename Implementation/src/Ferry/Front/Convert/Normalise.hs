@@ -16,6 +16,8 @@ import qualified Data.Foldable as F
 import qualified Data.List as L
 import Data.Maybe (fromJust)
 
+import System.IO.Unsafe
+
 -- Substitutions are stored in a map, a variable name is always substituted by a new one
 type Substitution = M.Map Identifier Expr
 
@@ -32,9 +34,10 @@ restoreState :: Normalisation a -> Normalisation a
 restoreState e = do
                     (_, s) <- get
                     e' <- e
-                    (c, _) <- get
+                    (c, s') <- get
                     put (c, s)
-                    return e'
+                    let void = unsafePerformIO $ putStrLn (show s')
+                    return $ seq void e'
     
 -- Convenience function for operations on the monad
 
@@ -207,7 +210,7 @@ normaliseQCompr (FerryCompr m bs bd r) =
                          (For _ b):bd' -> normaliseQCompr $ FerryCompr m (bs':b) bd' r
                          (ForWhere _ e):bd' -> normaliseWhere m e bs' bd' r
                          (ForLet m' b):(ForLet _ b'):bd' -> normaliseQCompr $ FerryCompr m [bs'] ((ForLet m' $ b ++ b'):bd') r
-                         (ForLet _ b):bd' -> normaliseLet m bs' b bd r
+                         (ForLet _ b):bd' -> normaliseLet m bs' b bd' r
                          (ForOrder _ os):bd' -> normaliseOrder m bs' os bd' r
                          b@(Group m' g me es mp):bd' -> case length es of
                                                            1 -> normaliseGroup m bs' b bd' r
@@ -263,13 +266,14 @@ normaliseOrder m (p, e) ords bd r = (\(AExpr _ app) -> normaliseQCompr $ FerryCo
 normaliseLet :: Meta -> (Pattern, Expr) -> [(Pattern, Expr)] -> [BodyElem] -> ReturnElem -> Normalisation Expr
 normaliseLet m (p, e) letB bd r = do
                                     star <- getFreshIdentifier
-                                    mapM (\(i, ex) -> addSubstitution i ex) substs
+                                    mapM (\(i, ex) -> addSubstitution i ex) (substs star)
+                                    -- app' <- normalise app
                                     normaliseQCompr $ FerryCompr m [(PVar emptyMeta star, app)] bd r
   where 
     app = App emptyMeta (Var emptyMeta "map") [arg1, arg2]
     arg1 = AAbstr emptyMeta [p] flatRec
     arg2 = AExpr emptyMeta e
-    substs = [(i, e') | (i, e') <- [(v, Var emptyMeta v) | v <- vars p] ++ splitBinds letB]
+    substs s = [(i, e') | (i, e') <- [(v, Elem emptyMeta (Var emptyMeta s) $ Left v) | v <- vars p ++ (map fst $ splitBinds letB)]]
     flatRec = Record emptyMeta $ [TrueRec emptyMeta (Right n) (Just $ Var emptyMeta n) | n <- vars p] 
                                     ++ [TrueRec emptyMeta (Right n) (Just e') | (n, e') <- splitBinds letB]
     splitBinds ((PVar _ v, e'):bs) = (v, e'):(splitBinds bs)
