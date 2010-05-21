@@ -7,6 +7,7 @@ import Ferry.Front.Render.Pretty
 import Ferry.Compiler.Stages.ReadStage
 import Ferry.Compiler.Stages.ParseStage
 import Ferry.Compiler.Stages.NormaliseStage
+import Ferry.Compiler.Stages.ToCoreStage
 
 import System.FilePath.Posix(takeFileName)
 
@@ -36,4 +37,5 @@ pipeline :: Config -> String -> PhaseResult ()
 pipeline c src = readPhase c src >>=
                  parsePhase c >>=
                  normalisePhase c >>=
+                 toCorePhase c >>=
                  \_ -> return () 

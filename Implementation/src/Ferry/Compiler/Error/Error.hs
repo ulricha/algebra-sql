@@ -7,7 +7,10 @@ import Text.ParserCombinators.Parsec (ParseError(..))
 data FerryError = NoSuchFile String
                 | ParserError ParseError
                 | IllegalRecSyntax RecElem
-                | IncompatableKeys Key Key 
+                | IncompatableKeys Key Key
+                | FrontToCoreError String Expr
+                | FrontToCoreArgError String Arg 
+                | FrontToCoreRecError String RecElem
                 | ProcessComplete
         deriving Show
                 

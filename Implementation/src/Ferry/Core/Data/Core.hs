@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 module Ferry.Core.Data.Core where
 
 import Ferry.Front.Data.Base
@@ -10,23 +11,23 @@ data CoreExpr where
     UnaOp :: Op -> CoreExpr -> CoreExpr
     Constant :: Const -> CoreExpr
     Var  :: String -> CoreExpr
-    App :: CoreExpr -> Param -> CoreExpr
+    App :: CoreExpr -> [Param] -> CoreExpr
     Let :: String -> CoreExpr -> CoreExpr -> CoreExpr
     Rec :: [RecElem] -> CoreExpr
     List :: [CoreExpr] -> CoreExpr
     Elem :: CoreExpr -> String -> CoreExpr
     Table :: String -> [Column] -> [Key] -> CoreExpr
-    If :: CoreExpr -> CoreExpr -> CoreExpr
+    If :: CoreExpr -> CoreExpr -> CoreExpr -> CoreExpr
 
 data RecElem where
-    RecElem :: String -> CoreExpr -> CoreExpr
+    RecElem :: String -> CoreExpr -> RecElem
     
 data Param where
      ParExpr :: CoreExpr -> Param
      ParAbstr :: Pattern -> CoreExpr -> Param
     
 data Pattern where
-    Var :: String -> Pattern
+    PVar :: String -> Pattern
     Pattern :: [String] -> Pattern
     
 data Column where
