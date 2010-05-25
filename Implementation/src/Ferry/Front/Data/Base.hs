@@ -10,3 +10,9 @@ data Const = CInt Integer
 
 class VarContainer a where
     vars :: a -> [Identifier]
+    
+toString :: Const -> String
+toString (CInt i) = show i
+toString (CFloat d) = show d
+toString (CBool b) = show b
+toString (CString s) = s

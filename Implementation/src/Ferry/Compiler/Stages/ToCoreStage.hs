@@ -4,6 +4,9 @@ import Ferry.Compiler.Types
 import Ferry.Compiler.Error.Error
 import Ferry.Compiler.ExecuteStep
 
+import Ferry.Common.Render.Dot
+import Ferry.Core.Render.Dot
+
 import Ferry.Front.Convert.FrontToCore
 import Ferry.Front.Data.Language
 import qualified Ferry.Core.Data.Core as C
@@ -21,4 +24,9 @@ normaliseStage = CompilationStep "FrontToCore" Transform step artefacts
                        in case res of
                              Left err -> newError err
                              Right expr -> return expr
-        artefacts = []
+        artefacts = [(DotCore ,"dot", \h s -> intoArtefact $ hPutStrLn h $ makeDot s)]
+        
+makeDot :: C.CoreExpr -> String
+makeDot c = case runDot $ toDot c of
+            Right s -> s
+            Left e -> error "Jikes"
