@@ -68,7 +68,7 @@ type ArtefactResult = Reader Config String
 type PhaseResult r = ErrorT FerryError (WriterT Log (WriterT [File] (Reader Config))) r
 
 type FileName = String
-type File = (FileName, String)
+type File = (Maybe FileName, String)
 
 data CompilationStep a b  = CompilationStep { 
                                 stageName :: Name, 
@@ -114,7 +114,7 @@ line = "--------------------------------------------------"
 logMsg :: (MonadWriter [t] m) => t -> m ()
 logMsg s = tell [s]
 
-addFile :: FileName -> String -> PhaseResult ()
+addFile :: Maybe FileName -> String -> PhaseResult ()
 addFile n c = lift $ lift $ tell [(n, c)]
 
 

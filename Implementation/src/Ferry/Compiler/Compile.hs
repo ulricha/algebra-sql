@@ -10,6 +10,7 @@ import Ferry.Compiler.Stages.NormaliseStage
 import Ferry.Compiler.Stages.ToCoreStage
 
 import System.FilePath.Posix(takeFileName)
+import System.IO
 
 -- | The compiler pipeline
 --   Note that there should be a monadic style for handling all the steps in the pipeline
@@ -23,7 +24,8 @@ compile opts inp = do
                         let file = case (input opts) of
                                     File f -> takeFileName f
                                     Arg  -> "StdIn"
-                        let (r, l, f) = runPhase opts $ pipeline src            
+                        let (r, l, f) = runPhase opts $ pipeline src   
+                        sequence $ map outputFile f
                         if (debug opts)
                             then putStrLn $ unlines l
                             else return ()
@@ -32,6 +34,16 @@ compile opts inp = do
                             (Right ()) -> return ()
                         return ()
 
+outputFile :: File -> IO ()
+outputFile (f, b) = 
+                    do
+                     h <- case f of
+                            Nothing -> return stdout
+                            Just f  -> openFile f WriteMode
+                     hPutStrLn h b
+                     hFlush h
+                     hClose h
+                    
                         
 pipeline :: String -> PhaseResult ()
 pipeline src = readPhase src >>=

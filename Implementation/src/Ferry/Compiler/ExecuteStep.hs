@@ -24,8 +24,8 @@ createArtefacts i (a, e, f) = do
                                   if elem a $ artefact opts
                                    then do 
                                          let file = case output opts of
-                                                  Nothing -> "stdOut"
-                                                  (Just file) -> file ++ "." ++ e
+                                                  Nothing -> Nothing
+                                                  (Just file) -> Just $ file ++ "." ++ e
                                          logMsg "Creating artefact"
                                          s <- artefactToPhaseResult $ f i
                                          addFile file s
