@@ -9,21 +9,21 @@ import Ferry.Front.Data.Language
 import Ferry.Front.Render.Pretty
 
 import Text.ParserCombinators.Parsec (ParseError(..))
-import System.IO
 
-parsePhase :: Config -> String -> PhaseResult Expr
-parsePhase c s = executeStep c parseStage s
+parsePhase :: String -> PhaseResult Expr
+parsePhase s = executeStep parseStage s
 
 parseStage :: CompilationStep String Expr
 parseStage = CompilationStep "Parse"  Parse step artefacts
     where
-        step :: Config -> String -> PhaseResult Expr
-        step opts arg = 
+        step :: String -> PhaseResult Expr
+        step arg = do
+                        opts <- getConfig
                         let fileName = case input opts of
-                                        Arg -> "StdIn"
-                                        File f -> f
+                                 Arg -> "StdIn"
+                                 File f -> f
                             pr = parseFerry fileName arg
                          in case pr of
                              Left err -> newError $ ParserError err
                              Right expr -> return expr
-        artefacts = [(PrettyAST, "ferry", \h s -> intoArtefact $ hPutStr h $  prettyPrint s)]
+        artefacts = [(PrettyAST, "ferry", \s -> return $ prettyPrint s)]

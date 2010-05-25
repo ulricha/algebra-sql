@@ -23,7 +23,7 @@ compile opts inp = do
                         let file = case (input opts) of
                                     File f -> takeFileName f
                                     Arg  -> "StdIn"
-                        (r, l) <- runPhase $ pipeline opts src            
+                        let (r, l, f) = runPhase opts $ pipeline src            
                         if (debug opts)
                             then putStrLn $ unlines l
                             else return ()
@@ -33,9 +33,9 @@ compile opts inp = do
                         return ()
 
                         
-pipeline :: Config -> String -> PhaseResult ()
-pipeline c src = readPhase c src >>=
-                 parsePhase c >>=
-                 normalisePhase c >>=
-                 toCorePhase c >>=
+pipeline :: String -> PhaseResult ()
+pipeline src = readPhase src >>=
+                 parsePhase >>=
+                 normalisePhase >>=
+                 toCorePhase >>=
                  \_ -> return () 

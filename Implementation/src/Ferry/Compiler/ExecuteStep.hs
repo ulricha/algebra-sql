@@ -1,36 +1,34 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Ferry.Compiler.ExecuteStep where
-
-import Control.Monad.Writer
-import Control.Monad.Error
-import System.IO
     
 import Ferry.Compiler.Types
 import Ferry.Compiler.Error.Error
 
 
-executeStep :: Config -> CompilationStep a b -> a -> PhaseResult b
-executeStep opts step i = do
-                            phaseHeader (stageName step) (stageMode step) opts
-                            b <- (stageStep step) opts i
-                            artefactToPhase $ mapM_ (createArtefacts opts b) $ stageArtefacts step
-                            -- map logMsg results
+executeStep :: CompilationStep a b -> a -> PhaseResult b
+executeStep step i = do
+                            opts <- getConfig
+                            phaseHeader (stageName step) (stageMode step)
+                            b <- stageStep step i
+                            c <- getConfig
+                            mapM_ (createArtefacts b) $ stageArtefacts step
                             if (mode opts == stageMode step)
                              then endProcess
                              else return b
 
-createArtefacts :: Config -> b -> (Artefact, String, Handle -> b -> CreateArtefact) -> CreateArtefact
-createArtefacts opts i (a, e, f) = do
+createArtefacts :: b -> (Artefact, String, b -> ArtefactResult) -> PhaseResult ()
+createArtefacts i (a, e, f) = do
+                                  opts <- getConfig
                                   logMsg line
                                   logMsg $ "Artefact creation stage for: " ++ (show a)
                                   if elem a $ artefact opts
                                    then do 
-                                         h <- case output opts of
-                                                  Nothing -> return stdout
-                                                  (Just file) -> liftIO $ openFile (file ++ "." ++ e) WriteMode 
+                                         let file = case output opts of
+                                                  Nothing -> "stdOut"
+                                                  (Just file) -> file ++ "." ++ e
                                          logMsg "Creating artefact"
-                                         f h i
-                                         liftIO $ hFlush h
+                                         s <- artefactToPhaseResult $ f i
+                                         addFile file s
                                          logMsg "Artefact creation done"
                                          logMsg line
                                          return ()
@@ -39,8 +37,9 @@ createArtefacts opts i (a, e, f) = do
                                          logMsg line
                                          return ()
     
-phaseHeader :: (MonadWriter [String] m) => Name -> Mode -> Config -> m ()
-phaseHeader n s c = do
+phaseHeader :: Name -> Mode -> PhaseResult ()
+phaseHeader n s = do
+                     c <- getConfig
                      logMsg line
                      logMsg $ "Compiler stage: " ++ (show s)
                      logMsg $ "Stage name: " ++ n

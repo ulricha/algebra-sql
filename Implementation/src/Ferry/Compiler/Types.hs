@@ -3,6 +3,7 @@ module Ferry.Compiler.Types where
     
 import Control.Monad.Error
 import Control.Monad.Writer
+import Control.Monad.Reader
 import System.IO
 
 import Ferry.Compiler.Error.Error
@@ -62,16 +63,18 @@ defaultConfig = Config {
                 --  Debug turned of by default
                 debug       = False 
               }
-              
-type PhaseResult r = ErrorT FerryError (WriterT Log IO) r
 
-type CreateArtefact = WriterT Log IO ()
+type ArtefactResult = Reader Config String              
+type PhaseResult r = ErrorT FerryError (WriterT Log (WriterT [File] (Reader Config))) r
+
+type FileName = String
+type File = (FileName, String)
 
 data CompilationStep a b  = CompilationStep { 
                                 stageName :: Name, 
                                 stageMode :: Mode,
-                                stageStep :: Config -> a -> PhaseResult b,
-                                stageArtefacts :: [(Artefact, String, Handle -> b -> CreateArtefact)]
+                                stageStep :: a -> PhaseResult b,
+                                stageArtefacts :: [(Artefact, String, b -> ArtefactResult)]
                                 }
 
 type Name = String
@@ -79,20 +82,20 @@ type Stage = Int
 
 type Log = [String]
 
-getLog :: PhaseResult r -> IO Log
-getLog n = liftM snd $ runPhase n
+artefactToPhaseResult :: ArtefactResult -> PhaseResult String
+artefactToPhaseResult r = lift $ lift $ lift r
+
+getConfig :: PhaseResult Config
+getConfig = ask
+
+getLog :: Config -> PhaseResult r -> Log
+getLog c n = (\(_, l, _) -> l) $ runPhase c n
             
-artefactToPhase :: CreateArtefact -> PhaseResult ()
-artefactToPhase a = lift a
+getFiles :: Config -> PhaseResult r -> [File]
+getFiles c n = (\(_, _, f) -> f) $ runPhase c n        
 
-intoPhase :: IO a -> PhaseResult a
-intoPhase = liftIO
-
-intoArtefact :: IO () -> CreateArtefact
-intoArtefact = liftIO
-
-runPhase :: PhaseResult r -> IO (Either FerryError r, Log)
-runPhase n = runWriterT $ runErrorT n
+runPhase :: Config -> PhaseResult r -> (Either FerryError r, Log, [File])
+runPhase c n = (\((r, l), f) -> (r, l, f)) $ flip runReader c $ runWriterT $ runWriterT $ runErrorT n
 
 newError :: FerryError -> PhaseResult r
 newError e = ErrorT $ return $ Left e
@@ -110,5 +113,8 @@ line = "--------------------------------------------------"
 
 logMsg :: (MonadWriter [t] m) => t -> m ()
 logMsg s = tell [s]
+
+addFile :: FileName -> String -> PhaseResult ()
+addFile n c = lift $ lift $ tell [(n, c)]
 
 
