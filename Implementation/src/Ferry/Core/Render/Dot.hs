@@ -1,6 +1,5 @@
 module Ferry.Core.Render.Dot where
 
-
 import Ferry.Common.Render.Dot    
 import Ferry.Core.Data.Core
 import Ferry.Front.Data.Base
@@ -8,9 +7,6 @@ import Ferry.Core.Render.Pretty
 
 import qualified Data.List as L
 
-
-
--- type Dot = ErrorT FerryError (WriterT [Node] (WriterT [Edge] (State Int)))
 
 toDot :: CoreExpr -> Dot Id
 toDot (BinOp o e1 e2) = do

@@ -6,7 +6,7 @@ FERRYC=../../bin/ferryc
 #### Adding a group of tests
 #### call bin/sh runTests <FOLDERWITHTESTS> $FERRYC <FERRYCFLAGS> 
 ##########################################
-/bin/sh runTests Parser $FERRYC -p ; X1=$?
+/bin/sh runTests Parser $FERRYC "-p -n" ; X1=$?
 TOTAL=$[$X1]
 echo "Test failures: $TOTAL"
 if [ "$TOTAL" = "0" ];

@@ -25,7 +25,7 @@ logo = [
         " _/        _/_/_/  _/        _/          _/_/_/     ",
         "                                            _/      ",
         "                                       _/_/         ",
-        " Ferry 2.0 Compiler",
+        " Ferry Compiler",
         " Developed at Universitaet Tuebingen"
        ]
                                         

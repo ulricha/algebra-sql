@@ -1,8 +1,10 @@
 module Ferry.Compiler.Compile where
     
 import Ferry.Compiler.Types
+import Ferry.Compiler.Error.Error
 import Ferry.Front.Parser.Parser
 import Ferry.Front.Render.Pretty
+
 
 import Ferry.Compiler.Stages.ReadStage
 import Ferry.Compiler.Stages.ParseStage
@@ -30,19 +32,20 @@ compile opts inp = do
                             then putStrLn $ unlines l
                             else return ()
                         case r of
-                            (Left e) -> putStrLn $ show e
+                            (Left e) -> handleError e
                             (Right ()) -> return ()
-                        return ()
 
 outputFile :: File -> IO ()
 outputFile (f, b) = 
                     do
-                     h <- case f of
-                            Nothing -> return stdout
-                            Just f  -> openFile f WriteMode
+                     (h, fm) <- case f of
+                            Nothing -> return (stdout, False)
+                            Just f  -> do
+                                        h <- openFile f WriteMode
+                                        return (h, True)
                      hPutStrLn h b
                      hFlush h
-                     hClose h
+                     if fm then hClose h else return ()
                     
                         
 pipeline :: String -> PhaseResult ()

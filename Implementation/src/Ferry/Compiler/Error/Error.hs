@@ -19,5 +19,10 @@ instance Error FerryError where
     noMsg = error "This function should not be used Error.hs noMsg"
     strMsg = error "This function should not be used Error.hs strMsg"
     
+handleError :: FerryError -> IO ()
+handleError ProcessComplete = return ()
+handleError (ParserError e) = putStrLn $ show e
+handleError e               = putStrLn $ show e
+    
 
      

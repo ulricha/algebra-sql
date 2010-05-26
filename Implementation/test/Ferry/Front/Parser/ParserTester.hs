@@ -6,6 +6,7 @@ import Ferry.Front.Parser.TestDataTypes
 
 import Ferry.Front.Parser.Parser
 import Ferry.Front.Data.Language
+import Ferry.Front.Data.Base
 
 
 import Text.ParserCombinators.Parsec (parse, getPosition, (<|>), try, 

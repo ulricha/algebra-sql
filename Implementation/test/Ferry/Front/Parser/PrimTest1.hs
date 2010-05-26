@@ -8,6 +8,7 @@ import Text.ParserCombinators.Parsec.Pos
 
 import Ferry.Front.Data.Language
 import Ferry.Front.Data.Meta
+import Ferry.Front.Data.Base
 
 pos = newPos "test" 1 1
 
