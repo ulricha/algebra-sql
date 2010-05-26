@@ -2,11 +2,12 @@
 *.tmproj
 
 # ignore LaTeX artefacts
+*.ptb
 *.aux
 *.log
 *.bbl
 *.pdf
-
+*.tex
 # ignore the swp files created by vim
 *.swp
 

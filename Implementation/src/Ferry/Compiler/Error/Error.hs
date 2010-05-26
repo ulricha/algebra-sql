@@ -4,6 +4,7 @@ import Control.Monad.Error
 import Ferry.Front.Data.Language
 import Text.ParserCombinators.Parsec (ParseError(..))
 
+-- | The FerryError datatype represents errors that occur during compilation
 data FerryError = NoSuchFile String
                 | ParserError ParseError
                 | IllegalRecSyntax RecElem
@@ -14,13 +15,14 @@ data FerryError = NoSuchFile String
                 | ProcessComplete
         deriving Show
                 
- 
+-- | Just to satisfy the Error monad 
 instance Error FerryError where
     noMsg = error "This function should not be used Error.hs noMsg"
     strMsg = error "This function should not be used Error.hs strMsg"
-    
+
+-- | Print an error message    
 handleError :: FerryError -> IO ()
-handleError ProcessComplete = return ()
+handleError ProcessComplete = return () -- | Process complete just means everything was fine but the pipeline was ordered to stop early
 handleError (ParserError e) = putStrLn $ show e
 handleError e               = putStrLn $ show e
     

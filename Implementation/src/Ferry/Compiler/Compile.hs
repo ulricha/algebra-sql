@@ -1,4 +1,4 @@
-module Ferry.Compiler.Compile where
+module Ferry.Compiler.Compile (compile) where
     
 import Ferry.Compiler.Types
 import Ferry.Compiler.Error.Error
@@ -35,6 +35,8 @@ compile opts inp = do
                             (Left e) -> handleError e
                             (Right ()) -> return ()
 
+-- | Write a file, if the given filename is Nothing write to stdout.
+--   In the case of the Just x write to x
 outputFile :: File -> IO ()
 outputFile (f, b) = 
                     do
@@ -47,7 +49,9 @@ outputFile (f, b) =
                      hFlush h
                      if fm then hClose h else return ()
                     
-                        
+
+-- | The compiler pipeline. The given string is transformed dependent on the configuration of the Phaseresult
+--   monad.
 pipeline :: String -> PhaseResult ()
 pipeline src = readPhase src >>=
                  parsePhase >>=

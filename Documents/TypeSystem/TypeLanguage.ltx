@@ -1,0 +1,39 @@
+\section{Type language}
+
+We define a type environment |Gam| as follows:
+\begin{syntaxdefs}
+    \syntaxdef{|Gam|}
+        \alt{|Gam[x +-> sig]|}
+        \alt{|[]|}
+\end{syntaxdefs}
+
+Looking up the type of |x| in |Gam| is denoted as |Gam(x)|. This would if |x In dom(Gam)| return the type scheme associated with the right most occurrence of |x|.
+
+We define our type language as follows:
+\begin{syntaxdefs}
+    \syntaxdef{|t|}
+        \alt{|TyInt|}
+        \alt{|TyFloat|}
+        \alt{|TyString|}
+        \alt{|TyBool|}
+        \alt{|a|}
+        \\
+        \alt{|t -> t|}
+        \\
+        \alt{|[t]|}
+        \\
+        \alt{|(t1, ..., tn)| \quad |n >= 2|}
+        \\
+        \alt{|r|}
+        \\
+        \alt{|TyTable r|}
+    \syntaxdef{|r|}
+        \alt{|{l1 :: t1, ..., ln :: tn}| \quad |n >= 1|}
+\end{syntaxdefs}
+
+Type schemes are defined as:
+\begin{syntaxdefs}
+    \syntaxdef{|sig|}
+        \alt{|forall a. sig|}
+        \alt{|t|}
+\end{syntaxdefs}
