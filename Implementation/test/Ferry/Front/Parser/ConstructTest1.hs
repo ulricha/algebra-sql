@@ -18,7 +18,7 @@ constructTests = [("x"                       , Right (Var (Meta pos) "x")),
                   ("hello123"                , Right (Var (Meta pos) "hello123")),
                   ("x_y"                     , Right (Var (Meta pos) "x_y")),
                   ("x y"                     , Right (App (Meta pos) (Var (Meta pos) "x") [(AExpr (Meta $ newPos "test" 1 3) $ Var (Meta $ newPos "test" 1 3) "y")])),
-                  ("x y z"                   , Left "bla"),
+                  ("x y z"                   , Right (App (Meta $ newPos "test" 1 1) (Var (Meta $ newPos "test" 1 1) "x") [AExpr (Meta $ newPos "test" 1 3) (Var (Meta $ newPos "test" 1 3) "y"),AExpr (Meta $ newPos "test" 1 5) (Var (Meta $ newPos "test" 1 5) "z")])),
                   ("if True then True else False",
                                                Right (If (Meta pos) (Const (Meta $ newPos "test" 1 4) $ CBool True)
                                                                     (Const (Meta $ newPos "test" 1 14) $ CBool True)
@@ -26,10 +26,10 @@ constructTests = [("x"                       , Right (Var (Meta pos) "x")),
                   ("1 + 1"                   , Right (BinOp (Meta pos) (Op (Meta $ newPos "test" 1 3) "+")
                                                                        (Const (Meta pos) $ CInt 1) 
                                                                        (Const (Meta $ newPos "test" 1 5) $ CInt 1))),
-                  ("(1,True, \"Hello\", x y)", Left "bla"),
-                  ("z (x y)"                 , Left "bla"),
+                  ("(1,True, \"Hello\", x y)", Right (Record (Meta $ newPos "test" 1 1) [TuplRec (Meta $ newPos "test" 1 2) 1 (Const (Meta $ newPos "test" 1 2) (CInt 1)),TuplRec (Meta $ newPos "test" 1 4) 2 (Const (Meta $ newPos "test" 1 4) (CBool True)),TuplRec (Meta $ newPos "test" 1 10) 3 (Const (Meta $ newPos "test" 1 10) (CString "Hello")),TuplRec (Meta $ newPos "test" 1 19) 4 (App (Meta $ newPos "test" 1 19) (Var (Meta $ newPos "test" 1 19) "x") [AExpr (Meta $ newPos "test" 1 21) (Var (Meta $ newPos "test" 1 21) "y")])])),
+                  ("z (x y)"                 , Right (App (Meta $ newPos "test" 1 1) (Var (Meta $ newPos "test" 1 1) "z") [AExpr (Meta $ newPos "test" 1 3) (Paren (Meta $ newPos "test" 1 3) (App (Meta $ newPos "test" 1 4) (Var (Meta $ newPos "test" 1 4) "x") [AExpr (Meta $ newPos "test" 1 6) (Var (Meta $ newPos "test" 1 6) "y")]))])),
                   ("{first = True, second = False}",
-                                               Left "bla"),
+                                               Right (Record (Meta $ newPos "test" 1 1) [TrueRec (Meta $ newPos "test" 1 2) (Right "first") (Just (Const (Meta $ newPos "test" 1 10) (CBool True))),TrueRec (Meta $ newPos "test" 1 16) (Right "second") (Just (Const (Meta $ newPos "test" 1 25) (CBool False)))])),
                   ("[]"                      , Right (List (Meta pos) [])),
                   ("[1,2,3,4]"               , Right (List (Meta pos) [Const (Meta $ newPos "test" 1 2) $ CInt 1,
                                                                        Const (Meta $ newPos "test" 1 4) $ CInt 2,
@@ -40,7 +40,7 @@ constructTests = [("x"                       , Right (Var (Meta pos) "x")),
                                                             [TuplRec (Meta $ newPos "test" 1 2) 1 (Const (Meta $ newPos "test" 1 2) (CInt 1)),
                                                              TuplRec (Meta $ newPos "test" 1 4) 2 (Const (Meta $ newPos "test" 1 4) (CInt 2))]) 
                                                             (Right 2))),
-                  ("{first = 1}.first"       , Left "bla"),
+                  ("{first = 1}.first"       , Right (Elem (Meta $ newPos "test" 1 1) (Record (Meta $ newPos "test" 1 1) [TrueRec (Meta $ newPos "test" 1 2) (Right "first") (Just (Const (Meta $ newPos "test" 1 10) (CInt 1)))]) (Left "first"))),
                   ("x.first.second"          , Right (Elem (Meta pos) (Elem (Meta pos) (Var (Meta pos) "x") (Left "first")) (Left "second"))),
                   ("let x = 1 in x + 1"      , Right (Let (Meta pos) [Binding (Meta $ newPos "test" 1 5) "x" (Const (Meta $ newPos "test" 1 9) (CInt 1))] 
                                                         (BinOp (Meta $ newPos "test" 1 14) (Op (Meta $ newPos "test" 1 16) "+") (Var (Meta $ newPos "test" 1 14) "x") 
