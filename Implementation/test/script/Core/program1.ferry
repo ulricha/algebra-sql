@@ -1,0 +1,5 @@
+for x in someTable
+    where True
+    let y = 4
+    let z = 5
+return x + y + z
