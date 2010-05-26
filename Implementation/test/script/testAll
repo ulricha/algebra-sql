@@ -7,7 +7,9 @@ FERRYC=../../bin/ferryc
 #### call bin/sh runTests <FOLDERWITHTESTS> $FERRYC <FERRYCFLAGS> 
 ##########################################
 /bin/sh runTests Parser $FERRYC "-p -n" ; X1=$?
-TOTAL=$[$X1]
+/bin/sh runTests Normalise $FERRYC "--prettyNorm -s3" ; X2=$?
+/bin/sh runTests Core $FERRYC "--dotCore -s10" ; X3=$?
+TOTAL=$[$X1 + $X2 + $X3]
 echo "Test failures: $TOTAL"
 if [ "$TOTAL" = "0" ];
 then exit 0

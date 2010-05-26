@@ -21,7 +21,7 @@ compile opts inp = do
                         src <- case (input opts) of
                                 File f -> readFile f
                                 Arg  -> do
-                                            src <- getLine
+                                            src <- getContents
                                             return src
                         let file = case (input opts) of
                                     File f -> takeFileName f
