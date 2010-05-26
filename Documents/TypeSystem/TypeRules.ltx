@@ -23,16 +23,70 @@
     \infrule[t-var]
         {|sig = Gam(x)|}
         {|Gam +- x : sig|}
+    \infrule[t-let]
+        {| Gam +- | | e1 : t1|\quad%
+         | Gam[x +-> t1] +- | | e2 : t2 |}
+        {| Gam +- let x = e1 in e2 : t2|}
+    \\
+    \infrule[t-Bin-op]
+        {| Gam +- | |e1 : top1 |\quad%
+         | Gam +- | |e2 : top2 |}
+        {| Gam +- | |e1 op e2 : top|}
+    \infrule[t-Un-op]
+        {| Gam +- | |e1 : top1 |}
+        {| Gam +- u e1 : top |}
+    \\
+    \infrule[t-app]
+        {| Gam +- | | e1 | | : t2 -> ... -> tn -> t0|\quad%
+         | Gam +-- | | e2 : t2|\quad%
+         | ... |\quad%
+         | Gam +-- | | en : tn|}
+        {| Gam +- | | e1 |~|e2 |~| ... |~| en : t0|}
+    \infrule[t-list]
+        {| Gam +- | |e1 : t|\quad%
+         | ... |\quad%
+         | Gam +- | |en : t|}
+        {| Gam +- | |[e1, ..., en] : [t]|}
+    \\
+    \infrule[t-elem]
+        {| Gam +- e : t |\quad%
+         | t >= {i :: t1} |}
+        {| Gam +- e.i : t1|}
+    \\
+    \infrule[t-table]
+        {| |}
+        {| Gam +- table R (col1 t1, ..., coln tn) with keys (k1, ..., kn) : TyTable {col1 :: t1, ..., coln :: tn} |}
+    \\
+    \infrule[t-rec]
+        {| Gam +- | |e1 : t1 |\quad%
+         | ... |\quad%
+         | Gam +- | |en : tn |}
+        {|Gam +- {x1 = e1, ..., xn = en} : {x1 :: t1, ..., xn :: tn}|}
 \end{infrules}
 
+Typing arguments:
+
+\begin{infrules}
+    \infrule[arg-expr]
+        {| Gam +- e : t |}
+        {| Gam +-- e : t|}
+    \infrule[arg-abstr]
+        {| Gam[x1 +-> t1, ..., xn +-> tn] +- e : t0|}
+        {| Gam +- (x1, ..., xn) -> e : (t1, ..., tn) -> t0|}
+\end{infrules}
+
+Instantiation and generalisation and record weakening
 \begin{infrules}
     \infrule[t-gen]
         {| Gam +- e : sig|\quad%
-         | a notIn ftv(Gam) |}
+         | a NotIn ftv(Gam) |}
         {| Gam +- e : forall a. sig|}
     \infrule[t-ins]
         {| Gam +- e : forall a. sig|}
         {| Gam +- e : [a +-> t] sig|}
+    \infrule[t-weak]
+        {| Gam +- e : {e1 :: t1, ..., ei :: ti, ..., en :: tn}|}
+        {| Gam +- e : {e1 :: t1, ..., ..., en :: tn}|}
 \end{infrules}
 
 \subsection{Syntax directed}

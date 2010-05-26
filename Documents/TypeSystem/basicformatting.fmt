@@ -30,6 +30,7 @@
 %% ----------------------------------------------------------------------------
 
 %format +-  = "\vdash"
+%format +-- = "\vdash_{a}"
 %format +-> = "\mapsto"
 %format :   = "\mathrel{:}"
 %format ~   = "\mathrel{\sim}"

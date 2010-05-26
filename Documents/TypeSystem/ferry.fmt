@@ -87,6 +87,7 @@
 %format en = "e_{n} "
 %format em = "e_{m} "
 %format er = "e_r"
+%format ei = "e_i"
 %format enp1 = "e_{n+1} "
 
 %format e11 = "e_{11}"
@@ -119,6 +120,8 @@
 %format km = "k_m"
 
 %format t = "\ty{\tau}"
+%format ti = "\ty{\tau_i}"
+%format t0 = "\ty{\tau_0}"
 %format t1 = "\ty{\tau_1}"
 %format t2 = "\ty{\tau_2}"
 %format t3 = "\ty{\tau_3}"
