@@ -2,4 +2,37 @@
 
 \subsection{Non syntax directed}
 
+\begin{infrules}
+     \infrule[t-int]%
+        {| |}%
+        {|Gam +- n : TyInt|}%
+    \infrule[t-float]
+        {| |}
+        {|Gam +- f : TyFloat|}
+    \infrule[t-string]
+        {| |}
+        {|Gam +- s : TyString |}
+    \\
+    \infrule[t-true]
+        {| |}
+        {|Gam +- True : TyBool|}
+    \infrule[t-bool]
+        {| |}
+        {|Gam +- False : TyBool|}
+    \\
+    \infrule[t-var]
+        {|sig = Gam(x)|}
+        {|Gam +- x : sig|}
+\end{infrules}
+
+\begin{infrules}
+    \infrule[t-gen]
+        {| Gam +- e : sig|\quad%
+         | a notIn ftv(Gam) |}
+        {| Gam +- e : forall a. sig|}
+    \infrule[t-ins]
+        {| Gam +- e : forall a. sig|}
+        {| Gam +- e : [a +-> t] sig|}
+\end{infrules}
+
 \subsection{Syntax directed}
