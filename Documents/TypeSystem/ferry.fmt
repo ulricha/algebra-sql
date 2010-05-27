@@ -103,6 +103,8 @@
 %format x3 = "x_3"
 %format x4 = "x_4"
 %format xn = "x_n"
+%format x21 = "x_{21}"
+%format x2n = "x_{2n}"
 
 %format i1 = "i_1"
 %format i2 = "i_2"
@@ -142,6 +144,13 @@
 %format top1 = "\ty{\tau_{\oplus 1}}"
 %format top2 = "\ty{\tau_{\oplus 2}}"
 %format top = "\ty{\tau_{\oplus}}"
+
+%format t11 = "\ty{\tau_{11}}"
+%format t12 = "\ty{\tau_{12}}"
+%format t21 = "\ty{\tau_{21}}"
+%format t22 = "\ty{\tau_{22}}"
+%format t1n = "\ty{\tau_{1n}}"
+%format t2n = "\ty{\tau_{2n}}"
 
 %format ar = "\ty{\alpha_0}"
 %format a1 = "\ty{\alpha_1}"

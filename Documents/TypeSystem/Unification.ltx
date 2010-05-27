@@ -1,1 +1,25 @@
 \section{Unification}
+
+\begin{code}
+  U ::  (Type                         ,Type)             ->  Substitution
+  U     (TyInt                        , TyInt)            =  id
+  U     (TyFloat                      , TyFloat)          =  id
+  U     (TyBool                       , TyBool)           =  id
+  U     (TyString                     , TyString)         =  id
+  U     ([t1]                         , [t2])             =  U(t1, t2)
+  U     (t11 -> t12                   , t21 -> t22)       =  let  subst1   = U(t11, t21)
+                                                                  subst2   = U(subst1 t12, subst1 t22)
+                                                              in  subst2 . subst1
+  U     ({x11 :: t11, ..., x1n :: t1n}, {x21 :: t21, ..., x2n :: t2n})
+                                                          =  let  subst1  = U(t11, t21)
+                                                                  ...
+                                                                  substn  = U(substn1 t1n, substn1 t2n)
+                                                              in  substn . ... . subst1
+  U     (t                            , a)                =  if (t == a Or a `S.notMember` (ftv t) ) 
+                                                              then [a +-> t]
+                                                              else fail
+  U     (a                            , t)                =  if (t == a Or a `S.notMember` (ftv t) ) 
+                                                              then [a +-> t]
+                                                              else fail
+  U     (_                            , _)                =  fail
+\end{code}
