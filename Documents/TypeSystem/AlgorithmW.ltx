@@ -1,1 +1,60 @@
 \section{Algorithm $\mathcal{W}$}
+
+The algorithm use substitutions to recover type information. A substitution is a function from a type to a type and can replace type variables inside a type by a different type. Substitutions can be composed,| subst1 . subst2 |,  the empty substitution is the identity function, |id|, and when applied they are applied recursively on a type. A substitution has the following form |[a -> t]|, if the type it is applied to is anything else then type variable a it is not applied, the rest of the composed substitution will however be applied if possible. Substitutions are idempotent so |subst (subst t) = subst t|.
+
+\begin{code}
+ W(Gam, n)                 =  (TyInt, id)
+ W(Gam, f)                 =  (TyFloat, id)
+ W(Gam, s)                 =  (TyString, id)
+ W(Gam, True)              =  (TyBool, id)
+ W(Gam, False)             =  (TyBool, id) 
+ W(Gam, x)                 =  (inst(Gam(x)), id)
+ W(Gam, let x = e1 in e2)  =  let  (t1, subst1) = W(Gam, e1)
+                                   (t2, subst2) = W(subst1 Gam[x +-> gen(t1)], e2)
+                               in  (t2, subst2 . subst1)
+ W(Gam, e1 op e2)          =  let  top1 -> top2 -> top = Gam(op)
+                                   (t1, subst1) = W(Gam, e1)
+                                   (t2, subst2) = W(subst1 Gam, e2)
+                                   subst3 = U(subst2 t1, t1op)
+                                   subst4 = U(subst3 t2, t2op)
+                                   subst = subst4 . subst3 . subst2 . subst1
+                               in  (trop, subst)
+ W(Gam, u e)               =  let  top1 -> top = Gam(u)
+                                   (t, subst1) = W(Gam, e)
+                                   subst2 = U(t, top1)
+                                   subst = subst2 . subst1
+                               in  (top, subst)
+ W(Gam, e0 e1 ... en)      =  let  ar be fresh
+                                   (t0, subst0) = W(Gam, e0)
+                                   (t1, subst1) = W(subst0 Gam, e1)
+                                   ...
+                                   (tn, substn) = W(substn1 . ... . subst0 Gam, en)
+                                   substm = U(subst1 . ... . substn t0, (subst2 . ... . substn) t1 -> ... -> tn -> ar)
+                                   subst = substm . substn . ... . subst0
+                               in  (substm ar, subst)
+ W(Gam, Nil)               =  let  a be fresh
+                               in  (List a, id)
+ W(Gam, Cons e1 e2)        =  let  (t1, subst1)    = W(Gam, e1)
+                                   (t2, subst2)    = W(subst1 Gam, e2)
+                                   subst3          = U(t2, [(subst2 t1)])
+                               in  (subst3 t2, subst3 . subst2 . subst1)
+ W(Gam, e.i)               =  let  (t1, subst) = W(Gam, e)
+                                   tr = lookup i t1
+                               in  (tr, subst)
+ W(Gam, table r (col1 t1, ..., coln tn) with keys (k1, ..., kn))
+                           =  ([{col1 :: t1, ..., coln :: tn}], id)
+ W(Gam, {x1 = e1, ..., xn = en})
+                           =  let  (t1, subst1) = W(Gam, e1)
+                                   ...
+                                   (tn, substn) = W(Gam, en)
+                               in  {x1 :: t1, ..., xn :: tn}
+ W(Gam, if e1 then e2 else e3)
+                           =  let  (t1, subst1) = W(Gam, e1)
+                                   (t2, subst2) = W(subst1 Gam, e2)
+                                   (t3, subst3) = W(subst2 . subst1 Gam, e2)
+                                   subst4 = U(subst3 . subst2 t1, TyBool)
+                                   subst5 = U(subst4 . subst3 t2, subst4 t3)
+                                   subst = subst5 . subst4 . subst3 . subst2 . subst1
+                               in  (subst5 . subst4 t3, subst)
+    
+\end{code}

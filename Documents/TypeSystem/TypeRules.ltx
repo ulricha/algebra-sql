@@ -37,6 +37,12 @@ Please note the type rules for operators do not fit entirely as expected but in 
         {| Gam +- | |e1 : top1 |}
         {| Gam +- u e1 : top |}
     \\
+    \infrule[t-if]
+        {| Gam +- | | e1 : TyBool |\quad%
+         | Gam +- | | e2 : t|\quad%
+         | Gam +- | | e3 : t|}
+        {| Gam +- if e1 then e2 else e3 : t |}
+    \\
     \infrule[t-app]
         {| Gam +- | | e1 | | : t2 -> ... -> tn -> t0|\quad%
          | Gam +-- | | e2 : t2|\quad%
@@ -75,7 +81,7 @@ Typing arguments:
         {| Gam +-- e : t|}
     \infrule[arg-abstr]
         {| Gam[x1 +-> t1, ..., xn +-> tn] +- e : t0|}
-        {| Gam +- (x1, ..., xn) -> e : (t1, ..., tn) -> t0|}
+        {| Gam +- (x1, ..., xn) -> e : t1 -> ... -> tn -> t0|}
 \end{infrules}
 
 Instantiation and generalisation and record weakening
@@ -89,9 +95,9 @@ Instantiation and generalisation and record weakening
         {| Gam +- e : [a +-> t] sig|}
     \\
     \infrule[t-weak]
-        {| Gam +- e : {e1 :: t1, ..., en :: tn}|\quad%
-         | {em :: tm, ... eo :: to'} sub {e1 :: t1, ..., en :: tn} |}
-        {| Gam +- e : {em :: tm, ... eo :: to'}|}
+        {| Gam +- e : {i1 :: t1, ..., in' :: tn}|\quad%
+         | {im :: tm, ... io :: to'} sub {i1 :: t1, ..., in' :: tn} |}
+        {| Gam +- e : {im :: tm, ... io :: to'}|}
 \end{infrules}
 
 \subsection{Syntax directed}
@@ -175,6 +181,12 @@ We introduce the following helper functions:
         {| Gam +- | |e1 : top1 |}
         {| Gam +- u e1 : top |}
     \\
+    \infrule[t-if]
+        {| Gam +- | | e1 : TyBool |\quad%
+         | Gam +- | | e2 : t|\quad%
+         | Gam +- | | e3 : t|}
+        {| Gam +- if e1 then e2 else e3 : t |}
+    \\
     \infrule[t-app]
         {| Gam +- | | e1 | | : t2 -> ... -> tn -> t0|\quad%
          | Gam +-- | | e2 : t2|\quad%
@@ -191,8 +203,8 @@ We introduce the following helper functions:
         {|Gam +- Nil : [t]|}
     \\
     \infrule[t-elem]
-        {| Gam +- e : {e1 :: t1, ..., en :: tn} |\quad%
-         | {i :: t} sub {e1 :: t1, ..., en :: tn} |}
+        {| Gam +- e : {i1 :: t1, ..., in' :: tn} |\quad%
+         | {i :: t} sub {i1 :: t1, ..., in' :: tn} |}
         {| Gam +- e.i : t|}
     \\
     \infrule[t-table]
@@ -204,4 +216,13 @@ We introduce the following helper functions:
          | ... |\quad%
          | Gam +- | |en : tn |}
         {|Gam +- {x1 = e1, ..., xn = en} : {x1 :: t1, ..., xn :: tn}|}
+\end{infrules}
+
+\begin{infrules}
+    \infrule[arg-expr]
+        {| Gam +- e : t |}
+        {| Gam +-- e : t|}
+    \infrule[arg-abstr]
+        {| Gam[x1 +-> t1, ..., xn +-> tn] +- e : t0|}
+        {| Gam +- (x1, ..., xn) -> e : t1 -> ... -> tn -> t0|}
 \end{infrules}
