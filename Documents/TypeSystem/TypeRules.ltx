@@ -2,6 +2,7 @@
 
 \subsection{Non syntax directed}
 
+Please note the type rules for operators do not fit entirely as expected but in the near future they will change into something correct
 \begin{infrules}
      \infrule[t-int]%
         {| |}%
@@ -42,20 +43,22 @@
          | ... |\quad%
          | Gam +-- | | en : tn|}
         {| Gam +- | | e1 |~|e2 |~| ... |~| en : t0|}
-    \infrule[t-list]
-        {| Gam +- | |e1 : t|\quad%
-         | ... |\quad%
-         | Gam +- | |en : t|}
-        {| Gam +- | |[e1, ..., en] : [t]|}
+    \\
+    \infrule[t-cons]
+        {| Gam +- | | e1 : t|\quad
+         | Gam +- | | e2 : [t] |}
+        {| Gam +- Cons e1 e2 : [t]|}
+    \infrule[t-nil]
+        {| |}
+        {|Gam +- Nil : [t]|}
     \\
     \infrule[t-elem]
-        {| Gam +- e : t |\quad%
-         | t >= {i :: t1} |}
-        {| Gam +- e.i : t1|}
+        {| Gam +- e : {i :: t} |}
+        {| Gam +- e.i : t|}
     \\
     \infrule[t-table]
         {| |}
-        {| Gam +- table R (col1 t1, ..., coln tn) with keys (k1, ..., kn) : TyTable {col1 :: t1, ..., coln :: tn} |}
+        {| Gam +- table R (col1 t1, ..., coln tn) with keys (k1, ..., kn) : [{col1 :: t1, ..., coln :: tn}] |}
     \\
     \infrule[t-rec]
         {| Gam +- | |e1 : t1 |\quad%
@@ -84,9 +87,121 @@ Instantiation and generalisation and record weakening
     \infrule[t-ins]
         {| Gam +- e : forall a. sig|}
         {| Gam +- e : [a +-> t] sig|}
+    \\
     \infrule[t-weak]
-        {| Gam +- e : {e1 :: t1, ..., ei :: ti, ..., en :: tn}|}
-        {| Gam +- e : {e1 :: t1, ..., ..., en :: tn}|}
+        {| Gam +- e : {e1 :: t1, ..., en :: tn}|\quad%
+         | {em :: tm, ... eo :: to'} sub {e1 :: t1, ..., en :: tn} |}
+        {| Gam +- e : {em :: tm, ... eo :: to'}|}
 \end{infrules}
 
 \subsection{Syntax directed}
+
+Instantiation is merged into variable access.
+Generalization into let bindings and weakening into elem access.
+
+We introduce the following helper functions:
+
+\begin{figure}[!h]
+\begin{boxedminipage}{\columnwidth}
+    \begin{code}
+        ftv(TyInt)                      =  empty
+        ftv(TyFloat)                    =  empty
+        ftv(TyString)                   =  empty
+        ftv(TyBool)                     =  empty
+        ftv([t])                        =  ftv(t)
+        ftv({l1 :: t1, ..., ln :: tn})  =  ftv(t1) `union` ... `union` ftv(tn)
+        ftv(t1 -> t2)                   =  ftv(t1) `union` ftv(t2)
+        ftv(a)                          =  {a}
+    \end{code}
+  \end{boxedminipage}
+  \caption{Free type variables in types}
+\end{figure}
+
+\begin{figure}[!h]
+\begin{boxedminipage}{\columnwidth}
+    \begin{code}
+        ftv(forall a. sig)  = ftv(sig)\\{a}
+    \end{code}
+  \end{boxedminipage}
+  \caption{Free type variables in type schemes}
+\end{figure}
+
+\begin{figure}[!h]
+\begin{boxedminipage}{\columnwidth}
+    \begin{code}
+        inst :: TyScheme -> Ty
+        inst (forall a1 ... an. t) = [a1 +-> a1']...[an +-> an'] t
+                where a1' ... an' are fresh
+            
+        gen :: TyEnv -> Ty -> TyScheme
+        gen(Gam, t) = forall a1 ... an. t
+                where {a1 ... an} = ftv(t) - ftv(Gam)
+    \end{code}
+  \end{boxedminipage}
+  \caption{Instantiation and Generalization functions}
+\end{figure}
+
+\begin{infrules}
+     \infrule[t-int]%
+        {| |}%
+        {|Gam +- n : TyInt|}%
+    \infrule[t-float]
+        {| |}
+        {|Gam +- f : TyFloat|}
+    \infrule[t-string]
+        {| |}
+        {|Gam +- s : TyString |}
+    \\
+    \infrule[t-true]
+        {| |}
+        {|Gam +- True : TyBool|}
+    \infrule[t-bool]
+        {| |}
+        {|Gam +- False : TyBool|}
+    \\
+    \infrule[t-var]
+        {|sig = Gam(x)|}
+        {|Gam +- x : inst(sig)|}
+    \infrule[t-let]
+        {| Gam +- | | e1 : t1|\quad%
+         | Gam[x +-> gen(Gam, t1)] +- | | e2 : t2 |}
+        {| Gam +- let x = e1 in e2 : t2|}
+    \\
+    \infrule[t-Bin-op]
+        {| Gam +- | |e1 : top1 |\quad%
+         | Gam +- | |e2 : top2 |}
+        {| Gam +- | |e1 op e2 : top|}
+    \infrule[t-Un-op]
+        {| Gam +- | |e1 : top1 |}
+        {| Gam +- u e1 : top |}
+    \\
+    \infrule[t-app]
+        {| Gam +- | | e1 | | : t2 -> ... -> tn -> t0|\quad%
+         | Gam +-- | | e2 : t2|\quad%
+         | ... |\quad%
+         | Gam +-- | | en : tn|}
+        {| Gam +- | | e1 |~|e2 |~| ... |~| en : t0|}
+    \\
+    \infrule[t-cons]
+        {| Gam +- | | e1 : t|\quad
+         | Gam +- | | e2 : [t] |}
+        {| Gam +- Cons e1 e2 : [t]|}
+    \infrule[t-nil]
+        {| |}
+        {|Gam +- Nil : [t]|}
+    \\
+    \infrule[t-elem]
+        {| Gam +- e : {e1 :: t1, ..., en :: tn} |\quad%
+         | {i :: t} sub {e1 :: t1, ..., en :: tn} |}
+        {| Gam +- e.i : t|}
+    \\
+    \infrule[t-table]
+        {| |}
+        {| Gam +- table R (col1 t1, ..., coln tn) with keys (k1, ..., kn) : [{col1 :: t1, ..., coln :: tn}] |}
+    \\
+    \infrule[t-rec]
+        {| Gam +- | |e1 : t1 |\quad%
+         | ... |\quad%
+         | Gam +- | |en : tn |}
+        {|Gam +- {x1 = e1, ..., xn = en} : {x1 :: t1, ..., xn :: tn}|}
+\end{infrules}

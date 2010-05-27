@@ -28,6 +28,8 @@
 %format group = "\textbf{group}"
 %format select = "\textbf{select}"
 %format into = "\textbf{into}"
+%format Cons = "\textbf{Cons}"
+%format Nil = "\textbf{Nil}"
 
 %format True = "\textbf{True}"
 %format False = "\textbf{False}"

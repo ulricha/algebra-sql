@@ -28,6 +28,8 @@
 %format group = "\textbf{group}"
 %format select = "\textbf{select}"
 %format into = "\textbf{into}"
+%format Cons = "\textbf{Cons}"
+%format Nil = "\textbf{Nil}"
 
 %format True = "\textbf{True}"
 %format False = "\textbf{False}"
@@ -79,6 +81,7 @@
 %% Variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%format eo = "e_{o}"
 %format e0 = "e_{0} "
 %format e1 = "e_{1} "
 %format e2 = "e_{2} "
@@ -126,6 +129,15 @@
 %format t2 = "\ty{\tau_2}"
 %format t3 = "\ty{\tau_3}"
 %format tn = "\ty{\tau_n}"
+%format tm = "\ty{\tau_m}"
+%format to' = "\ty{\tau_o}"
+
+%format a1 = "\ty{\alpha_1}"
+%format a2 = "\ty{\alpha_2}"
+%format a3 = "\ty{\alpha_3}"
+%format an = "\ty{\alpha_n}"
+%format an' = "\ty{\alpha_{n}'}"
+%format a1' = "\ty{\alpha_{1}'}"
 
 %format sig = "\ty{\sigma}"
 %format Gam = "\ty{\Gamma}"
@@ -153,3 +165,7 @@
 %format SQBR(x) = "\texttt{[}" x "\texttt{]}"
 %format PAREN(x) = "\texttt{(}" x "\texttt{)}"
 %format CURL(x) = "\texttt{\{}" x "\texttt{\}}"
+%format sub = "\subseteq"
+%format NotIn = "\notin"
+%format empty = "\empty"
+%format `union` = " \cup "

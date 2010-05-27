@@ -56,5 +56,5 @@ pipeline :: String -> PhaseResult ()
 pipeline src = readPhase src >>=
                  parsePhase >>=
                  normalisePhase >>=
-                 toCorePhase >>=
-                 \_ -> return () 
+                 toCorePhase >>
+                 return () 
