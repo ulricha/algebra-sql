@@ -1,22 +1,23 @@
 {-# LANGUAGE GADTs #-}
-module Ferry.Core.Data.TypedCore where
+module Ferry.TypedCore.Data.TypedCore where
     
 import Ferry.Front.Data.Base
-import Ferry.Core.Data.Base
-import Ferry.Core.Data.Type
+import Ferry.TypedCore.Data.Base
+import Ferry.TypedCore.Data.Type
 
 data Op where
-    Op :: FType -> String -> Op
+    Op :: String -> Op
 
 data CoreExpr where
     BinOp :: FType -> Op -> CoreExpr -> CoreExpr -> CoreExpr
     UnaOp :: FType -> Op -> CoreExpr -> CoreExpr
     Constant :: FType -> Const -> CoreExpr
     Var  :: FType -> String -> CoreExpr
-    App :: FType -> CoreExpr -> [Param] -> CoreExpr
+    App :: FType -> CoreExpr -> Param -> CoreExpr
     Let :: FType -> String -> CoreExpr -> CoreExpr -> CoreExpr
     Rec :: FType -> [RecElem] -> CoreExpr
-    List :: FType ->[CoreExpr] -> CoreExpr
+    Cons :: FType -> CoreExpr -> CoreExpr -> CoreExpr
+    Nil :: FType -> CoreExpr
     Elem :: FType -> CoreExpr -> String -> CoreExpr
     Table :: FType -> String -> [Column] -> [Key] -> CoreExpr
     If :: FType -> CoreExpr -> CoreExpr -> CoreExpr -> CoreExpr

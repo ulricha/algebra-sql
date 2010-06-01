@@ -8,6 +8,8 @@ import Ferry.Front.Parser.Parser
 import Ferry.Front.Data.Language
 import Ferry.Front.Render.Pretty
 
+import Ferry.Common.Render.Pretty
+
 import Text.ParserCombinators.Parsec (ParseError(..))
 
 parsePhase :: String -> PhaseResult Expr

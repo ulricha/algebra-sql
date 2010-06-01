@@ -2,17 +2,12 @@ module Ferry.Front.Render.Pretty where
     
 import Ferry.Front.Data.Base
 import Ferry.Front.Data.Language
+import Ferry.Common.Render.Pretty
 
 import qualified Data.List as L
 
-prettyPrint :: Pretty a => a -> String
-prettyPrint a = pretty a 0 
-
-class Pretty a where
-    pretty :: a -> Int -> String
-    
 prettyAST :: Expr -> String
-prettyAST e = pretty e 0
+prettyAST e = prettyPrint e
     
 instance Pretty Expr where
     pretty (UnOp         _ o e)               i = (pretty o i) ++ (pretty e i)
@@ -48,12 +43,6 @@ instance Pretty Arg where
     pretty (AExpr _ e) i = pretty e i
     pretty (AAbstr _ x e) i = "(" ++ pretty x i ++ " ->" ++ pretty e i ++ ")"
     
-newLine :: Int -> String
-newLine n = "\n" ++ (take n $ repeat ' ')
-
-mapIntersperseConcat :: (a -> [b]) -> [b] -> [a] -> [b]
-mapIntersperseConcat f e l = concat $ L.intersperse e $ map f l
-
 instance Pretty Op where
     pretty (Op _ o) _ = o
     
@@ -131,9 +120,6 @@ instance Pretty BodyElem where
                                     "group " ++ (case e of
                                                 Nothing -> ""
                                                 Just e -> pretty e (i+6) ++ newLine(i+1))  ++ mid ++ intersperseComma es (i+9) ++ into
-
-intersperseComma :: Pretty a => [a] -> Int -> String
-intersperseComma xs i = concat $ L.intersperse ", " $ map (flip pretty i) xs 
 
 instance Pretty Const where
     pretty (CInt i) _ = (show i)

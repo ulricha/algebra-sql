@@ -2,6 +2,8 @@ module Ferry.Compiler.Error.Error where
 
 import Control.Monad.Error
 import Ferry.Front.Data.Language
+import Ferry.TypedCore.Data.Type
+
 import Text.ParserCombinators.Parsec (ParseError(..))
 
 -- | The FerryError datatype represents errors that occur during compilation
@@ -12,6 +14,7 @@ data FerryError = NoSuchFile String
                 | FrontToCoreError String Expr
                 | FrontToCoreArgError String Arg 
                 | FrontToCoreRecError String RecElem
+                | UnificationError FType FType
                 | ProcessComplete
         deriving Show
                 
@@ -22,7 +25,7 @@ instance Error FerryError where
 
 -- | Print an error message    
 handleError :: FerryError -> IO ()
-handleError ProcessComplete = return () -- | Process complete just means everything was fine but the pipeline was ordered to stop early
+handleError ProcessComplete = return () -- Process complete just means everything was fine but the pipeline was ordered to stop early
 handleError (ParserError e) = putStrLn $ show e
 handleError e               = putStrLn $ show e
     

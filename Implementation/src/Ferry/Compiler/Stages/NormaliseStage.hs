@@ -7,6 +7,7 @@ import Ferry.Compiler.ExecuteStep
 import Ferry.Front.Convert.Normalise
 import Ferry.Front.Data.Language
 import Ferry.Front.Render.Pretty
+import Ferry.Common.Render.Pretty
 
 
 normalisePhase :: Expr -> PhaseResult Expr

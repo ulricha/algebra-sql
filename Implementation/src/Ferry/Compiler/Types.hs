@@ -31,6 +31,7 @@ data Mode = Read
           | Parse  -- ^ Parse mode will stop the compiler after the parsing phase
           | Normalise 
           | Transform
+          | TypeInfer
           | Full
     deriving (Show, Eq)
           
@@ -40,6 +41,7 @@ data Artefact = Echo   -- ^ Echo mode prints the given input to the console
               | PrettyCore
               | DotAST
               | DotCore
+              | Type
               | Algebra
     deriving (Show, Eq)
 

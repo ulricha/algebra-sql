@@ -40,9 +40,9 @@ toDot (Var i) = do
 toDot (App c ps) = do
                      nId <- getFreshId
                      fId <- toDot c
-                     pIds <- mapM paramToDot ps
+                     pIds <- paramToDot ps
                      addNode $ Node nId [Label $ SLabel "$", Color Green, Shape Circle]
-                     addEdge $ Edge nId (fId:pIds)
+                     addEdge $ Edge nId [fId, pIds]
                      return nId
 toDot (Let s e1 e2) = do
                        nId <- getFreshId
@@ -59,12 +59,17 @@ toDot (Rec es) = do
                   addNode $ Node nId [Label $ SLabel "Rec", Color Blue, Shape Oval]
                   addEdge $ Edge nId eIds
                   return nId
-toDot (List es) = do
+toDot (Cons e1 e2) = do
                      nId <- getFreshId
-                     eIds <- mapM toDot es
-                     addNode $ Node nId [Label $ SLabel "List", Color Blue, Shape Oval]
-                     addEdge $ Edge nId eIds
+                     eIdh <- toDot e1
+                     eIdt <- toDot e2
+                     addNode $ Node nId [Label $ SLabel "Cons", Color Blue, Shape Oval]
+                     addEdge $ Edge nId [eIdh, eIdt]
                      return nId
+toDot (Nil)      = do
+                    nId <- getFreshId
+                    addNode $ Node nId [Label $ SLabel "Nil", Color Blue, Shape Oval]
+                    return nId
 toDot (Elem c s) = do
                     nId <- getFreshId
                     sId <- getFreshId

@@ -12,6 +12,7 @@ stopSelect "1"  = Read
 stopSelect "2"  = Parse
 stopSelect "3"  = Normalise
 stopSelect "10" = Transform
+stopSelect "20" = TypeInfer 
 stopSelect _    = Full
 
 type Logo = [String]
@@ -76,6 +77,9 @@ options = [ Option ['s'] ["stop"]
           , Option ['f']["file"]
                    (ReqArg (\s o -> o {input = File s}) "File")
                    "Source file input"
+          , Option ['t']["type"]
+                    (NoArg (\o -> o {artefact = Type : (artefact o)}))
+                        "Typecheck program and return its type"
           ]
 
 -- | Process the arguments given to the compiler

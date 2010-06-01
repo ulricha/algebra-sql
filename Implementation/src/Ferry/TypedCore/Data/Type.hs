@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs, TypeSynonymInstances #-}
-module Ferry.Core.Data.Type where
+module Ferry.TypedCore.Data.Type where
 
-import Ferry.Core.Data.Base
+import Ferry.TypedCore.Data.Base
 
 import qualified Data.Set as S
 import qualified Data.Map as M
@@ -25,3 +25,7 @@ data FType where
 
 class VarContainer a where
    ftv :: a -> S.Set Ident
+   
+class HasType a where
+  typeOf :: a -> FType
+  

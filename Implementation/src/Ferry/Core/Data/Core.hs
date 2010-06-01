@@ -11,10 +11,11 @@ data CoreExpr where
     UnaOp :: Op -> CoreExpr -> CoreExpr
     Constant :: Const -> CoreExpr
     Var  :: String -> CoreExpr
-    App :: CoreExpr -> [Param] -> CoreExpr
+    App :: CoreExpr -> Param -> CoreExpr
     Let :: String -> CoreExpr -> CoreExpr -> CoreExpr
     Rec :: [RecElem] -> CoreExpr
-    List :: [CoreExpr] -> CoreExpr
+    Cons :: CoreExpr -> CoreExpr -> CoreExpr
+    Nil :: CoreExpr
     Elem :: CoreExpr -> String -> CoreExpr
     Table :: String -> [Column] -> [Key] -> CoreExpr
     If :: CoreExpr -> CoreExpr -> CoreExpr -> CoreExpr
