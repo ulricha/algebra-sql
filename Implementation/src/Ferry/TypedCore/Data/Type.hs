@@ -10,7 +10,7 @@ type TyEnv = M.Map Ident TyScheme
 
 data TyScheme where
     Forall :: Ident -> TyScheme -> TyScheme
-    FType :: FType -> TyScheme
+    QualTy :: QualTy -> TyScheme
 
 data FType where
     FInt :: FType
@@ -22,6 +22,10 @@ data FType where
     FRec :: S.Set (String, FType) -> FType 
     FFn :: FType -> FType -> FType
  deriving (Show, Eq, Ord)
+ 
+data QualTy where
+    Qual :: String -> Ident -> QualTy -> QualTy
+    FType :: FType -> QualTy
 
 class VarContainer a where
    ftv :: a -> S.Set Ident

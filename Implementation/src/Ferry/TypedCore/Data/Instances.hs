@@ -18,9 +18,17 @@ instance Substitutable FType where
                                         False -> s M.! i
   apply' _ _    t                  = t -- If the substitution is not applied to a container type or variable just stop primitives cannot be substituted
 
+instance Substitutable QualTy where
+  apply' b s (FType a)   = FType $ apply' b s a
+  apply' b s (Qual n v t) | S.notMember v b = case M.lookup v s of
+                                                Nothing -> Qual n v $ apply' b s t
+                                                Just (FVar a) -> Qual n a $ apply' b s t
+                                                Just _       -> Qual n v $ apply' b s t
+                          | otherwise       = Qual n v $ apply' b s t
+                          
 instance Substitutable TyScheme where
   apply' b s (Forall i t) = Forall i $ apply' (S.insert i b) s t
-  apply' b s (FType t) = FType $ apply' b s t
+  apply' b s (QualTy t) = QualTy $ apply' b s t
     
 instance Substitutable TyEnv where
   apply' b s m = M.map (apply' b s) m
@@ -57,8 +65,12 @@ instance VarContainer FType where
 
 instance VarContainer TyScheme where
   ftv (Forall i t) = S.delete i $ ftv t 
-  ftv (FType t)    = ftv t
+  ftv (QualTy t)    = ftv t
 
+instance VarContainer QualTy where
+  ftv (Qual _ v t) = S.singleton v `S.union` (ftv t)
+  ftv (FType t)    = ftv t
+  
 instance VarContainer TyEnv where
   ftv m = S.unions $ M.elems $ M.map ftv m
   
