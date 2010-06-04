@@ -87,7 +87,7 @@ Typing arguments:
 Instantiation and generalisation and record weakening
 \begin{infrules}
     \infrule[t-qual]
-        {|Gam, C union {pi} +- e : sig|}
+        {|Gam, C `union` {pi} +- e : sig|}
         {|Gam, C +- e : pi => sig |}
     \infrule[t-res]
         {|Gam, C +- e : pi => sig|\quad |C +- pi|}
@@ -103,10 +103,10 @@ Instantiation and generalisation and record weakening
     \\
     \infrule[t-RecRes]
         {|Gam, C +- e : {x1 :: t1, ..., xn :: tn}|}
-        {|Gam, C union {r <: {x1 :: t1}, ..., r <: {xn :: tn}} +- e : r|}
+        {|Gam, C `union` {r <: {x1 :: t1}, ..., r <: {xn :: tn}} +- e : r|}
     \\
     \infrule[t-RecQual]
-        {|Gam, C union {r <: {x1 :: t1, ..., xn :: tn}} +- e : r|}
+        {|Gam, C `union` {r <: {x1 :: t1, ..., xn :: tn}} +- e : r|}
         {|Gam, C +- e : {x1 :: t1, ..., xn :: tn} |}
 \end{infrules}
 
@@ -178,13 +178,13 @@ We introduce the following helper functions:
     \\
     \infrule[t-var]
         {|{pi1, ..., pin} => t = inst(Gam(x))|}
-        {|Gam, C union {pi1, ..., pin} +- x : t|}
+        {|Gam, C `union` {pi1, ..., pin} +- x : t|}
     \\
     \infrule[t-let]
         {| Gam, C' +- | | e1 : t1|\quad%
          | (sig, C'') = gen(Gam, C, t1) |\quad%
-         | Gam[x +-> sig], C union C'' +- | | e2 : t2 |}
-        {| Gam C union C'' +- let x = e1 in e2 : t2|}
+         | Gam[x +-> sig], C `union` C'' +- | | e2 : t2 |}
+        {| Gam C `union` C'' +- let x = e1 in e2 : t2|}
     \\
     \infrule[t-Bin-op]
         {| Gam, C +- | |e1 : top1 |\quad%
@@ -222,13 +222,13 @@ We introduce the following helper functions:
     \\
     \infrule[t-table]
         {| |}
-        {| Gam, C union {r <: col1 :: t1, ..., r <: coln :: tn} +- table R (col1 t1, ..., coln tn) with keys (k1, ..., kn) : [r] |}
+        {| Gam, C `union` {r <: col1 :: t1, ..., r <: coln :: tn} +- table R (col1 t1, ..., coln tn) with keys (k1, ..., kn) : [r] |}
     \\
     \infrule[t-rec]
         {| Gam, C +- | |e1 : t1 |\quad%
          | ... |\quad%
          | Gam, C +- | |en : tn |}
-        {|Gam, C union {r <: x1 :: t1, ..., r <: xn :: tn} +- {x1 = e1, ..., xn = en} : r|}
+        {|Gam, C `union` {r <: x1 :: t1, ..., r <: xn :: tn} +- {x1 = e1, ..., xn = en} : r|}
 \end{infrules}
 
 \begin{infrules}
