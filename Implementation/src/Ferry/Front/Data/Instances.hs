@@ -22,7 +22,7 @@ instance HasMeta Expr where
 
 instance HasMeta QCompr where
     getMeta (FerryCompr m _ _ _) = m
-    getMeta (HaskellCompr m)       = m
+    getMeta (HaskellCompr m _ _) = m
     
 instance VarContainer Pattern where
     vars (PVar _ v)  = [v]

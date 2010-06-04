@@ -28,8 +28,17 @@ data Expr where
     
 data QCompr where
     FerryCompr     :: Meta -> [(Pattern, Expr)] -> [BodyElem] -> ReturnElem -> QCompr
-    HaskellCompr :: Meta -> QCompr
+    HaskellCompr :: Meta -> Expr -> HaskellBody -> QCompr
      deriving (Show, Eq)
+     
+data HaskellBody where
+    HFor :: Meta -> Pattern -> Expr -> HaskellBody
+    HLet :: Meta -> Pattern -> Expr -> HaskellBody
+    HGuard :: Meta -> Expr -> HaskellBody
+    HCart :: Meta -> HaskellBody -> HaskellBody -> HaskellBody
+    HZip :: Meta -> HaskellBody -> HaskellBody -> HaskellBody
+     deriving (Show, Eq)
+    
 
 data BodyElem where
     For :: Meta -> [(Pattern, Expr)] -> BodyElem

@@ -229,7 +229,7 @@ normaliseQCompr (FerryCompr m bs bd r) =
                                                             return $ Return m' e' mi 
                               normaliseQCompr $ FerryCompr m (bs':bt) bd r'
                                                                                 
-normaliseQCompr (HaskellCompr _) = error "Not implemented HaskellCompr"
+normaliseQCompr (HaskellCompr _ _ _) = error "Not implemented HaskellCompr"
 
 normaliseReturn :: Meta -> (Pattern, Expr) -> ReturnElem -> Normalisation Expr
 normaliseReturn m (p1,e1) (Return m' e2 mi) = case mi of

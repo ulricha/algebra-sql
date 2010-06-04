@@ -88,6 +88,42 @@ queryComprehension = QComp <$> pMeta <*> ferryCompr
 
 -- Parse query comprehensions
 
+-- | Parser for Haskell list comprehensions
+
+haskellCompr :: Parser QCompr
+haskellCompr = HaskellCompr <$> pMeta <* symbol "[" <*> expr <* symbol "|" <*> haskellBody <* symbol "]"
+
+haskellBody :: Parser HaskellBody
+haskellBody = process <$> haskellSBody <*> many haskellTBody
+    where
+        process :: HaskellBody -> [HaskellBody -> HaskellBody] -> HaskellBody
+        process b [] = b
+        process b (x:xs) = process (x b) xs
+        
+haskellSBody :: Parser HaskellBody
+haskellSBody = try haskellSFor
+              <|> try haskellSLet
+              <|> try haskellSGuard
+              <|> parens haskellBody 
+
+haskellSFor :: Parser HaskellBody
+haskellSFor = HFor <$> pMeta <*> pattern <* symbol "<-" <*> expr
+
+haskellSLet :: Parser HaskellBody
+haskellSLet = HLet <$> pMeta <* reserved "let" <*> pattern <* symbol "=" <*> expr
+
+haskellSGuard :: Parser HaskellBody
+haskellSGuard = HGuard <$> pMeta <*> expr
+              
+haskellTBody :: Parser (HaskellBody -> HaskellBody)
+haskellTBody = try haskellTCart <|> try haskellTZip
+
+haskellTCart :: Parser (HaskellBody -> HaskellBody)
+haskellTCart = (\m b l -> HCart m l b) <$> pMeta <* symbol "," <*> haskellSBody
+
+haskellTZip :: Parser (HaskellBody -> HaskellBody)
+haskellTZip = (\m b l -> HZip m l b) <$> pMeta <* symbol "|" <*> haskellSBody
+
 -- | Parser for Ferry list comprehensions.
 ferryCompr :: Parser QCompr
 ferryCompr = (\m (For _ ps) b r -> FerryCompr m ps b r) <$> pMeta <*> forClause <*> many bodyClause <*> returnClause
