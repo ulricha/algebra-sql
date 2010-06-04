@@ -152,6 +152,8 @@
 %format t1n = "\ty{\tau_{1n}}"
 %format t2n = "\ty{\tau_{2n}}"
 
+%format qt = "\ty{\rho}"
+
 %format ar = "\ty{\alpha_0}"
 %format a1 = "\ty{\alpha_1}"
 %format a2 = "\ty{\alpha_2}"
@@ -199,3 +201,4 @@
 %format NotIn = "\notin"
 %format empty = "\empty"
 %format `union` = " \cup "
+%format preds = "\pi "

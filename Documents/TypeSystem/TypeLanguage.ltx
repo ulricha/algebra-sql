@@ -17,6 +17,7 @@ We define our type language as follows:
         \alt{|TyString|}
         \alt{|TyBool|}
         \alt{|a|}
+        \alt{|r|}
         \\
         \alt{|t -> t|}
         \\
@@ -27,9 +28,21 @@ We define our type language as follows:
         \alt{|{l1 :: t1, ..., ln :: tn}| \quad |n >= 1|}
 \end{syntaxdefs}
 
+We define qualified types as follows:
+\begin{syntaxdefs}
+    \syntaxdef{|qt|}
+        \alt{|preds => t|}
+\end{syntaxdefs}
+
 Type schemes are defined as:
 \begin{syntaxdefs}
     \syntaxdef{|sig|}
         \alt{|forall a. sig|}
-        \alt{|t|}
+        \alt{|qt|}
+\end{syntaxdefs}
+
+\begin{syntaxdefs}
+    \syntaxdef{|preds|}
+        \alt{|r <: {x :: t}|}
+        \alt{|C t|}
 \end{syntaxdefs}
