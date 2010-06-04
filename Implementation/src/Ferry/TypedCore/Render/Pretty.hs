@@ -15,3 +15,9 @@ instance Pretty FType where
   pretty (FRec a)  _ = "{" ++ mapIntersperseConcat (flip pretty 1) ", " (map snd $ S.toList a) ++ "}" 
   pretty (FFn t1 t2) _ = "(" ++ pretty t1 0 ++ ") -> " ++ pretty t2 0
   
+instance (Pretty a) => Pretty (Qual a) where
+    pretty (ps :=> t) _ = (mapIntersperseConcat (flip pretty 1) ", " ps) ++ " => " ++ pretty t 1   
+    
+instance Pretty Pred where
+    pretty (IsIn s t) _ = s ++ " " ++ pretty t 1
+    pretty (Has r f t) _ = pretty r 1 ++ " <: {" ++ f ++ " ::" ++ pretty t 1 ++ "}"  

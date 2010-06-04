@@ -9,25 +9,25 @@ data Op where
     Op :: String -> Op
 
 data CoreExpr where
-    BinOp :: FType -> Op -> CoreExpr -> CoreExpr -> CoreExpr
-    UnaOp :: FType -> Op -> CoreExpr -> CoreExpr
-    Constant :: FType -> Const -> CoreExpr
-    Var  :: FType -> String -> CoreExpr
-    App :: FType -> CoreExpr -> Param -> CoreExpr
-    Let :: FType -> String -> CoreExpr -> CoreExpr -> CoreExpr
-    Rec :: FType -> [RecElem] -> CoreExpr
-    Cons :: FType -> CoreExpr -> CoreExpr -> CoreExpr
-    Nil :: FType -> CoreExpr
-    Elem :: FType -> CoreExpr -> String -> CoreExpr
-    Table :: FType -> String -> [Column] -> [Key] -> CoreExpr
-    If :: FType -> CoreExpr -> CoreExpr -> CoreExpr -> CoreExpr
+    BinOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr -> CoreExpr
+    UnaOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr
+    Constant :: (Qual FType) -> Const -> CoreExpr
+    Var  :: (Qual FType) -> String -> CoreExpr
+    App :: (Qual FType) -> CoreExpr -> Param -> CoreExpr
+    Let :: (Qual FType) -> String -> CoreExpr -> CoreExpr -> CoreExpr
+    Rec :: (Qual FType) -> [RecElem] -> CoreExpr
+    Cons :: (Qual FType) -> CoreExpr -> CoreExpr -> CoreExpr
+    Nil :: (Qual FType) -> CoreExpr
+    Elem :: (Qual FType) -> CoreExpr -> String -> CoreExpr
+    Table :: (Qual FType) -> String -> [Column] -> [Key] -> CoreExpr
+    If :: (Qual FType) -> CoreExpr -> CoreExpr -> CoreExpr -> CoreExpr
 
 data RecElem where
-    RecElem :: FType -> String -> CoreExpr -> RecElem
+    RecElem :: (Qual FType) -> String -> CoreExpr -> RecElem
 
 data Param where
-     ParExpr :: FType -> CoreExpr -> Param
-     ParAbstr :: FType -> Pattern -> CoreExpr -> Param
+     ParExpr :: (Qual FType) -> CoreExpr -> Param
+     ParAbstr :: (Qual FType) -> Pattern -> CoreExpr -> Param
 
 data Pattern where
     PVar :: String -> Pattern

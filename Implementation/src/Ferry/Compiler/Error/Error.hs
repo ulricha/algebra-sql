@@ -15,6 +15,9 @@ data FerryError = NoSuchFile String
                 | FrontToCoreArgError String Arg 
                 | FrontToCoreRecError String RecElem
                 | UnificationError FType FType
+                | ClassAlreadyDefinedError String
+                | SuperClassNotDefined String [String]
+                | ClassNotDefined String
                 | ProcessComplete
         deriving Show
                 
