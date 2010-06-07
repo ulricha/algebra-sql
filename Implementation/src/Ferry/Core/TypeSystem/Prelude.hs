@@ -36,6 +36,8 @@ primitives = M.fromList $
              ,("*", Forall 1 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
              ,("/", Forall 1 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
              ,("%", Forall 1 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
-             ,("^", Forall 1 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))]
+             ,("^", Forall 1 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
+             ,("map", Forall 2 $ [] :=> (genT 1 .-> genT 2) .-> list (genT 1) .-> list (genT 2))
+             ,("concatMap", Forall 2 $ [] :=> (genT 1 .-> list (genT 2)) .-> list (genT 1) .-> list (genT 2))]
 
 

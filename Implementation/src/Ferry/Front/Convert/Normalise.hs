@@ -91,7 +91,7 @@ normaliseArg (AAbstr m p e) = restoreState $
                              e' <- normalise e
                              let p' = replacePattern p $ map snd ns
                              return $ AAbstr m [p'] e'
---FIX
+
 normIdent :: [Pattern] -> Normalisation [(Pattern, Identifier)]
 normIdent [] = return []
 normIdent (x:xs) = (\y ys -> (x, y):ys) <$> getFreshIdentifier <*> normIdent xs
@@ -153,7 +153,7 @@ normalise (List m es) = List m <$> mapM normalise es
 normalise (Elem m e i) = do 
                            e' <- normalise e
                            (_, s) <- get
-                           seq (putStrLn $ "hello " ++ show s) $ return $ Elem m e' i -- <$> normalise e <*> return i
+                           return $ Elem m e' i -- <$> normalise e <*> return i
 normalise (Lookup m e1 e2) = normalise $ App m (Var m "lookup") [AExpr (getMeta e2) e2, AExpr (getMeta e1) e1]
 normalise (Let m bs e) = restoreState $ 
                           case bs of

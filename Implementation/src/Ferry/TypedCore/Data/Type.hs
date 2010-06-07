@@ -13,10 +13,16 @@ data TyScheme where
     Forall :: Int -> Qual FType -> TyScheme
  deriving Show
 
-infixr 6 .->
+infix 5 :=> 
 
-(.->) :: Qual FType -> Qual FType -> Qual FType 
-t1 .-> t2 = fn t1 t2
+data Qual t where
+  (:=>) :: [Pred] -> t -> Qual t
+   deriving Show
+
+data Pred where
+ IsIn :: String -> FType -> Pred
+ Has :: FType -> String -> FType -> Pred
+  deriving (Show, Eq)
 
 data FType where
     FGen :: Int -> FType
@@ -31,37 +37,29 @@ data FType where
     FFn :: FType -> FType -> FType
  deriving (Show, Eq, Ord)
 
+int :: FType
+int = FInt
+float :: FType
+float = FFloat
+string :: FType
+string = FString
+bool ::  FType
+bool = FBool
+list :: FType -> FType
+list t = FList t
+var :: Ident -> FType
+var i = FVar i
+rec :: [(String, FType)] -> FType
+rec s = FRec s
+fn :: FType -> FType -> FType
+fn t1 t2 = FFn t1 t2
+genT :: Int -> FType
+genT i = FGen i  
 
-int :: Qual FType
-int = ([]) :=> FInt
-float :: Qual FType
-float = ([]) :=> FFloat
-string :: Qual FType
-string = ([]) :=> FString
-bool :: Qual FType
-bool = ([]) :=> FBool
-list :: Qual FType -> Qual FType
-list (q :=> t) = q :=> FList t
-var :: Ident -> Qual FType
-var i = ([]) :=> FVar i
-rec :: [(String, FType)] -> Qual FType
-rec s = ([]) :=> FRec s
-fn :: Qual FType -> Qual FType -> Qual FType
-fn (q1 :=> t1) (q2 :=> t2) = mergeQuals q1 q2 :=> FFn t1 t2
-genT :: Int -> Qual FType
-genT i = [] :=> FGen i  
+infixr 6 .->
 
-infix 5 :=> 
-
-data Qual t where
-    (:=>) :: [Pred] -> t -> Qual t
-     deriving Show
-    
-data Pred where
-    IsIn :: String -> FType -> Pred
-    Has :: FType -> String -> FType -> Pred
-     deriving (Show, Eq)
-
+(.->) :: FType -> FType -> FType 
+t1 .-> t2 = fn t1 t2
 
 class VarContainer a where
    ftv :: a -> S.Set Ident
