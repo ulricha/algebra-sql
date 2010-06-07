@@ -22,13 +22,13 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Error
 
-typeInfer :: TyEnv -> C.CoreExpr -> Either FerryError CoreExpr
-typeInfer gam c = fst $ runAlgW gam $ applyS $ algW c
-
+typeInfer :: TyEnv -> C.CoreExpr -> (Either FerryError CoreExpr, Subst)
+typeInfer gam c = runAlgW gam $ algW c
+                  
 algW :: C.CoreExpr -> AlgW CoreExpr
 algW (C.Constant c)  = Constant <$> typeOfConst c <*> pure c
 algW (C.Var x)       = Var <$> (inst $ lookupVariable x) <*> pure x
-algW (C.Let x c1 c2) = Let <$> liftM typeOf c2' <*> pure x <*> c1' <*> c2' 
+algW (C.Let x c1 c2) = applyS $ Let <$> liftM typeOf c2' <*> pure x <*> c1' <*> c2' 
  where
      c1' = algW c1
      c2' = do
@@ -41,7 +41,7 @@ algW (C.Cons c1 c2) = do
                         let (q1 :=> t1) = typeOf c1'
                         let (q2 :=> t2) = typeOf c2'
                         unify t2 $ FList t1
-                        return $ Cons ((mergeQuals q1 q2) :=> t2) c1' c2'
+                        applySubst $ Cons ((mergeQuals q1 q2) :=> t2) c1' c2'
 algW (C.If c1 c2 c3) = do
                          c1' <- algW c1
                          c2' <- algW c2
@@ -54,20 +54,20 @@ algW (C.If c1 c2 c3) = do
                          s' <- getSubst
                          unify (apply s' $ t2) (apply s' $ t3) 
                          s'' <- getSubst
-                         applyS $ return $ If (mergeQuals' [q1, q2, q3] :=> t2) c1' c2' c3'
+                         applySubst $ If (mergeQuals' [q1, q2, q3] :=> t2) c1' c2' c3'
 algW (C.Table n cs ks) = let recTys = L.sortBy (\(n1, t1) (n2, t2) -> compare n1 n2) $ map columnToRecElem cs
                              in if length (uniqueKeys recTys) == length recTys 
-                                 then pure $ Table ([] :=> FRec recTys) n (map columnToTyColumn cs) (map keyToTyKey ks)
+                                 then applySubst $ Table ([] :=> FRec recTys) n (map columnToTyColumn cs) (map keyToTyKey ks)
                                  else throwError $ RecordDuplicateFields (Just n) $ map columnToRecElem cs
 algW (C.Elem e i) = do
                        a <- liftM FVar freshTyVar
                        c1' <- algW e
                        let (q1 :=> t1) = typeOf c1'
                        case t1 of
-                            (FVar i) -> pure $ Elem ((mergeQuals q1 [Has (FVar i) i a]) :=> a) c1' i
+                            (FVar i) -> applySubst $ Elem ((mergeQuals q1 [Has (FVar i) i a]) :=> a) c1' i
                             (FRec els) -> case lookup i els of
                                             Nothing -> throwError $ RecordWithoutI t1 i
-                                            (Just a) -> pure $ Elem (q1 :=> a) c1' i
+                                            (Just a) -> applySubst $ Elem (q1 :=> a) c1' i
                             _       -> throwError $ NotARecordType t1
 algW (C.Rec elems) = do
                         els <- recElemsToTyRecElems elems
@@ -75,7 +75,7 @@ algW (C.Rec elems) = do
                             q = mergeQuals' qs
                             t = FRec $ L.sortBy (\(n1, t1) (n2, t2) -> compare n1 n2) nt
                          in if (length (uniqueKeys nt) == length nt) 
-                                then pure $ Rec (q :=> t) els
+                                then applySubst $ Rec (q :=> t) els
                                 else throwError $ RecordDuplicateFields Nothing nt
 algW (C.BinOp (C.Op o) e1 e2) = do
                             ot <- inst $ lookupVariable o
@@ -86,14 +86,15 @@ algW (C.BinOp (C.Op o) e1 e2) = do
                                 (q2 :=> t2) = typeOf e2'
                             unify t1 ot1
                             unify t2 ot2
-                            applyS $ pure $ BinOp (mergeQuals' [q, q1, q2] :=> otr) (Op o) e1' e2'
-algW (C.UnaOp (C.Op o) e1) = do
+                            applySubst $ BinOp (mergeQuals' [q, q1, q2] :=> otr) (Op o) e1' e2'
+algW (C.UnaOp (C.Op o) e1) = 
+                          do
                             ot <- inst $ lookupVariable o
                             let (q :=> FFn ot1 otr) = ot
                             e1' <- algW e1
                             let (q1 :=> t1) = typeOf e1'
                             unify t1 ot1
-                            pure $ UnaOp (mergeQuals q q1 :=> otr) (Op o) e1'
+                            applySubst $ UnaOp (mergeQuals q q1 :=> otr) (Op o) e1'
 algW (C.App e arg) = do
                          ar <- liftM FVar freshTyVar
                          e' <- algW e
@@ -103,13 +104,13 @@ algW (C.App e arg) = do
                          unify t1 (FFn ta ar)
                          let rqt = mergeQuals qt1 qta
                          t <- applyS $ pure (rqt :=> ta)
-                         pure $ App t e' arg'
+                         applySubst $ App t e' arg'
                          
 
 algWArg :: C.Param -> AlgW Param
 algWArg (C.ParExpr e) = do
-                        e' <- algW e
-                        pure $ ParExpr (typeOf e') e'  
+                         e' <- algW e
+                         applySubst $ ParExpr (typeOf e') e'  
 algWArg (C.ParAbstr p e) = do
                              let vars = getVars p
                              bindings <- foldr (\v r -> do
@@ -118,7 +119,7 @@ algWArg (C.ParAbstr p e) = do
                                                           return $ (v, t):r' 
                                                           ) (pure []) vars
                              e' <- foldr (\(v, t) r -> addToEnv v (Forall 0 t) r) (algW e) bindings  
-                             pure $ ParAbstr (typeOf e') (toPattern vars) e'
+                             applySubst $ ParAbstr (typeOf e') (toPattern vars) e'
                              
 toPattern :: [String] -> Pattern
 toPattern [x]   = PVar x
@@ -142,7 +143,7 @@ recElemToTyRecElem :: C.RecElem -> AlgW RecElem
 recElemToTyRecElem (C.RecElem s e) = do
                                         e' <- algW e
                                         let t = typeOf e'
-                                        pure $ RecElem t s e'    
+                                        applySubst $ RecElem t s e'    
                            
                             
 columnToTyColumn :: C.Column -> Column

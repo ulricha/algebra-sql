@@ -80,3 +80,6 @@ applyS v = do
              s <- getSubst
              v' <- v
              return $ apply s v'
+             
+applySubst :: Substitutable a => a -> AlgW a
+applySubst v = applyS $ pure v

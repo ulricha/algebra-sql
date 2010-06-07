@@ -14,6 +14,9 @@ import qualified Ferry.Core.Data.Core as C
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.Core.TypeSystem.AlgorithmW
 
+import System.IO.Unsafe
+import qualified Data.Map as M
+
 typeInferPhase :: C.CoreExpr -> PhaseResult CoreExpr
 typeInferPhase e = executeStep inferStage e
 
@@ -21,7 +24,7 @@ inferStage :: CompilationStep C.CoreExpr CoreExpr
 inferStage = CompilationStep "TypeInfer" TypeInfer step artefacts
     where
         step :: C.CoreExpr -> PhaseResult CoreExpr
-        step e = let res = typeInfer primitives e
+        step e = let (res, s) = typeInfer primitives e
                   in case res of
                        Left err -> newError err
                        Right expr -> return expr
