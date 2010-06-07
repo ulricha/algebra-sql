@@ -56,18 +56,18 @@ addToEnv x t a = do
                   gam <- getGamma
                   local (\ _ -> M.insert x t gam) a
 
-addSubstitution :: Subst -> Ident -> FType -> Subst
+addSubstitution :: Subst -> FType -> FType -> Subst
 addSubstitution s i t = let s' = M.singleton i t
                             s'' = M.map (apply s') s
                          in s' `M.union` s''
 
-updateSubstitution :: Ident -> FType -> AlgW ()
+updateSubstitution :: FType -> FType -> AlgW ()
 updateSubstitution v t = do
                             (i, s) <- get
                             let s' = addSubstitution s v t
                             put (i, s')
 
-localAddSubstitution :: Ident -> FType -> AlgW a -> AlgW a
+localAddSubstitution :: FType -> FType -> AlgW a -> AlgW a
 localAddSubstitution i t l = do
                             s <- getSubst
                             updateSubstitution i t

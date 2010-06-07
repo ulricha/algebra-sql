@@ -7,12 +7,7 @@ import Ferry.TypedCore.Data.Type
 import qualified Data.Set as S
 import qualified Data.Map as M
 
-type Subst = M.Map Ident FType
+type Subst = M.Map FType FType
 
 class Substitutable a where
-    apply' :: S.Set Ident -> Subst -> a -> a
-    
-apply :: Substitutable a => Subst -> a -> a
-apply s a = if M.null s
-              then a
-              else apply' S.empty s a
+    apply :: Subst -> a -> a

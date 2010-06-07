@@ -10,61 +10,59 @@ import qualified Data.Set as S
 import qualified Data.Map as M
 
 instance Substitutable FType where
-  apply' b s (FList t)             = FList $ apply' b s t 
-  apply' b s (FFn t1 t2)           = FFn (apply' b s t1) (apply' b s t2)
-  apply' b s (FRec rs)             = FRec $ S.map (\(n, t) -> (n, apply' b s t)) rs
-  apply' b s v@(FVar i) = case S.member i b || M.notMember i s of
-                                        True -> v
-                                        False -> s M.! i
-  apply' _ _    t                  = t -- If the substitution is not applied to a container type or variable just stop primitives cannot be substituted
+  apply s (FList t)             = FList $ apply s t 
+  apply s (FFn t1 t2)           = FFn (apply s t1) (apply s t2)
+  apply s (FRec rs)             = FRec $ map (\(n, t) -> (n, apply s t)) rs
+  apply s v@(FVar i) = case M.notMember v s of
+                            True -> v
+                            False -> s M.! v
+  apply _    t                  = t -- If the substitution is not applied to a container type or variable just stop primitives cannot be substituted
 
 instance Substitutable t => Substitutable (Qual t) where
-  apply' b s (preds:=> t) = (map (apply' b s) preds) :=> apply' b s t
+  apply s (preds:=> t) = (map (apply s) preds) :=> apply s t
   
 instance Substitutable Pred where
-  apply' b s (IsIn c t) = IsIn c $ apply' b s t
-  apply' b s (Has r n t) = Has (apply' b s r) n (apply' b s t)  
+  apply s (IsIn c t) = IsIn c $ apply s t
+  apply s (Has r n t) = Has (apply s r) n (apply s t)  
                           
 instance Substitutable TyScheme where
-  apply' b s (Forall i t) = Forall i $ apply' (S.insert i b) s t
-  apply' b s (QualTy t) = QualTy $ apply' b s t
+  apply s (Forall i t) = Forall i $ apply s t
     
 instance Substitutable TyEnv where
-  apply' b s m = M.map (apply' b s) m
+  apply s m = M.map (apply s) m
   
 instance Substitutable CoreExpr where
-  apply' b s (BinOp t o c1 c2) = BinOp (apply' b s t) o (apply' b s c1) (apply' b s c2)
-  apply' b s (UnaOp t o c)      = UnaOp (apply' b s t) o (apply' b s c)
-  apply' b s (Constant t c)    = Constant (apply' b s t) c
-  apply' b s (Var t x)         = Var (apply' b s t) x
-  apply' b s (App t c a)       = App (apply' b s t) (apply' b s c) (apply' b s a)
-  apply' b s (Let t x c1 c2)   = Let (apply' b s t) x (apply' b s c1) (apply' b s c2)
-  apply' b s (Rec t es)        = Rec (apply' b s t) $ map (apply' b s) es
-  apply' b s (Cons t c1 c2)    = Cons (apply' b s t) (apply' b s c1) (apply' b s c2)
-  apply' b s (Nil t)           = Nil (apply' b s t)
-  apply' b s (Elem t c f)      = Elem (apply' b s t) (apply' b s c) f
-  apply' b s (Table t n c k)   = Table (apply' b s t) n c k
-  apply' b s (If t c1 c2 c3)   = If (apply' b s t) (apply' b s c1) (apply' b s c2) (apply' b s c3)
+  apply s (BinOp t o c1 c2) = BinOp (apply s t) o (apply s c1) (apply s c2)
+  apply s (UnaOp t o c)      = UnaOp (apply s t) o (apply s c)
+  apply s (Constant t c)    = Constant (apply s t) c
+  apply s (Var t x)         = Var (apply s t) x
+  apply s (App t c a)       = App (apply s t) (apply s c) (apply s a)
+  apply s (Let t x c1 c2)   = Let (apply s t) x (apply s c1) (apply s c2)
+  apply s (Rec t es)        = Rec (apply s t) $ map (apply s) es
+  apply s (Cons t c1 c2)    = Cons (apply s t) (apply s c1) (apply s c2)
+  apply s (Nil t)           = Nil (apply s t)
+  apply s (Elem t c f)      = Elem (apply s t) (apply s c) f
+  apply s (Table t n c k)   = Table (apply s t) n c k
+  apply s (If t c1 c2 c3)   = If (apply s t) (apply s c1) (apply s c2) (apply s c3)
 
 instance Substitutable Param where
-    apply' b s (ParExpr t c) = ParExpr (apply' b s t) (apply' b s c)
-    apply' b s (ParAbstr t pa c) = ParAbstr (apply' b s t) pa (apply' b s c)
+    apply s (ParExpr t c) = ParExpr (apply s t) (apply s c)
+    apply s (ParAbstr t pa c) = ParAbstr (apply s t) pa (apply s c)
         
 instance Substitutable RecElem where
-    apply' b s (RecElem t x c) = RecElem (apply' b s t) x (apply' b s c)
+    apply s (RecElem t x c) = RecElem (apply s t) x (apply s c)
 
 {- | Instances of VarContainer class-}
   
 instance VarContainer FType where
   ftv (FVar a)    = S.singleton a
   ftv (FList t)   = ftv t
-  ftv (FRec s)    = S.unions $ map (ftv . snd) $ S.toList s
+  ftv (FRec s)    = S.unions $ map (ftv . snd) s
   ftv (FFn t1 t2) = ftv t1 `S.union` ftv t2
   ftv _           = S.empty
 
 instance VarContainer TyScheme where
-  ftv (Forall i t) = S.delete i $ ftv t 
-  ftv (QualTy t)    = ftv t
+  ftv (Forall i t)  = ftv t 
 
 instance VarContainer t => VarContainer (Qual t) where
   ftv (preds :=> t) = S.unions $ (ftv t):(map ftv preds)
@@ -89,3 +87,7 @@ instance HasType CoreExpr where
   typeOf (Elem t c f)      = t
   typeOf (Table t n c k)   = t
   typeOf (If t c1 c2 c3)   = t
+  
+instance HasType Param where
+    typeOf (ParExpr t e) = t
+    typeOf (ParAbstr t p e) = t

@@ -10,8 +10,7 @@ import qualified Data.List as L
 type TyEnv = M.Map Ident TyScheme
 
 data TyScheme where
-    Forall :: Ident -> TyScheme -> TyScheme
-    QualTy :: Qual FType -> TyScheme
+    Forall :: Int -> Qual FType -> TyScheme
 
 infixr 6 .->
 
@@ -19,6 +18,7 @@ infixr 6 .->
 t1 .-> t2 = fn t1 t2
 
 data FType where
+    FGen :: Int -> FType
     FInt :: FType
     FFloat :: FType
     FString :: FType
@@ -26,8 +26,7 @@ data FType where
     FList :: FType -> FType
     FVar :: Ident -> FType
     FRTy :: Ident -> FType -> FType
-    FRec :: S.Set (String, FType) -> FType
-    FRecV :: Ident -> FType 
+    FRec :: [(String, FType)] -> FType
     FFn :: FType -> FType -> FType
  deriving (Show, Eq, Ord)
 
@@ -44,12 +43,12 @@ list :: Qual FType -> Qual FType
 list (q :=> t) = q :=> FList t
 var :: Ident -> Qual FType
 var i = ([]) :=> FVar i
-rec :: S.Set (String, FType) -> Qual FType
+rec :: [(String, FType)] -> Qual FType
 rec s = ([]) :=> FRec s
-rec' :: [Pred] -> Ident -> Qual FType
-rec' f r = (f) :=> FRecV r
 fn :: Qual FType -> Qual FType -> Qual FType
-fn (q1 :=> t1) (q2 :=> t2) = mergeQuals q1 q2 :=> FFn t1 t2  
+fn (q1 :=> t1) (q2 :=> t2) = mergeQuals q1 q2 :=> FFn t1 t2
+genT :: Int -> Qual FType
+genT i = [] :=> FGen i  
 
 infix 5 :=> 
 
