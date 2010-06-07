@@ -8,6 +8,7 @@ import Ferry.Common.Render.Pretty
 import Ferry.TypedCore.Render.Pretty
 import Ferry.TypedCore.Data.Instances
 import Ferry.TypedCore.Data.Type
+import Ferry.Core.TypeSystem.Prelude
 
 import qualified Ferry.Core.Data.Core as C
 import Ferry.TypedCore.Data.TypedCore
@@ -20,7 +21,7 @@ inferStage :: CompilationStep C.CoreExpr CoreExpr
 inferStage = CompilationStep "TypeInfer" TypeInfer step artefacts
     where
         step :: C.CoreExpr -> PhaseResult CoreExpr
-        step e = let (res, _) = runAlgW $ algW e
+        step e = let res = typeInfer primitives e
                   in case res of
                        Left err -> newError err
                        Right expr -> return expr

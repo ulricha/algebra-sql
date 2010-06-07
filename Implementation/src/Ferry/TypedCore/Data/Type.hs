@@ -11,6 +11,7 @@ type TyEnv = M.Map Ident TyScheme
 
 data TyScheme where
     Forall :: Int -> Qual FType -> TyScheme
+ deriving Show
 
 infixr 6 .->
 
@@ -54,11 +55,12 @@ infix 5 :=>
 
 data Qual t where
     (:=>) :: [Pred] -> t -> Qual t
+     deriving Show
     
 data Pred where
     IsIn :: String -> FType -> Pred
     Has :: FType -> String -> FType -> Pred
-     deriving Eq
+     deriving (Show, Eq)
 
 
 class VarContainer a where

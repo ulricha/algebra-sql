@@ -22,10 +22,10 @@ instance Applicative (AlgW) where
   pure  = return
   (<*>) = ap
 
-runAlgW :: Substitutable a => AlgW a -> (Either FerryError a, Subst)
-runAlgW a = (x, s)
+runAlgW :: Substitutable a => TyEnv -> AlgW a -> (Either FerryError a, Subst)
+runAlgW gam a = (x, s)
    where
-    (x, (_, s)) = runState (runReaderT (runErrorT $ applyS a) M.empty) (1, M.empty)
+    (x, (_, s)) = runState (runReaderT (runErrorT $ applyS a) gam) (1, M.empty)
 
 getGamma :: AlgW TyEnv
 getGamma = applyS ask
@@ -67,11 +67,11 @@ updateSubstitution v t = do
                             let s' = addSubstitution s v t
                             put (i, s')
 
-localAddSubstitution :: FType -> FType -> AlgW a -> AlgW a
+localAddSubstitution :: Substitutable a => FType -> FType -> AlgW a -> AlgW a
 localAddSubstitution i t l = do
                             s <- getSubst
                             updateSubstitution i t
-                            v <- l
+                            v <- applyS l
                             putSubst s
                             return v
 

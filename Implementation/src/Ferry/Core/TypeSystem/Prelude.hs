@@ -3,6 +3,8 @@ module Ferry.Core.TypeSystem.Prelude where
 import Ferry.TypedCore.Data.TypeClasses
 import Ferry.TypedCore.Data.Type
 
+import qualified Data.Map as M
+
 baseEnv :: ClassEnv
 baseEnv = case addAll emptyClassEnv of
             Right a -> a
@@ -26,3 +28,14 @@ baseEnv = case addAll emptyClassEnv of
          <:> addInstance [] (IsIn "Ord" FBool)
          <:> addInstance [] (IsIn "Ord" FString)
          <:> addInstance [IsIn "Ord" $ FVar "a"] (IsIn "Ord" $ FList $ FVar "a")
+         
+primitives :: TyEnv
+primitives = M.fromList $
+             [("+", Forall 1 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
+             ,("-", Forall 1 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
+             ,("*", Forall 1 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
+             ,("/", Forall 1 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
+             ,("%", Forall 1 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
+             ,("^", Forall 1 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))]
+
+

@@ -16,6 +16,9 @@ instance Substitutable FType where
   apply s v@(FVar i) = case M.notMember v s of
                             True -> v
                             False -> s M.! v
+  apply s v@(FGen i) = case M.notMember v s of
+                            True -> v
+                            False -> s M.! v
   apply _    t                  = t -- If the substitution is not applied to a container type or variable just stop primitives cannot be substituted
 
 instance Substitutable t => Substitutable (Qual t) where

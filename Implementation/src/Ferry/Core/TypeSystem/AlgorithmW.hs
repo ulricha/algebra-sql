@@ -1,4 +1,4 @@
-module Ferry.Core.TypeSystem.AlgorithmW (runAlgW, algW) where
+module Ferry.Core.TypeSystem.AlgorithmW (typeInfer) where
 
 import Ferry.Core.TypeSystem.Types    
 import qualified Ferry.Core.Data.Core as C
@@ -14,6 +14,7 @@ import Ferry.Core.TypeSystem.Unification
 
 import qualified Data.Set as S
 import qualified Data.List as L
+import qualified Data.Map as M
 
 import Control.Applicative hiding (Const(..))
 import Control.Monad (MonadPlus(..), ap)
@@ -21,6 +22,8 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Error
 
+typeInfer :: TyEnv -> C.CoreExpr -> Either FerryError CoreExpr
+typeInfer gam c = fst $ runAlgW gam $ applyS $ algW c
 
 algW :: C.CoreExpr -> AlgW CoreExpr
 algW (C.Constant c)  = Constant <$> typeOfConst c <*> pure c
@@ -83,7 +86,7 @@ algW (C.BinOp (C.Op o) e1 e2) = do
                                 (q2 :=> t2) = typeOf e2'
                             unify t1 ot1
                             unify t2 ot2
-                            pure $ BinOp (mergeQuals' [q, q1, q2] :=> otr) (Op o) e1' e2'
+                            applyS $ pure $ BinOp (mergeQuals' [q, q1, q2] :=> otr) (Op o) e1' e2'
 algW (C.UnaOp (C.Op o) e1) = do
                             ot <- inst $ lookupVariable o
                             let (q :=> FFn ot1 otr) = ot
@@ -124,12 +127,7 @@ toPattern xs    = Pattern xs
 getVars :: C.Pattern -> [String]
 getVars (C.PVar v) = [v]
 getVars (C.Pattern p) = p                     
-                    
-{-
-ParExpr :: CoreExpr -> Param
-ParAbstr :: Pattern -> CoreExpr -> Param
--}
-                                
+                           
 uniqueKeys :: Eq k => [(k, a)] -> [(k, a)]
 uniqueKeys l1 = L.nubBy (\(k1, _) (k2, _) -> k1 == k2) l1  
 
@@ -161,10 +159,6 @@ typeToFType C.TBool = FBool
 
 keyToTyKey :: C.Key -> Key
 keyToTyKey (C.Key k) = Key k                     
-{-  
-
-App :: CoreExpr -> Param -> CoreExpr
--}
 
 typeOfConst :: Const -> AlgW (Qual FType)
 typeOfConst (CInt _) = pure $ [] :=> FInt
@@ -187,22 +181,9 @@ gen s = do
 inst :: AlgW TyScheme -> AlgW (Qual FType)
 inst s = do
             s' <- s
+            subst <- getSubst
             case s' of
-                Forall 0 t -> pure t
+                Forall 0 t -> applyS $ pure t
                 Forall i t -> do
                                 freshVar <- freshTyVar
-                                localAddSubstitution (FGen i) (FVar freshVar) (applyS (inst $ pure $ Forall (i-1) t))
-
-{-
-     Forall :: Ident -> TyScheme -> TyScheme
-     FType :: FType -> TyScheme  
-           FGen :: Int -> FType
-           FInt :: FType
-           FFloat :: FType
-           FString :: FType
-           FBool :: FType
-           FList :: FType -> FType
-           FVar :: Ident -> FType
-           FRec :: [(String, FType)] -> FType 
-           FFn :: FType -> FType -> FType
--}
+                                localAddSubstitution (FGen i) (FVar freshVar) (inst $ pure $ Forall (i-1) t)
