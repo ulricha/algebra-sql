@@ -44,20 +44,18 @@ The algorithm use substitutions to recover type information. A substitution is a
                                in  (subst3 t2, subst3 . subst2 . subst1, subst3 . subst2 (c1 `union` c2))
  W(Gam, e.i)               =  let  a be fresh
                                    (t1, subst, c) = W(Gam, e)
-                                   (tr, c') = (lookup i t1 c, c)              if i In c
-                                   (tr, c') = (a, (t1 <: {i :: a}) `union` c)  otherwise
+                                   (t', c') = case t1 of
+                                                {_}       -> (lookup i t1 c, c) 
+                                                otherwise -> (a1, {a1 <: i::a} `union` c)
                                in  (tr, subst, c')
  W(Gam, table r (col1 t1, ..., coln tn) with keys (k1, ..., kn))
-                           =  let  r be fresh
-                                   c = {r <: {col1 :: t1}, ..., r <: {coln :: tn}}
-                               in  ([r], id, c)
+                           =  ([{col1 :: t1, ..., coln :: tn}], id, c)
  W(Gam, {x1 = e1, ..., xn = en})
-                           =  let  r be fresh
-                                   (t1, subst1, c1) = W(Gam, e1)
+                           =  let  (t1, subst1, c1) = W(Gam, e1)
                                    ...
                                    (tn, substn, cn) = W(Gam, en)
-                                   c0 = {r <: {x1 :: t1}, ..., r <: {xn :: tn}}
-                               in  (r, substn . ... . subst1, c0 `union` c1 `union` ... `union` cn) 
+                                   subst = substn . ... . subst1
+                               in  (subst {x1 :: t1, ..., xn :: tn}, c1 `union` ... `union` cn) 
  W(Gam, if e1 then e2 else e3)
                            =  let  (t1, subst1, c1) = W(Gam, e1)
                                    (t2, subst2, c2) = W(subst1 Gam, e2)
@@ -66,5 +64,8 @@ The algorithm use substitutions to recover type information. A substitution is a
                                    subst5 = U(subst4 . subst3 t2, subst4 t3)
                                    subst = subst5 . subst4 . subst3 . subst2 . subst1
                                in  (subst5 . subst4 t3, subst, subst (c1 `union` c2 `union` c3))
-    
+ W(Gam, \(x1,..., xn) -> e)
+                           =  let  a1 ... an be fresh
+                                   (t, subst , c) = W(Gam[x1 +-> a1, ..., xn +-> an], e)
+                               in  (subst (a1 -> ... -> an -> t), subst, c)    
 \end{code}

@@ -12,6 +12,7 @@ Looking up the type of |x| in |Gam| is denoted as |Gam(x)|. This would if |x In 
 We define our type language as follows:
 \begin{syntaxdefs}
     \syntaxdef{|t|}
+        \alt{|TyGeni|}
         \alt{|TyInt|}
         \alt{|TyFloat|}
         \alt{|TyString|}
@@ -37,7 +38,7 @@ We define qualified types as follows:
 Type schemes are defined as:
 \begin{syntaxdefs}
     \syntaxdef{|sig|}
-        \alt{|forall a. sig|}
+        \alt{|forall i. sig|}
         \alt{|qt|}
 \end{syntaxdefs}
 

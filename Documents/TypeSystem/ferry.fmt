@@ -39,6 +39,9 @@
 %format FFloat = "\textbf{Float}"
 %format FBool = "\textbf{Bool}"
 
+%format TyGeni = "\ty{\textbf{Gen}_i}"
+%format TyGen1 = "\ty{\textbf{Gen}_1}"
+%format TyGenn = "\ty{\textbf{Gen}_n}"
 %format TyString = "\ty{\textbf{String}}"
 %format TyInt = "\ty{\textbf{Int}}"
 %format TyFloat = "\ty{\textbf{Float}}"

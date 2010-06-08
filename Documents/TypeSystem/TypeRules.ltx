@@ -121,6 +121,7 @@ We introduce the following helper functions:
 \begin{figure}[!h]
 \begin{boxedminipage}{\columnwidth}
     \begin{code}
+        ftv(TyGeni)                     =  empty
         ftv(TyInt)                      =  empty
         ftv(TyFloat)                    =  empty
         ftv(TyString)                   =  empty
@@ -137,7 +138,7 @@ We introduce the following helper functions:
 \begin{figure}[!h]
 \begin{boxedminipage}{\columnwidth}
     \begin{code}
-        ftv(forall a. sig)  = ftv(sig)\\{a}
+        ftv(forall i. sig)  = ftv(sig)
     \end{code}
   \end{boxedminipage}
   \caption{Free type variables in type schemes}
@@ -147,11 +148,11 @@ We introduce the following helper functions:
 \begin{boxedminipage}{\columnwidth}
     \begin{code}
         inst :: TyScheme -> Ty
-        inst (forall a1 ... an. qt) = [a1 +-> a1']...[an +-> an'] qt
+        inst (forall n. qt) = [TyGen1 +-> a1']...[TyGenn +-> an'] qt
                 where a1' ... an' are fresh
             
         gen :: TyEnv -> CEnv -> Ty -> (TyScheme, CEnv)
-        gen(Gam, t) = forall a1 ... an. qt
+        gen(Gam, t) = forall n. [a1 +-> TyGen1]...[TyGenn +-> an] qt
                 where {a1 ... an} = ftv(qt) - ftv(Gam)
     \end{code}
   \end{boxedminipage}
@@ -222,13 +223,13 @@ We introduce the following helper functions:
     \\
     \infrule[t-table]
         {| |}
-        {| Gam, C `union` {r <: col1 :: t1, ..., r <: coln :: tn} +- table R (col1 t1, ..., coln tn) with keys (k1, ..., kn) : [r] |}
+        {| Gam, C +- table R (col1 t1, ..., coln tn) with keys (k1, ..., kn) : [{col1 :: t1, ..., coln :: tn}] |}
     \\
     \infrule[t-rec]
         {| Gam, C +- | |e1 : t1 |\quad%
          | ... |\quad%
          | Gam, C +- | |en : tn |}
-        {|Gam, C `union` {r <: x1 :: t1, ..., r <: xn :: tn} +- {x1 = e1, ..., xn = en} : r|}
+        {|Gam, C +- {x1 = e1, ..., xn = en} : {x1 :: t1, ..., xn :: tn}|}
 \end{infrules}
 
 \begin{infrules}
