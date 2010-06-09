@@ -119,8 +119,10 @@ algWArg (C.ParAbstr p e) = do
                                                           r' <- r
                                                           return $ (v, t):r' 
                                                           ) (pure []) vars
-                             e' <- foldr (\(v, t) r -> addToEnv v (Forall 0 t) r) (algW e) bindings  
-                             applySubst $ ParAbstr (typeOf e') (toPattern vars) e'
+                             e' <- foldr (\(v, t) r -> addToEnv v (Forall 0 t) r) (algW e) bindings
+                             let (q :=> rt) = typeOf e'
+                             let t = q :=> (foldr (\(_ :=> t) r -> FFn t r) rt bindings)  
+                             applySubst $ ParAbstr t (toPattern vars) e'
                              
 toPattern :: [String] -> Pattern
 toPattern [x]   = PVar x

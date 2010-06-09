@@ -70,7 +70,7 @@ relationship = Relationship <$> pMeta <* reserved "relationship" <* reserved "fr
                 <*> key <* reserved "eq" <*> key
 
 arg :: Parser Arg
-arg = AExpr <$> pMeta <*> atom
+arg = AExpr <$> pMeta <*> try atom
         <|> abstract
 
 -- | Parse function abstraction
