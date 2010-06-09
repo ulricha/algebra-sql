@@ -38,6 +38,18 @@ primitives = M.fromList $
              ,("%", Forall 1 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
              ,("^", Forall 1 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
              ,("map", Forall 2 $ [] :=> (genT 1 .-> genT 2) .-> list (genT 1) .-> list (genT 2))
-             ,("concatMap", Forall 2 $ [] :=> (genT 1 .-> list (genT 2)) .-> list (genT 1) .-> list (genT 2))]
+             ,("concatMap", Forall 2 $ [] :=> (genT 1 .-> list (genT 2)) .-> list (genT 1) .-> list (genT 2))
+             ,("single", Forall 1 $ [] :=> (list $ genT 1) .-> genT 1)
+             ,("filter", Forall 1 $ [] :=> (genT 1 .-> bool) .-> (list $ genT 1) .-> (list $ genT 1))
+             ,("lookup", Forall 2 $ [IsIn "Eq" (genT 1)] :=> list (rec [("1", genT 1), ("2", genT 2)]) .-> genT 1 .-> genT 2)
+             ,("groupByN", Forall 1 $ [] :=> genT 1)
+             ,("orderBy", Forall 2 $ [] :=> (genT 1 .-> genT 2) .-> (list $ genT 1) .-> (list $ genT 2))
+             ,("orderByDescending", Forall 2 $ [] :=> (genT 1 .-> genT 2) .-> (list $ genT 1) .-> (list $ genT 2))
+             ,("thenBy", Forall 2 $ [] :=> (genT 1 .-> genT 2) .-> (list $ genT 1) .-> (list $ genT 2))
+             ,("thenByDescending", Forall 2 $ [] :=> (genT 1 .-> genT 2) .-> (list $ genT 1) .-> (list $ genT 2))
+             ,("concatMap", Forall 2 $ [] :=> (genT 1 .-> (list $ genT 2)) .-> (list $ genT 1) .-> (list $ genT 2))
+             ,("concatMap'", Forall 3 $ [] :=> (genT 1 .-> (list $ genT 2)) .-> (genT 1 .-> genT 2 .-> genT 3) .-> (list $ genT 1) .-> (list $ genT 3))
+             ,("groupWith", Forall 3 $ [] :=> (genT 1 .-> genT 2) .-> (genT 1 .-> genT 3) .-> (list $ genT 1) .-> (list $ rec [("1", genT 3), ("2", list $ genT 2)]))
+             ]
 
 
