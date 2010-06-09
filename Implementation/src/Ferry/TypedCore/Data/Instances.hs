@@ -63,19 +63,29 @@ instance VarContainer FType where
   ftv (FRec s)    = S.unions $ map (ftv . snd) s
   ftv (FFn t1 t2) = ftv t1 `S.union` ftv t2
   ftv _           = S.empty
-
+  hasQVar (FList t) = hasQVar t
+  hasQVar (FRec s)  = and $ map (hasQVar . snd) s
+  hasQVar (FFn t1 t2) = hasQVar t1 && hasQVar t2
+  hasQVar (FGen _) = True
+  hasQVar _        = False
+  
 instance VarContainer TyScheme where
   ftv (Forall i t)  = ftv t 
+  hasQVar (Forall i t) = if i > 0 then True else False
 
 instance VarContainer t => VarContainer (Qual t) where
   ftv (preds :=> t) = S.unions $ (ftv t):(map ftv preds)
+  hasQVar (preds :=> t) = (&&) (hasQVar t) $ and $ map hasQVar preds 
 
 instance VarContainer Pred where
   ftv (IsIn c t) = ftv t
   ftv (Has t _ t2) = ftv t `S.union` ftv t2
+  hasQVar (IsIn _ t) = hasQVar t
+  hasQVar (Has t _ t2) = hasQVar t && hasQVar t2
 
 instance VarContainer TyEnv where
   ftv m = S.unions $ M.elems $ M.map ftv m
+  hasQVar m = and $ map (hasQVar . snd) $ M.assocs m
   
 instance HasType CoreExpr where
   typeOf (BinOp t o c1 c2) = t

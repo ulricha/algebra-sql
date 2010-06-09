@@ -10,6 +10,7 @@ import Ferry.Compiler.Error.Error
 import Ferry.TypedCore.Data.Instances
 import Ferry.Front.Data.Base hiding (VarContainer)
 import Ferry.Core.TypeSystem.Unification
+import Ferry.Core.TypeSystem.ContextReduction
 
 
 import qualified Data.Set as S
@@ -176,8 +177,9 @@ gen s = do
            let freeInGam = ftv gam
            let quant = S.toList $ freeInT S.\\ freeInGam
            let substs = zip quant [FGen i | i <- [1..]]
-           qt <- foldr (\(i, q) -> localAddSubstitution (FVar i) q) (applyS $ pure s') substs
-           return $ (error "Predicates at gen not yet handled properly", Forall (length substs) qt)
+           qualT <- foldr (\(i, q) -> localAddSubstitution (FVar i) q) (applyS $ pure s') substs
+           let (qg, qt) = reduce qualT M.empty
+           return $ (qg, Forall (length substs) $ qt)
            
 inst :: AlgW TyScheme -> AlgW (Qual FType)
 inst s = do

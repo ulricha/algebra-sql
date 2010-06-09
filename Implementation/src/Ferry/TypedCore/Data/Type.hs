@@ -63,6 +63,7 @@ t1 .-> t2 = fn t1 t2
 
 class VarContainer a where
    ftv :: a -> S.Set Ident
+   hasQVar :: a -> Bool
    
 class HasType a where
   typeOf :: a -> Qual FType
