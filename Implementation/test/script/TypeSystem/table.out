@@ -1,0 +1,1 @@
+  => [{eff :: Float, injured :: Bool, name :: String, number :: Int, team :: String}]

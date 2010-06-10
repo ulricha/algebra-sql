@@ -58,7 +58,7 @@ algW (C.If c1 c2 c3) = do
                          applySubst $ If (mergeQuals' [q1, q2, q3] :=> t2) c1' c2' c3'
 algW (C.Table n cs ks) = let recTys = L.sortBy (\(n1, t1) (n2, t2) -> compare n1 n2) $ map columnToRecElem cs
                              in if length (uniqueKeys recTys) == length recTys 
-                                 then applySubst $ Table ([] :=> FRec recTys) n (map columnToTyColumn cs) (map keyToTyKey ks)
+                                 then applySubst $ Table ([] :=> (list $ FRec recTys)) n (map columnToTyColumn cs) (map keyToTyKey ks)
                                  else throwError $ RecordDuplicateFields (Just n) $ map columnToRecElem cs
 algW (C.Elem e i) = do
                        a <- liftM FVar freshTyVar

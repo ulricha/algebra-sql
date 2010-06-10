@@ -9,7 +9,8 @@ FERRYC=../../bin/ferryc
 /bin/sh runTests Parser $FERRYC "-p -n" ; X1=$?
 /bin/sh runTests Normalise $FERRYC "--prettyNorm -s3" ; X2=$?
 /bin/sh runTests Core $FERRYC "--dotCore -s10" ; X3=$?
-TOTAL=$[$X1 + $X2 + $X3]
+/bin/sh runTests TypeSystem $FERRYC "-t -s20" ; X4=$?
+TOTAL=$[$X1 + $X2 + $X3 + $X4]
 echo "Test failures: $TOTAL"
 if [ "$TOTAL" = "0" ];
 then exit 0
