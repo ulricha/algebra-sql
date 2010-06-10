@@ -1,0 +1,3 @@
+let players = table Players (number Int, name String, team String) with keys ((number))
+ in let teams = table Team (number Int, name String, fans Int) with keys ((number))
+     in relationship from one teams to many players by (name) eq (team)

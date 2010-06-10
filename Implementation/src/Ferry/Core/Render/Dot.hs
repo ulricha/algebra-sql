@@ -49,7 +49,7 @@ toDot (Let s e1 e2) = do
                        id0 <- getFreshId
                        id1 <- toDot e1
                        id2 <- toDot e2
-                       addNode $ Node nId [Label $ SLabel s, Color Black, Shape Rect, TextColor Black]
+                       addNode $ Node id0 [Label $ SLabel s, Color Red, Shape Rect, TextColor White]
                        addNode $ Node nId [Label $ SLabel "Let", Color Blue, Shape Rect]
                        addEdge $ Edge nId [id0, id1, id2]
                        return nId
@@ -82,8 +82,8 @@ toDot (Table n cs ks) = do
                          nId <- getFreshId
                          let label = VLabel $ ((HLabel [SLabel "Table:", SLabel n])
                                             : [HLabel [SLabel $ n ++ "::", SLabel $ prettyTy t ] | (Column n t) <- cs])
-                                            ++ [SLabel  $ show k | Key k <- ks]
-                         addNode $ Node nId [Label label, Color Yellow, Shape Rect]
+                                            ++ [SLabel $ keyToString k | k <- ks]
+                         addNode $ Node nId [Shape Rect, Label label, Color Yellow]
                          return nId
 toDot (If e1 e2 e3) = do
                         nId <- getFreshId
@@ -121,3 +121,6 @@ recToDot (RecElem s e) = do
                           addNode $ Node nId [Label $ SLabel s, Color Red, Shape Oval]
                           addEdge $ Edge nId [eId]
                           return nId
+
+keyToString :: Key -> String
+keyToString (Key ks) = "(" ++ (concat $ L.intersperse ", " ks) ++ ")"

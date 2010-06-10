@@ -35,7 +35,7 @@ algW (C.Let x c1 c2) = applyS $ Let <$> liftM typeOf c2' <*> pure x <*> c1' <*> 
      c2' = do
             (q :=> t) <- liftM typeOf c1'
             addToEnv x (Forall 0 $ q :=> t) (algW c2)
-algW (C.Nil) = Nil <$> liftM (\v -> [] :=> FVar v) freshTyVar
+algW (C.Nil) = Nil <$> liftM (\v -> [] :=> (list $ FVar v)) freshTyVar
 algW (C.Cons c1 c2) = do
                         c1' <- algW c1
                         c2' <- algW c2
@@ -61,11 +61,11 @@ algW (C.Table n cs ks) = let recTys = L.sortBy (\(n1, t1) (n2, t2) -> compare n1
                                  then applySubst $ Table ([] :=> (list $ FRec recTys)) n (map columnToTyColumn cs) (map keyToTyKey ks)
                                  else throwError $ RecordDuplicateFields (Just n) $ map columnToRecElem cs
 algW (C.Elem e i) = do
-                       a <- liftM FVar freshTyVar
+                       fresh <- liftM FVar freshTyVar
                        c1' <- algW e
                        let (q1 :=> t1) = typeOf c1'
                        case t1 of
-                            (FVar i) -> applySubst $ Elem ((mergeQuals q1 [Has (FVar i) i a]) :=> a) c1' i
+                            (FVar v) -> applySubst $ Elem ((mergeQuals q1 [Has t1 i fresh]) :=> fresh) c1' i
                             (FRec els) -> case lookup i els of
                                             Nothing -> throwError $ RecordWithoutI t1 i
                                             (Just a) -> applySubst $ Elem (q1 :=> a) c1' i
@@ -104,7 +104,7 @@ algW (C.App e arg) = do
                              (qta :=> ta) = typeOf arg'
                          unify t1 (FFn ta ar)
                          let rqt = mergeQuals qt1 qta
-                         t <- applyS $ pure (rqt :=> ta)
+                         t <- applyS $ pure (rqt :=> ar)
                          applySubst $ App t e' arg'
                          
 

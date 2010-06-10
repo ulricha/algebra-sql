@@ -77,7 +77,7 @@ propsDot (TextColor White)    = "color=white"
 propsDot (Label l)            = "label=\"" ++ labelDot l ++ "\""
 
 labelDot :: Label -> String
-labelDot (SLabel s) = s
+labelDot (SLabel s) = s 
 labelDot (HLabel ls) = concat $ L.intersperse " | " $ map labelDot ls
 labelDot (VLabel ls) = "{" ++ (concat $ L.intersperse " | " $ map (\l -> "{" ++ labelDot l ++ "}") ls) ++"}"
 
