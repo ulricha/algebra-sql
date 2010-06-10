@@ -68,10 +68,3 @@ class VarContainer a where
 class HasType a where
   typeOf :: a -> Qual FType
   
-mergeQuals :: [Pred] -> [Pred] -> [Pred]
-mergeQuals []     t  = t
-mergeQuals t      [] = t
-mergeQuals (p:ps) t  = if L.elem p t then mergeQuals ps t else mergeQuals ps (p:t)
-
-mergeQuals' :: [[Pred]] -> [Pred]
-mergeQuals' = foldr mergeQuals []   

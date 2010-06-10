@@ -103,7 +103,9 @@ algW (C.App e arg) = do
                          let (qt1 :=> t1) = typeOf e'
                              (qta :=> ta) = typeOf arg'
                          unify t1 (FFn ta ar)
-                         let rqt = mergeQuals qt1 qta
+                         q1 <- applySubst qt1
+                         q2 <- applySubst qta
+                         let rqt = mergeQuals q1 q2
                          t <- applyS $ pure (rqt :=> ar)
                          applySubst $ App t e' arg'
                          

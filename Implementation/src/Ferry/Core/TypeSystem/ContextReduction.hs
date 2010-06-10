@@ -41,3 +41,11 @@ filterImpossiblePreds p@(Has (FRec rs) f t) ps = case L.lookup f rs of
                                        Nothing -> error "record does not contain file"
                                        (Just t2) -> if t == t2 then ps else error "incompatable types"
 filterImpossiblePreds _                    _ = error "Not a record type"
+
+mergeQuals :: [Pred] -> [Pred] -> [Pred]
+mergeQuals []     t  = t
+mergeQuals t      [] = t
+mergeQuals (p:ps) t  = if L.elem p t then mergeQuals ps t else mergeQuals ps (p:t)
+
+mergeQuals' :: [[Pred]] -> [Pred]
+mergeQuals' = foldr mergeQuals []

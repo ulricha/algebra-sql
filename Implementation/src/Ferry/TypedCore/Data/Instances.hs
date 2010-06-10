@@ -34,6 +34,9 @@ instance Substitutable TyScheme where
 instance Substitutable TyEnv where
   apply s m = M.map (apply s) m
   
+instance Substitutable a => Substitutable [a] where
+  apply s m = map (apply s) m
+  
 instance Substitutable CoreExpr where
   apply s (BinOp t o c1 c2) = BinOp (apply s t) o (apply s c1) (apply s c2)
   apply s (UnaOp t o c)      = UnaOp (apply s t) o (apply s c)
