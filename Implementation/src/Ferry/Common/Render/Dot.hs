@@ -37,6 +37,7 @@ data Color = Red
            | Yellow
            | Black
            | White
+           | Gray
               
 type Dot = ErrorT FerryError (WriterT [Node] (WriterT [Edge] (State Int)))
 
@@ -48,7 +49,7 @@ runDot d = case r of
  where (((r, ns), es), _) = flip runState 0 $ runWriterT $ runWriterT $ runErrorT d
 
 dotFile :: [Node] -> [Edge] -> String
-dotFile ns es = "digraph g {" ++ concatMap dotNode ns ++ concatMap dotEdge es ++ "}"
+dotFile ns es = "digraph g {\nordering=out;" ++ concatMap dotNode ns ++ concatMap dotEdge es ++ "}"
 
 dotEdge :: Edge -> String
 dotEdge (Edge i ts) = concat [i ++ " -> " ++ t ++ ";\n" | t <- ts]
@@ -68,6 +69,7 @@ propsDot (Color Green)    = "fillcolor=green,style=filled"
 propsDot (Color Yellow)   = "fillcolor=yellow,style=filled"
 propsDot (Color Black)    = "fillcolor=black,style=filled"
 propsDot (Color White)    = "fillcolor=white,style=filled"
+propsDot (Color Gray)     = "fillcolor=gray,style=filled"
 propsDot (TextColor Red)      = "color=red"
 propsDot (TextColor Blue)     = "color=blue"
 propsDot (TextColor Green)    = "color=green"

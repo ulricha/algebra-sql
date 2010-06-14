@@ -1,0 +1,4 @@
+for p in table Players (name String, id Int, team String) with keys ((id)) 
+    let t = {team = "Oranje"} 
+    where p.team == t.team 
+    return t.team
