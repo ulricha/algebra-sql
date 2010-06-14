@@ -103,6 +103,19 @@ instance HasType CoreExpr where
   typeOf (Elem t c f)      = t
   typeOf (Table t n c k)   = t
   typeOf (If t c1 c2 c3)   = t
+  setType t (BinOp _ o c1 c2) = BinOp t o c1 c2
+  setType t (UnaOp _ o c)     = UnaOp t o c
+  setType t (Constant _ c)    = Constant t c
+  setType t (Var _ x)         = Var t x    
+  setType t (App _ c a)       = App t c a  
+  setType t (Let _ x c1 c2)   = Let t x c1 c2
+  setType t (Rec _ es)        = Rec t es
+  setType t (Cons _ c1 c2)    = Cons t c1 c2
+  setType t (Nil _)           = Nil t
+  setType t (Elem _ c f)      = Elem t c f
+  setType t (Table _ n c k)   = Table t n c k
+  setType t (If _ c1 c2 c3)   = If t c1 c2 c3
+  
   
 instance HasType Param where
     typeOf (ParExpr t e) = t

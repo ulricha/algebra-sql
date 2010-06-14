@@ -23,20 +23,24 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Error
 
-import System.IO.Unsafe
-
 typeInfer :: TyEnv -> C.CoreExpr -> (Either FerryError CoreExpr, Subst)
-typeInfer gam c = runAlgW gam $ algW c
+typeInfer gam c = runAlgW gam $ do 
+                                   e <- algW c
+                                   (p, s@(Forall _ t)) <- gen $ pure $ typeOf e
+                                   applySubst $ setType t e
+                                   
                   
 algW :: C.CoreExpr -> AlgW CoreExpr
 algW (C.Constant c)  = Constant <$> typeOfConst c <*> pure c
 algW (C.Var x)       = Var <$> (inst $ lookupVariable x) <*> pure x
-algW (C.Let x c1 c2) = applyS $ Let <$> liftM typeOf c2' <*> pure x <*> c1' <*> c2' 
- where
-     c1' = algW c1
-     c2' = do
-            (q :=> t) <- liftM typeOf c1'
-            addToEnv x (Forall 0 $ q :=> t) (algW c2)
+algW (C.Let x c1 c2) = do
+                            c1' <- algW c1
+                            (p, ts@(Forall _ qt)) <- gen $ pure $ typeOf c1'
+                            let c1'' = setType qt  c1'
+                            c2' <- addToEnv x ts (algW c2)
+                            let (q2 :=> t2) = typeOf c2'
+                            q <- mergeQuals q2 p
+                            applySubst $ Let (q :=> t2) x c1'' c2' 
 algW (C.Nil) = Nil <$> liftM (\v -> [] :=> (list $ FVar v)) freshTyVar
 algW (C.Cons c1 c2) = do
                         c1' <- algW c1
@@ -114,7 +118,7 @@ algW (C.App e arg) = do
                          q1 <- applySubst qt1
                          q2 <- applySubst qta
                          
-                         rqt <- (unsafePerformIO $ putStrLn $ show (q1 ++ q2)) `seq` (mergeQuals q1 q2)
+                         rqt <- (mergeQuals q1 q2)
                          t <- applyS $ pure (rqt :=> ar)
                          applySubst $ App t e' arg'
                          

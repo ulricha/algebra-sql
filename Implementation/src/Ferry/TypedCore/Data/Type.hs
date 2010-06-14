@@ -67,4 +67,5 @@ class VarContainer a where
    
 class HasType a where
   typeOf :: a -> Qual FType
+  setType :: Qual FType -> a -> a
   
