@@ -29,7 +29,9 @@ typeInfer gam c = runAlgW gam $ do
                                    -- (p, s@(Forall _ t)) <- gen $ pure $ typeOf e
                                    let (q :=> t) = typeOf e
                                    q' <- consistents $ pure q
-                                   applySubst $ setType (q' :=> t) e
+                                   let (qs, q'' :=> t') = reduce (q' :=> t) M.empty
+                                   qual <- mergeQuals qs q''
+                                   applySubst $ setType (qual :=> t) e
                                    --pure e
                   
 algW :: C.CoreExpr -> AlgW CoreExpr
