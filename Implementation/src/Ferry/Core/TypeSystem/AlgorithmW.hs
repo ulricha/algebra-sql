@@ -23,6 +23,8 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Error
 
+import System.IO.Unsafe
+
 typeInfer :: TyEnv -> C.CoreExpr -> (Either FerryError CoreExpr, Subst)
 typeInfer gam c = runAlgW gam $ algW c
                   
@@ -42,7 +44,8 @@ algW (C.Cons c1 c2) = do
                         let (q1 :=> t1) = typeOf c1'
                         let (q2 :=> t2) = typeOf c2'
                         unify t2 $ FList t1
-                        applySubst $ Cons ((mergeQuals q1 q2) :=> t2) c1' c2'
+                        q <- mergeQuals q1 q2
+                        applySubst $ Cons (q :=> t2) c1' c2'
 algW (C.If c1 c2 c3) = do
                          c1' <- algW c1
                          c2' <- algW c2
@@ -55,7 +58,8 @@ algW (C.If c1 c2 c3) = do
                          s' <- getSubst
                          unify (apply s' $ t2) (apply s' $ t3) 
                          s'' <- getSubst
-                         applySubst $ If (mergeQuals' [q1, q2, q3] :=> t2) c1' c2' c3'
+                         q <- mergeQuals' [q1, q2, q3]
+                         applySubst $ If (q :=> t2) c1' c2' c3'
 algW (C.Table n cs ks) = let recTys = L.sortBy (\(n1, t1) (n2, t2) -> compare n1 n2) $ map columnToRecElem cs
                              in if length (uniqueKeys recTys) == length recTys 
                                  then applySubst $ Table ([] :=> (list $ FRec recTys)) n (map columnToTyColumn cs) (map keyToTyKey ks)
@@ -65,7 +69,9 @@ algW (C.Elem e i) = do
                        c1' <- algW e
                        let (q1 :=> t1) = typeOf c1'
                        case t1 of
-                            (FVar v) -> applySubst $ Elem ((mergeQuals q1 [Has t1 i fresh]) :=> fresh) c1' i
+                            (FVar v) -> do 
+                                          q <- insertQual (Has t1 i fresh) q1 
+                                          applySubst $ Elem (q :=> fresh) c1' i
                             (FRec els) -> case lookup i els of
                                             Nothing -> throwError $ RecordWithoutI t1 i
                                             (Just a) -> applySubst $ Elem (q1 :=> a) c1' i
@@ -73,9 +79,9 @@ algW (C.Elem e i) = do
 algW (C.Rec elems) = do
                         els <- recElemsToTyRecElems elems
                         let (qs, nt) = foldr (\(RecElem (q :=> t) n _) (qs, nt) -> (q:qs, (n, t):nt)) ([], []) els
-                            q = mergeQuals' qs
-                            t = FRec $ L.sortBy (\(n1, t1) (n2, t2) -> compare n1 n2) nt
-                         in if (length (uniqueKeys nt) == length nt) 
+                        let t = FRec $ L.sortBy (\(n1, t1) (n2, t2) -> compare n1 n2) nt
+                        q <- mergeQuals' qs
+                        if (length (uniqueKeys nt) == length nt) 
                                 then applySubst $ Rec (q :=> t) els
                                 else throwError $ RecordDuplicateFields Nothing nt
 algW (C.BinOp (C.Op o) e1 e2) = do
@@ -87,7 +93,8 @@ algW (C.BinOp (C.Op o) e1 e2) = do
                                 (q2 :=> t2) = typeOf e2'
                             unify t1 ot1
                             unify t2 ot2
-                            applySubst $ BinOp (mergeQuals' [q, q1, q2] :=> otr) (Op o) e1' e2'
+                            q' <- mergeQuals' [q, q1, q2] 
+                            applySubst $ BinOp (q' :=> otr) (Op o) e1' e2'
 algW (C.UnaOp (C.Op o) e1) = 
                           do
                             ot <- inst $ lookupVariable o
@@ -95,7 +102,8 @@ algW (C.UnaOp (C.Op o) e1) =
                             e1' <- algW e1
                             let (q1 :=> t1) = typeOf e1'
                             unify t1 ot1
-                            applySubst $ UnaOp (mergeQuals q q1 :=> otr) (Op o) e1'
+                            q' <- mergeQuals q q1 
+                            applySubst $ UnaOp (q :=> otr) (Op o) e1'
 algW (C.App e arg) = do
                          ar <- liftM FVar freshTyVar
                          e' <- algW e
@@ -105,7 +113,8 @@ algW (C.App e arg) = do
                          unify t1 (FFn ta ar)
                          q1 <- applySubst qt1
                          q2 <- applySubst qta
-                         let rqt = mergeQuals q1 q2
+                         
+                         rqt <- (unsafePerformIO $ putStrLn $ show (q1 ++ q2)) `seq` (mergeQuals q1 q2)
                          t <- applyS $ pure (rqt :=> ar)
                          applySubst $ App t e' arg'
                          
