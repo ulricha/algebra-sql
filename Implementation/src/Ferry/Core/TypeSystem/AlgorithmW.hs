@@ -26,9 +26,11 @@ import Control.Monad.Error
 typeInfer :: TyEnv -> C.CoreExpr -> (Either FerryError CoreExpr, Subst)
 typeInfer gam c = runAlgW gam $ do 
                                    e <- algW c
-                                   (p, s@(Forall _ t)) <- gen $ pure $ typeOf e
-                                   applySubst $ setType t e
-                                   
+                                   -- (p, s@(Forall _ t)) <- gen $ pure $ typeOf e
+                                   let (q :=> t) = typeOf e
+                                   q' <- consistents $ pure q
+                                   applySubst $ setType (q' :=> t) e
+                                   --pure e
                   
 algW :: C.CoreExpr -> AlgW CoreExpr
 algW (C.Constant c)  = Constant <$> typeOfConst c <*> pure c

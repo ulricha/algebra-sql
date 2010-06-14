@@ -55,7 +55,7 @@ primitives = M.fromList $
              ,("orderByDescending", Forall 2 $ [] :=> (genT 1 .-> genT 2) .-> (list $ genT 1) .-> (list $ genT 2))
              ,("thenBy", Forall 2 $ [] :=> (genT 1 .-> genT 2) .-> (list $ genT 1) .-> (list $ genT 2))
              ,("thenByDescending", Forall 2 $ [] :=> (genT 1 .-> genT 2) .-> (list $ genT 1) .-> (list $ genT 2))
-             ,("concatMap", Forall 2 $ [] :=> (genT 1 .-> (list $ genT 2)) .-> (list $ genT 1) .-> (list $ genT 2))
+             -- ,("concatMap", Forall 2 $ [] :=> (genT 1 .-> (list $ genT 2)) .-> (list $ genT 1) .-> (list $ genT 2))
              ,("concatMap'", Forall 3 $ [] :=> (genT 1 .-> (list $ genT 2)) .-> (genT 1 .-> genT 2 .-> genT 3) .-> (list $ genT 1) .-> (list $ genT 3))
              ,("groupWith", Forall 3 $ [] :=> (genT 1 .-> genT 2) .-> (genT 1 .-> genT 3) .-> (list $ genT 1) .-> (list $ rec [("1", genT 3), ("2", list $ genT 2)]))
              ]

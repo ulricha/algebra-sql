@@ -7,6 +7,8 @@ import Ferry.TypedCore.Data.Instances
 import qualified Data.List as L
 import qualified Data.Set as S
 
+import System.IO.Unsafe
+
 reduce :: Qual FType -> ClassEnv -> ([Pred], Qual FType)
 reduce (preds :=> tau) cEnv = (gamPreds, tyPreds :=> tau)
     where
@@ -38,7 +40,9 @@ filterImpossiblePreds :: Pred -> [Pred] -> [Pred]
 filterImpossiblePreds p@(Has (FVar v) f t) ps = case S.member v (ftv t) of
                                     True -> error "infinite type in record"
                                     False -> p:ps
+filterImpossiblePreds p@(Has (FRec rs) f (FVar v)) ps = (p:ps)
+                                                         
 filterImpossiblePreds p@(Has (FRec rs) f t) ps = case L.lookup f rs of
                                        Nothing -> error "record does not contain file"
-                                       (Just t2) -> if t == t2 then ps else error "incompatable types"
+                                       (Just t2) -> if t == t2 then ps else error $ show p ++ "incompatable types"
 filterImpossiblePreds _                    _ = error "Not a record type"

@@ -300,7 +300,7 @@ normaliseCompr (p1, e1) (p2, e2) = do
           v2s = case p2 of
                  PVar _ s -> [s]
                  PPat _ vs -> vs
-          rExpr e1 e2 = App m (Var m "concatMap" ) [arg1 e2, arg2, arg3 e1]
+          rExpr e1 e2 = App m (Var m "concatMap'" ) [arg1 e2, arg2, arg3 e1]
           arg1 e2 = AAbstr m [p1] e2
           arg2 = AAbstr m [p1, p2] $ Record m $ [TrueRec m (Right n) (Just $ Var m n) | n <- vars p1] 
                                                ++ [TrueRec m (Right n) (Just $ Var m n) | n <- vars p2]
