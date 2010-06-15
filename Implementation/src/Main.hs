@@ -56,6 +56,9 @@ options = [ Option ['s'] ["stop"]
           , Option []["dotCore"]
                    (NoArg (\o -> o {artefact=DotCore:(artefact o)}))
                    "Generate dot file for Core"
+          , Option []["dotType"]
+                   (NoArg (\o -> o {artefact=DotType:(artefact o)}))
+                   "Generate dot file for Typed Core"
           , Option []["prettyCore"]
                    (NoArg (\o -> o {artefact=PrettyCore:(artefact o)}))
                    "Pretty print core program"

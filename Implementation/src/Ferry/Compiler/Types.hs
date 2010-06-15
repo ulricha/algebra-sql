@@ -41,6 +41,7 @@ data Artefact = Echo   -- ^ Echo mode prints the given input to the console
               | PrettyCore
               | DotAST
               | DotCore
+              | DotType
               | Type
               | Algebra
     deriving (Show, Eq)

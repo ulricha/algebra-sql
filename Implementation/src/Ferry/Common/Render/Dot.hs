@@ -79,7 +79,7 @@ propsDot (TextColor White)    = "color=white"
 propsDot (Label l)            = "label=\"" ++ labelDot l ++ "\""
 
 labelDot :: Label -> String
-labelDot (SLabel s) = s 
+labelDot (SLabel s) = escape s 
 labelDot (HLabel ls) = concat $ L.intersperse " | " $ map labelDot ls
 labelDot (VLabel ls) = "{" ++ (concat $ L.intersperse " | " $ map (\l -> "{" ++ labelDot l ++ "}") ls) ++"}"
 
@@ -95,3 +95,13 @@ getFreshId = do
               n <- get
               put $ n + 1
               return $ (:) 'n' $ show n
+              
+escape :: String -> String
+escape (x:xs) = case x of
+                  '{' -> "\\{"
+                  '}' -> "\\}"
+                  '>' -> "\\>"
+                  '<' -> "\\<"
+                  otherwise -> [x]
+                 ++ escape xs
+escape []     = []

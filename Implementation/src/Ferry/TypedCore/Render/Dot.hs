@@ -1,11 +1,12 @@
 module Ferry.TypedCore.Render.Dot where
 
 
-import Ferry.Common.Render.Dot    
+import Ferry.Common.Render.Dot
+import Ferry.Common.Render.Pretty    
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Data.Type
 import Ferry.Front.Data.Base
-import Ferry.Core.Render.Pretty
+import Ferry.TypedCore.Render.Pretty
 
 import qualified Data.List as L
 
@@ -67,7 +68,7 @@ toDot (Rec t es) = do
                   tId <- typeToDot t
                   eIds <- mapM recToDot es
                   addNode $ Node nId [Label $ SLabel "Rec", Color Blue, Shape Oval]
-                  addEdge $ Edge nId eIds ++ [tId]
+                  addEdge $ Edge nId (eIds ++ [tId])
                   return nId
 toDot (Cons t e1 e2) = do
                      nId <- getFreshId
@@ -92,11 +93,11 @@ toDot (Elem t c s) = do
                     cId <- toDot c
                     addEdge $ Edge nId [cId, sId, tId]
                     return nId
-toDot (Table t n cs ks) = do
+toDot (Table ty n cs ks) = do
                          nId <- getFreshId
-                         tId <- typeToDot t
+                         tId <- typeToDot ty
                          let label = VLabel $ ((HLabel [SLabel "Table:", SLabel n])
-                                            : [HLabel [SLabel $ n ++ "::", SLabel $ prettyTy t ] | (Column n t) <- cs])
+                                            : [HLabel [SLabel $ n ++ "::", SLabel $ prettyPrint t ] | (Column n t) <- cs])
                                             ++ [SLabel $ keyToString k | k <- ks]
                          addNode $ Node nId [Shape Rect, Label label, Color Yellow]
                          addEdge $ Edge nId [tId]
@@ -133,11 +134,12 @@ patToDot (Pattern s) = do
                         addNode $ Node nId [Label $ SLabel $  "(" ++ (concat $ L.intersperse ", " s) ++ ")", Color Red, Shape Triangle]
                         return nId
                         
-recToDot (RecElem s e) = do
+recToDot (RecElem t s e) = do
                           nId <- getFreshId
+                          tId <- typeToDot t
                           eId <- toDot e
                           addNode $ Node nId [Label $ SLabel s, Color Red, Shape Oval]
-                          addEdge $ Edge nId [eId]
+                          addEdge $ Edge nId [eId, tId]
                           return nId
 
 keyToString :: Key -> String
@@ -146,5 +148,5 @@ keyToString (Key ks) = "(" ++ (concat $ L.intersperse ", " ks) ++ ")"
 typeToDot :: Qual FType -> Dot Id
 typeToDot t = do
                nId <- getFreshId
-               addNode $ Node nId [Label $ SLabel $ show t, Color Gray, Shape Rect]
+               addNode $ Node nId [Label $ SLabel $ prettyPrint t, Color Gray, Shape Rect]
                return nId

@@ -9,6 +9,8 @@ import Ferry.TypedCore.Render.Pretty
 import Ferry.TypedCore.Data.Instances
 import Ferry.TypedCore.Data.Type
 import Ferry.Core.TypeSystem.Prelude
+import Ferry.TypedCore.Render.Dot
+import Ferry.Common.Render.Dot
 
 import qualified Ferry.Core.Data.Core as C
 import Ferry.TypedCore.Data.TypedCore
@@ -28,5 +30,10 @@ inferStage = CompilationStep "TypeInfer" TypeInfer step artefacts
                   in case res of
                        Left err -> newError err
                        Right expr -> return expr
-        artefacts = [(Type ,"ty", \s -> return $ prettyPrint $ typeOf s)]
+        artefacts = [(Type ,"ty", \s -> return $ prettyPrint $ typeOf s)
+                    ,(DotType ,"dot", \s -> return $ makeDot s)]
         
+makeDot :: CoreExpr -> String
+makeDot c = case runDot $ toDot c of
+            Right s -> s
+            Left e -> error "Jikes"
