@@ -13,12 +13,12 @@ instance Substitutable FType where
   apply s (FList t)             = FList $ apply s t 
   apply s (FFn t1 t2)           = FFn (apply s t1) (apply s t2)
   apply s (FRec rs)             = FRec $ map (\(n, t) -> (n, apply s t)) rs
-  apply s v@(FVar i) = case M.notMember v s of
-                            True -> v
-                            False -> s M.! v
-  apply s v@(FGen i) = case M.notMember v s of
-                            True -> v
-                            False -> s M.! v
+  apply s@(t, _) v@(FVar i) = case M.notMember v t of
+                                    True -> v
+                                    False -> t M.! v
+  apply s@(t, _) v@(FGen i) = case M.notMember v t of
+                                True -> v
+                                False -> t M.! v
   apply _    t                  = t -- If the substitution is not applied to a container type or variable just stop primitives cannot be substituted
 
 instance Substitutable t => Substitutable (Qual t) where
@@ -29,7 +29,7 @@ instance Substitutable Pred where
   apply s (Has r n t) = Has (apply s r) n (apply s t)  
                           
 instance Substitutable TyScheme where
-  apply s (Forall i t) = Forall i $ apply s t
+  apply s (Forall i r t) = Forall i r $ apply s t
     
 instance Substitutable TyEnv where
   apply s m = M.map (apply s) m
@@ -58,6 +58,11 @@ instance Substitutable Param where
 instance Substitutable RecElem where
     apply s (RecElem t x c) = RecElem (apply s t) x (apply s c)
 
+instance Substitutable RLabel where
+    apply s@(_, r) v = case M.notMember v r of
+                                      True -> v
+                                      False -> r M.! v
+    
 {- | Instances of VarContainer class-}
   
 instance VarContainer FType where
@@ -66,6 +71,10 @@ instance VarContainer FType where
   ftv (FRec s)    = S.unions $ map (ftv . snd) s
   ftv (FFn t1 t2) = ftv t1 `S.union` ftv t2
   ftv _           = S.empty
+  frv (FList t)   = frv t
+  frv (FRec s)    = S.unions $ map (\(r,t) -> S.union (frv r) (frv t)) s
+  frv (FFn t1 t2) = frv t1 `S.union` frv t2
+  frv _           = S.empty 
   hasQVar (FList t) = hasQVar t
   hasQVar (FRec s)  = and $ map (hasQVar . snd) s
   hasQVar (FFn t1 t2) = hasQVar t1 && hasQVar t2
@@ -73,22 +82,34 @@ instance VarContainer FType where
   hasQVar _        = False
   
 instance VarContainer TyScheme where
-  ftv (Forall i t)  = ftv t 
-  hasQVar (Forall i t) = if i > 0 then True else False
+  ftv (Forall i r t)  = ftv t 
+  frv (Forall i r t)  = frv t
+  hasQVar (Forall i r t) = if i > 0 then True else False
 
 instance VarContainer t => VarContainer (Qual t) where
   ftv (preds :=> t) = S.unions $ (ftv t):(map ftv preds)
+  frv (preds :=> t) = S.unions $ (frv t):(map frv preds)
   hasQVar (preds :=> t) = (&&) (hasQVar t) $ and $ map hasQVar preds 
 
 instance VarContainer Pred where
   ftv (IsIn c t) = ftv t
   ftv (Has t _ t2) = ftv t `S.union` ftv t2
+  frv (IsIn c t) = frv t
+  frv (Has t _ t2) = frv t `S.union` frv t2
   hasQVar (IsIn _ t) = hasQVar t
   hasQVar (Has t _ t2) = hasQVar t && hasQVar t2
 
 instance VarContainer TyEnv where
   ftv m = S.unions $ M.elems $ M.map ftv m
+  frv m = S.unions $ M.elems $ M.map frv m
   hasQVar m = and $ map (hasQVar . snd) $ M.assocs m
+  
+instance VarContainer RLabel where
+  ftv _ = S.empty
+  frv (RVar i) = S.singleton i
+  frv _        = S.empty
+  hasQVar (RGen i) = True
+  hasQVar _        = False
   
 instance HasType CoreExpr where
   typeOf (BinOp t o c1 c2) = t
@@ -120,3 +141,5 @@ instance HasType CoreExpr where
 instance HasType Param where
     typeOf (ParExpr t e) = t
     typeOf (ParAbstr t p e) = t
+    setType t (ParExpr _ e) = ParExpr t e
+    setType t (ParAbstr _ p e) = ParAbstr t p e

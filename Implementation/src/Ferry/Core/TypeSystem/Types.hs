@@ -25,7 +25,7 @@ instance Applicative (AlgW) where
 runAlgW :: Substitutable a => TyEnv -> AlgW a -> (Either FerryError a, Subst)
 runAlgW gam a = (x, s)
    where
-    (x, (_, s)) = runState (runReaderT (runErrorT $ applyS a) gam) (1, M.empty)
+    (x, (_, s)) = runState (runReaderT (runErrorT $ applyS a) gam) (1, (M.empty, M.empty))
 
 getGamma :: AlgW TyEnv
 getGamma = applyS ask
@@ -57,9 +57,9 @@ addToEnv x t a = do
                   local (\ _ -> M.insert x t gam) a
 
 addSubstitution :: Subst -> FType -> FType -> Subst
-addSubstitution s i t = let s' = M.singleton i t
-                            s'' = M.map (apply s') s
-                         in s' `M.union` s''
+addSubstitution (s, r) i t = let s' = M.singleton i t
+                                 s'' = M.map (apply (s', M.empty)) s
+                              in (s' `M.union` s'', r)
 
 updateSubstitution :: FType -> FType -> AlgW ()
 updateSubstitution v t = do

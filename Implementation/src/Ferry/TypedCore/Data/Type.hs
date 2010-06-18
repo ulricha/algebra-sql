@@ -9,8 +9,11 @@ import qualified Data.List as L
 
 type TyEnv = M.Map Ident TyScheme
 
+type TyGens = Int
+type RecGens = Int
+
 data TyScheme where
-    Forall :: Int -> Qual FType -> TyScheme
+    Forall :: TyGens -> RecGens -> Qual FType -> TyScheme
  deriving Show
 
 infix 5 :=> 
@@ -33,10 +36,23 @@ data FType where
     FList :: FType -> FType
     FVar :: Ident -> FType
     FRTy :: Ident -> FType -> FType
-    FRec :: [(String, FType)] -> FType
+    FRec :: [(RLabel, FType)] -> FType
     FFn :: FType -> FType -> FType
+    FTF :: FTFn -> FType -> FType
+    FRGen :: Int -> FType
+    FRVar :: String -> FType
  deriving (Show, Eq, Ord)
 
+data RLabel where
+    RLabel :: String -> RLabel
+    RGen :: Int -> RLabel
+    RVar :: String -> RLabel
+ deriving (Show, Eq, Ord)
+ 
+data FTFn where
+    Tr :: FTFn
+    Tr' :: FTFn
+ deriving (Show, Eq, Ord)
 int :: FType
 int = FInt
 float :: FType
@@ -49,7 +65,7 @@ list :: FType -> FType
 list t = FList t
 var :: Ident -> FType
 var i = FVar i
-rec :: [(String, FType)] -> FType
+rec :: [(RLabel, FType)] -> FType
 rec s = FRec s
 fn :: FType -> FType -> FType
 fn t1 t2 = FFn t1 t2
@@ -63,6 +79,7 @@ t1 .-> t2 = fn t1 t2
 
 class VarContainer a where
    ftv :: a -> S.Set Ident
+   frv :: a -> S.Set Ident
    hasQVar :: a -> Bool
    
 class HasType a where
