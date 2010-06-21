@@ -3,6 +3,7 @@ module Ferry.Core.TypeSystem.Unification where
 import Ferry.Core.TypeSystem.Types
 import Ferry.TypedCore.Data.Type
 import Ferry.Compiler.Error.Error
+import Ferry.Core.TypeSystem.TypeFunction
 
 import Control.Applicative hiding (Const(..))
 import Control.Monad (MonadPlus(..), ap)
@@ -16,7 +17,7 @@ unify :: FType -> FType -> AlgW ()
 unify a  b = do
                 a' <- applyS $ pure a
                 b' <- applyS $ pure b
-                unify' a' b'
+                unify' (evalTy a') (evalTy b')
 
 unify' :: FType -> FType -> AlgW ()
 unify' FInt        FInt        = pure ()

@@ -13,6 +13,7 @@ instance Substitutable FType where
   apply s (FList t)             = FList $ apply s t 
   apply s (FFn t1 t2)           = FFn (apply s t1) (apply s t2)
   apply s (FRec rs)             = FRec $ map (\(n, t) -> (n, apply s t)) rs
+  apply s (FTF f t)             = FTF f $ apply s t
   apply s@(t, _) v@(FVar i) = case M.notMember v t of
                                     True -> v
                                     False -> t M.! v

@@ -35,12 +35,9 @@ data FType where
     FBool :: FType
     FList :: FType -> FType
     FVar :: Ident -> FType
-    FRTy :: Ident -> FType -> FType
     FRec :: [(RLabel, FType)] -> FType
     FFn :: FType -> FType -> FType
     FTF :: FTFn -> FType -> FType
-    FRGen :: Int -> FType
-    FRVar :: String -> FType
  deriving (Show, Eq, Ord)
 
 data RLabel where
@@ -53,6 +50,7 @@ data FTFn where
     Tr :: FTFn
     Tr' :: FTFn
  deriving (Show, Eq, Ord)
+ 
 int :: FType
 int = FInt
 float :: FType
