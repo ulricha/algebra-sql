@@ -33,6 +33,7 @@ opExpr = buildExpressionParser operators simpleExpr
         [ [ unop "not"]
         , [ binop "*"  AssocLeft, binop "/"  AssocLeft ]
         , [ binop "+"  AssocLeft, binop "-"  AssocLeft ]
+--        , [ unop "-"]
         , [ binop "%"  AssocLeft, binop "contains"  AssocLeft]
         , [ binop "==" AssocNone, binop "!=" AssocNone, binop "<="  AssocNone
           , binop "<" AssocNone, binop ">="  AssocNone, binop ">" AssocNone ]
@@ -45,6 +46,10 @@ opExpr = buildExpressionParser operators simpleExpr
                                                     pos <- getPosition
                                                     reservedOp name
                                                     return (\e1 e2 -> BinOp (Meta $ getPos e1) (Op (Meta pos) name) e1 e2)
+{-         unop "-"      = Prefix $ do
+                                    pos <- getPosition
+                                    reservedOp "-"
+                                    return (\e -> ) -}
           unop name     = Prefix  $ do
                                      pos <- getPosition
                                      reservedOp name
@@ -235,7 +240,9 @@ constParser :: Parser Expr
 constParser = do
              (c, p) <- choice [
                               try floatParser,
+                              try negFloatParser,
                               try intParser,
+                              try negIntParser,
                               try stringParser,
                               try boolParser
                               ]
@@ -390,6 +397,13 @@ intParser = do
              pos <- getPosition
              v <- natural
              return (CInt v, pos)
+             
+negIntParser :: FParser Const
+negIntParser = do
+                pos <- getPosition
+                symbol "-"
+                ((CInt v), _) <- intParser
+                return (CInt $ negate v, pos)
 
 -- | Parse a float, currently only positive floats are allowed
 floatParser :: FParser Const
@@ -397,7 +411,13 @@ floatParser = do
                 pos <- getPosition
                 f <- float
                 return (CFloat f, pos)
-
+                
+negFloatParser :: FParser Const
+negFloatParser = do
+                    pos <- getPosition
+                    symbol "-"
+                    ((CFloat f), p) <- floatParser
+                    return (CFloat $ negate f, pos)
 -- | Parse a string, a string is anything surrounded by " ... "
 stringParser :: FParser Const
 stringParser = do
