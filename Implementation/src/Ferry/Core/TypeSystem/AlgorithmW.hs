@@ -39,7 +39,7 @@ algW (C.Constant c)  = Constant <$> typeOfConst c <*> pure c
 algW (C.Var x)       = Var <$> (inst $ lookupVariable x) <*> pure x
 algW (C.Let x c1 c2) = do
                             c1' <- algW c1
-                            (p, ts@(Forall _ qt)) <- gen $ pure $ typeOf c1'
+                            (p, ts@(Forall _ _ qt)) <- gen $ pure $ typeOf c1'
                             let c1'' = setType qt  c1'
                             c2' <- addToEnv x ts (algW c2)
                             let (q2 :=> t2) = typeOf c2'
@@ -78,15 +78,15 @@ algW (C.Elem e i) = do
                        let (q1 :=> t1) = typeOf c1'
                        case t1 of
                             (FVar v) -> do 
-                                          q <- insertQual (Has t1 i fresh) q1 
+                                          q <- insertQual (Has t1 (RLabel i) fresh) q1 
                                           applySubst $ Elem (q :=> fresh) c1' i
-                            (FRec els) -> case lookup i els of
+                            (FRec els) -> case lookup (RLabel i) els of
                                             Nothing -> throwError $ RecordWithoutI t1 i
                                             (Just a) -> applySubst $ Elem (q1 :=> a) c1' i
                             _       -> throwError $ NotARecordType t1
 algW (C.Rec elems) = do
                         els <- recElemsToTyRecElems elems
-                        let (qs, nt) = foldr (\(RecElem (q :=> t) n _) (qs, nt) -> (q:qs, (n, t):nt)) ([], []) els
+                        let (qs, nt) = foldr (\(RecElem (q :=> t) n _) (qs, nt) -> (q:qs, (RLabel n, t):nt)) ([], []) els
                         let t = FRec $ L.sortBy (\(n1, t1) (n2, t2) -> compare n1 n2) nt
                         q <- mergeQuals' qs
                         if (length (uniqueKeys nt) == length nt) 
@@ -138,7 +138,7 @@ algWArg (C.ParAbstr p e) = do
                                                           r' <- r
                                                           return $ (v, t):r' 
                                                           ) (pure []) vars
-                             e' <- foldr (\(v, t) r -> addToEnv v (Forall 0 t) r) (algW e) bindings
+                             e' <- foldr (\(v, t) r -> addToEnv v (Forall 0 0 t) r) (algW e) bindings
                              let (q :=> rt) = typeOf e'
                              let t = q :=> (foldr (\(_, _ :=> t) r -> FFn t r) rt bindings)  
                              applySubst $ ParAbstr t (toPattern vars) e'
@@ -171,8 +171,8 @@ recElemToTyRecElem (C.RecElem s e) = do
 columnToTyColumn :: C.Column -> Column
 columnToTyColumn (C.Column s t) = Column s $ typeToFType t
 
-columnToRecElem :: C.Column -> (String, FType)
-columnToRecElem (C.Column s t) = (s, typeToFType t)
+columnToRecElem :: C.Column -> (RLabel, FType)
+columnToRecElem (C.Column s t) = (RLabel s, typeToFType t)
 
 typeToFType :: C.Type -> FType
 typeToFType C.TInt = FInt
@@ -196,18 +196,26 @@ gen s = do
            gam <- getGamma
            let freeInT = ftv s'
            let freeInGam = ftv gam
+           let freeRInT = frv s'
+           let freeRInGam = frv gam
            let quant = S.toList $ freeInT S.\\ freeInGam
+           let quantR = S.toList $ freeRInT S.\\ freeRInGam
            let substs = zip quant [FGen i | i <- [1..]]
+           let substsR = zip quantR [RGen i | i <- [1..]]
            qualT <- foldr (\(i, q) -> localAddSubstitution (FVar i) q) (applyS $ pure s') substs
-           let (qg, qt) = reduce qualT M.empty
-           return $ (qg, Forall (length substs) $ qt)
+           qualR <- foldr (\(i, q) -> localAddRecSubstitution (RVar i) q) (applyS $ pure qualT) substsR
+           let (qg, qt) = reduce qualR M.empty
+           return $ (qg, Forall (length substs) (length substsR) $ qt)
            
 inst :: AlgW TyScheme -> AlgW (Qual FType)
 inst s = do
             s' <- s
             subst <- getSubst
             case s' of
-                Forall 0 t -> applyS $ pure t
-                Forall i t -> do
-                                freshVar <- freshTyVar
-                                localAddSubstitution (FGen i) (FVar freshVar) (inst $ pure $ Forall (i-1) t)
+                Forall 0 0 t -> applyS $ pure t
+                Forall 0 t ty -> do
+                                  freshVar <- freshTyVar
+                                  localAddRecSubstitution (RGen t) (RVar freshVar) (inst $ pure $ Forall 0 (t - 1) ty)
+                Forall i t ty -> do
+                                  freshVar <- freshTyVar
+                                  localAddSubstitution (FGen i) (FVar freshVar) (inst $ pure $ Forall (i-1) t ty)

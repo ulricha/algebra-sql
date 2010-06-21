@@ -24,7 +24,7 @@ data Qual t where
 
 data Pred where
  IsIn :: String -> FType -> Pred
- Has :: FType -> String -> FType -> Pred
+ Has :: FType -> RLabel -> FType -> Pred
   deriving (Show, Eq)
 
 data FType where

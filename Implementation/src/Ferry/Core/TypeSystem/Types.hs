@@ -75,6 +75,25 @@ localAddSubstitution i t l = do
                             putSubst s
                             return v
 
+localAddRecSubstitution :: Substitutable a => RLabel -> RLabel -> AlgW a -> AlgW a
+localAddRecSubstitution i t l = do
+                             s <- getSubst
+                             updateRecSubstitution i t
+                             v <- applyS l
+                             putSubst s
+                             return v
+
+updateRecSubstitution :: RLabel -> RLabel -> AlgW ()
+updateRecSubstitution v t = do
+                           (i, s) <- get
+                           let s' = addRecSubstitution s v t
+                           put (i, s')
+
+addRecSubstitution :: Subst -> RLabel -> RLabel -> Subst
+addRecSubstitution (s, r) i t = let r' = M.singleton i t
+                                    r'' = M.map (apply (M.empty, r')) r
+                                 in (s, r' `M.union` r'')
+
 applyS :: Substitutable a => AlgW a -> AlgW a
 applyS v = do
              s <- getSubst

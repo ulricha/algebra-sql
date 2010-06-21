@@ -29,7 +29,7 @@ instance (Pretty a) => Pretty (Qual a) where
     
 instance Pretty Pred where
     pretty (IsIn s t) _ = s ++ " " ++ pretty t 1
-    pretty (Has r f t) _ = pretty r 1 ++ " <: {" ++ f ++ " ::" ++ pretty t 1 ++ "}"
+    pretty (Has r f t) _ = pretty r 1 ++ " <: {" ++ pretty f 1 ++ " ::" ++ pretty t 1 ++ "}"
 
 instance Pretty (RLabel, FType) where
    pretty (n, t) i = pretty n i ++ " :: " ++ pretty t i

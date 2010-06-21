@@ -34,14 +34,23 @@ unify' v@(FVar a)  t           = if v == t || S.notMember a (ftv t)
                                      else pure ()
 unify' a1          a2          = throwError $ UnificationError a1 a2
 
-unifyRecords :: [(String, FType)] -> [(String, FType)] -> AlgW ()
-unifyRecords ((s, t):r1) r2 = case lookup s r2 of
-                                Nothing -> throwError $ UnificationRecError r1 r2
-                                Just a -> do
-                                            unify t a
-                                            unifyRecords r1 $ L.delete (s, a) r2
+unifyRecords :: [(RLabel, FType)] -> [(RLabel, FType)] -> AlgW ()
+unifyRecords ((l1, t1):r1) ((l2, t2):r2) = do
+                                                unifyFields l1 l2
+                                                unify t1 t2
+                                                unifyRecords r1 r2
 unifyRecords []         [] = pure ()
 unifyRecords r1         r2 = throwError $ UnificationRecError r1 r2 
+
+unifyFields :: RLabel -> RLabel -> AlgW ()
+unifyFields r1@(RLabel l1) r2@(RLabel l2) = if l1 == l2 then return () else throwError $ UnificationOfRecordFieldsFailed r1 r2
+unifyFields r1@(RVar i) r2                = if r1 == r2 || S.notMember i (frv r2)
+                                              then updateRecSubstitution r1 r2
+                                              else pure ()
+unifyFields r1          r2@(RVar i)       = if r1 == r2 || S.notMember i (frv r1)
+                                              then updateRecSubstitution r2 r1
+                                              else pure ()
+unifyFields r1          r2                = throwError $ UnificationFail r1 r2
 
 mergeQuals :: [Pred] -> [Pred] -> AlgW [Pred]
 mergeQuals t1     t2 = consistents $ mergeQualsW t1 t2

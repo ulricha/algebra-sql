@@ -15,13 +15,15 @@ data FerryError = NoSuchFile String
                 | FrontToCoreArgError String Arg 
                 | FrontToCoreRecError String RecElem
                 | UnificationError FType FType
-                | UnificationRecError [(String, FType)] [(String, FType)]
+                | UnificationRecError [(RLabel, FType)] [(RLabel, FType)]
                 | ClassAlreadyDefinedError String
                 | SuperClassNotDefined String [String]
                 | ClassNotDefined String
-                | RecordDuplicateFields (Maybe String) [(String, FType)]
+                | RecordDuplicateFields (Maybe String) [(RLabel, FType)]
                 | NotARecordType FType
                 | RecordWithoutI FType String
+                | UnificationOfRecordFieldsFailed RLabel RLabel
+                | UnificationFail RLabel RLabel
                 | ProcessComplete
         deriving Show
                 
