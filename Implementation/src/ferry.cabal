@@ -5,7 +5,7 @@ License:             GPL
 License-file:   LICENSE
 Author:			Jeroen Weijers <jeroen.weijers@uni-tuebingen.de> Tom Schreiber <tom.schreiber@uni-tuebingen.de>
 Maintainer:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de> Tom Schreiber <tom.schreiber@uni-tuebingen.de>
-build-depends:  base >= 4.2, parsec == 2.1.0.1, HUnit == 1.2.2.1, filepath >= 1.1.0.3, mtl >= 1.1.0.2, containers >= 0.3.0.0
+build-depends:  base >= 4.2, parsec == 2.1.0.1, HUnit == 1.2.2.1, filepath >= 1.1.0.3, mtl >= 1.1.0.2, containers >= 0.3.0.0, fgl >= 5.4.2.2
 Build-Type:     Simple
 Executable:     ferryc
 Main-Is:        Main.hs

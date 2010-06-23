@@ -240,7 +240,7 @@ normaliseReturn m (p1,e1) (Return m' e2 mi) = case mi of
 normaliseGroup :: Meta -> (Pattern, Expr) -> BodyElem -> [BodyElem] -> ReturnElem -> Normalisation Expr
 normaliseGroup m (p, e) (Group _ g me [eg] mi) bd r = 
     do
-      let f = case g of {GBy -> "groupByN"; GWith -> "groupWithN"} 
+      let f = case g of {GBy -> "groupByN"; GWith -> "groupWith"} 
       star <- getFreshIdentifier
       let arg1 = case me of
                     Nothing -> AAbstr emptyMeta [PVar emptyMeta star] $ Var emptyMeta star
