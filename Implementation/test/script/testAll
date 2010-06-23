@@ -1,7 +1,7 @@
 #!/bin/sh
 clear
 echo Running ferry tests...
-FERRYC=../../bin/ferryc
+FERRYC=../../dist/build/ferryc/ferryc
 ##########################################
 #### Adding a group of tests
 #### call bin/sh runTests <FOLDERWITHTESTS> $FERRYC <FERRYCFLAGS> 

@@ -1,8 +1,10 @@
 all: ferryc haddock
 
-configure: ferry.cabal LICENSE Setup.hs
+./dist/setup-config: ferry.cabal LICENSE Setup.hs
 	cabal clean
-	cabal configure 
+	cabal configure
+
+configure: ./dist/setup-config
 
 ferryc: configure
 	cabal build
@@ -11,9 +13,9 @@ clean:
 	cabal clean
 
 test:  ferryc
-	ghc --make ../test/Main.hs -i../test -i../src -i../bin -outputdir ../bin -o ../bin/tests
+	ghc --make ./test/Main.hs -i./test -i./src -i./dist -outputdir ./dist -o ./dist/tests
 	./runShellTests
-	./bin/tests
+	./dist/tests
 
 haddock: 
 	cabal haddock --internal --executables --hoogle
