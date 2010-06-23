@@ -21,6 +21,10 @@ instance Pretty FType where
                         otherwise -> "{" ++ mapIntersperseConcat (flip pretty 1) ", " a ++ "}"
   pretty (FFn t1 t2) _ = "(" ++ pretty t1 0 ++ ") -> " ++ pretty t2 0
   pretty (FGen i) _ = "a" ++ show i
+  pretty (FTF f t) _ = "(" ++ pretty f 1 ++ " " ++ pretty t 0 ++ ")"
+  
+instance Pretty FTFn where
+  pretty Tr _ = "Tr"
   
 instance (Pretty a) => Pretty (Qual a) where
     pretty (ps :=> t) _ = (mapIntersperseConcat (flip pretty 1) ", " ps) ++ " => " ++ pretty t 1   

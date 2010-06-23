@@ -1,4 +1,4 @@
-module Ferry.TypeSystem.TypeFunction where
+module Ferry.TypedCore.Data.TypeFunction where
 
 import Ferry.TypedCore.Data.Type
     

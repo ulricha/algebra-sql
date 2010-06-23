@@ -3,7 +3,7 @@ module Ferry.TypeSystem.Unification where
 import Ferry.TypeSystem.Types
 import Ferry.TypedCore.Data.Type
 import Ferry.Compiler.Error.Error
-import Ferry.TypeSystem.TypeFunction
+import Ferry.TypedCore.Data.TypeFunction
 
 import Control.Applicative hiding (Const(..))
 import Control.Monad (MonadPlus(..), ap)

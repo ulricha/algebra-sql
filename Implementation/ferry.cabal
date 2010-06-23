@@ -36,7 +36,8 @@ executable ferryc
                      Ferry.Front.Parser.Parser,
                      Ferry.Front.Parser.Scanner,
                      Ferry.Front.Render.Pretty,
-                     Ferry.TypedCore.Convert.Specialise,
+                     Ferry.TypedCore.Convert.Specialize,
+                     Ferry.TypedCore.Convert.Traverse
                      Ferry.TypedCore.Data.Base,
                      Ferry.TypedCore.Data.Instances,
                      Ferry.TypedCore.Data.Substitution,
@@ -48,6 +49,6 @@ executable ferryc
                      Ferry.TypeSystem.AlgorithmW,
                      Ferry.TypeSystem.ContextReduction,
                      Ferry.TypeSystem.Prelude,
-                     Ferry.TypeSystem.TypeFunction,
+                     Ferry.TypedCore.Data.TypeFunction,
                      Ferry.TypeSystem.Types,
                      Ferry.TypeSystem.Unification
