@@ -8,13 +8,13 @@ import Ferry.Common.Render.Pretty
 import Ferry.TypedCore.Render.Pretty
 import Ferry.TypedCore.Data.Instances
 import Ferry.TypedCore.Data.Type
-import Ferry.Core.TypeSystem.Prelude
+import Ferry.TypeSystem.Prelude
 import Ferry.TypedCore.Render.Dot
 import Ferry.Common.Render.Dot
 
 import qualified Ferry.Core.Data.Core as C
 import Ferry.TypedCore.Data.TypedCore
-import Ferry.Core.TypeSystem.AlgorithmW
+import Ferry.TypeSystem.AlgorithmW
 
 import System.IO.Unsafe
 import qualified Data.Map as M

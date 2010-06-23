@@ -1,4 +1,4 @@
-module Ferry.Core.TypeSystem.Prelude where
+module Ferry.TypeSystem.Prelude where
     
 import Ferry.TypedCore.Data.TypeClasses
 import Ferry.TypedCore.Data.Type

@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeSynonymInstances #-}
-module Ferry.Core.TypeSystem.Types where
+module Ferry.TypeSystem.Types where
 
 import Control.Monad.Reader
 import Control.Monad.State

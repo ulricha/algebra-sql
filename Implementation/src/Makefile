@@ -2,6 +2,8 @@ hsFiles :=$(wildcard *.hs)
 
 all: ferryc haddock
 
+configure:
+    cabal configure 
 ferryc: $(hsFiles) bin
 	ghc --make Main.hs -i../bin -outputdir ../bin -o ../bin/ferryc
 

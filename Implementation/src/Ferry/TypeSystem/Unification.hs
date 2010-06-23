@@ -1,9 +1,9 @@
-module Ferry.Core.TypeSystem.Unification where
+module Ferry.TypeSystem.Unification where
     
-import Ferry.Core.TypeSystem.Types
+import Ferry.TypeSystem.Types
 import Ferry.TypedCore.Data.Type
 import Ferry.Compiler.Error.Error
-import Ferry.Core.TypeSystem.TypeFunction
+import Ferry.TypeSystem.TypeFunction
 
 import Control.Applicative hiding (Const(..))
 import Control.Monad (MonadPlus(..), ap)

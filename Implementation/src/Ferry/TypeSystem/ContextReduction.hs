@@ -1,4 +1,4 @@
-module Ferry.Core.TypeSystem.ContextReduction where
+module Ferry.TypeSystem.ContextReduction where
     
 import Ferry.TypedCore.Data.Type
 import Ferry.TypedCore.Data.TypeClasses

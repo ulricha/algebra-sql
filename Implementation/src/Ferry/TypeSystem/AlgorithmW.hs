@@ -1,6 +1,6 @@
-module Ferry.Core.TypeSystem.AlgorithmW (typeInfer) where
+module Ferry.TypeSystem.AlgorithmW (typeInfer) where
 
-import Ferry.Core.TypeSystem.Types    
+import Ferry.TypeSystem.Types    
 import qualified Ferry.Core.Data.Core as C
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Data.Type
@@ -9,8 +9,8 @@ import Ferry.TypedCore.Data.Base
 import Ferry.Compiler.Error.Error
 import Ferry.TypedCore.Data.Instances
 import Ferry.Front.Data.Base hiding (VarContainer)
-import Ferry.Core.TypeSystem.Unification
-import Ferry.Core.TypeSystem.ContextReduction
+import Ferry.TypeSystem.Unification
+import Ferry.TypeSystem.ContextReduction
 
 
 import qualified Data.Set as S
