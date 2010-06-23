@@ -1,0 +1,3 @@
+for p in table Player (name String, team String) with keys ((name, team))
+ group with p.team
+return p
