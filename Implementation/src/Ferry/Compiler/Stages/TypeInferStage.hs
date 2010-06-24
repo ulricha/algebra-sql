@@ -11,6 +11,8 @@ import Ferry.TypedCore.Data.Type
 import Ferry.TypeSystem.Prelude
 import Ferry.TypedCore.Render.Dot
 import Ferry.Common.Render.Dot
+import Ferry.TypedCore.Convert.Specialize
+import Ferry.TypedCore.Convert.Traverse
 
 import qualified Ferry.Core.Data.Core as C
 import Ferry.TypedCore.Data.TypedCore
@@ -29,7 +31,7 @@ inferStage = CompilationStep "TypeInfer" TypeInfer step artefacts
         step e = let (res, s) = typeInfer primitives e
                   in case res of
                        Left err -> newError err
-                       Right expr -> return expr
+                       Right expr -> return $ groupNSpecialize expr
         artefacts = [(Type ,"ty", \s -> return $ prettyPrint $ typeOf s)
                     ,(DotType ,"dot", \s -> return $ makeDot s)]
         
