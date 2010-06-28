@@ -50,4 +50,29 @@ unboxFn e = App t (Var t' "unBox") $ ParExpr t e
     t' = q :=> ty .-> ty 
     
 box :: CoreExpr -> Boxing (CoreExpr, Box)
-box = undefined
+box c@(Constant _ _) = (c, Atom)
+box n@(Nil _)        = (n, List)
+box (Cons t e1 e2)   = do
+                         (e1', phi) <- box e1
+                         (e2', phi2) <- box e2 
+                         return (Cons t (boxOp phi star e1') (boxOp phi2 list e2), List)
+box (Elem t e s) = do
+                      (e', phi) <- box e
+                      return $ Elem t (boxOp phi atom e') s
+box t@(Table _ _ _ _) = (t, List)
+box (If t e1 e2 e3) = do
+                        (e1', phi1) <- box e1
+                        (e2', phi2) <- box e2
+                        (e3', phi3) <- box e3
+                        if phi2 == phi3
+                            then return (If t (boxOp phi1 atom e1') e2' e3', phi3)
+                            else return (If t (boxOp phi1 atom e1') (boxOp phi2 atom e2') (boxOp phi3 atom e3'), atom) 
+
+{-
+BinOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr -> CoreExpr
+UnaOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr
+Var  :: (Qual FType) -> String -> CoreExpr
+App :: (Qual FType) -> CoreExpr -> Param -> CoreExpr
+Let :: (Qual FType) -> String -> CoreExpr -> CoreExpr -> CoreExpr
+Rec :: (Qual FType) -> [RecElem] -> CoreExpr
+-}
