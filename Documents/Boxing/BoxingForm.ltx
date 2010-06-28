@@ -30,8 +30,8 @@ We define a formula that takes care of transforming an expression into a boxed, 
             {| Gam +- Nil => Nil :: list |}\\
     \infrule[box-Cons]
             {| Gam +- e1 => e1' :: sig |\quad%
-             | Gam +- e2 => e2' :: list |}
-            {| Gam +- Cons e1 e2 => Cons (Box sig atom e1') e2' :: list|}
+             | Gam +- e2 => e2' :: sig2 |}
+            {| Gam +- Cons e1 e2 => Cons (Box sig atom e1') (Box sig2 list e2') :: list|}
     \infrule[box-var]
             {| Gam x = sig |}
             {| Gam +- x => x :: sig |}\\
@@ -71,4 +71,7 @@ We define a formula that takes care of transforming an expression into a boxed, 
     \infrule[box-lambda]
             {| Gam[x +-> atom] +- e => e' :: phi|}
             {| Gam +- (\x -> e) => (\x -> e') :: atom -> phi|}
-\end{infrules}
+\end{infrules}           
+
+In the original implementation there doesn't seem to be a check that both branches of if ... then ... else are equal. Therefor it is not possible to determine what sort of boxing type the if then else construct as a whole has. Furthermore it is not clear whether the conditional should be required to be of the sort atom.
+The handling of a lambda seems to be quite ad-hoc as well, it could very well be that the lambda would be better of accepting lists as arguments. 
