@@ -57,6 +57,11 @@ We define a formula that takes care of transforming an expression into a boxed, 
              | Gam +- e2 => e2' :: sig2 |\quad%
              | Gam +- e3 => e3' :: sig2 |}
             {| Gam +- if e1 then e2 else e3 => if (Box sig1 atom e1') then e2' else e3' :: sig2 |}\\
+    \infrule[box-if]
+            {| Gam +- e1 => e1' :: sig1 |\quad%
+             | Gam +- e2 => e2' :: sig2 |\quad%
+             | Gam +- e3 => e3' :: sig3 |}
+            {| Gam +- if e then e2 else e3 => if (Box sig1 atom e1') then (Box sig2 atom e2') else (Box sig3 atom e3') :: atom|}\\
     \infrule[box-elem]
             {| Gam +- e => e' :: sig1 |}
             {| Gam +- e.i => (Box sig1 atom e').i :: atom|}
@@ -69,8 +74,8 @@ We define a formula that takes care of transforming an expression into a boxed, 
              | Gam +- en => en' :: sign |}
             {| Gam +- {x1 = e1, ..., xn = en} => {x1 = (Box sig1 atom e1'), xn = (Box sign atom en')} :: atom|}
     \infrule[box-lambda]
-            {| Gam[x +-> atom] +- e => e' :: phi|}
-            {| Gam +- (\x -> e) => (\x -> e') :: atom -> phi|}
+            {| Gam[x +-> atom] +- e => e' :: sig|}
+            {| Gam +- (\x -> e) => (\x -> e') :: atom -> sig|}
 \end{infrules}           
 
 In the original implementation there doesn't seem to be a check that both branches of if ... then ... else are equal. Therefor it is not possible to determine what sort of boxing type the if then else construct as a whole has. Furthermore it is not clear whether the conditional should be required to be of the sort atom.
