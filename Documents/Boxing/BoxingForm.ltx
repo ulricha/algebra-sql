@@ -67,7 +67,7 @@ We define a formula that takes care of transforming an expression into a boxed, 
             {| Gam +- e1 => e1' :: sig1 |\quad%
              | ... |\quad%
              | Gam +- en => en' :: sign |}
-            {| Gam +- {x1 = e1, ..., xn = en} => {x1 = (Box sig1 atom e1'), xn = (Box sign atom en')}|}
+            {| Gam +- {x1 = e1, ..., xn = en} => {x1 = (Box sig1 atom e1'), xn = (Box sign atom en')} :: atom|}
     \infrule[box-lambda]
             {| Gam[x +-> atom] +- e => e' :: phi|}
             {| Gam +- (\x -> e) => (\x -> e') :: atom -> phi|}
