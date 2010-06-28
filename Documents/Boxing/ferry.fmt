@@ -67,15 +67,18 @@
 %% Variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%format e0 = "e_{0} "
-%format e1 = "e_{1} "
-%format e2 = "e_{2} "
-%format e3 = "e_{3} "
-%format e4 = "e_{4} "
-%format en = "e_{n} "
-%format em = "e_{m} "
-%format er = "e_r"
+%format e0 = " e_{0} "
+%format e1 = " e_{1} "
+%format e2 = " e_{2} "
+%format e3 = " e_{3} "
+%format e4 = " e_{4} "
+%format en = " e_{n} "
+%format em = " e_{m} "
+%format er = " e_{r} "
 %format enp1 = "e_{n+1} "
+
+%format e1' = " e_{1}'' "
+%format e2' = " e_{2}'' "                      
 
 %format e11 = "e_{11}"
 %format e1n = "e_{1n}"
@@ -119,6 +122,13 @@
 %format ordering1 = "ordering_1"
 %format orderingn = "ordering_n"
 
+%format sig = " \sigma "
+%format sig1 = " \sigma_{1} "
+%format sig2 = " \sigma_{2} "
+%format sig0 = " \sigma_{0} "
+
+%format Gam = " \Gamma "
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -129,3 +139,7 @@
 %format SQBR(x) = "\texttt{[}" x "\texttt{]}"
 %format PAREN(x) = "\texttt{(}" x "\texttt{)}"
 %format CURL(x) = "\texttt{\{}" x "\texttt{\}}"
+
+%format (Box (a) (b) (c)) = "\lightning^{"a"}_{"b"} " c
+%format list = "[]"
+%format atom = "*" 

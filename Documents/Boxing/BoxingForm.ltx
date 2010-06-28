@@ -1,0 +1,46 @@
+\section{Boxing}
+             
+The boxing rules follow the following pattern: | Gam +- e => e' :: sig |. Which is read as under environment |Gam| expression |e| is transformed into expression |e'| with boxing type |sig|.
+
+We define a formula that takes care of transforming an expression into a boxed, or unboxed expressions.
+
+\begin{code}
+         Box list atom e = box e
+         Box atom list e = unBox e
+         Box list list e = e
+         Box atom atom e = e
+\end{code}
+
+
+\begin{infrules} 
+    \infrule[box-int]
+            {| |}
+            {| Gam +- i => i :: atom |}
+    \infrule[box-float]
+            {| |}
+            {| Gam +- f => f :: atom |}
+    \infrule[box-bool]
+            {| |}
+            {| Gam +- b => b :: atom |}\\    
+    \infrule[box-string]
+            {| |}
+            {| Gam +- s => s :: atom |}
+    \infrule[box-Nil]
+            {| |}
+            {| Gam +- Nil => Nil :: list |}\\
+    \infrule[box-Cons]
+            {| Gam +- e1 => e1' :: sig |\quad%
+             | Gam +- e2 => e2' :: list |}
+            {| Gam +- Cons e1 e2 => Cons (Box sig list e1') e2' :: list|}
+    \infrule[box-var]
+            {| Gam x = sig |}
+            {| Gam +- x => x :: sig |}\\
+    \infrule[box-let]
+            {| Gam +- e1 => e1' :: sig1 |\quad%
+             | Gam[x +-> sig1] +- e2 => e2' :: sig2 |}
+            {| Gam +- let x = e1 in e2 => let x = e1' in e2' :: sig2|}
+    \infrule[box-app]
+            {| Gam +- e1 => e1' :: sig1 -> sig2 |\quad%
+             | Gam +- e2 => e2' :: sig0 |}
+            {| Gam +- e1 e2 => e1' (Box sig0 sig1 e2') :: sig2|}\\
+\end{infrules}
