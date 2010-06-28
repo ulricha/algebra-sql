@@ -67,12 +67,26 @@ box (If t e1 e2 e3) = do
                         if phi2 == phi3
                             then return (If t (boxOp phi1 atom e1') e2' e3', phi3)
                             else return (If t (boxOp phi1 atom e1') (boxOp phi2 atom e2') (boxOp phi3 atom e3'), atom) 
+box (Let t s e1 e2) = do
+                        (e1', phi1) <- box e1
+                        (e2', phi2) <- addToEnv s phi1 $ box e2'
+                        return (Let t s e1' e2', phi2)
+box (Var t x) = do 
+                  phi <- fromEnv x
+                  return (Var t z, phi)
+box (Rec t els) = do 
+                    els' <- mapM boxRec els
+                    return (Rec t els', atom)
 
+                    
+                    
+boxRec :: RecElem -> Boxing RecElem
+boxRec (RecElem t x e) = do
+                          (e', phi) <- box e
+                          return $ RecElem t x (boxOp phi atom e')
+    
 {-
 BinOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr -> CoreExpr
 UnaOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr
-Var  :: (Qual FType) -> String -> CoreExpr
 App :: (Qual FType) -> CoreExpr -> Param -> CoreExpr
-Let :: (Qual FType) -> String -> CoreExpr -> CoreExpr -> CoreExpr
-Rec :: (Qual FType) -> [RecElem] -> CoreExpr
 -}
