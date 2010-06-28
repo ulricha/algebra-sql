@@ -78,7 +78,9 @@
 %format enp1 = "e_{n+1} "
 
 %format e1' = " e_{1}'' "
-%format e2' = " e_{2}'' "                      
+%format e2' = " e_{2}'' "
+%format e3' = " e_{3}'' "
+%format en' = " e_{n}'' "                      
 
 %format e11 = "e_{11}"
 %format e1n = "e_{1n}"
@@ -125,7 +127,10 @@
 %format sig = " \sigma "
 %format sig1 = " \sigma_{1} "
 %format sig2 = " \sigma_{2} "
-%format sig0 = " \sigma_{0} "
+%format sig0 = " \sigma_{0} " 
+%format sig1' = " \sigma_{1}'' "
+%format sig2' = " \sigma_{2}'' "
+%format sign = " \sigma_{n} "
 
 %format Gam = " \Gamma "
 
