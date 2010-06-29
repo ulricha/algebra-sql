@@ -143,6 +143,7 @@
 %format psi2' = " \psi_{2}'' "
 %format psi3' = " \psi_{3}'' "
 %format psi4' = " \psi_{4}'' "
+%format psin = " \psi_{n} "
 
 
 %format Gam = " \Gamma "
