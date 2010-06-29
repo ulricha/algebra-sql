@@ -6,10 +6,12 @@ import Ferry.TypedCore.Data.Type
 import Ferry.Front.Data.Base
 
 import Control.Monad.Reader
+                               
+import qualified Data.Map as M (lookup)
+import Data.Maybe (listToMaybe)
 
-
-runBoxing :: CoreExpr -> CoreExpr
-runBoxing = fst . flip runReader emptyEnv . box
+runBoxing :: TyEnv -> CoreExpr -> CoreExpr
+runBoxing env = fst . flip runReader (env, [], emptyEnv) . box
 
 data Box = Atom
          | List
@@ -17,20 +19,43 @@ data Box = Atom
                        
 type BoxEnv = [(Identifier, Box)]
 
+type Context = [Box]
+
 emptyEnv :: BoxEnv
 emptyEnv = []    
 
-type Boxing = Reader BoxEnv
+type Boxing = Reader (TyEnv, Context, BoxEnv)
 
 addToEnv :: Identifier -> Box -> Boxing a -> Boxing a
-addToEnv i b e = local ((:)(i, b)) e 
+addToEnv i b = local (\(gE, cE, bE) -> (gE, cE, (i, b):bE))
+
+fromGam :: Identifier -> Boxing (Maybe TyScheme)
+fromGam i = do
+             (g, _, _) <- ask
+             return $ M.lookup i g
                  
 fromEnv :: Identifier -> Boxing Box
 fromEnv i = do
-              env <- ask
+              (_, _, env) <- ask
               case lookup i env of
                   Just x -> return x
                   Nothing -> error $ "Identifier: " ++ i ++ " not found in env during boxing."
+
+addToContext :: Box -> Boxing a -> Boxing a
+addToContext t = local (\(gE, cE, bE) -> (gE, t:cE, bE)) 
+
+getFromContext :: Boxing (Maybe Box) 
+getFromContext = do
+                    (_, c, _) <- ask
+                    return $ listToMaybe c
+                             
+popFromContext :: Boxing a -> Boxing a
+popFromContext e = do
+                    res <- getFromContext
+                    case res of
+                        Nothing -> e
+                        Just _ -> local (\(gE, cE, bE) -> (gE, tail cE, bE)) e
+                        
 
 boxOp :: Box -> Box -> CoreExpr -> CoreExpr
 boxOp Atom List = boxFn
@@ -50,7 +75,8 @@ unboxFn e = App t (Var t' "unBox") $ ParExpr t e
     t' = q :=> ty .-> ty 
     
 box :: CoreExpr -> Boxing (CoreExpr, Box)
-box c@(Constant _ _) = (c, Atom)
+box = undefined
+{-box c@(Constant _ _) = (c, Atom)
 box n@(Nil _)        = (n, List)
 box (Cons t e1 e2)   = do
                          (e1', phi) <- box e1
@@ -77,14 +103,16 @@ box (Var t x) = do
 box (Rec t els) = do 
                     els' <- mapM boxRec els
                     return (Rec t els', atom)
-
-                    
-                    
-boxRec :: RecElem -> Boxing RecElem
+box (App t e1 e2) = do
+                     undefined
+-}                    
+boxRec :: RecElem -> Boxing RecElem 
+boxRec = undefined
+{-
 boxRec (RecElem t x e) = do
                           (e', phi) <- box e
                           return $ RecElem t x (boxOp phi atom e')
-    
+-}    
 {-
 BinOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr -> CoreExpr
 UnaOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr
