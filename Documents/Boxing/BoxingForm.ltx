@@ -49,7 +49,7 @@ We define a type conversion function from regular types to boxing types:
             {| C, Gam, Ome +- Nil => Nil :: list |}\\
     \infrule[box-Cons]
             {| [], Gam, Ome +- e1 => e1' :: psi |\quad%
-             | C, Gam, Ome +- e2 => e2' :: psi2 |}
+             | [], Gam, Ome +- e2 => e2' :: psi2 |}
             {| C, Gam, Ome +- Cons e1 e2 => Cons (Box psi atom e1') (Box psi2 list e2') :: list|}
     \infrule[box-var-prim]
             {| Gam x = sig |\quad%
@@ -59,11 +59,11 @@ We define a type conversion function from regular types to boxing types:
             {|Ome x = psi|}
             {|C, Gam, Ome +- x => x :: psi|}
     \infrule[box-app]
-            {| C, Gam, Ome +- e1 => e1' :: psi1 -> psi2 |\quad%
-             | C[psi1], Gam, Ome +- e2 => e2' :: psi0 |}
+            {| [], Gam, Ome +- e1 => e1' :: psi1 -> psi2 |\quad%
+             | [psi1], Gam, Ome +- e2 => e2' :: psi0 |}
             {| C, Gam, Ome +- e1 e2 => e1' (Box psi0 psi1 e2') :: psi2|}\\
     \infrule[box-let]
-            {| C, Gam, Ome +- e1 => e1' :: psi1 |\quad%
+            {| [], Gam, Ome +- e1 => e1' :: psi1 |\quad%
              | C, Gam, Ome[x +-> psi1] +- e2 => e2' :: psi2 |}
             {| C, Gam, Ome +- let x = e1 in e2 => let x = e1' in e2' :: psi2|}\\
     \infrule[box-op]
