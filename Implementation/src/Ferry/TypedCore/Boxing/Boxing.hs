@@ -16,6 +16,7 @@ runBoxing env = fst . flip runReader (env, [], emptyEnv) . box
 data Box = Atom
          | List
          | BFn Box Box
+       deriving Eq
                        
 type BoxEnv = [(Identifier, Box)]
 
@@ -56,6 +57,20 @@ popFromContext e = do
                         Nothing -> e
                         Just _ -> local (\(gE, cE, bE) -> (gE, tail cE, bE)) e
                         
+noContext :: Boxing a -> Boxing a
+noContext = local (\(gE, _, bE) -> (gE, [], bE))
+ 
+trans :: FType -> Box
+trans (FList _) = List
+trans (FFn t1 t2) = BFn (trans t1) (trans t2)
+trans _           = Atom
+    
+{-
+Heavily simplified inst, it doesn't work as a proper inst
+ from the type system it only works for types that are passed to trans.
+-}
+inst :: TyScheme -> FType
+inst (Forall _ _ (_ :=> t)) = t
 
 boxOp :: Box -> Box -> CoreExpr -> CoreExpr
 boxOp Atom List = boxFn
@@ -73,39 +88,54 @@ unboxFn e = App t (Var t' "unBox") $ ParExpr t e
   where 
     t@(q :=> ty) = typeOf e
     t' = q :=> ty .-> ty 
+
+
+resultCheck :: (CoreExpr, Box) -> Boxing (CoreExpr, Box)
+resultCheck (e, psi) = do
+                        psir <- getFromContext 
+                        case (psir, psi) of
+                            (Just p, psi) | p == psi -> return (e, psi) 
+                                          | otherwise -> error "Expected box sort doesn't match inferred sort"
+                            (Nothing, psi) -> return (e, psi)
+
     
 box :: CoreExpr -> Boxing (CoreExpr, Box)
-box = undefined
-{-box c@(Constant _ _) = (c, Atom)
-box n@(Nil _)        = (n, List)
+box c@(Constant _ _) = resultCheck (c, Atom)
+box n@(Nil _)        = resultCheck (n, List)
 box (Cons t e1 e2)   = do
-                         (e1', phi) <- box e1
-                         (e2', phi2) <- box e2 
-                         return (Cons t (boxOp phi star e1') (boxOp phi2 list e2), List)
+                         (e1', phi) <- noContext $ box e1
+                         (e2', phi2) <- noContext $ box e2 
+                         resultCheck (Cons t (boxOp phi Atom e1') (boxOp phi2 List e2), List)
 box (Elem t e s) = do
-                      (e', phi) <- box e
-                      return $ Elem t (boxOp phi atom e') s
-box t@(Table _ _ _ _) = (t, List)
+                      (e', phi) <- noContext $ box e
+                      resultCheck (Elem t (boxOp phi Atom e') s, Atom)
+box t@(Table _ _ _ _) = resultCheck (t, List)
 box (If t e1 e2 e3) = do
-                        (e1', phi1) <- box e1
+                        (e1', phi1) <- noContext $ box e1
                         (e2', phi2) <- box e2
                         (e3', phi3) <- box e3
                         if phi2 == phi3
-                            then return (If t (boxOp phi1 atom e1') e2' e3', phi3)
-                            else return (If t (boxOp phi1 atom e1') (boxOp phi2 atom e2') (boxOp phi3 atom e3'), atom) 
+                            then resultCheck (If t (boxOp phi1 Atom e1') e2' e3', phi3)
+                            else resultCheck (If t (boxOp phi1 Atom e1') (boxOp phi2 Atom e2') (boxOp phi3 Atom e3'), Atom) 
 box (Let t s e1 e2) = do
-                        (e1', phi1) <- box e1
-                        (e2', phi2) <- addToEnv s phi1 $ box e2'
-                        return (Let t s e1' e2', phi2)
+                        (e1', phi1) <- noContext $ box e1
+                        (e2', phi2) <- addToEnv s phi1 $ box e2
+                        resultCheck (Let t s e1' e2', phi2)
 box (Var t x) = do 
-                  phi <- fromEnv x
-                  return (Var t z, phi)
+                  ty <- fromGam x
+                  case ty of
+                      Nothing -> do
+                                  psi <- fromEnv x
+                                  resultCheck (Var t x, psi)
+                      (Just t') -> do
+                                   let psi = trans $ inst t' 
+                                   resultCheck (Var t x, psi)
 box (Rec t els) = do 
-                    els' <- mapM boxRec els
-                    return (Rec t els', atom)
+                    els' <- mapM (noContext . boxRec) els
+                    return (Rec t els', Atom)
 box (App t e1 e2) = do
                      undefined
--}                    
+                    
 boxRec :: RecElem -> Boxing RecElem 
 boxRec = undefined
 {-
