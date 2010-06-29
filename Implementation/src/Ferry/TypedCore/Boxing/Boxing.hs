@@ -8,19 +8,19 @@ import Ferry.Front.Data.Base
 import Control.Monad.Reader
                                
 import qualified Data.Map as M (lookup)
-import Data.Maybe (listToMaybe)
+import Data.Maybe (listToMaybe, fromJust)
 
 runBoxing :: TyEnv -> CoreExpr -> CoreExpr
-runBoxing env = fst . flip runReader (env, [], emptyEnv) . box
+runBoxing env = fst . flip runReader (env, Nothing, emptyEnv) . box
 
 data Box = Atom
          | List
          | BFn Box Box
-       deriving Eq
+       deriving (Eq, Show)
                        
 type BoxEnv = [(Identifier, Box)]
 
-type Context = [Box]
+type Context = Maybe Box
 
 emptyEnv :: BoxEnv
 emptyEnv = []    
@@ -42,23 +42,16 @@ fromEnv i = do
                   Just x -> return x
                   Nothing -> error $ "Identifier: " ++ i ++ " not found in env during boxing."
 
-addToContext :: Box -> Boxing a -> Boxing a
-addToContext t = local (\(gE, cE, bE) -> (gE, t:cE, bE)) 
+withContext :: Box -> Boxing a -> Boxing a
+withContext t = local (\(gE, _, bE) -> (gE, Just t, bE)) 
 
 getFromContext :: Boxing (Maybe Box) 
 getFromContext = do
                     (_, c, _) <- ask
-                    return $ listToMaybe c
-                             
-popFromContext :: Boxing a -> Boxing a
-popFromContext e = do
-                    res <- getFromContext
-                    case res of
-                        Nothing -> e
-                        Just _ -> local (\(gE, cE, bE) -> (gE, tail cE, bE)) e
-                        
+                    return c
+                                                     
 noContext :: Boxing a -> Boxing a
-noContext = local (\(gE, _, bE) -> (gE, [], bE))
+noContext = local (\(gE, _, bE) -> (gE, Nothing, bE))
  
 trans :: FType -> Box
 trans (FList _) = List
@@ -103,24 +96,24 @@ box :: CoreExpr -> Boxing (CoreExpr, Box)
 box c@(Constant _ _) = resultCheck (c, Atom)
 box n@(Nil _)        = resultCheck (n, List)
 box (Cons t e1 e2)   = do
-                         (e1', phi) <- noContext $ box e1
-                         (e2', phi2) <- noContext $ box e2 
-                         resultCheck (Cons t (boxOp phi Atom e1') (boxOp phi2 List e2), List)
+                         (e1', psi) <- noContext $ box e1
+                         (e2', psi2) <- noContext $ box e2 
+                         resultCheck (Cons t (boxOp psi Atom e1') (boxOp psi2 List e2), List)
 box (Elem t e s) = do
-                      (e', phi) <- noContext $ box e
-                      resultCheck (Elem t (boxOp phi Atom e') s, Atom)
+                      (e', psi) <- noContext $ box e
+                      resultCheck (Elem t (boxOp psi Atom e') s, Atom)
 box t@(Table _ _ _ _) = resultCheck (t, List)
 box (If t e1 e2 e3) = do
-                        (e1', phi1) <- noContext $ box e1
-                        (e2', phi2) <- box e2
-                        (e3', phi3) <- box e3
-                        if phi2 == phi3
-                            then resultCheck (If t (boxOp phi1 Atom e1') e2' e3', phi3)
-                            else resultCheck (If t (boxOp phi1 Atom e1') (boxOp phi2 Atom e2') (boxOp phi3 Atom e3'), Atom) 
+                        (e1', psi1) <- noContext $ box e1
+                        (e2', psi2) <- box e2
+                        (e3', psi3) <- box e3
+                        if psi2 == psi3
+                            then resultCheck (If t (boxOp psi1 Atom e1') e2' e3', psi3)
+                            else resultCheck (If t (boxOp psi1 Atom e1') (boxOp psi2 Atom e2') (boxOp psi3 Atom e3'), Atom) 
 box (Let t s e1 e2) = do
-                        (e1', phi1) <- noContext $ box e1
-                        (e2', phi2) <- addToEnv s phi1 $ box e2
-                        resultCheck (Let t s e1' e2', phi2)
+                        (e1', psi1) <- noContext $ box e1
+                        (e2', psi2) <- addToEnv s psi1 $ box e2
+                        resultCheck (Let t s e1' e2', psi2)
 box (Var t x) = do 
                   ty <- fromGam x
                   case ty of
@@ -134,17 +127,47 @@ box (Rec t els) = do
                     els' <- mapM (noContext . boxRec) els
                     return (Rec t els', Atom)
 box (App t e1 e2) = do
-                     undefined
+                     (e1', psi) <- noContext $ box e1
+                     let (psia, psir ) = case psi of
+                                           (BFn psia psir) -> (psia, psir)
+                                           _               -> error $ show psi ++ "not a function box"   
+                     case psia of
+                         (BFn _ _) -> do
+                                        (e2', psi2) <- withContext psia $ boxParam e2
+                                        resultCheck (App t e1' e2', psir)
+{-                         _         -> do
+                                        (e2', psi2) <- noContext $ boxParam e2
+                                        resultCheck (App t e1' $ boxOp psi2 psia e2', psir)
+-}                     
                     
 boxRec :: RecElem -> Boxing RecElem 
-boxRec = undefined
-{-
 boxRec (RecElem t x e) = do
-                          (e', phi) <- box e
-                          return $ RecElem t x (boxOp phi atom e')
--}    
+                          (e', psi) <- box e
+                          return $ RecElem t x (boxOp psi Atom e')    
 {-
 BinOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr -> CoreExpr
 UnaOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr
 App :: (Qual FType) -> CoreExpr -> Param -> CoreExpr
 -}
+
+boxParam :: Param -> Boxing (Param, Box)   
+boxParam (ParExpr t e) = do
+                           (e', psi) <- noContext $ box e
+                           psie <- getFromContext
+                           return $ (ParExpr t $ boxOp psi (fromJust psie) e', fromJust psie)
+boxParam (ParAbstr t p e) = do
+                             let args = getVars p
+                             psie <- getFromContext
+                             let (asso, boxR) = varsWithBox args $ fromJust psie
+                             (e', psi) <- foldr (\(v, t) r -> addToEnv v t r) (withContext boxR $ box e) asso
+                             return (ParAbstr t p e', psi)
+                             
+    
+getVars :: Pattern -> [String]
+getVars (PVar v) = [v]
+getVars (Pattern p) = p  
+
+varsWithBox :: [String] -> Box -> ([(String, Box)], Box)
+varsWithBox []             b = ([], b)
+varsWithBox (x:xs) (BFn b1 b2) = (\(l, b) -> ((x, b1):l, b)) (varsWithBox xs b2)
+varsWithBox _      b           = error $ "varswithBox err, should not happen"   
