@@ -1,8 +1,28 @@
 \section{Boxing}
              
-The boxing rules follow the following pattern: | Gam +- e => e' :: sig |. Which is read as under environment |Gam| expression |e| is transformed into expression |e'| with boxing type |sig|.
+The boxing rules follow the following pattern: | C,Gam, Ome +- e => e :: psi |. Which is read as: Under the context |C| type environment |Gam| and boxing environment |Ome| expression |e| is transformed into expression |e'| with boxing boxing type |psi|. |Gam| contains all primitive types.
 
 We define a formula that takes care of transforming an expression into a boxed, or unboxed expressions.
+
+For the sake of readability we ommitted several sanity checks, we will however describe them here informally. Each rule is defined as |C, Gam, Ome +- e => e' :: psi|. There is a relation between the context |C|, which tells about the expected value and the returned boxing type |psi|. The head of the context |C| has to be equal to the result |psi|. If C is empty any |psi| will do.
+
+The boxing language:
+
+\begin{syntaxdefs}
+    \syntaxdef{|psi|}
+        \alt{|atom|}
+        \alt{|list|}
+        \alt{|psi -> psi|}
+\end{syntaxdefs}  
+
+We define a type conversion function from regular types to boxing types:
+
+\begin{code}
+  trans :: t -> psi  
+  trans (TyList _) = list
+  trans (t1 -> t2) = trans t1 -> trans t2
+  trans _ = atom
+\end{code}
 
 \begin{code}
          Box list atom e = box e
@@ -11,66 +31,69 @@ We define a formula that takes care of transforming an expression into a boxed, 
          Box atom atom e = e
 \end{code}
 
-
 \begin{infrules} 
-    \infrule[box-int]
-            {| |}
-            {| Gam +- i => i :: atom |}
-    \infrule[box-float]
-            {| |}
-            {| Gam +- f => f :: atom |}
-    \infrule[box-bool]
-            {| |}
-            {| Gam +- b => b :: atom |}\\    
-    \infrule[box-string]
-            {| |}
-            {| Gam +- s => s :: atom |}
-    \infrule[box-Nil]
-            {| |}
-            {| Gam +- Nil => Nil :: list |}\\
-    \infrule[box-Cons]
-            {| Gam +- e1 => e1' :: sig |\quad%
-             | Gam +- e2 => e2' :: sig2 |}
-            {| Gam +- Cons e1 e2 => Cons (Box sig atom e1') (Box sig2 list e2') :: list|}
+%    \infrule[box-int]
+%            {| |}
+%            {| C, Gam, Ome +- i => i :: atom |}
+%    \infrule[box-float]
+%            {| |}
+%            {| C, Gam, Ome +- f => f :: atom |}
+%    \infrule[box-bool]
+%            {| |}
+%            {| C, Gam, Ome +- b => b :: atom |}\\    
+%    \infrule[box-string]
+%            {| |}
+%            {| C, Gam, Ome +- s => s :: atom |}
+%    \infrule[box-Nil]
+%            {| |}
+%            {| C, Gam, Ome +- Nil => Nil :: list |}\\
+%    \infrule[box-Cons]
+%            {| Gam +- e1 => e1' :: sig |\quad%
+%             | Gam +- e2 => e2' :: sig2 |}
+%            {| Gam +- Cons e1 e2 => Cons (Box sig atom e1') (Box sig2 list e2') :: list|}
+    \infrule[box-var-prim]
+            {| Gam x = sig |\quad%
+             | psi = trans(inst(sig)) |}
+            {| C, Gam, Ome +- x => x :: psi |}\\ 
     \infrule[box-var]
-            {| Gam x = sig |}
-            {| Gam +- x => x :: sig |}\\
-    \infrule[box-let]
-            {| Gam +- e1 => e1' :: sig1 |\quad%
-             | Gam[x +-> sig1] +- e2 => e2' :: sig2 |}
-            {| Gam +- let x = e1 in e2 => let x = e1' in e2' :: sig2|}
+            {|Ome x = psi|}
+            {|C, Gam, Ome +- x => x :: psi|}
     \infrule[box-app]
-            {| Gam +- e1 => e1' :: sig1 -> sig2 |\quad%
-             | Gam +- e2 => e2' :: sig0 |}
-            {| Gam +- e1 e2 => e1' (Box sig0 sig1 e2') :: sig2|}\\
-    \infrule[box-op]
-            {| Gam `op` = sig0 -> sig1 -> sig2|\quad%
-             | Gam +- e1 => e1' :: sig1' |\quad%
-             | Gam +- e2 => e2' :: sig2' |}
-            {| Gam +- e1 `op` e2 => (Box sig1' sig0 e1') `op` (Box sig2' sig1 e2') :: sig2 |}
-    \infrule[box-unop]
-            {| Gam u = sig0 -> sig1 |\quad%
-             | Gam +- e1 => e1' :: sig1'|}
-            {| Gam +- u e1 :: u (Box sig1' sig0 e1') :: sig1 |}\\   
-    \infrule[box-if]
-            {| Gam +- e1 => e1' :: sig1 |\quad%
-             | Gam +- e2 => e2' :: sig2 |\quad%
-             | Gam +- e3 => e3' :: sig2 |}
-            {| Gam +- if e1 then e2 else e3 => if (Box sig1 atom e1') then e2' else e3' :: sig2 |}\\
-    \infrule[box-elem]
-            {| Gam +- e => e' :: sig1 |}
-            {| Gam +- e.i => (Box sig1 atom e').i :: atom|}
-    \infrule[box-table]
-            {| |}
-            {| Gam +- table R cs with keys ks => table R cs with keys ks :: list |}\\
-    \infrule[box-rec]
-            {| Gam +- e1 => e1' :: sig1 |\quad%
-             | ... |\quad%
-             | Gam +- en => en' :: sign |}
-            {| Gam +- {x1 = e1, ..., xn = en} => {x1 = (Box sig1 atom e1'), xn = (Box sign atom en')} :: atom|}
+            {| C, Gam, Ome +- e1 => e1' :: psi1 -> psi2 |\quad%
+             | C[psi1], Gam, Ome +- e2 => e2' :: psi0 |}
+            {| C, Gam, Ome +- e1 e2 => e1' (Box psi0 psi1 e2') :: psi2|}\\
+    \infrule[box-let]
+            {| C, Gam, Ome +- e1 => e1' :: psi1 |\quad%
+             | C, Gam, Ome[x +-> psi1] +- e2 => e2' :: psi2 |}
+            {| C, Gam, Ome +- let x = e1 in e2 => let x = e1' in e2' :: psi2|}\\
+%    \infrule[box-op]
+%            {| Gam `op` = sig0 -> sig1 -> sig2|\quad%
+%             | Gam +- e1 => e1' :: sig1' |\quad%
+%             | Gam +- e2 => e2' :: sig2' |}
+%            {| Gam +- e1 `op` e2 => (Box sig1' sig0 e1') `op` (Box sig2' sig1 e2') :: sig2 |}
+%    \infrule[box-unop]
+%            {| Gam u = sig0 -> sig1 |\quad%
+%             | Gam +- e1 => e1' :: sig1'|}
+%            {| Gam +- u e1 :: u (Box sig1' sig0 e1') :: sig1 |}\\   
+%    \infrule[box-if]
+%            {| Gam +- e1 => e1' :: sig1 |\quad%
+%             | Gam +- e2 => e2' :: sig2 |\quad%
+%             | Gam +- e3 => e3' :: sig2 |}
+%            {| Gam +- if e1 then e2 else e3 => if (Box sig1 atom e1') then e2' else e3' :: sig2 |}\\
+%    \infrule[box-elem]
+%            {| Gam +- e => e' :: sig1 |}
+%            {| Gam +- e.i => (Box sig1 atom e').i :: atom|}
+%    \infrule[box-table]
+%            {| |}
+%            {| Gam +- table R cs with keys ks => table R cs with keys ks :: list |}\\
+%    \infrule[box-rec]
+%            {| Gam +- e1 => e1' :: sig1 |\quad%
+%             | ... |\quad%
+%             | Gam +- en => en' :: sign |}
+%            {| Gam +- {x1 = e1, ..., xn = en} => {x1 = (Box sig1 atom e1'), xn = (Box sign atom en')} :: atom|}
     \infrule[box-lambda]
-            {| Gam[x +-> atom] +- e => e' :: phi|}
-            {| Gam +- (\x -> e) => (\x -> e') :: atom -> phi|}
+            {| C[psi2], Gam, Ome[x +-> psi1] +- e => e' :: psi2|}
+            {| C[psi1 -> psi2], Gam, Ome +- (\x -> e) => (\x -> e') :: psi1 -> psi2|}
 \end{infrules}           
 
 In the original implementation there doesn't seem to be a check that both branches of if ... then ... else are equal. Therefor it is not possible to determine what sort of boxing type the if then else construct as a whole has. Furthermore it is not clear whether the conditional should be required to be of the sort atom.

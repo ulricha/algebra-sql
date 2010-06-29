@@ -132,6 +132,19 @@
 %format sig2' = " \sigma_{2}'' "
 %format sign = " \sigma_{n} "
 
+
+%format psi = " \psi "
+%format psi1 = " \psi_{1} "
+%format psi2 = " \psi_{2} "
+%format psi3 = " \psi_{3} "
+%format psi4 = " \psi_{4} "
+%format psi0 = " \psi_{0} "
+%format psi1' = " \psi_{1}'' "
+%format psi2' = " \psi_{2}'' "
+%format psi3' = " \psi_{3}'' "
+%format psi4' = " \psi_{4}'' "
+
+
 %format Gam = " \Gamma "
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -144,7 +157,8 @@
 %format SQBR(x) = "\texttt{[}" x "\texttt{]}"
 %format PAREN(x) = "\texttt{(}" x "\texttt{)}"
 %format CURL(x) = "\texttt{\{}" x "\texttt{\}}"
-
+                      
+%format Ome = " \Omega "
 %format (Box (a) (b) (c)) = "\lightning^{"a"}_{"b"} " c
 %format list = "[]"
 %format atom = "*" 
