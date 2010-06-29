@@ -131,24 +131,32 @@ box (App t e1 e2) = do
                      let (psia, psir ) = case psi of
                                            (BFn psia psir) -> (psia, psir)
                                            _               -> error $ show psi ++ "not a function box"   
-                     case psia of
-                         (BFn _ _) -> do
-                                        (e2', psi2) <- withContext psia $ boxParam e2
-                                        resultCheck (App t e1' e2', psir)
-{-                         _         -> do
-                                        (e2', psi2) <- noContext $ boxParam e2
-                                        resultCheck (App t e1' $ boxOp psi2 psia e2', psir)
--}                     
+                     (e2', psi2) <- withContext psia $ boxParam e2
+                     resultCheck (App t e1' e2', psir)
+box (BinOp t (Op o) e1 e2) = do
+                               ty <- fromGam o
+                               case ty of
+                                   Nothing -> error "Non primitive operator during boxing phase, this should not happen"
+                                   (Just t') -> do
+                                                let (BFn psi1 (BFn psi2 psi3)) = trans $ inst t'
+                                                (e1', psi1') <- noContext $ box e1
+                                                (e2', psi2') <- noContext $ box e2
+                                                resultCheck (BinOp t (Op o) (boxOp psi1' psi1 e1') (boxOp psi2' psi2 e2'), psi3)
+box (UnaOp t (Op o) e1) = do
+                            ty <- fromGam o
+                            case ty of
+                                Nothing -> error "Non primitive unary operator during boxing phase, this should not happen"
+                                (Just t') -> do
+                                              let (BFn psi1 psi2) = trans $ inst t'
+                                              (e1', psi1') <- noContext $ box e1
+                                              resultCheck (UnaOp t (Op o) (boxOp psi1' psi1 e1'), psi2)
+ 
+
                     
 boxRec :: RecElem -> Boxing RecElem 
 boxRec (RecElem t x e) = do
                           (e', psi) <- box e
                           return $ RecElem t x (boxOp psi Atom e')    
-{-
-BinOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr -> CoreExpr
-UnaOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr
-App :: (Qual FType) -> CoreExpr -> Param -> CoreExpr
--}
 
 boxParam :: Param -> Boxing (Param, Box)   
 boxParam (ParExpr t e) = do
