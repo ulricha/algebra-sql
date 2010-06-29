@@ -32,6 +32,7 @@ data Mode = Read
           | Normalise 
           | Transform
           | TypeInfer
+          | Boxing
           | Full
     deriving (Show, Eq)
           
@@ -42,11 +43,12 @@ data Artefact = Echo   -- ^ Echo mode prints the given input to the console
               | DotAST
               | DotCore
               | DotType
+              | DotBox
               | Type
               | Algebra
     deriving (Show, Eq)
 
-allArtefacts = [Echo, PrettyAST, PrettyCore, DotAST, DotCore, Algebra]
+allArtefacts = [Echo, PrettyAST, PrettyCore, DotAST, DotCore, DotType, DotBox, Algebra]
 -- | The input mode determines whether the source program is given through a file or via stdin
 data Input  = File String-- ^ File mode, the program is read from a file 
             | Arg  -- ^ Argument mode, the program is given as input directly

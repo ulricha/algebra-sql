@@ -11,6 +11,7 @@ import Ferry.Compiler.Stages.ParseStage
 import Ferry.Compiler.Stages.NormaliseStage
 import Ferry.Compiler.Stages.ToCoreStage
 import Ferry.Compiler.Stages.TypeInferStage
+import Ferry.Compiler.Stages.BoxingStage
 
 import System.FilePath.Posix(takeFileName)
 import System.IO
@@ -58,5 +59,6 @@ pipeline src = readPhase src >>=
                  parsePhase >>=
                  normalisePhase >>=
                  toCorePhase >>=
-                 typeInferPhase >>
+                 typeInferPhase >>=
+                 boxingPhase >>
                  return () 

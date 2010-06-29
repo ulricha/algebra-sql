@@ -12,7 +12,8 @@ stopSelect "1"  = Read
 stopSelect "2"  = Parse
 stopSelect "3"  = Normalise
 stopSelect "10" = Transform
-stopSelect "20" = TypeInfer 
+stopSelect "20" = TypeInfer  
+stopSelect "30" = Boxing
 stopSelect _    = Full
 
 type Logo = [String]
@@ -59,6 +60,9 @@ options = [ Option ['s'] ["stop"]
           , Option []["dotType"]
                    (NoArg (\o -> o {artefact=DotType:(artefact o)}))
                    "Generate dot file for Typed Core"
+          , Option []["dotBox"]
+                    (NoArg (\o -> o {artefact=DotBox:(artefact o)}))
+                    "Generate dot file for Boxed Core"
           , Option []["prettyCore"]
                    (NoArg (\o -> o {artefact=PrettyCore:(artefact o)}))
                    "Pretty print core program"
