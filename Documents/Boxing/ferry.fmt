@@ -87,11 +87,11 @@
 %format en1 = "e_{n1}"
 %format enn = "e_{nn}"
 
-%format x1 = "x_1"
-%format x2 = "x_2"
-%format x3 = "x_3"
-%format x4 = "x_4"
-%format xn = "x_n"
+%format x1 = " x_1 "
+%format x2 = " x_2 "
+%format x3 = " x_3 "
+%format x4 = " x_4 "
+%format xn = " x_n "
 
 %format x11 = "x_{11}"
 %format x1n = "x_{1n}"

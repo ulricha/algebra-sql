@@ -97,8 +97,8 @@ We define a type conversion function from regular types to boxing types:
              | [], Gam, Ome +- en => en' :: nsi1 |}
             {| C, Gam, Ome +- {x1 = e1, ..., xn = en} => {x1 = (Box psi1 atom e1'), ...,xn = (Box psin atom en')} :: atom|}\\
     \infrule[box-lambda]
-            {| C[psi2], Gam, Ome[x +-> psi1] +- e => e' :: psi2|}
-            {| C[psi1 -> psi2], Gam, Ome +- (\x -> e) => (\x -> e') :: psi1 -> psi2|}
+            {| C[psi], Gam, Ome[x1 +-> psi1, ..., xn +-> psin] +- e => e' :: psi|}
+            {| C[psi1 -> ... -> psin -> psi], Gam, Ome +- (\x -> e) => (\x1 ... xn -> e') :: psi1 -> ... -> psin -> psi|}
 \end{infrules}           
 
 In the original implementation there doesn't seem to be a check that both branches of if ... then ... else are equal. Therefor it is not possible to determine what sort of boxing type the if then else construct as a whole has. Furthermore it is not clear whether the conditional should be required to be of the sort atom.
