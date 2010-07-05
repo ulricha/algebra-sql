@@ -6,12 +6,13 @@ FERRYC=../../dist/build/ferryc/ferryc
 #### Adding a group of tests
 #### call bin/sh runTests <FOLDERWITHTESTS> $FERRYC <FERRYCFLAGS> 
 ##########################################
-/bin/sh runTests Parser $FERRYC "-p -n" ; X1=$?
-/bin/sh runTests Normalise $FERRYC "--prettyNorm -s3" ; X2=$?
-/bin/sh runTests Core $FERRYC "--dotCore -s10" ; X3=$?
-/bin/sh runTests TypeSystem $FERRYC "-t -s20" ; X4=$?
-/bin/sh runTests ComplexTypeSystem $FERRYC "-t -s20" ; X5=$?
-TOTAL=$[$X1 + $X2 + $X3 + $X4 + $X5]
+/bin/sh runTests Parser $FERRYC "-p -n" "out" ; X1=$?
+/bin/sh runTests Normalise $FERRYC "--prettyNorm -s3" "out" ; X2=$?
+/bin/sh runTests Core $FERRYC "--dotCore -s10" "out" ; X3=$?
+/bin/sh runTests TypeSystem $FERRYC "-t -s20" "out" ; X4=$?
+/bin/sh runTests ComplexTypeSystem $FERRYC "-t -s20" "out" ; X5=$?
+/bin/sh runTests Boxing $FERRYC "--dotBox -s30" "dot" ; X6=$?
+TOTAL=$[$X1 + $X2 + $X3 + $X4 + $X5 + $X6]
 echo "Test failures: $TOTAL"
 if [ "$TOTAL" = "0" ];
 then exit 0

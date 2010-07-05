@@ -109,7 +109,7 @@ toDot (If t e1 e2 e3) = do
                         eId2 <- toDot e2
                         eId3 <- toDot e3
                         addNode $ Node nId [Label $ SLabel "If", Color Blue, Shape Circle]
-                        addEdge $ Edge nId [eId1, eId2, eId2, tId]
+                        addEdge $ Edge nId [eId1, eId2, eId3, tId]
                         return nId
                         
 
