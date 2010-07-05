@@ -1,0 +1,5 @@
+digraph g {
+ordering=out;n1[label=" =\> Bool",fillcolor=gray,style=filled,shape=record];
+n0[label="True",fillcolor=yellow,style=filled,shape=triangle];
+n0 -> n1;
+}

@@ -1,0 +1,5 @@
+digraph g {
+ordering=out;n1[label=" =\> [\{eff :: Float, injured :: Bool, name :: String, number :: Int, team :: String\}]",fillcolor=gray,style=filled,shape=record];
+n0[shape=record,label="{{Table: | Player} | {eff:: | Float} | {injured:: | Bool} | {name:: | String} | {number:: | Int} | {team:: | String} | {(name, team)}}",fillcolor=yellow,style=filled];
+n0 -> n1;
+}

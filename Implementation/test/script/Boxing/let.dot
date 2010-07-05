@@ -1,0 +1,23 @@
+digraph g {
+ordering=out;n1[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
+n4[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
+n6[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
+n5[label="1",fillcolor=yellow,style=filled,shape=triangle];
+n8[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
+n7[label="2",fillcolor=yellow,style=filled,shape=triangle];
+n3[label="+",fillcolor=green,style=filled,shape=circle];
+n10[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
+n9[label="x",fillcolor=red,style=filled,shape=triangle];
+n2[label="x",fillcolor=red,style=filled,shape=record,color=white];
+n0[label="Let",fillcolor=blue,style=filled,shape=record];
+n5 -> n6;
+n7 -> n8;
+n3 -> n5;
+n3 -> n7;
+n3 -> n4;
+n9 -> n10;
+n0 -> n2;
+n0 -> n3;
+n0 -> n9;
+n0 -> n1;
+}
