@@ -98,7 +98,7 @@ box n@(Nil _)        = resultCheck (n, List)
 box (Cons t e1 e2)   = do
                          (e1', psi) <- noContext $ box e1
                          (e2', psi2) <- noContext $ box e2 
-                         resultCheck (Cons t (boxOp psi Atom e1') (boxOp psi2 List e2), List)
+                         resultCheck (Cons t (boxOp psi Atom e1') (boxOp psi2 List e2'), List)
 box (Elem t e s) = do
                       (e', psi) <- noContext $ box e
                       resultCheck (Elem t (boxOp psi Atom e') s, Atom)
