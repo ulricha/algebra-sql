@@ -66,8 +66,8 @@ inst :: TyScheme -> FType
 inst (Forall _ _ (_ :=> t)) = t
 
 boxOp :: Box -> Box -> CoreExpr -> CoreExpr
-boxOp Atom List = boxFn
-boxOp List Atom = unboxFn
+boxOp Atom List = unboxFn
+boxOp List Atom = boxFn
 boxOp _ _ = id
 
 boxFn :: CoreExpr -> CoreExpr
