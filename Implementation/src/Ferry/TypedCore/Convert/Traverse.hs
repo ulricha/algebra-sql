@@ -3,6 +3,7 @@ module Ferry.TypedCore.Convert.Traverse where
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Data.Type
 import Ferry.Front.Data.Base
+import Control.Monad
 
 
 data FoldCore b p r = FoldCore {binOpF :: Qual FType -> Op -> b -> b -> b
@@ -23,6 +24,28 @@ data FoldCore b p r = FoldCore {binOpF :: Qual FType -> Op -> b -> b -> b
 
 idFoldCore :: FoldCore CoreExpr Param RecElem
 idFoldCore = FoldCore BinOp UnaOp Constant Var App Let Rec Cons Nil Elem Table If ParExpr ParAbstr RecElem  
+
+mFoldCore :: Monad m => FoldCore (m CoreExpr) (m Param) (m RecElem)
+mFoldCore = FoldCore (\t o -> liftM2 (BinOp t o))
+                      (\t o -> liftM (UnaOp t o))
+                      (\t c -> return $ Constant t c)
+                      (\t s -> return $ Var t s)
+                      (\t -> liftM2 $ App t)
+                      (\t s -> liftM2 $ Let t s)
+                      (\t rs -> do
+                                 rs' <- sequence rs
+                                 return $ Rec t rs')
+                      (\t -> liftM2 $ Cons t)
+                      (\t -> return $ Nil t)
+                      (\t e s -> do
+                                  e' <- e
+                                  return $ Elem t e' s)
+                      (\t s c k -> return $ Table t s c k)
+                      (\t -> liftM3 $ If t)
+                      (\t -> liftM $ ParExpr t)
+                      (\t p -> liftM $ ParAbstr t p)
+                      (\t s -> liftM $ RecElem t s)
+                     
 
 -- | This function traverses the whole CoreExpr tree and applies the given function at every node after
 -- | that the function is applied to all its children.
