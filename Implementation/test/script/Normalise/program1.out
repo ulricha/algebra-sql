@@ -1,1 +1,1 @@
-map (_v2  ->_v2.x + _v2.y + _v2.z) map (_v4  ->{x = _v4, y = 4, z = 5}) filter (_v6  ->True) someTable  
+map (\_v2  ->_v2.x + _v2.y + _v2.z) map (\_v4  ->{x = _v4, y = 4, z = 5}) filter (\_v6  ->True) someTable  

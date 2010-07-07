@@ -57,7 +57,7 @@ opExpr = buildExpressionParser operators simpleExpr
 
 -- | A simpleExpr is an if, let, relationship, list comprehension or application.
 simpleExpr :: Parser Expr
-simpleExpr = ifExpr <|> letExpr <|> relationship <|>  try app <|>  queryComprehension <|>  atom
+simpleExpr = ifExpr <|> letExpr <|> relationship <|> try app <|>  queryComprehension <|>  atom
 
 -- | Parser for if then else contructs. The expression contained in the conditional and branches are
 --   regular top level expression 'expr'.
@@ -75,12 +75,15 @@ relationship = Relationship <$> pMeta <* reserved "relationship" <* reserved "fr
                 <*> key <* reserved "eq" <*> key
 
 arg :: Parser Arg
-arg = AExpr <$> pMeta <*> try atom
-        <|> abstract
+arg = try argExpr
+        <|> try abstract
+
+argExpr :: Parser Arg
+argExpr = AExpr <$> pMeta <*> atom
 
 -- | Parse function abstraction
 abstract :: Parser Arg
-abstract = (\m (p, e) -> AAbstr m p e) <$> pMeta <*> parens ((\p e -> (p, e)) <$> commaSep1 pattern <* symbol "->" <*> expr) 
+abstract = (\m (p, e) -> AAbstr m p e) <$> pMeta <*> parens ((\p e -> (p, e)) <$ symbol "\\" <*> commaSep1 pattern <* symbol "->" <*> expr) 
 
 -- | Parser for function application. Parse an atomic expression followed by as much
 --   atomic expressions as possible.If there is no application then parse at least

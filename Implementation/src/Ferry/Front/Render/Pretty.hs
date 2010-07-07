@@ -41,7 +41,7 @@ instance Pretty a => Pretty [a] where
     
 instance Pretty Arg where
     pretty (AExpr _ e) i = pretty e i
-    pretty (AAbstr _ x e) i = "(" ++ pretty x i ++ " ->" ++ pretty e i ++ ")"
+    pretty (AAbstr _ x e) i = "(\\" ++ pretty x i ++ " ->" ++ pretty e i ++ ")"
     
 instance Pretty Op where
     pretty (Op _ o) _ = o
