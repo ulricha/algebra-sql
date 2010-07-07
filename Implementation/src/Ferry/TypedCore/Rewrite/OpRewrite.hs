@@ -32,24 +32,67 @@ rewrite = runRewrite . rewrite'
 rewrite' :: CoreExpr -> Rewrite CoreExpr
 rewrite' = traverse rules
     where
-     rules = mFoldCore {binOpF = eqRewrite}
+     rules = mFoldCore {binOpF = opRewrite}
 
-eqRewrite :: Qual FType -> Op -> Rewrite CoreExpr -> Rewrite CoreExpr -> Rewrite CoreExpr
-eqRewrite qt (Op "==") e1 e2 = do
-                                 e1' <- e1
-                                 e2' <- e2
-                                 v1 <- getFreshIdentifier
-                                 v2 <- getFreshIdentifier
-                                 let (_ :=> ty1) = typeOf e1'
-                                 case ty1 of
-                                     FList t -> eqListExpr v1 v2 e1' e2'
-                                     FRec t  -> eqRecExpr v1 v2 e1' e2' 
-                                     t       -> return $ BinOp qt (Op "==") e1' e2'
-eqRewrite qt o e1 e2 = do
-                        e1' <- e1
-                        e2' <- e2
-                        return $ BinOp qt o e1' e2'
+opRewrite :: Qual FType -> Op -> Rewrite CoreExpr -> Rewrite CoreExpr -> Rewrite CoreExpr
+opRewrite qt (Op op) e1 e2 = do
+                              e1' <- e1
+                              e2' <- e2
+                              v1 <- getFreshIdentifier
+                              v2 <- getFreshIdentifier
+                              let (_ :=> ty1) = typeOf e1'
+                              case (ty1, op) of
+                                  (FList t, "==") -> liftM (addBindings v1 v2 e1' e2') $ eqListExpr v1 v2 e1' e2'
+                                  (FRec t, "==") -> liftM (addBindings v1 v2 e1' e2') $ eqRecExpr v1 v2 e1' e2'
+                                  (ty, "!=") -> liftM (addBindings v1 v2 e1' e2') $ notEq e1' e2'
+                                  (FList t, "<") -> liftM (addBindings v1 v2 e1' e2') $ ordList v1 v2 e1' e2' 
+                                  (FRec t, "<") -> liftM (addBindings v1 v2 e1' e2') $ ordRec "<" v1 v2 e1' e2'
+                                  (FList t, ">") -> liftM (addBindings v1 v2 e1' e2') $ ordList v2 v1 e2' e1' 
+                                  (FRec t, ">") -> liftM (addBindings v1 v2 e1' e2') $ ordRec ">" v1 v2 e1' e2'
+                                  (t, "<=") -> liftM (addBindings v1 v2 e1' e2') $ opOrEq "<" v1 v2 e1' e2'
+                                  (t, ">=") -> liftM (addBindings v1 v2 e1' e2') $ opOrEq ">" v1 v2 e1' e2'
+                                  (t, o) -> return $ BinOp qt (Op o) e1' e2'
 
+addBindings :: String -> String -> CoreExpr -> CoreExpr -> CoreExpr -> CoreExpr
+addBindings v1 v2 val1 val2 val3 = Let ([] :=> FBool) v1 val1 
+                                    $ Let ([] :=> FBool) v2 val2 val3
+                                    
+
+opOrEq :: String -> String -> String -> CoreExpr -> CoreExpr -> Rewrite CoreExpr
+opOrEq op id1 id2 v1 v2 = let var1 = Var (typeOf v1) id1
+                              var2 = Var (typeOf v2) id2
+                           in rewrite' $ BinOp ([] :=> FBool) (Op "||") 
+                                            (BinOp ([] :=> FBool) (Op op) var1 var2) 
+                                            (BinOp ([] :=> FBool) (Op "==") var1 var2)
+
+ordRec :: String -> String -> String -> CoreExpr -> CoreExpr -> Rewrite CoreExpr
+ordRec op id1 id2 v1 v2 = let (q :=> FRec ls) = typeOf v1
+                              var1 = Var (typeOf v1) id1
+                              var2 = Var (typeOf v2) id2
+                              els = [(Elem (q :=> t) var1 l, Elem (q :=> t) var2 l) | (RLabel l, t) <- ls]
+                           in rewrite' $ recCompExpr op els
+
+recCompExpr :: String -> [(CoreExpr, CoreExpr)] -> CoreExpr
+recCompExpr op [(v1, v2)] = BinOp ([] :=> FBool) (Op op) v1 v2
+recCompExpr op ((v1, v2):vs) = let opE = BinOp ([] :=> FBool) (Op op) v1 v2
+                                   eqE = BinOp ([] :=> FBool) (Op "==") v1 v2
+                                in BinOp ([] :=> FBool) (Op "||") opE 
+                                    $ BinOp ([] :=> FBool) (Op "&&") eqE 
+                                      $ recCompExpr op vs
+
+ordList :: String -> String -> CoreExpr -> CoreExpr -> Rewrite CoreExpr
+ordList id1 id2 val1 val2 = let t1@(q1 :=> ty1@(FList ls1)) = typeOf val1
+                                t2@(q2 :=> ty2@(FList ls2)) = typeOf val2
+                                var1 = Var t1 id1
+                                var2 = Var t2 id2
+                                lens = BinOp ([] :=> FBool) (Op "<") (lengthF var1) (lengthF var2)
+                                eqMinPf = (minPF var1 var2) `eq` (minPF var2 var1)
+                                ltMinPf = BinOp ([] :=> FBool) (Op "<") (minPF var1 var2) $ minPF var2 var1
+                             in rewrite' $ flip orExpr ltMinPf $ andExpr lens eqMinPf
+                         
+notEq :: CoreExpr -> CoreExpr -> Rewrite CoreExpr
+notEq e1 e2 = rewrite' $ notF (BinOp ([] :=> FBool) (Op "==") e1 e2)
+              
 eqRecExpr :: String -> String -> CoreExpr -> CoreExpr -> Rewrite CoreExpr
 eqRecExpr id1 id2 val1 val2 = do
                                 let t1@(q1 :=> ty1@(FRec ls1)) = typeOf val1
@@ -58,9 +101,7 @@ eqRecExpr id1 id2 val1 val2 = do
                                 let var2 = Var t2 id2
                                 let eqs = [recElemEq l (q1 :=> ty) var1 var2 | (RLabel l, ty) <- ls1]
                                 eqs' <- sequence $ map rewrite' eqs
-                                return $ Let ([] :=> FBool) id1 val1
-                                        $ Let ([] :=> FBool) id2 val2
-                                         $ foldl1 andExpr eqs'
+                                return $ foldl1 andExpr eqs'
                                 
 recElemEq :: String -> Qual FType -> CoreExpr -> CoreExpr -> CoreExpr
 recElemEq lab (q :=> t) v1 v2 = let el1 = Elem (q :=> t) v1 lab
@@ -77,13 +118,14 @@ eqListExpr id1 id2 val1 val2 = do
                                 let var1 = Var t1 id1
                                 let var2 = Var t2 id2
                                 elEq <- elemEq var1 var2
-                                return $ Let ([] :=> FBool) id1 val1 
-                                        $ Let ([] :=> FBool) id2 val2 
-                                          $ andExpr (eqLength var1 var2) elEq
+                                return $ andExpr (eqLength var1 var2) elEq
     
 -- | Chain two boolean expression together in an and relation    
 andExpr :: CoreExpr -> CoreExpr -> CoreExpr
 andExpr = BinOp ([] :=> FBool) (Op "&&")
+
+orExpr :: CoreExpr -> CoreExpr -> CoreExpr
+orExpr = BinOp ([] :=> FBool) (Op "||")
 
 -- | Given two list expressions returns an expression that checks that they have equal length
 eqLength :: CoreExpr -> CoreExpr -> CoreExpr
@@ -159,4 +201,17 @@ eq :: CoreExpr -> CoreExpr -> CoreExpr
 eq e1 e2 = let (q1 :=> t1) = typeOf e1
                (q2 :=> t2) = typeOf e2
             in BinOp (q1 `L.union` q2 :=> t1 .-> t2 .-> FBool) (Op "==") e1 e2
-             
+
+notF :: CoreExpr -> CoreExpr
+notF e = App ([] :=> FBool) (Var ([] :=> FBool .-> FBool) "not") (ParExpr (typeOf e) e)    
+
+lengthF :: CoreExpr -> CoreExpr
+lengthF e = let (q :=> t) = typeOf e
+            in App ([] :=> FInt) (Var (q :=> t .-> FInt) "length") (ParExpr (typeOf e) e)
+            
+minPF :: CoreExpr -> CoreExpr -> CoreExpr
+minPF e1 e2 = let (q1 :=> t1) = typeOf e1
+                  (q2 :=> t2) = typeOf e2
+                  fn = Var (q1 `L.union` q2 :=> t1 .-> t2 .-> FInt) "minP"
+                  app1 = App (q2 :=> t2 .-> FInt) fn (ParExpr (typeOf e1) e1)
+               in App ([] :=> FInt) app1 (ParExpr (typeOf e2) e2)
