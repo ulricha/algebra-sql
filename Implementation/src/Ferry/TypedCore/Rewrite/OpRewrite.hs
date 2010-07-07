@@ -43,13 +43,32 @@ eqRewrite qt (Op "==") e1 e2 = do
                                  let (_ :=> ty1) = typeOf e1'
                                  case ty1 of
                                      FList t -> eqListExpr v1 v2 e1' e2'
-                                     FRec t  -> undefined 
+                                     FRec t  -> eqRecExpr v1 v2 e1' e2' 
                                      t       -> return $ BinOp qt (Op "==") e1' e2'
 eqRewrite qt o e1 e2 = do
                         e1' <- e1
                         e2' <- e2
                         return $ BinOp qt o e1' e2'
 
+eqRecExpr :: String -> String -> CoreExpr -> CoreExpr -> Rewrite CoreExpr
+eqRecExpr id1 id2 val1 val2 = do
+                                let t1@(q1 :=> ty1@(FRec ls1)) = typeOf val1
+                                let t2@(q2 :=> ty2@(FRec ls2)) = typeOf val2
+                                let var1 = Var t1 id1
+                                let var2 = Var t2 id2
+                                let eqs = [recElemEq l (q1 :=> ty) var1 var2 | (RLabel l, ty) <- ls1]
+                                eqs' <- sequence $ map rewrite' eqs
+                                return $ Let ([] :=> FBool) id1 val1
+                                        $ Let ([] :=> FBool) id2 val2
+                                         $ foldl1 andExpr eqs'
+                                
+recElemEq :: String -> Qual FType -> CoreExpr -> CoreExpr -> CoreExpr
+recElemEq lab (q :=> t) v1 v2 = let el1 = Elem (q :=> t) v1 lab
+                                    el2 = Elem (q :=> t) v2 lab
+                                 in el1 `eq` el2
+                                    
+    
+                                    
 -- | Rewrite of list equality
 eqListExpr :: String -> String -> CoreExpr -> CoreExpr -> Rewrite CoreExpr
 eqListExpr id1 id2 val1 val2 = do
@@ -135,3 +154,9 @@ countF (q :=> t) = Var (q :=> t .-> int) "count"
 -- | Wrap an expression that is to be passed as an argument to a function
 wrapArg :: CoreExpr -> Param
 wrapArg e = ParExpr (typeOf e) e
+
+eq :: CoreExpr -> CoreExpr -> CoreExpr
+eq e1 e2 = let (q1 :=> t1) = typeOf e1
+               (q2 :=> t2) = typeOf e2
+            in BinOp (q1 `L.union` q2 :=> t1 .-> t2 .-> FBool) (Op "==") e1 e2
+             
