@@ -32,6 +32,7 @@ data Mode = Read
           | Normalise 
           | Transform
           | TypeInfer
+          | OpRewrite
           | Boxing
           | Full
     deriving (Show, Eq)
@@ -43,6 +44,7 @@ data Artefact = Echo   -- ^ Echo mode prints the given input to the console
               | DotAST
               | DotCore
               | DotType
+              | DotRewrite
               | DotBox
               | Type
               | Algebra

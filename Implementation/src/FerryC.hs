@@ -12,7 +12,8 @@ stopSelect "1"  = Read
 stopSelect "2"  = Parse
 stopSelect "3"  = Normalise
 stopSelect "10" = Transform
-stopSelect "20" = TypeInfer  
+stopSelect "20" = TypeInfer
+stopSelect "25" = OpRewrite  
 stopSelect "30" = Boxing
 stopSelect _    = Full
 
@@ -60,6 +61,9 @@ options = [ Option ['s'] ["stop"]
           , Option []["dotType"]
                    (NoArg (\o -> o {artefact=DotType:(artefact o)}))
                    "Generate dot file for Typed Core"
+          , Option []["dotRewrite"]
+                   (NoArg (\o -> o {artefact=DotRewrite:(artefact o)}))
+                   "Generate dot file for rewritten Typed Core AST"
           , Option []["dotBox"]
                     (NoArg (\o -> o {artefact=DotBox:(artefact o)}))
                     "Generate dot file for Boxed Core"

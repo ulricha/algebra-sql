@@ -136,7 +136,7 @@ box (App t e1 e2) = do
 box (BinOp t (Op o) e1 e2) = do
                                ty <- fromGam o
                                case ty of
-                                   Nothing -> error "Non primitive operator during boxing phase, this should not happen"
+                                   Nothing -> error $ "Non primitive operator during boxing phase, this should not happen: " ++ show o
                                    (Just t') -> do
                                                 let (BFn psi1 (BFn psi2 psi3)) = trans $ inst t'
                                                 (e1', psi1') <- noContext $ box e1
