@@ -1,1 +1,18 @@
 \section{Algebraic compilation}
+
+\begin{infrules}
+     \infrule[ac-int]%
+        {| |}%
+        {|Gam, loop +- c => (attach pos 1 (attach item1 c loop), {item1}, empty)|}\\
+    \infrule[ac-Binop]%
+        {|Gam, loop +- e1 => (q1, {item1}, empty)|\quad%
+         |Gam, loop +- e2 => (q2, {item1}, empty)|}
+        {|Gam, loop +- e1 op e2 => (proj (iter, pos, item1:res) (oper res item1 item1' (join (item1:item1') q1 ((proj (iter':iter, item1':item1) q2)))) , {item1}, empty)|}\\
+    \infrule[ac-let]
+        {| Gam, loop +- e1 => (q1, cs1, ts1)|\quad%
+         | Gam[x +-> (q1, cs1, ts1)], loop +- e2 => (q2, cs2, ts2)|}
+        {| Gam, loop +- let x = e1 in e2 => (q2, cs2, ts2)|}\\
+    \infrule[ac-var]
+        {| Gam(x) = (q, cs, ts)|}
+        {| Gam, loop +- x => (q, cs, ts)|}
+\end{infrules}

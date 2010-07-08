@@ -67,14 +67,14 @@
 %% Variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%format e0 = "e_{0} "
-%format e1 = "e_{1} "
-%format e2 = "e_{2} "
-%format e3 = "e_{3} "
-%format e4 = "e_{4} "
-%format en = "e_{n} "
-%format em = "e_{m} "
-%format er = "e_r"
+%format e0 = " e_{0} "
+%format e1 = " e_{1} "
+%format e2 = " e_{2} "
+%format e3 = " e_{3} "
+%format e4 = " e_{4} "
+%format en = " e_{n} "
+%format em = " e_{m} "
+%format er = " e_r"
 %format enp1 = "e_{n+1} "
 
 %format e11 = "e_{11}"
@@ -93,11 +93,11 @@
 %format xn1 = "x_{n1}"
 %format xnn = "x_{nn}"
 
-%format p1 = "p_1"
-%format p2 = "p_2"
-%format p3 = "p_3"
-%format p4 = "p_4"
-%format pn = "p_n"
+%format q1 = "q_1"
+%format q2 = "q_2"
+%format q3 = "q_3"
+%format q4 = "q_4"
+%format qn = "q_n"
 
 %format k1 = "k_1"
 %format k2 = "k_2"
@@ -129,3 +129,19 @@
 %format SQBR(x) = "\texttt{[}" x "\texttt{]}"
 %format PAREN(x) = "\texttt{(}" x "\texttt{)}"
 %format CURL(x) = "\texttt{\{}" x "\texttt{\}}"
+
+%%% Algebra
+
+%format empty = " \emptyset "
+%format item1 = " item_{1} "
+%format item1' = " item_{1}'' "
+%format cs1 = " cs_{1} "
+%format cs2 = " cs_{2} "
+%format ts1 = " ts_{1} "
+%format ts2 = " ts_{2} "
+
+%format Gam = "\Gamma"
+%format (attach (x) (y) (b)) = " @_{" x ":" y"}(" b ") "
+%format (proj (x) (y)) = " \pi_{" x"}(" y ") "
+%format (join (x) (y) (z)) = " " y " \bowtie_{" x "} " z " "
+%format (oper (x) (y) (z) (a)) = " \oplus^{"x"}_{< \stackrel{"y"}{"z"} >} " a " "
