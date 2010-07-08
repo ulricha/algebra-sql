@@ -3,6 +3,7 @@ module Ferry.TypedCore.Rewrite.Combinators where
 import Ferry.TypedCore.Data.Type
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Data.Instances
+
 import qualified Data.List as L
     
 -- | Count variable node, needs a specialized type in the AST and therefore still expects the type of the list
