@@ -34,6 +34,7 @@ data Mode = Read
           | TypeInfer
           | OpRewrite
           | Boxing
+          | Algebra
           | Full
     deriving (Show, Eq)
           
@@ -46,11 +47,12 @@ data Artefact = Echo   -- ^ Echo mode prints the given input to the console
               | DotType
               | DotRewrite
               | DotBox
+              | DotAlg
+              | SQL
               | Type
-              | Algebra
     deriving (Show, Eq)
 
-allArtefacts = [Echo, PrettyAST, PrettyCore, DotAST, DotCore, DotType, DotBox, Algebra]
+allArtefacts = [Echo, PrettyAST, PrettyCore, DotAST, DotCore, DotType, DotBox, DotAlg]
 -- | The input mode determines whether the source program is given through a file or via stdin
 data Input  = File String-- ^ File mode, the program is read from a file 
             | Arg  -- ^ Argument mode, the program is given as input directly
@@ -66,7 +68,7 @@ defaultConfig = Config {
                 --  By default the program is given through a File
                 input       = Arg,
                 -- Standard output is the empty list, denoting regular compilation proces
-                artefact    = [Algebra], 
+                artefact    = [SQL], 
                 --  Debug turned of by default
                 debug       = False 
               }

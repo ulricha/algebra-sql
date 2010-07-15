@@ -11,18 +11,20 @@ import qualified Data.Map as M
 import Control.Monad.State
 import Control.Monad.Reader
 
+type AlgGr = Gr Algebra ()
+
 type Link = Adj ()
 
 type ContextN = Context Algebra ()
 
-type GraphM = ReaderT (Gam, Algebra) (State (Int, Gr Algebra (), M.Map AlgNode Int))
+type GraphM = ReaderT (Gam, AlgNode) (State (Int, AlgGr, M.Map AlgNode Int))
 
-type Gam = [(String, AlgNode)]
+type Gam = [(String, Int)]
 
-initLoop :: Algebra
-initLoop = undefined
+initLoop :: AlgNode
+initLoop = litTable (nat 1) "iter" natT
 
-runGraph :: GraphM c -> Gr Algebra ()
+runGraph :: GraphM c -> AlgGr
 runGraph = (\(_,n,_) -> n) . snd . flip runState (1, empty, M.empty) . flip runReaderT ([], initLoop)
 
 getFreshId :: GraphM Int
@@ -65,3 +67,6 @@ insertEdges from (x:xs)  = do
                                 insertEdges from xs
 insertEdges _ []           = return ()
                 
+withBinding :: String -> Int -> GraphM a -> GraphM a
+withBinding n v a = do
+                     local (\(g, alg) -> ((n, v):g, alg)) a

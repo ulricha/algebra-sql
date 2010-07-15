@@ -13,6 +13,7 @@ import Ferry.Compiler.Stages.ToCoreStage
 import Ferry.Compiler.Stages.TypeInferStage
 import Ferry.Compiler.Stages.RewriteStage
 import Ferry.Compiler.Stages.BoxingStage
+import Ferry.Compiler.Stages.ToAlgebraStage
 
 import System.FilePath.Posix(takeFileName)
 import System.IO
@@ -62,5 +63,6 @@ pipeline src = readPhase src >>=
                  toCorePhase >>=
                  typeInferPhase >>=
                  rewritePhase >>=
-                 boxingPhase >>
+                 boxingPhase >>=
+                 algebraPhase >>
                  return () 

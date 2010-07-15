@@ -15,6 +15,7 @@ stopSelect "10" = Transform
 stopSelect "20" = TypeInfer
 stopSelect "25" = OpRewrite  
 stopSelect "30" = Boxing
+stopSelect "40" = Algebra
 stopSelect _    = Full
 
 type Logo = [String]
