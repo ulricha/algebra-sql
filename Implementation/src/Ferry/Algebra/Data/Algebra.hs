@@ -110,6 +110,7 @@ type SemInfAttach   = (ResAttrName, ATyVal)
 -- type SemInfCast     = (ResAttrName, AttrName, ATy)
 -- type SemInfosUnOp   = (ResAttrName, AttrName)   
 -- type SemInfBinOp    = (ResAttrName, (LeftAttrName, RightAttrName))   
+type SemBinOp = (String, ResAttrName, LeftAttrName, RightAttrName)
 -- type SemInfFun1To1  = (FunTy1To1, ResAttrName, [AttrName])   
 -- type SemInfFunAggr  = (FunTyAggr, SemInfosUnOp, Maybe PartAttrName)
 -- type SemInfFunAggrCnt = (ResAttrName, Maybe PartAttrName)
@@ -136,6 +137,7 @@ data Algebra where
 --    EmptyTable :: SchemaInf -> Algebra
 --    TableRef   :: SemInfTableRef -> Algebra
     Attach     :: SemInfAttach -> Algebra     -- should have one child
+    FunBinOp   :: SemBinOp -> Algebra         -- should have one child
 --    Cast       :: SemInfCast -> Algebra       -- should have one child
 --    FunNumEq   :: SemInfBinOp -> Algebra      -- should have one child
 --    FunNumGt   :: SemInfBinOp -> Algebra      -- should have one child

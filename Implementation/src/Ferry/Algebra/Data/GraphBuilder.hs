@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 module Ferry.Algebra.Data.GraphBuilder where
     
 import Data.Graph.Inductive.Graph
@@ -21,11 +22,25 @@ type GraphM = ReaderT (Gam, AlgNode) (State (Int, AlgGr, M.Map AlgNode Int))
 
 type Gam = [(String, Int)]
 
+data SubPlan where
+    SubPlan :: String -> AlgRes -> SubPlan -> SubPlan
+    EmptySub :: SubPlan
+
+type AlgRes = (Int, Columns, SubPlan)
+
+type AlgPlan = (M.Map AlgNode Int, AlgRes)
+
 initLoop :: AlgNode
 initLoop = litTable (nat 1) "iter" natT
 
-runGraph :: GraphM c -> AlgGr
-runGraph = (\(_,n,_) -> n) . snd . flip runState (1, empty, M.empty) . flip runReaderT ([], initLoop)
+
+runGraph :: GraphM AlgRes -> AlgPlan
+runGraph = (\(r, (_,_,m)) -> (m, r) ) . flip runState (1, empty, M.empty) . flip runReaderT ([], initLoop)
+
+getLoop :: GraphM AlgNode
+getLoop = do 
+            (_, l) <- ask
+            return l
 
 getFreshId :: GraphM Int
 getFreshId = do
@@ -38,13 +53,13 @@ findNode n = do
               (_, _, t) <- get
               return $ M.lookup n t
               
-insertNode :: Algebra -> [Int] -> GraphM Int
-insertNode n children = do
-                        let ctx = (n, children)
-                        v <- findNode ctx             
-                        case v of
-                            (Just n) -> return n
-                            Nothing -> insertNode' n children
+insertNode :: AlgNode-> GraphM Int
+insertNode (n, children) = do
+                            let ctx = (n, children)
+                            v <- findNode ctx             
+                            case v of
+                                (Just n) -> return n
+                                Nothing -> insertNode' n children
                                  
 insertNode' :: Algebra -> [Int] -> GraphM Int
 insertNode' n children = do 

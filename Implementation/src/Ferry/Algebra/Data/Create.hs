@@ -39,3 +39,6 @@ eqJoin n1 n2 c1 c2 = (EqJoin (n1, n2), [c1, c2])
 
 proj :: ProjInf -> Int -> AlgNode
 proj cols c = (Proj cols, [c])
+
+oper :: String -> ResAttrName -> LeftAttrName -> RightAttrName -> Int -> AlgNode
+oper o r la ra c = (FunBinOp (o, r, la, ra), [c])

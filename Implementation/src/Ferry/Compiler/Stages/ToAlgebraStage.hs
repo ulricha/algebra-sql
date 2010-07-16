@@ -16,12 +16,12 @@ import Ferry.Common.Render.Dot
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Boxing.Boxing
 
-algebraPhase :: CoreExpr -> PhaseResult AlgGr
+algebraPhase :: CoreExpr -> PhaseResult AlgPlan
 algebraPhase e = executeStep algebraStage e
 
-algebraStage :: CompilationStep CoreExpr AlgGr
+algebraStage :: CompilationStep CoreExpr AlgPlan
 algebraStage = CompilationStep "ToAlg" Algebra step artefacts
     where
-        step :: CoreExpr -> PhaseResult AlgGr
+        step :: CoreExpr -> PhaseResult AlgPlan
         step e = return $ runGraph $ coreToAlgebra e
         artefacts = []
