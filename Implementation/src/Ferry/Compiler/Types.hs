@@ -35,7 +35,7 @@ data Mode = Read
           | OpRewrite
           | Boxing
           | Algebra
-          | Full
+          | AlgebraXML
     deriving (Show, Eq)
           
 data Artefact = Echo   -- ^ Echo mode prints the given input to the console
@@ -48,11 +48,11 @@ data Artefact = Echo   -- ^ Echo mode prints the given input to the console
               | DotRewrite
               | DotBox
               | DotAlg
-              | SQL
+              | XML
               | Type
     deriving (Show, Eq)
 
-allArtefacts = [Echo, PrettyAST, PrettyCore, DotAST, DotCore, DotType, DotBox, DotAlg]
+allArtefacts = [Echo, PrettyAST, PrettyCore, DotAST, DotCore, DotType, DotBox, DotAlg, XML]
 -- | The input mode determines whether the source program is given through a file or via stdin
 data Input  = File String-- ^ File mode, the program is read from a file 
             | Arg  -- ^ Argument mode, the program is given as input directly
@@ -62,13 +62,13 @@ data Input  = File String-- ^ File mode, the program is read from a file
 defaultConfig :: Config
 defaultConfig = Config {
                 --  Standard 'Mode' is set to Full
-                mode        = Full,
+                mode        = AlgebraXML,
                 logFile     = Nothing,
                 output      = Nothing, 
                 --  By default the program is given through a File
                 input       = Arg,
                 -- Standard output is the empty list, denoting regular compilation proces
-                artefact    = [SQL], 
+                artefact    = [XML], 
                 --  Debug turned of by default
                 debug       = False 
               }

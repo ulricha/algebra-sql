@@ -14,6 +14,7 @@ import Ferry.Compiler.Stages.TypeInferStage
 import Ferry.Compiler.Stages.RewriteStage
 import Ferry.Compiler.Stages.BoxingStage
 import Ferry.Compiler.Stages.ToAlgebraStage
+import Ferry.Compiler.Stages.AlgebraToXMLStage
 
 import System.FilePath.Posix(takeFileName)
 import System.IO
@@ -64,5 +65,6 @@ pipeline src = readPhase src >>=
                  typeInferPhase >>=
                  rewritePhase >>=
                  boxingPhase >>=
-                 algebraPhase >>
+                 algebraPhase >>=
+                 xmlPhase >>
                  return () 

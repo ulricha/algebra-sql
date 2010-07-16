@@ -16,7 +16,7 @@ stopSelect "20" = TypeInfer
 stopSelect "25" = OpRewrite  
 stopSelect "30" = Boxing
 stopSelect "40" = Algebra
-stopSelect _    = Full
+stopSelect _    = AlgebraXML
 
 type Logo = [String]
 
@@ -51,7 +51,7 @@ options = [ Option ['s'] ["stop"]
                    (OptArg (\s o -> o {debug = True, logFile = s}) "LOGFILE")
                    "Debug output, when file is specified direct log to LOGFILE"
           , Option ['a']["all"]
-                   (NoArg (\o -> o {mode = Full, artefact = allArtefacts}))
+                   (NoArg (\o -> o {mode = AlgebraXML, artefact = allArtefacts}))
                    "Generate all artefacts"
           , Option []["dotAST"]
                    (NoArg (\o -> o {artefact=DotAST:(artefact o)}))

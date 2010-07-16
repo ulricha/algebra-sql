@@ -8,7 +8,7 @@ Author:			Jeroen Weijers <jeroen.weijers@uni-tuebingen.de> Tom Schreiber <tom.sc
 Maintainer:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de> Tom Schreiber <tom.schreiber@uni-tuebingen.de>
 Build-Type:     Simple
 executable ferryc
-    build-depends:  base >= 4.2, parsec == 2.1.0.1, HUnit == 1.2.2.1, filepath >= 1.1.0.3, mtl >= 1.1.0.2, containers >= 0.3.0.0, fgl >= 5.4.2.2, haskell98 >= 1.0.1.1
+    build-depends:  base >= 4.2, HaXml >= 1.20.2, pretty >= 1.0.1.1, parsec == 2.1.0.1, HUnit == 1.2.2.1, filepath >= 1.1.0.3, mtl >= 1.1.0.2, containers >= 0.3.0.0, fgl >= 5.4.2.2, haskell98 >= 1.0.1.1
     main-is:        FerryC.hs
     hs-source-dirs: src
     other-modules:   Ferry.Common.GraphTools,
