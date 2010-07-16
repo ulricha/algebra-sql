@@ -11,6 +11,7 @@ import Control.Monad.Writer
 import Control.Monad.Reader
 import Control.Monad
 
+
 import Text.PrettyPrint.HughesPJ
 
 import qualified Data.Map as M
@@ -52,10 +53,40 @@ runXML m = snd . fst . flip runState (0, M.empty) . flip runReaderT m . runWrite
 
 transform :: AlgPlan -> Doc
 transform (nodes, (top, cols, subs)) = let nodeTable = M.fromList $ map (\(a, b) -> (b, a)) $ M.toList nodes
-                                           plan = runXML nodeTable $ alg2XML top
+                                           plan = runXML nodeTable $ serializeAlgebra top cols
                                            qPlan = runXML M.empty $ mkQueryPlan plan
                                            planBundle = mkPlanBundle qPlan
-                                        in document $ mkXMLDocument planBundle
+                                        in (document $ mkXMLDocument planBundle)
+
+
+serializeAlgebra :: GraphNode -> Columns -> XML XMLNode
+serializeAlgebra qGId cols = do
+                                    qId <- alg2XML qGId
+                                    nilId <- nilNode
+                                    xId <- freshId
+                                    let contentN = Elem "content" [] $ (:) (CElem iterCol ()) $ (:) (CElem posCol ()) $ map (\c -> CElem c ()) $ colsToNodes $ zip cols [1..]
+                                    let edgeNil = mkEdge nilId
+                                    let edgeQ = mkEdge qId
+                                    tell [Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "serialize relation"])] [CElem contentN (), CElem edgeNil (), CElem edgeQ ()]]
+                                    return xId
+
+iterCol :: Element ()
+iterCol = Elem "column" [("name", AttValue [Left "iter"]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "iter"])] []
+
+posCol :: Element ()
+posCol = Elem "column" [("name", AttValue [Left "pos"]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "pos"])] []
+                                    
+colsToNodes :: [(Column, Int)] -> [Element ()]
+colsToNodes ((Col name, nr):cols) = let col = Elem "column" [("name", AttValue [Left name]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"]), ("position", AttValue [Left $ show nr])] []
+                                     in (:) col $ colsToNodes cols
+colsToNodes []                    = []
+
+nilNode :: XML XMLNode
+nilNode = do
+            xId <- freshId
+            tell [Elem "node" [("id", AttValue [Left $ show xId]),("kind", AttValue [Left "nil"])] []]
+            return xId
+            
 
 -- type AlgNode = (Algebra, [Int])
                                    
@@ -73,13 +104,11 @@ alg2XML gId = do
                                             xId <- freshId
                                             tell [mkTableNode xId n v ty]
                                             return xId 
-    algrXML' (Attach (n, (ty, val)),[cId1]) = do
+    alg2XML' (Attach (n, (ty, val)),[cId1]) = do
                                                 xId <- freshId
                                                 cxId1 <- alg2XML cId1
                                                 tell [mkAttachNode xId n val ty cxId1]
                                                 return xId
-
-
 
 mkAttachNode :: XMLNode -> ColName -> AVal -> ATy -> XMLNode -> Element ()
 mkAttachNode xId n val ty cxId = let valNode = Elem "value" [("type", AttValue [Left $ show ty])] [CString False (show val) ()]
@@ -104,11 +133,11 @@ mkEdge n = Elem "edge" [("to", AttValue [Left $ show n])] []
 contentNode :: Element () -> Element ()
 contentNode n = Elem "content" [] [CElem n ()]
 
-mkQueryPlan :: [Element ()] -> XML (Element ())
+mkQueryPlan :: [Element ()] -> XML ()
 mkQueryPlan els = let logicalPlan = Elem "logical_query_plan" [("unique_names", AttValue [Left "true"])] $ map (\n -> CElem n ()) els
                    in do
                         planId <- freshId
-                        return $ Elem "query_plan" [("id", AttValue [Left $ show planId])] [CElem logicalPlan ()]
+                        tell $ [Elem "query_plan" [("id", AttValue [Left $ show planId])] [CElem logicalPlan ()]]
                         
 
 mkPlanBundle :: [Element ()] -> Element ()
