@@ -31,6 +31,11 @@ type AlgRes = (Int, Columns, SubPlan)
 type AlgPlan = (M.Map AlgNode Int, AlgRes)
 -}
 
+isDefined :: GraphNode -> XML (Maybe XMLNode)
+isDefined g = do
+                (_, d) <- get
+                return $ M.lookup g d 
+
 freshId :: XML Int
 freshId = do
             (n, d) <- get
@@ -92,10 +97,14 @@ nilNode = do
                                    
 alg2XML :: GraphNode -> XML XMLNode 
 alg2XML gId = do
-                node <- getNode gId
-                xId <- alg2XML' node
-                addNodeTrans gId xId
-                return xId
+                def <- isDefined gId
+                case def of
+                    Just x -> return x
+                    Nothing -> do
+                                node <- getNode gId
+                                xId <- alg2XML' node
+                                addNodeTrans gId xId
+                                return xId
                 
                 
  where
@@ -105,10 +114,38 @@ alg2XML gId = do
                                             tell [mkTableNode xId n v ty]
                                             return xId 
     alg2XML' (Attach (n, (ty, val)),[cId1]) = do
-                                                xId <- freshId
                                                 cxId1 <- alg2XML cId1
+                                                xId <- freshId
                                                 tell [mkAttachNode xId n val ty cxId1]
                                                 return xId
+    alg2XML' (Proj proj, [cId1]) = do
+                                    cxId1 <- alg2XML cId1
+                                    xId <- freshId
+                                    tell [mkProjNode xId proj cxId1]
+                                    return xId
+--    alg2XML' (EqJoin )
+                                    
+
+{-
+{-
+data Algebra where
+X    Proj       :: SemInfProj -> Algebra       -- should have one child   
+    EqJoin     :: SemInfEqJoin -> Algebra     -- should have two children 
+X    LitTable   :: SemInfLitTable -> SchemaInfos -> Algebra
+X    Attach     :: SemInfAttach -> Algebra     -- should have one child
+    FunBinOp   :: SemBinOp -> Algebra         -- should have one child
+
+-}
+-}
+
+mkProjNode :: XMLNode -> [(NewAttrName, OldAttrName)] -> XMLNode -> Element ()
+mkProjNode xId mapping cxId = let contNode = Elem "content" [] $ map (\m -> flip CElem () $ mkProjColumn m) mapping
+                                  edgeNode = mkEdge cxId
+                               in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "project"])]
+                                              [CElem contNode (), CElem edgeNode ()]
+    where
+      mkProjColumn :: (NewAttrName, OldAttrName) -> Element ()
+      mkProjColumn (n, o) = Elem "column" [("name", AttValue [Left n]), ("old_name", AttValue [Left o]), ("new", AttValue [Left "true"])] []
 
 mkAttachNode :: XMLNode -> ColName -> AVal -> ATy -> XMLNode -> Element ()
 mkAttachNode xId n val ty cxId = let valNode = Elem "value" [("type", AttValue [Left $ show ty])] [CString False (show val) ()]
@@ -147,13 +184,5 @@ mkXMLDocument :: Element () -> Document ()
 mkXMLDocument el = let xmlDecl = XMLDecl "1.0" (Just $ EncodingDecl "UTF-8") Nothing
                        prolog = Prolog (Just xmlDecl) [] Nothing []
                     in Document prolog emptyST el []
-{-
-data Algebra where
-    Proj       :: SemInfProj -> Algebra       -- should have one child   
-    EqJoin     :: SemInfEqJoin -> Algebra     -- should have two children 
-    LitTable   :: SemInfLitTable -> SchemaInfos -> Algebra
-    Attach     :: SemInfAttach -> Algebra     -- should have one child
-    FunBinOp   :: SemBinOp -> Algebra         -- should have one child
 
--}
 
