@@ -21,9 +21,27 @@ coreToAlgebra :: CoreExpr -> GraphM AlgRes
 coreToAlgebra (Constant t (CInt i)) = do 
                                         loop <- getLoop
                                         n1 <- insertNode loop
-                                        n2 <- insertNode (attach "item1" intT (int i) n1)
-                                        n2 <- insertNode (attach "pos" intT (int 1) n2)
-                                        return (n2, [Col "item1"], EmptySub)
+                                        n2 <- insertNode $ attach "item1" intT (int i) n1
+                                        n3 <- insertNode $ attach "pos" intT (int 1) n2
+                                        return (n3, [Col "item1"], EmptySub)
+coreToAlgebra (Constant t (CBool i)) = do
+                                         loop <- getLoop
+                                         n1 <- insertNode loop
+                                         n2 <- insertNode $ attach "item1" boolT (bool i) n1
+                                         n3 <- insertNode $ attach "pos" intT (int 1) n2
+                                         return (n3, [Col "item1"], EmptySub)
+coreToAlgebra (Constant t (CFloat i)) = do
+                                         loop <- getLoop
+                                         n1 <- insertNode loop
+                                         n2 <- insertNode $ attach "item1" doubleT (double i) n1
+                                         n3 <- insertNode $ attach "pos" intT (int 1) n2
+                                         return (n3, [Col "item1"], EmptySub)
+coreToAlgebra (Constant t (CString i)) = do
+                                          loop <- getLoop
+                                          n1 <- insertNode loop
+                                          n2 <- insertNode $ attach "item1" stringT (string i) n1
+                                          n3 <- insertNode $ attach "pos" intT (int 1) n2
+                                          return (n3, [Col "item1"], EmptySub)
 coreToAlgebra (BinOp t (Op o) e1 e2) = do
                                          (q1, [Col "item1"], m1) <- coreToAlgebra e1
                                          (q2, [Col "item1"], m2) <- coreToAlgebra e2
