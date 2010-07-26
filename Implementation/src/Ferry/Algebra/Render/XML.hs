@@ -93,8 +93,6 @@ nilNode = do
             return xId
             
 
--- type AlgNode = (Algebra, [Int])
-                                   
 alg2XML :: GraphNode -> XML XMLNode 
 alg2XML gId = do
                 def <- isDefined gId
@@ -123,20 +121,63 @@ alg2XML gId = do
                                     xId <- freshId
                                     tell [mkProjNode xId proj cxId1]
                                     return xId
---    alg2XML' (EqJoin )
-                                    
+    alg2XML' (EqJoin jc, [cId1, cId2]) = do
+                                                cxId1 <- alg2XML cId1
+                                                cxId2 <- alg2XML cId2
+                                                xId <- freshId
+                                                tell [mkEqJoinNode xId jc cxId1 cxId2]
+                                                return xId
+    alg2XML' (FunBinOp (op, res, lArg, rArg), [cId]) = do
+                                                        cxId1 <- alg2XML cId
+                                                        xId <- freshId
+                                                        tell [mkBinOpNode xId op res lArg rArg cxId1]
+                                                        return xId
+                                                            
+mkBinOpNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
+mkBinOpNode xId op res lArg rArg cId | elem op ["+", "-", "*", "%", "/"] = mkFnNode xId (arOptoFn op) res lArg rArg cId
+                                     | elem op [">", "==", "and", "or", "&&", "||"] = mkRelFnNode xId (relOptoFn op) res lArg rArg cId
+                                     | elem op ["<" ] = mkRelFnNode xId (relOptoFn op) res rArg lArg cId
+        where
+            arOptoFn :: String -> String
+            arOptoFn "+" = "add"
+            arOptoFn "-" = "substract"
+            arOptoFn "/" = "divide"
+            arOptoFn "*" = "multiply"
+            arOptoFn "%" = "modulo"
+            relOptoFn :: String -> String
+            relOptoFn ">" = "gt"
+            relOptoFn "==" = "eq"
+            relOptoFn "and" = "and"
+            relOptoFn "or" = "or"
+            relOptoFn "&&" = "and"
+            relOptoFn "||" = "or"
 
-{-
-{-
-data Algebra where
-X    Proj       :: SemInfProj -> Algebra       -- should have one child   
-    EqJoin     :: SemInfEqJoin -> Algebra     -- should have two children 
-X    LitTable   :: SemInfLitTable -> SchemaInfos -> Algebra
-X    Attach     :: SemInfAttach -> Algebra     -- should have one child
-    FunBinOp   :: SemBinOp -> Algebra         -- should have one child
-
--}
--}
+mkRelFnNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
+mkRelFnNode xId fn res lArg rArg cId = let content = Elem "content" [] [CElem (Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []) (),
+                                                                        CElem (Elem "column" [("name", AttValue [Left lArg]), ("new", AttValue [Left "false"]), ("position", AttValue [Left "1"])] []) (),
+                                                                        CElem (Elem "column" [("name", AttValue [Left rArg]), ("new", AttValue [Left "false"]), ("position", AttValue [Left "2"])] []) ()]
+                                           edge = mkEdge cId
+                                        in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left fn])]
+                                                       [CElem content (), CElem edge ()]
+            
+mkFnNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
+mkFnNode xId fn res lArg rArg cId = let kNode = Elem "kind" [("name", AttValue [Left fn])] []
+                                        content = Elem "content" [] [CElem kNode (),
+                                                                     CElem (Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []) (),
+                                                                     CElem (Elem "column" [("name", AttValue [Left lArg]), ("new", AttValue [Left "false"]), ("position", AttValue [Left "1"])] []) (),
+                                                                     CElem (Elem "column" [("name", AttValue [Left rArg]), ("new", AttValue [Left "false"]), ("position", AttValue [Left "2"])] []) ()]
+                                        edge = mkEdge cId
+                                     in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "fun"])]
+                                                    [CElem content (), CElem edge ()]
+            
+mkEqJoinNode :: XMLNode -> (LeftAttrName,RightAttrName) -> XMLNode -> XMLNode -> Element ()
+mkEqJoinNode xId (lN, rN) cxId1 cxId2 = let contNode = Elem "content" [] [CElem (Elem "column" [("name", AttValue [Left lN]), ("new", AttValue [Left "false"]), ("position", AttValue [Left "1"])] []) ()
+                                                                         ,CElem (Elem "column" [("name", AttValue [Left rN]), ("new", AttValue [Left "false"]), ("position", AttValue [Left "2"])] []) ()]
+                                            edge1 = mkEdge cxId1
+                                            edge2 = mkEdge cxId2
+                                         in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "eqjoin"])]
+                                                        [CElem contNode (), CElem edge1 (), CElem edge2 ()]
+                                                        
 
 mkProjNode :: XMLNode -> [(NewAttrName, OldAttrName)] -> XMLNode -> Element ()
 mkProjNode xId mapping cxId = let contNode = Elem "content" [] $ map (\m -> flip CElem () $ mkProjColumn m) mapping

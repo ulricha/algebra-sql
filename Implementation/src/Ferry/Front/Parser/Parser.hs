@@ -37,8 +37,8 @@ opExpr = buildExpressionParser operators simpleExpr
         , [ binop "%"  AssocLeft, binop "contains"  AssocLeft]
         , [ binop "==" AssocNone, binop "!=" AssocNone, binop "<="  AssocNone
           , binop "<" AssocNone, binop ">="  AssocNone, binop ">" AssocNone ]
-        , [ binop "and" AssocRight ] -- Right for shortcircuiting
-        , [ binop "or" AssocRight ] -- Right for shortcircuiting
+        , [ binop "&&" AssocRight ] -- Right for shortcircuiting
+        , [ binop "||" AssocRight ] -- Right for shortcircuiting
         , [ binop "^" AssocLeft ]
         ]
         where

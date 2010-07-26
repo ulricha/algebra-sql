@@ -9,6 +9,14 @@ import Ferry.TypedCore.Data.TypedCore
 
 import qualified Data.Map as M 
 
+resCol = "item999999001"
+
+mkPrefixCol i = "item" ++ prefixCol ++ (show i)
+
+mkPrefixIter i = "iter" ++ prefixCol ++ (show i)
+
+prefixCol = "9999"
+
 coreToAlgebra :: CoreExpr -> GraphM AlgRes
 coreToAlgebra (Constant t (CInt i)) = do 
                                         loop <- getLoop
@@ -19,10 +27,10 @@ coreToAlgebra (Constant t (CInt i)) = do
 coreToAlgebra (BinOp t (Op o) e1 e2) = do
                                          (q1, [Col "item1"], m1) <- coreToAlgebra e1
                                          (q2, [Col "item1"], m2) <- coreToAlgebra e2
-                                         n1 <- insertNode $ proj [("iter'", "iter"), ("item1'", "item1")] q2
-                                         n2 <- insertNode $ eqJoin "iter" "iter'" q1 n1
-                                         n3 <- insertNode $ oper o "res" "item1" "item1'" n2
-                                         n4 <- insertNode $ proj [("iter", "iter"), ("pos", "pos"), ("item1", "res")] n3
+                                         n1 <- insertNode $ proj [(mkPrefixIter 1, "iter"), (mkPrefixCol 1, "item1")] q2
+                                         n2 <- insertNode $ eqJoin "iter" (mkPrefixIter 1) q1 n1
+                                         n3 <- insertNode $ oper o resCol  "item1" (mkPrefixCol 1) n2
+                                         n4 <- insertNode $ proj [("iter", "iter"), ("pos", "pos"), ("item1", resCol)] n3
                                          return (n4, [Col "item1"], EmptySub)
 
 {-
