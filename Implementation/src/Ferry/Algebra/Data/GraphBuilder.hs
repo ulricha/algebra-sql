@@ -10,7 +10,7 @@ import Control.Monad.Reader
 
 type GraphM = ReaderT (Gam, AlgNode) (State (Int, M.Map AlgNode Int))
 
-type Gam = [(String, Int)]
+type Gam = [(String, AlgRes)]
 
 data SubPlan where
     SubPlan :: String -> AlgRes -> SubPlan -> SubPlan
@@ -59,6 +59,13 @@ insertNode' n children = do
                               put $ (sup, t')
                               return i
 
-withBinding :: String -> Int -> GraphM a -> GraphM a
+withBinding :: String -> AlgRes -> GraphM a -> GraphM a
 withBinding n v a = do
                      local (\(g, alg) -> ((n, v):g, alg)) a
+                     
+fromGam :: String -> GraphM AlgRes
+fromGam n = do
+             (m, _) <- ask
+             case lookup n m of
+                 Just r -> return r
+                 Nothing -> error $ "Variable: " ++ n ++ " could not be found, should not be possible!"

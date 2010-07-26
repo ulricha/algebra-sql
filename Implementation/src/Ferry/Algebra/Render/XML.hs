@@ -136,7 +136,7 @@ alg2XML gId = do
 mkBinOpNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
 mkBinOpNode xId op res lArg rArg cId | elem op ["+", "-", "*", "%", "/"] = mkFnNode xId (arOptoFn op) res lArg rArg cId
                                      | elem op [">", "==", "and", "or", "&&", "||"] = mkRelFnNode xId (relOptoFn op) res lArg rArg cId
-                                     | elem op ["<" ] = mkRelFnNode xId (relOptoFn op) res rArg lArg cId
+                                     | elem op ["<" ] = mkBinOpNode xId ">" res rArg lArg cId
         where
             arOptoFn :: String -> String
             arOptoFn "+" = "add"

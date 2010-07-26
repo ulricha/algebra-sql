@@ -32,6 +32,12 @@ coreToAlgebra (BinOp t (Op o) e1 e2) = do
                                          n3 <- insertNode $ oper o resCol  "item1" (mkPrefixCol 1) n2
                                          n4 <- insertNode $ proj [("iter", "iter"), ("pos", "pos"), ("item1", resCol)] n3
                                          return (n4, [Col "item1"], EmptySub)
+coreToAlgebra (Let t s e1 e2) = do
+                                    (q1, cs1, m1) <- coreToAlgebra e1
+                                    withBinding s (q1, cs1, m1) $ coreToAlgebra e2
+coreToAlgebra (Var t n) = do
+                            fromGam n
+                                    
 
 {-
 data CoreExpr where
