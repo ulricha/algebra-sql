@@ -4,7 +4,7 @@ module Ferry.Algebra.Data.Algebra where
 import Numeric (showFFloat)
 
 data Column where
-    Col :: String -> Column
+    Col :: Int -> Column
     NCol :: String -> Columns -> Column
      
 type Columns = [Column]

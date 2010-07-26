@@ -85,7 +85,7 @@ posCol :: Element ()
 posCol = Elem "column" [("name", AttValue [Left "pos"]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "pos"])] []
                                     
 colsToNodes :: [(Column, Int)] -> [Element ()]
-colsToNodes ((Col name, nr):cols) = let col = Elem "column" [("name", AttValue [Left name]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"]), ("position", AttValue [Left $ show nr])] []
+colsToNodes ((Col name, nr):cols) = let col = Elem "column" [("name", AttValue [Left $ "item" ++ (show name)]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"]), ("position", AttValue [Left $ show nr])] []
                                      in (:) col $ colsToNodes cols
 colsToNodes []                    = []
 
