@@ -7,12 +7,22 @@
     \infrule[ac-Binop]%
         {|Gam, loop +- e1 => (q1, {item1}, empty)|\quad%
          |Gam, loop +- e2 => (q2, {item1}, empty)|}
-        {|Gam, loop +- e1 op e2 => (proj (iter, pos, item1:res) (oper res item1 item1' (join (item1:item1') q1 ((proj (iter':iter, item1':item1) q2)))) , {item1}, empty)|}\\
+        {|Gam, loop +- e1 op e2 => (proj (iter, pos, item1:res) (oper res item1 item1' (join (iter1:iter1') q1 ((proj (iter':iter, item1':item1) q2)))) , {item1}, empty)|}\\
     \infrule[ac-let]
         {| Gam, loop +- e1 => (q1, cs1, ts1)|\quad%
          | Gam[x +-> (q1, cs1, ts1)], loop +- e2 => (q2, cs2, ts2)|}
         {| Gam, loop +- let x = e1 in e2 => (q2, cs2, ts2)|}\\
     \infrule[ac-var]
         {| Gam(x) = (q, cs, ts)|}
-        {| Gam, loop +- x => (q, cs, ts)|}
+        {| Gam, loop +- x => (q, cs, ts)|}\\
+    \infrule[ac-rec]
+        {| Gam, loop +- ei => (qi, csi, tsi)|\quad |i = 1, 2 |\quad%
+         | cs2' = incr cs2 (card cs1) |\\
+         | q = proj (iter, pos, ln cs1, ln cs2)(join (iter1:iter1') q1 (proj (iter':iter, ln cs2': ln cs2) q2))|}
+        {| Gam, loop +- {x1 = e1, x2 = e2} => (q, {x1 -> cs1, x2 -> cs2'}, empty)|}\\
+    \infrule[ac-lookup]
+        {| Gam, loop +- e => (q1, cs@{..., l -> csl, ...}, ts)|\quad%
+         | csl' = decr csl |\\
+         | q = proj (iter, pos, ln csl': ln csl) q1 |}
+        {| Gam, loop +- e.l => (q, csl', empty)|}
 \end{infrules}
