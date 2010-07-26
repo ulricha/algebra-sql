@@ -7,13 +7,14 @@ import Ferry.Compiler.ExecuteStep
 import Ferry.Algebra.Data.Algebra
 import Ferry.Algebra.Data.GraphBuilder
 import Ferry.Algebra.Render.XML
+import Ferry.TypedCore.Data.Type
 
-xmlPhase :: AlgPlan -> PhaseResult String
+xmlPhase :: (Qual FType, AlgPlan) -> PhaseResult String
 xmlPhase e = executeStep xmlStage e
 
-xmlStage :: CompilationStep AlgPlan String
+xmlStage :: CompilationStep (Qual FType, AlgPlan) String
 xmlStage = CompilationStep "ToXML" AlgebraXML step artefacts
     where
-        step :: AlgPlan -> PhaseResult String
+        step :: (Qual FType, AlgPlan) -> PhaseResult String
         step = return . show . transform 
         artefacts = [(XML, "xml", return)]

@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>src/Ferry/TypedCore/Convert/CoreToAlgebra.hs</string>
+	<string>src/Ferry/Algebra/Render/XML.hs</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -36,23 +36,39 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>39</integer>
+				<integer>31</integer>
 				<key>line</key>
-				<integer>7</integer>
+				<integer>112</integer>
 			</dict>
+			<key>columnSelection</key>
+			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>100</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>25</integer>
+				<key>line</key>
+				<integer>112</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>36</integer>
+				<key>line</key>
+				<integer>112</integer>
+			</dict>
 		</dict>
 		<key>src/Ferry/Algebra/Data/Create.hs</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>4</integer>
+				<integer>2</integer>
 				<key>line</key>
-				<integer>30</integer>
+				<integer>13</integer>
 			</dict>
 			<key>columnSelection</key>
 			<false/>
@@ -65,14 +81,14 @@
 				<key>column</key>
 				<integer>0</integer>
 				<key>line</key>
-				<integer>30</integer>
+				<integer>13</integer>
 			</dict>
 			<key>selectTo</key>
 			<dict>
 				<key>column</key>
-				<integer>8</integer>
+				<integer>6</integer>
 				<key>line</key>
-				<integer>30</integer>
+				<integer>13</integer>
 			</dict>
 		</dict>
 		<key>src/Ferry/Algebra/Data/GraphBuilder.hs</key>
@@ -80,30 +96,44 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>20</integer>
+				<integer>5</integer>
 				<key>line</key>
-				<integer>27</integer>
+				<integer>65</integer>
 			</dict>
 			<key>columnSelection</key>
 			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>7</integer>
+			<integer>41</integer>
 			<key>selectFrom</key>
 			<dict>
 				<key>column</key>
-				<integer>14</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>27</integer>
+				<integer>65</integer>
 			</dict>
 			<key>selectTo</key>
 			<dict>
 				<key>column</key>
-				<integer>20</integer>
+				<integer>7</integer>
 				<key>line</key>
-				<integer>27</integer>
+				<integer>65</integer>
 			</dict>
+		</dict>
+		<key>src/Ferry/Algebra/Render/XML.hs</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>36</integer>
+				<key>line</key>
+				<integer>142</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>124</integer>
 		</dict>
 		<key>src/Ferry/Common/Render/Dot.hs</key>
 		<dict>
@@ -442,9 +472,9 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>16</integer>
 				<key>line</key>
-				<integer>4</integer>
+				<integer>5</integer>
 			</dict>
 			<key>columnSelection</key>
 			<false/>
@@ -455,16 +485,16 @@
 			<key>selectFrom</key>
 			<dict>
 				<key>column</key>
-				<integer>27</integer>
+				<integer>13</integer>
 				<key>line</key>
-				<integer>7</integer>
+				<integer>5</integer>
 			</dict>
 			<key>selectTo</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>19</integer>
 				<key>line</key>
-				<integer>4</integer>
+				<integer>5</integer>
 			</dict>
 		</dict>
 		<key>src/Ferry/Front/Data/Instances.hs</key>
@@ -544,14 +574,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>16</integer>
+				<integer>21</integer>
 				<key>line</key>
-				<integer>78</integer>
+				<integer>40</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>63</integer>
+			<integer>33</integer>
 		</dict>
 		<key>src/Ferry/Front/Parser/Scanner.hs</key>
 		<dict>
@@ -702,14 +732,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>25</integer>
+				<integer>66</integer>
 				<key>line</key>
-				<integer>10</integer>
+				<integer>43</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>14</integer>
 		</dict>
 		<key>src/Ferry/TypedCore/Convert/Specialize.hs</key>
 		<dict>
@@ -959,7 +989,7 @@
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>44</integer>
 			<key>selectFrom</key>
 			<dict>
 				<key>column</key>
@@ -2038,6 +2068,7 @@
 		<string>src/Ferry/TypedCore/Convert/Specialize.hs</string>
 		<string>src/Ferry/Algebra/Data/GraphBuilder.hs</string>
 		<string>src/Ferry/TypedCore/Convert/CoreToAlgebra.hs</string>
+		<string>src/Ferry/Algebra/Render/XML.hs</string>
 		<string>test/script/runTests</string>
 		<string>test/script/Normalise/program1.out</string>
 		<string>test/script/Core/program1.out</string>

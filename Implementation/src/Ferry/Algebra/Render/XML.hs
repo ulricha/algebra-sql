@@ -6,6 +6,8 @@ import Ferry.Algebra.Data.GraphBuilder
 import Text.XML.HaXml.Types
 import Text.XML.HaXml.Pretty
 
+import Ferry.TypedCore.Data.Type
+
 import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Reader
@@ -56,12 +58,13 @@ getNode i = do
 runXML :: M.Map Int AlgNode -> XML a -> [Element ()]
 runXML m = snd . fst . flip runState (0, M.empty) . flip runReaderT m . runWriterT 
 
-transform :: AlgPlan -> Doc
-transform (nodes, (top, cols, subs)) = let nodeTable = M.fromList $ map (\(a, b) -> (b, a)) $ M.toList nodes
-                                           plan = runXML nodeTable $ serializeAlgebra top cols
-                                           qPlan = runXML M.empty $ mkQueryPlan plan
-                                           planBundle = mkPlanBundle qPlan
-                                        in (document $ mkXMLDocument planBundle)
+transform :: (Qual FType, AlgPlan) -> Doc
+transform (_ :=> t, (nodes, (top, cols, subs))) = let nodeTable = M.fromList $ map (\(a, b) -> (b, a)) $ M.toList nodes
+                                                      plan = runXML nodeTable $ serializeAlgebra top cols
+                                                      qPlan = runXML M.empty $ mkQueryPlan (Just $ mkProperties t) plan
+                                                      planBundle = mkPlanBundle qPlan
+                                                      props = mkProperties t
+                                                   in (document $ mkXMLDocument planBundle)
 
 
 serializeAlgebra :: GraphNode -> Columns -> XML XMLNode
@@ -140,7 +143,7 @@ mkBinOpNode xId op res lArg rArg cId | elem op ["+", "-", "*", "%", "/"] = mkFnN
         where
             arOptoFn :: String -> String
             arOptoFn "+" = "add"
-            arOptoFn "-" = "substract"
+            arOptoFn "-" = "subtract"
             arOptoFn "/" = "divide"
             arOptoFn "*" = "multiply"
             arOptoFn "%" = "modulo"
@@ -211,11 +214,14 @@ mkEdge n = Elem "edge" [("to", AttValue [Left $ show n])] []
 contentNode :: Element () -> Element ()
 contentNode n = Elem "content" [] [CElem n ()]
 
-mkQueryPlan :: [Element ()] -> XML ()
-mkQueryPlan els = let logicalPlan = Elem "logical_query_plan" [("unique_names", AttValue [Left "true"])] $ map (\n -> CElem n ()) els
-                   in do
-                        planId <- freshId
-                        tell $ [Elem "query_plan" [("id", AttValue [Left $ show planId])] [CElem logicalPlan ()]]
+mkQueryPlan :: Maybe (Element ()) -> [Element ()] -> XML ()
+mkQueryPlan props els = let logicalPlan = Elem "logical_query_plan" [("unique_names", AttValue [Left "true"])] $ map (\n -> CElem n ()) els
+                            propPlan = case props of
+                                            Nothing -> []
+                                            Just e  -> [CElem e ()]
+                         in do
+                             planId <- freshId
+                             tell $ [Elem "query_plan" [("id", AttValue [Left $ show planId])] $ propPlan ++ [CElem logicalPlan ()]]
                         
 
 mkPlanBundle :: [Element ()] -> Element ()
@@ -227,3 +233,10 @@ mkXMLDocument el = let xmlDecl = XMLDecl "1.0" (Just $ EncodingDecl "UTF-8") Not
                     in Document prolog emptyST el []
 
 
+mkProperties :: FType -> Element ()
+mkProperties ty = let resTy = Elem "property" [("name", AttValue [Left "overallResultType"]), ("value", AttValue[Left result])] []
+                   in Elem "properties" [] [CElem resTy ()]
+    where
+        result = case ty of
+                    FList _ -> "LIST"
+                    _       -> "TUPLE"
