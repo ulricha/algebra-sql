@@ -4,13 +4,14 @@ module Ferry.Algebra.Data.Algebra where
 import Numeric (showFFloat)
 
 data Column where
-    Col :: Int -> Column
+    Col :: Int -> ATy -> Column
     NCol :: String -> Columns -> Column
      
 type Columns = [Column]
 
---data SortDir = Asc
---             | Desc
+data SortDir = Asc
+             | Desc
+    deriving (Show, Eq, Ord)
 --
 --data JoinCompKind = TJ_EQ 
 --                  | TJ_GT 
@@ -26,6 +27,7 @@ data ATy where
     ADec :: ATy             
     ADouble :: ATy          
     ANat :: ATy             
+    ASur :: ATy
       deriving (Eq, Ord)
       
 
@@ -36,6 +38,7 @@ instance Show ATy where
   show ADec     = "dec"
   show ADouble  = "dbl"
   show ANat     = "nat"
+  show ASur     = "sur"
                   
 data AVal where
   VInt :: Integer -> AVal
@@ -55,13 +58,6 @@ instance Show AVal where
   show (VDec x)     = showFFloat (Just 2) x ""
   show (VNat x)     = show x
 
---data FunTy1To1 = FT1To1Add
---               | FT1To1Sub
---               | FT1To1Mul
---               | FT1To1Div
---               | FT1To1Mod
---               | FT1To1Con
---              deriving (Eq,  Show)
 --
 --data FunTyAggr = FTAggr_Avg
 --               | FTAggr_Max
@@ -73,7 +69,7 @@ type ATyVal = (ATy, AVal)
 
 type AttrName            = String              
 type ResAttrName         = AttrName
---type SortAttrName        = AttrName
+type SortAttrName        = AttrName
 --type PartAttrName        = AttrName
 type NewAttrName         = AttrName
 type OldAttrName         = AttrName
@@ -86,7 +82,7 @@ type RightAttrName       = AttrName
 --type KeyInfo             = [AttrName]
 --type KeyInfos            = [KeyInfo]
 --
---type SortInf              = [(SortAttrName, SortDir)]
+type SortInf              = [(SortAttrName, SortDir)]
 type ProjInf              = [(NewAttrName, OldAttrName)]  
 
 --type JoinPred = (JoinCompKind, (LeftAttrName,RightAttrName))
@@ -98,7 +94,7 @@ type SchemaInfos = [(AttrName, ATy)]
 
 -- type SemInfRowNum  = (ResAttrName, SortInf, Maybe PartAttrName) 
 -- type SemInfRowId   = ResAttrName
--- type SemInfRank    = (ResAttrName,  SortInf)
+type SemInfRank    = (ResAttrName,  SortInf)
 type SemInfProj    = ProjInf
 -- type SemInfSel     = SelAttrName
 -- type SemInfPosSel  = (Int, SortInf, Maybe PartAttrName) 
@@ -122,7 +118,7 @@ data Algebra where
 --    RowNum     :: SemInfRowNum -> Algebra     -- Should have one child
 --    RowId      :: SemInfRowId -> Algebra      -- should have one child
 --    RowRank    :: SemInfRank -> Algebra       -- should have one child
---    Rank       :: SemInfRank -> Algebra       -- should have one child
+    Rank       :: SemInfRank -> Algebra       -- should have one child
     Proj       :: SemInfProj -> Algebra       -- should have one child   
 --    Sel        :: SemInfSel  -> Algebra       -- should have one child  
 --    PosSel     :: SemInfPosSel -> Algebra     -- should have one child
@@ -130,11 +126,11 @@ data Algebra where
     EqJoin     :: SemInfEqJoin -> Algebra     -- should have two children 
 --    SemiJoin   :: SemInfEqJoin -> Algebra     -- should have two children 
 --    ThetaJoin  :: SemInfThetaJoin -> Algebra  -- should have two children
---    DisjUnion  :: Algebra                     -- should have two children
+    DisjUnion  :: Algebra                     -- should have two children
 --    Diff       :: Algebra                     -- should have two children
 --    Distinct   :: Algebra                     -- should have one child
     LitTable   :: SemInfLitTable -> SchemaInfos -> Algebra
---    EmptyTable :: SchemaInf -> Algebra
+    EmptyTable :: SchemaInfos -> Algebra
 --    TableRef   :: SemInfTableRef -> Algebra
     Attach     :: SemInfAttach -> Algebra     -- should have one child
     FunBinOp   :: SemBinOp -> Algebra         -- should have one child

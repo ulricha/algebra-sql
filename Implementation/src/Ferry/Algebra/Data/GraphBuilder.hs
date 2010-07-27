@@ -69,3 +69,4 @@ fromGam n = do
              case lookup n m of
                  Just r -> return r
                  Nothing -> error $ "Variable: " ++ n ++ " could not be found, should not be possible!"
+                 

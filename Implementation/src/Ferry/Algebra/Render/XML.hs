@@ -107,9 +107,9 @@ posCol = Elem "column" [("name", AttValue [Left "pos"]), ("new", AttValue [Left 
 
 -- Transform cs structure into xml columns
 colsToNodes :: Int -> Columns -> ([Element ()], Int)
-colsToNodes i ((Col n):cs) = let col = Elem "column" [("name", AttValue [Left $ "item" ++ (show n)]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"]), ("position", AttValue [Left $ show i])] []
-                                 (els, i') = colsToNodes (i+1) cs
-                              in (col:els, i') 
+colsToNodes i ((Col n _):cs) = let col = Elem "column" [("name", AttValue [Left $ "item" ++ (show n)]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"]), ("position", AttValue [Left $ show i])] []
+                                   (els, i') = colsToNodes (i+1) cs
+                                in (col:els, i') 
 colsToNodes i ((NCol n cs):cs') = let (els, i') = colsToNodes i cs 
                                       (els', i'') = colsToNodes i' cs'
                                    in (els ++ els', i'')
