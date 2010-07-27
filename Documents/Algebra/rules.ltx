@@ -24,5 +24,43 @@
         {| Gam, loop +- e => (q1, cs@{..., l -> csl, ...}, ts)|\quad%
          | csl' = decr csl |\\
          | q = proj (iter, pos, ln csl': ln csl) q1 |}
-        {| Gam, loop +- e.l => (q, csl', empty)|}
+        {| Gam, loop +- e.l => (q, csl', empty)|}\\
+    \infrule[ac-Cons]
+        {| Gam, loop +- ei => (qi, csi, empty) where i = 1,2|\\
+         | q = proj (iter, pos':pos, ln cs1) (rank pos' (<ord,pos>) (union (attach ord 1 q1) (attach ord 2 q2))) |}
+        {| Gam, loop +- Cons e1 e2 => (q, cs1, empty)|}\\
+    \infrule[ac-Nil]
+        {| cs = tyToCol t 1|}
+        {| Gam, loop +- Nil :: t => (EmptyTBL (iter, pos, ln cs), cs, empty)|}
+\end{infrules}
+
+\begin{code}
+tyToCol :: Type -> Int -> Columns
+\end{code}
+
+Optimized lists, these rules can replace the ac-Cons rule from the previous section.
+ac-Cons1 and ac-ConsNil1 have the same signature as ac-Cons. ac-ConsNil1 checks for a singleton list
+if so no expensive attach unions and projects have to be carried out.
+ac-Cons1 adds an extra environment element to the for transforming e2, this optimized version carries
+out the rank operator. The rules that fit, ac-Cons2, and ac-ConsNil2 only do the attach but do not perform the
+rank, or the projection. These will only be done by the first element of the list.
+
+\begin{infrules}
+    \infrule[ac-Cons1]
+            {| Gam, loop +- e1 => (q1, cs1, empty) |\quad
+             | Gam, loop, 2 +- e2 => (q2, cs2, empty)|\\
+             | q = proj (iter, pos':pos, ln cs1) (rank pos' (<ord,pos>) (union (attach ord 1 q1) q2))|}
+            {| Gam, loop +- Cons e1 e2 => (q, cs1, empty)|}\\
+    \infrule[ac-ConsNil1]
+            {| Gam, loop +- e1 => (q1, cs1, empty)|}
+            {| Gam, loop +- Cons e1 Nil => (q1, cs1, empty)|}\\
+    \infrule[ac-Cons2]
+            {| Gam, loop +- e1 => (q1, cs1, empty) |\quad
+             | Gam, loop, i + 1 +- e2 => (q2, cs2, empty) |\quad
+             | q = union (attach ord i q1) q2 |}
+            {| Gam, loop, i +- Cons e1 e2 => (q, cs1, empty) |}\\
+    \infrule[ac-ConsNil2]
+            {| Gam, loop +- e1 => (q1, cs1, empty)|\quad
+             | q = (attach ord i q1) |}
+            {| Gam, loop, i +- Cons e1 Nil => (q, cs1, empty) |}
 \end{infrules}

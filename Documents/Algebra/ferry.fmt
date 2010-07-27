@@ -152,3 +152,6 @@
 %format (proj (x) (y)) = " \pi_{" x"}(" y ") "
 %format (join (x) (y) (z)) = " " y " \bowtie_{" x "} " z " "
 %format (oper (x) (y) (z) (a)) = " \oplus^{"x"}_{< \stackrel{"y"}{"z"} >} " a " "
+%format (union (x) (y)) = x "\cup" y
+%format (rank (x) (y) (z)) = " \text{rank}_{\stackrel{"x"}{"y"}} (" z ")"
+%format (EmptyTBL (x)) = " \text{EmptyTBL}_{"x"} "
