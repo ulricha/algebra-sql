@@ -55,7 +55,55 @@ coreToAlgebra (Let t s e1 e2) = do
                                     withBinding s (q1, cs1, m1) $ coreToAlgebra e2
 coreToAlgebra (Var t n) = do
                             fromGam n
+coreToAlgebra (Rec t (e:els)) = foldr recElemsToAlgebra (recElemToAlgebra e) els
+                             
+recElemToAlgebra :: RecElem -> GraphM AlgRes
+recElemToAlgebra (RecElem t n e) = do
+                                     (q1, cs1, ts1) <- coreToAlgebra e
+                                     return (q1, [NCol n cs1], ts1)
+                                     
+recElemsToAlgebra :: RecElem -> GraphM AlgRes -> GraphM AlgRes
+recElemsToAlgebra el alg2 = do
+                                (q1, cs1, ts1) <- recElemToAlgebra el
+                                (q2, cs2, ts2) <- alg2
+                                let offSet = colSize cs1
+                                let cs2' = incrCols offSet cs2
+                                let projPairs = zip (leafNames cs2') (leafNames cs2)
+                                n1 <- insertNode $ proj ((mkPrefixIter 1, "iter"):projPairs) q2
+                                n2 <- insertNode $ eqJoin "iter" (mkPrefixIter 1) q1 n1
+                                let projPairs' = zip (leafNames cs1) (leafNames cs1) ++ zip (leafNames cs2') (leafNames cs2')
+                                n3 <- insertNode $ proj (("iter", "iter"):("pos", "pos"):projPairs') n2
+                                return (n3, cs1 ++ cs2', EmptySub)
                                     
+--  RecElem :: (Qual FType) -> String -> CoreExpr -> RecElem
+
+leafNames :: Columns -> [String]
+leafNames cs = map (\i -> "item" ++ show i) $ colLeafs cs
+
+colLeafs :: Columns -> [Int]
+colLeafs ((Col i):xs) = (:) i $ colLeafs xs
+colLeafs ((NCol _ cs):xs) = colLeafs cs ++ colLeafs xs
+colLeafs []               = []
+
+colSize :: Columns -> Int
+colSize = length . colLeafs
+
+incrCols :: Int -> Columns -> Columns
+incrCols inc ((Col i):xs)    = (Col (i + inc)):(incrCols inc xs)
+incrCols inc ((NCol x i):xs) = (NCol x (incrCols inc i)):(incrCols inc xs)
+incrCols inc []              = [] 
+
+minCol :: Columns -> Int
+minCol c = minimum $ (:) 1 $ colLeafs c
+
+decrCols :: Columns -> Columns
+decrCols cols = let minV = minCol cols
+                 in decr' (minV - 1) cols
+    where
+     decr' :: Int -> Columns -> Columns
+     decr' decr ((Col i):xs)    = (Col $ i - decr) : (decr' decr xs)
+     decr' decr ((NCol x i):xs) = (NCol x $ decr' decr i) : (decr' decr xs)
+     decr' _    []              = []
 
 {-
 data CoreExpr where
