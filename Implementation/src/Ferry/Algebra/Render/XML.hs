@@ -1,5 +1,7 @@
 module Ferry.Algebra.Render.XML where
-    
+{-
+Transform a query plan DAG into an XML representation.
+-}    
 import Ferry.Algebra.Data.Algebra
 import Ferry.Algebra.Data.GraphBuilder
 
@@ -18,13 +20,23 @@ import Text.PrettyPrint.HughesPJ
 
 import qualified Data.Map as M
 
+
 type ColName = String
+
 
 type Graph = (Int, [(AlgNode, Int)])
 type GraphNode = Int
 type XMLNode = Int
+
+-- Mapping from graphnodes to xmlnode ids. This dictionary is used to prevent duplicate xml nodes
 type Dictionary = M.Map GraphNode XMLNode
 
+-- XML monad, all elements are printed in bottom up!!! order into the writer monad so
+-- that the xml can easily be printed an will be accepted by pfopt.
+-- The reader monad contains the map with all the nodes from the algebraic plan, the keys
+-- are the node ids from the graph. The state monad keeps track of the supply of fresh ids
+-- for xml nodes and the dictionary for looking up whether a certain graphnode already has
+-- an xml representation.
 type XML = WriterT [Element ()] (ReaderT (M.Map Int AlgNode) (State (Int, Dictionary)))
 
 {-
@@ -33,31 +45,38 @@ type AlgRes = (Int, Columns, SubPlan)
 type AlgPlan = (M.Map AlgNode Int, AlgRes)
 -}
 
+-- Has a graphnode already been translated into an xml node. If yes which node?
 isDefined :: GraphNode -> XML (Maybe XMLNode)
 isDefined g = do
                 (_, d) <- get
                 return $ M.lookup g d 
 
+-- Get a fresh xml node id.
 freshId :: XML Int
 freshId = do
             (n, d) <- get
             put (n + 1, d)
             return n
-            
+
+-- Add a mapping from a graphnode to an xml node id to the dictionary            
 addNodeTrans :: GraphNode -> XMLNode -> XML ()
 addNodeTrans gId xId = do
                         (n, d) <- get
                         put (n, M.insert gId xId d)
 
+-- Get a node from the algebraic plan with a certain graphNode id number
 getNode :: Int -> XML AlgNode
 getNode i = do
              nodes <- ask
              return $ nodes M.! i
 
 
+-- Run the monad and return a list of xml elements from the monad.
 runXML :: M.Map Int AlgNode -> XML a -> [Element ()]
 runXML m = snd . fst . flip runState (0, M.empty) . flip runReaderT m . runWriterT 
 
+-- Transform a query plan with result type into a pretty doc.
+-- The type is used to add meta information to the XML that is used for pretty printing by ferryDB
 transform :: (Qual FType, AlgPlan) -> Doc
 transform (_ :=> t, (nodes, (top, cols, subs))) = let nodeTable = M.fromList $ map (\(a, b) -> (b, a)) $ M.toList nodes
                                                       plan = runXML nodeTable $ serializeAlgebra top cols
@@ -66,7 +85,7 @@ transform (_ :=> t, (nodes, (top, cols, subs))) = let nodeTable = M.fromList $ m
                                                       props = mkProperties t
                                                    in (document $ mkXMLDocument planBundle)
 
-
+-- Serialize algebra
 serializeAlgebra :: GraphNode -> Columns -> XML XMLNode
 serializeAlgebra qGId cols = do
                                     qId <- alg2XML qGId
@@ -78,12 +97,15 @@ serializeAlgebra qGId cols = do
                                     tell [Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "serialize relation"])] [CElem contentN (), CElem edgeNil (), CElem edgeQ ()]]
                                     return xId
 
+-- XML defintion of iter column
 iterCol :: Element ()
 iterCol = Elem "column" [("name", AttValue [Left "iter"]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "iter"])] []
 
+-- XML defintion of position column
 posCol :: Element ()
 posCol = Elem "column" [("name", AttValue [Left "pos"]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "pos"])] []
 
+-- Transform cs structure into xml columns
 colsToNodes :: Int -> Columns -> ([Element ()], Int)
 colsToNodes i ((Col n):cs) = let col = Elem "column" [("name", AttValue [Left $ "item" ++ (show n)]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"]), ("position", AttValue [Left $ show i])] []
                                  (els, i') = colsToNodes (i+1) cs
@@ -92,14 +114,17 @@ colsToNodes i ((NCol n cs):cs') = let (els, i') = colsToNodes i cs
                                       (els', i'') = colsToNodes i' cs'
                                    in (els ++ els', i'')
 colsToNodes i []                = ([], i)
-                                    
+
+-- XML defintion of nil node                                    
 nilNode :: XML XMLNode
 nilNode = do
             xId <- freshId
             tell [Elem "node" [("id", AttValue [Left $ show xId]),("kind", AttValue [Left "nil"])] []]
             return xId
             
-
+-- Transform algebra into XML
+-- The outer function determines whether the node was already translated into xml, if so it returns the xml id of that node.
+-- if the node was not translated yet the inner function alg2XML' will translated the plan and return the xml id
 alg2XML :: GraphNode -> XML XMLNode 
 alg2XML gId = do
                 def <- isDefined gId
