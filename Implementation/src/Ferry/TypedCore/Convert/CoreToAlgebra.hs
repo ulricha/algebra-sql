@@ -53,19 +53,18 @@ coreToAlgebra (BinOp t (Op o) e1 e2) = do
 coreToAlgebra (Let t s e1 e2) = do
                                     (q1, cs1, m1) <- coreToAlgebra e1
                                     withBinding s (q1, cs1, m1) $ coreToAlgebra e2
-coreToAlgebra (Var t n) = do
-                            fromGam n
-coreToAlgebra (Rec t (e:els)) = foldr recElemsToAlgebra (recElemToAlgebra e) els
+coreToAlgebra (Var t n) = fromGam n
+coreToAlgebra (Rec t (e:els)) = foldl recElemsToAlgebra (recElemToAlgebra e) els
                              
 recElemToAlgebra :: RecElem -> GraphM AlgRes
 recElemToAlgebra (RecElem t n e) = do
                                      (q1, cs1, ts1) <- coreToAlgebra e
                                      return (q1, [NCol n cs1], ts1)
                                      
-recElemsToAlgebra :: RecElem -> GraphM AlgRes -> GraphM AlgRes
-recElemsToAlgebra el alg2 = do
-                                (q1, cs1, ts1) <- recElemToAlgebra el
-                                (q2, cs2, ts2) <- alg2
+recElemsToAlgebra :: GraphM AlgRes -> RecElem -> GraphM AlgRes
+recElemsToAlgebra alg2 el = do
+                                (q1, cs1, ts1) <- alg2
+                                (q2, cs2, ts2) <- recElemToAlgebra el
                                 let offSet = colSize cs1
                                 let cs2' = incrCols offSet cs2
                                 let projPairs = zip (leafNames cs2') (leafNames cs2)
@@ -75,8 +74,6 @@ recElemsToAlgebra el alg2 = do
                                 n3 <- insertNode $ proj (("iter", "iter"):("pos", "pos"):projPairs') n2
                                 return (n3, cs1 ++ cs2', EmptySub)
                                     
---  RecElem :: (Qual FType) -> String -> CoreExpr -> RecElem
-
 leafNames :: Columns -> [String]
 leafNames cs = map (\i -> "item" ++ show i) $ colLeafs cs
 

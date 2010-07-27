@@ -72,7 +72,7 @@ serializeAlgebra qGId cols = do
                                     qId <- alg2XML qGId
                                     nilId <- nilNode
                                     xId <- freshId
-                                    let contentN = Elem "content" [] $ (:) (CElem iterCol ()) $ (:) (CElem posCol ()) $ map (\c -> CElem c ()) $ colsToNodes $ zip cols [1..]
+                                    let contentN = Elem "content" [] $ (:) (CElem iterCol ()) $ (:) (CElem posCol ()) $ map (\c -> CElem c ()) $ fst $ colsToNodes 1 cols 
                                     let edgeNil = mkEdge nilId
                                     let edgeQ = mkEdge qId
                                     tell [Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "serialize relation"])] [CElem contentN (), CElem edgeNil (), CElem edgeQ ()]]
@@ -83,12 +83,16 @@ iterCol = Elem "column" [("name", AttValue [Left "iter"]), ("new", AttValue [Lef
 
 posCol :: Element ()
 posCol = Elem "column" [("name", AttValue [Left "pos"]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "pos"])] []
-                                    
-colsToNodes :: [(Column, Int)] -> [Element ()]
-colsToNodes ((Col name, nr):cols) = let col = Elem "column" [("name", AttValue [Left $ "item" ++ (show name)]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"]), ("position", AttValue [Left $ show nr])] []
-                                     in (:) col $ colsToNodes cols
-colsToNodes []                    = []
 
+colsToNodes :: Int -> Columns -> ([Element ()], Int)
+colsToNodes i ((Col n):cs) = let col = Elem "column" [("name", AttValue [Left $ "item" ++ (show n)]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"]), ("position", AttValue [Left $ show i])] []
+                                 (els, i') = colsToNodes (i+1) cs
+                              in (col:els, i') 
+colsToNodes i ((NCol n cs):cs') = let (els, i') = colsToNodes i cs 
+                                      (els', i'') = colsToNodes i' cs'
+                                   in (els ++ els', i'')
+colsToNodes i []                = ([], i)
+                                    
 nilNode :: XML XMLNode
 nilNode = do
             xId <- freshId
