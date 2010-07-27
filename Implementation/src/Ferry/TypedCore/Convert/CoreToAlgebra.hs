@@ -55,6 +55,13 @@ coreToAlgebra (Let t s e1 e2) = do
                                     withBinding s (q1, cs1, m1) $ coreToAlgebra e2
 coreToAlgebra (Var t n) = fromGam n
 coreToAlgebra (Rec t (e:els)) = foldl recElemsToAlgebra (recElemToAlgebra e) els
+coreToAlgebra (Elem t e n) = do
+                                (q1, cs1 ,ts1) <- coreToAlgebra e
+                                let csn = getCol n cs1
+                                let csn' = decrCols csn
+                                let projPairs = zip (leafNames csn') (leafNames csn)
+                                n1 <- insertNode $ proj (("iter", "iter"):("pos", "pos"):projPairs) q1
+                                return (n1, csn', EmptySub)
                              
 recElemToAlgebra :: RecElem -> GraphM AlgRes
 recElemToAlgebra (RecElem t n e) = do
@@ -102,6 +109,14 @@ decrCols cols = let minV = minCol cols
      decr' decr ((NCol x i):xs) = (NCol x $ decr' decr i) : (decr' decr xs)
      decr' _    []              = []
 
+getCol :: String -> Columns -> Columns
+getCol n cs = getCol' cs
+    where
+     getCol' :: Columns -> Columns
+     getCol' ((Col i):xs)                = getCol' xs
+     getCol' ((NCol x i):xs) | x == n    = i
+                             | otherwise = getCol' xs
+     getCol' []                          = []
 {-
 data CoreExpr where
     BinOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr -> CoreExpr
