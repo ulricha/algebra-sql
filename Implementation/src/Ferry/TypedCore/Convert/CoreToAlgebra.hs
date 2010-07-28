@@ -90,27 +90,44 @@ coreToAlgebra (c@(Cons _ _ _)) = listFirst c
     
 listFirst :: CoreExpr -> GraphM AlgRes
 listFirst (Cons t e1 (Nil _)) = coreToAlgebra e1
+listFirst (Cons t e1 e2@(Cons _ _ _)) = do
+                                         (q1, cs1, ts1) <- coreToAlgebra e1
+                                         (q2, cs2, ts2) <- listSequence e2 2
+                                         n1 <- insertNode $ attach ordCol intT (int 1) q1
+                                         n2 <- insertNode $ union n1 q2
+                                         n3 <- insertNode $ rank resCol [(ordCol, Asc), ("pos", Asc)] n2
+                                         let projPairs = zip (leafNames cs1) (leafNames cs1)
+                                         n4 <- insertNode $ proj (("iter", "iter"):("pos", resCol):projPairs) n3
+                                         return (n4, cs1, EmptySub)
 listFirst (Cons t e1 e2) = do
                             (q1, cs1, ts1) <- coreToAlgebra e1
-                            (q2, cs2, ts2) <- listSequence e2 2
+                            (q2, cs2, ts2) <- coreToAlgebra e2
                             n1 <- insertNode $ attach ordCol intT (int 1) q1
-                            n2 <- insertNode $ union n1 q2
-                            n3 <- insertNode $ rank resCol [(ordCol, Asc), ("pos", Asc)] n2
+                            n2 <- insertNode $ attach ordCol intT (int 2) q2
+                            n3 <- insertNode $ union n1 n2
+                            n4 <- insertNode $ rank resCol [(ordCol, Asc), ("pos", Asc)] n3
                             let projPairs = zip (leafNames cs1) (leafNames cs1)
-                            n4 <- insertNode $ proj (("iter", "iter"):("pos", resCol):projPairs) n3
-                            return (n4, cs1, EmptySub) 
+                            n5 <- insertNode $ proj (("iter", "iter"):("pos", resCol):projPairs) n4
+                            return (n5, cs1, EmptySub)
 
 listSequence :: CoreExpr -> Int -> GraphM AlgRes
 listSequence (Cons t e1 (Nil _)) n = do
                                       (q1, cs1, ts1) <- coreToAlgebra e1
                                       n1 <- insertNode $ attach ordCol intT (int $ toEnum n) q1
                                       return (n1, cs1, EmptySub)
+listSequence (Cons t e1 e2@(Cons _ _ _)) n = do
+                                                (q1, cs1, ts1) <- coreToAlgebra e1
+                                                (q2, cs2, ts2) <- listSequence e2 $ n + 1
+                                                n1 <- insertNode $ attach ordCol intT (int $ toEnum n) q1
+                                                n2 <- insertNode $ union n1 q2
+                                                return (n2, cs1, EmptySub)
 listSequence (Cons t e1 e2) n = do
-                                    (q1, cs1, ts1) <- coreToAlgebra e1
-                                    (q2, cs2, ts2) <- listSequence e2 $ n + 1
-                                    n1 <- insertNode $ attach ordCol intT (int $ toEnum n) q1
-                                    n2 <- insertNode $ union n1 q2
-                                    return (n2, cs1, EmptySub)
+                                 (q1, cs1, ts1) <- coreToAlgebra e1
+                                 (q2, cs2, ts2) <- coreToAlgebra e2
+                                 n1 <- insertNode $ attach ordCol intT (int $ toEnum n) q1
+                                 n2 <- insertNode $ attach ordCol intT (int $ toEnum (n + 1)) q2
+                                 n3 <- insertNode $ union n1 n2
+                                 return (n3, cs1, EmptySub)
                                     
 -- Transform a record element into algebraic plan                             
 recElemToAlgebra :: RecElem -> GraphM AlgRes
@@ -200,16 +217,16 @@ recsToCols [] i = ([], i)
      
 {-
 data CoreExpr where
-    BinOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr -> CoreExpr
+    X BinOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr -> CoreExpr
     UnaOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr
-    Constant :: (Qual FType) -> Const -> CoreExpr
-    Var  :: (Qual FType) -> String -> CoreExpr
+    X Constant :: (Qual FType) -> Const -> CoreExpr
+    X Var  :: (Qual FType) -> String -> CoreExpr
     App :: (Qual FType) -> CoreExpr -> Param -> CoreExpr
-    Let :: (Qual FType) -> String -> CoreExpr -> CoreExpr -> CoreExpr
-    Rec :: (Qual FType) -> [RecElem] -> CoreExpr
-    Cons :: (Qual FType) -> CoreExpr -> CoreExpr -> CoreExpr
-    Nil :: (Qual FType) -> CoreExpr
-    Elem :: (Qual FType) -> CoreExpr -> String -> CoreExpr
+    X Let :: (Qual FType) -> String -> CoreExpr -> CoreExpr -> CoreExpr
+    X Rec :: (Qual FType) -> [RecElem] -> CoreExpr
+    X Cons :: (Qual FType) -> CoreExpr -> CoreExpr -> CoreExpr
+    X Nil :: (Qual FType) -> CoreExpr
+    X Elem :: (Qual FType) -> CoreExpr -> String -> CoreExpr
     Table :: (Qual FType) -> String -> [Column] -> [Key] -> CoreExpr
     If :: (Qual FType) -> CoreExpr -> CoreExpr -> CoreExpr -> CoreExpr
 -}
