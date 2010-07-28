@@ -20,12 +20,16 @@ import Text.PrettyPrint.HughesPJ
 
 import qualified Data.Map as M
 
-
+-- Convenient alias for column names
 type ColName = String
 
-
+-- The Graph is represented as a tuple of an int, that represents the first node, and
+-- a list of algebraic nodes with their node numbers.
 type Graph = (Int, [(AlgNode, Int)])
+
+-- Alias for GraphNode ids
 type GraphNode = Int
+-- Alias for xmlNode ids
 type XMLNode = Int
 
 -- Mapping from graphnodes to xmlnode ids. This dictionary is used to prevent duplicate xml nodes
@@ -38,12 +42,6 @@ type Dictionary = M.Map GraphNode XMLNode
 -- for xml nodes and the dictionary for looking up whether a certain graphnode already has
 -- an xml representation.
 type XML = WriterT [Element ()] (ReaderT (M.Map Int AlgNode) (State (Int, Dictionary)))
-
-{-
-type AlgRes = (Int, Columns, SubPlan)
-
-type AlgPlan = (M.Map AlgNode Int, AlgRes)
--}
 
 -- Has a graphnode already been translated into an xml node. If yes which node?
 isDefined :: GraphNode -> XML (Maybe XMLNode)
@@ -179,35 +177,43 @@ alg2XML gId = do
                                             xId <- freshId
                                             tell [mkRank xId res sort cxId1]
                                             return xId
--- (ResAttrName,  SortInf)
--- [(SortAttrName, SortDir)]
 
+-- Create an xml rank element node. 
 mkRank :: XMLNode -> ResAttrName -> SortInf -> XMLNode -> Element ()
 mkRank xId res sort cId = let sortCols = map mkSortColumn $ zip sort [1..]
                               resCol = Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []
                               contNode = contentsNode (resCol:sortCols)
                               edge = mkEdge cId
                            in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "rank"])] [CElem contNode (), CElem edge ()]
-    
+
+-- Create an xml sort column node for use in the rank node.    
 mkSortColumn :: ((SortAttrName, SortDir), Int) -> Element ()
 mkSortColumn ((n, d), p) = Elem "column" [("name", AttValue [Left n]),
                                           ("function", AttValue [Left "sort"]),
                                           ("position", AttValue [Left $ show p]),
                                           ("direction", AttValue [Left $ show d]),
                                           ("new", AttValue [Left "false"])] []
-                                          
+
+-- Create an xml union node                                          
 mkUnion :: XMLNode -> XMLNode -> XMLNode -> Element ()
 mkUnion xId cxId1 cxId2 = let edge1 = mkEdge cxId1
                               edge2 = mkEdge cxId2
                            in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "union"])] [CElem edge1 (), CElem edge2 ()]
 
+-- Create an empty table node, table needs to contain type information
 mkEmptyTable :: XMLNode -> SchemaInfos -> Element ()
 mkEmptyTable xId schema = let contNode = contentsNode $ map mkColumn schema
                            in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "empty_tbl"])] [CElem contNode ()]
 
+-- Create an xml column node
 mkColumn :: (AttrName, ATy) -> Element ()
 mkColumn (n, t) = Elem "column" [("name", AttValue [Left n]), ("type", AttValue [Left $ show t]),("new", AttValue [Left "true"])] []
-                                                            
+
+-- Create an xml binary operator node.
+-- Three sort of binary operators exist:
+--  1. Arithmatic operators, represented in xml as function nodes
+--  2. Relational operators, represented in xml as relational function nodes
+--  3. Operators that can be expressed in terms of other operators                                                            
 mkBinOpNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
 mkBinOpNode xId op res lArg rArg cId | elem op ["+", "-", "*", "%", "/"] = mkFnNode xId (arOptoFn op) res lArg rArg cId
                                      | elem op [">", "==", "and", "or", "&&", "||"] = mkRelFnNode xId (relOptoFn op) res lArg rArg cId
@@ -227,6 +233,7 @@ mkBinOpNode xId op res lArg rArg cId | elem op ["+", "-", "*", "%", "/"] = mkFnN
             relOptoFn "&&" = "and"
             relOptoFn "||" = "or"
 
+-- Create an XML relational function node
 mkRelFnNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
 mkRelFnNode xId fn res lArg rArg cId = let content = Elem "content" [] [CElem (Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []) (),
                                                                         CElem (Elem "column" [("name", AttValue [Left lArg]), ("new", AttValue [Left "false"]), ("position", AttValue [Left "1"])] []) (),
@@ -234,7 +241,8 @@ mkRelFnNode xId fn res lArg rArg cId = let content = Elem "content" [] [CElem (E
                                            edge = mkEdge cId
                                         in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left fn])]
                                                        [CElem content (), CElem edge ()]
-            
+
+-- Create an XML function node            
 mkFnNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
 mkFnNode xId fn res lArg rArg cId = let kNode = Elem "kind" [("name", AttValue [Left fn])] []
                                         content = Elem "content" [] [CElem kNode (),
@@ -244,7 +252,8 @@ mkFnNode xId fn res lArg rArg cId = let kNode = Elem "kind" [("name", AttValue [
                                         edge = mkEdge cId
                                      in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "fun"])]
                                                     [CElem content (), CElem edge ()]
-            
+
+-- Create an XML eq-join node.             
 mkEqJoinNode :: XMLNode -> (LeftAttrName,RightAttrName) -> XMLNode -> XMLNode -> Element ()
 mkEqJoinNode xId (lN, rN) cxId1 cxId2 = let contNode = Elem "content" [] [CElem (Elem "column" [("name", AttValue [Left lN]), ("new", AttValue [Left "false"]), ("position", AttValue [Left "1"])] []) ()
                                                                          ,CElem (Elem "column" [("name", AttValue [Left rN]), ("new", AttValue [Left "false"]), ("position", AttValue [Left "2"])] []) ()]
@@ -253,7 +262,7 @@ mkEqJoinNode xId (lN, rN) cxId1 cxId2 = let contNode = Elem "content" [] [CElem 
                                          in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "eqjoin"])]
                                                         [CElem contNode (), CElem edge1 (), CElem edge2 ()]
                                                         
-
+-- Create an XML projection node
 mkProjNode :: XMLNode -> [(NewAttrName, OldAttrName)] -> XMLNode -> Element ()
 mkProjNode xId mapping cxId = let contNode = Elem "content" [] $ map (\m -> flip CElem () $ mkProjColumn m) mapping
                                   edgeNode = mkEdge cxId
@@ -263,6 +272,7 @@ mkProjNode xId mapping cxId = let contNode = Elem "content" [] $ map (\m -> flip
       mkProjColumn :: (NewAttrName, OldAttrName) -> Element ()
       mkProjColumn (n, o) = Elem "column" [("name", AttValue [Left n]), ("old_name", AttValue [Left o]), ("new", AttValue [Left "true"])] []
 
+-- Create an xml attach column node 
 mkAttachNode :: XMLNode -> ColName -> AVal -> ATy -> XMLNode -> Element ()
 mkAttachNode xId n val ty cxId = let valNode = Elem "value" [("type", AttValue [Left $ show ty])] [CString False (show val) ()]
                                      colNode = Elem "column" [("name", AttValue [Left n])
@@ -272,6 +282,7 @@ mkAttachNode xId n val ty cxId = let valNode = Elem "value" [("type", AttValue [
                                      edgeNode = mkEdge cxId
                                   in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "attach"])] [CElem conNode (), CElem edgeNode ()]
 
+-- Create an xml table node with one value in it
 mkTableNode :: XMLNode -> ColName -> AVal -> ATy -> Element ()
 mkTableNode xId n val ty = let valNode = Elem "value" [("type", AttValue [Left $ show ty])] [CString False (show val) ()]
                                colNode = Elem "column" [("name", AttValue [Left n])
@@ -280,15 +291,20 @@ mkTableNode xId n val ty = let valNode = Elem "value" [("type", AttValue [Left $
                                conNode = contentNode colNode
                             in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "table"])] [CElem conNode ()] 
 
+-- Create an xml edge to point to the given xml node id.
 mkEdge :: XMLNode -> Element ()
 mkEdge n = Elem "edge" [("to", AttValue [Left $ show n])] []
 
+-- Wrap the given element in an xml content node
 contentNode :: Element () -> Element ()
 contentNode n = Elem "content" [] [CElem n ()]
 
+-- Wrap the given elements in an xml content node
 contentsNode :: [Element ()] -> Element ()
 contentsNode ns = Elem "content" [] $ map (\n -> CElem n ()) ns
 
+-- Transform the given plan nodes into an xml query plan.
+-- The first argument can contain additional property node information
 mkQueryPlan :: Maybe (Element ()) -> [Element ()] -> XML ()
 mkQueryPlan props els = let logicalPlan = Elem "logical_query_plan" [("unique_names", AttValue [Left "true"])] $ map (\n -> CElem n ()) els
                             propPlan = case props of
@@ -298,16 +314,17 @@ mkQueryPlan props els = let logicalPlan = Elem "logical_query_plan" [("unique_na
                              planId <- freshId
                              tell $ [Elem "query_plan" [("id", AttValue [Left $ show planId])] $ propPlan ++ [CElem logicalPlan ()]]
                         
-
+-- Create a plan bundle out of the given query plans
 mkPlanBundle :: [Element ()] -> Element ()
 mkPlanBundle plans = Elem "query_plan_bundle" [] $ map (\p -> CElem p ()) plans
 
+-- Create an xml document out of the given root tag.
 mkXMLDocument :: Element () -> Document ()
 mkXMLDocument el = let xmlDecl = XMLDecl "1.0" (Just $ EncodingDecl "UTF-8") Nothing
                        prolog = Prolog (Just xmlDecl) [] Nothing []
                     in Document prolog emptyST el []
 
-
+-- Create an xml property node so that ferryDB knows more or less how to print the result
 mkProperties :: FType -> Element ()
 mkProperties ty = let resTy = Elem "property" [("name", AttValue [Left "overallResultType"]), ("value", AttValue[Left result])] []
                    in Elem "properties" [] [CElem resTy ()]

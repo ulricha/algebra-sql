@@ -81,13 +81,24 @@ coreToAlgebra (Elem t e n) = do
                                 let projPairs = zip (leafNames csn') (leafNames csn)
                                 n1 <- insertNode $ proj (("iter", "iter"):("pos", "pos"):projPairs) q1
                                 return (n1, csn', EmptySub)
+--Empty lists
 coreToAlgebra (Nil (_ :=> t)) = do
                                  let cs = fst $ typeToCols t 1
                                  let schema = ("iter", AInt):("pos", AInt):(colsToSchema cs)
                                  n1 <- insertNode $ emptyTable schema
                                  return (n1, cs, EmptySub)
+-- List constructor, because of optimisation chances contents has been directed to special functions
 coreToAlgebra (c@(Cons _ _ _)) = listFirst c
-    
+
+-- Compilation for the first element of a list.
+-- For optimisation purposes we distinguish three cases:
+-- Singleton lists: compile these if they were just single values
+-- A list where the second element is also created through a list constructor
+--      that particular case allows for optimising on the rank operator, it is
+--      compiled to algebra in the listSequence function that does not perform rank.
+-- A list where the tail is the result of a computation, the tail is compiled as a
+--      normal expression. The result get an ord column attached and the is unified
+--      with the head of the list and then ranked.    
 listFirst :: CoreExpr -> GraphM AlgRes
 listFirst (Cons t e1 (Nil _)) = coreToAlgebra e1
 listFirst (Cons t e1 e2@(Cons _ _ _)) = do
@@ -110,6 +121,8 @@ listFirst (Cons t e1 e2) = do
                             n5 <- insertNode $ proj (("iter", "iter"):("pos", resCol):projPairs) n4
                             return (n5, cs1, EmptySub)
 
+-- List sequence, doesn't perform the rank operation, that is carried out by listFirst.
+--  Three cases with similar motivation as listFirst.
 listSequence :: CoreExpr -> Int -> GraphM AlgRes
 listSequence (Cons t e1 (Nil _)) n = do
                                       (q1, cs1, ts1) <- coreToAlgebra e1
@@ -195,11 +208,13 @@ getCol n cs = getCol' cs
                              | otherwise = getCol' xs
      getCol' []                          = []
 
+-- Transform Columns info into schema info for algebraic compilation
 colsToSchema :: Columns -> SchemaInfos
 colsToSchema ((Col i t):xs) = (:)("item" ++ show i, t) $ colsToSchema xs
 colsToSchema ((NCol _ cs):xs) = colsToSchema cs ++ colsToSchema xs
 colsToSchema [] = []
 
+-- Transform a type to columns structure
 typeToCols :: FType -> Int -> (Columns, Int)
 typeToCols (FRec recs) i = recsToCols recs i
 typeToCols FInt i = ([Col i AInt], i + 1)
@@ -208,7 +223,7 @@ typeToCols FFloat i = ([Col i ADouble], i + 1)
 typeToCols FString i = ([Col i AStr], i + 1)
 typeToCols (FList _) i = ([Col i ASur], i + 1)
 
-
+-- Compile a record type to a column structure
 recsToCols :: [(RLabel, FType)] -> Int -> (Columns, Int)
 recsToCols ((RLabel s, ty):xs) i = let (cs, i') = typeToCols ty i
                                        (cs', i'') = recsToCols xs i'
