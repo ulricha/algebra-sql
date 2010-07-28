@@ -148,6 +148,12 @@
 %format tsi = " ts_{i} "
 %format i1 = " i_{1} "
 %format itn = " i_{n} "
+%format loopthen = " loop_{then} "
+%format loopelse = " loop_{else} "
+%format Gamthen = " \Gamma_{then} "
+%format Gamelse = " \Gamma_{else} "
+
+%format qm = " q_{m} "
 
 %format (Table (t) (c) (i) (k)) = " \tableref_{" t "_{\stackrel{"c"}{"i"}} "k"} "
 
@@ -160,3 +166,5 @@
 %format (rank (x) (y) (z)) = " \text{rank}_{\stackrel{"x"}{"y"}} (" z ")"
 %format (EmptyTBL (x)) = " \text{EmptyTBL}_{"x"} "
 %format (cross (x) (y)) = " " x " \times " y " "
+%format (sel (x) (y)) = " \sigma_{"x"} ( "y")"
+%format (not (x) (y)) = " not_{"x"} ("y") "

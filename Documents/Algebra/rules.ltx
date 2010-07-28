@@ -27,14 +27,21 @@
         {| Gam, loop +- e.l => (q, csl', empty)|}\\
     \infrule[ac-Cons]
         {| Gam, loop +- ei => (qi, csi, empty) where i = 1,2|\\
-         | q = proj (iter, pos':pos, ln cs1) (rank pos' (<ord,pos>) (union (attach ord 1 q1) (attach ord 2 q2))) |}
+         | q = proj (iter, pos:pos', ln cs1) (rank pos' (<ord,pos>) (union (attach ord 1 q1) (attach ord 2 q2))) |}
         {| Gam, loop +- Cons e1 e2 => (q, cs1, empty)|}\\
     \infrule[ac-Nil]
         {| cs = tyToCol t 1|}
         {| Gam, loop +- Nil :: t => (EmptyTBL (iter, pos, ln cs), cs, empty)|}\\
     \infrule[ac-Table]
         {| q = (cross loop (rank pos (<||k1||>) (Table t (x1, ..., xn) (i1, ..., itn) (||k1||, ..., ||km||))))|}
-        {| Gam, loop +- table t (x1 t1, ..., xn tn) with keys (k1, ..., km) => (q, {x1 -> {i1}, ... xn -> {itn}}, empty)|}
+        {| Gam, loop +- table t (x1 t1, ..., xn tn) with keys (k1, ..., km) => (q, {x1 -> {i1}, ... xn -> {itn}}, empty)|}\\
+    \infrule[ac-If]
+        {| Gam, loop +- e1 => (q1, {item1}, empty)|\\
+         | loopthen = proj iter (sel item1 q1) | \quad | Gamthen = map (\qm -> join iter qm loopthen) Gam |\\
+         | loopelse = proj iter (sel item1 (not (item1:item1) q1))| \quad | Gamelse = map (\qm -> join iter qm loopelse) Gam |\\
+         | Gamthen, loopthen +- e2 => (q2, cs2, empty)|\quad |Gamelse, loopelse +- e3 => (q3, cs3, empty) |\\
+         | q = proj (iter, pos ln cs2) (union (attach ord 1 q2) (attach ord 2 q3))|}
+        {| Gam, loop +- if e1 then e2 else e3 => (q, cs2, empty)|}
 \end{infrules}
 \begin{code}
 tyToCol :: Type -> Int -> Columns
@@ -51,7 +58,7 @@ rank, or the projection. These will only be done by the first element of the lis
     \infrule[ac-Cons1]
             {| Gam, loop +- e1 => (q1, cs1, empty) |\quad
              | Gam, loop, 2 +- e2 => (q2, cs2, empty)|\\
-             | q = proj (iter, pos':pos, ln cs1) (rank pos' (<ord,pos>) (union (attach ord 1 q1) q2))|}
+             | q = proj (iter, pos:pos', ln cs1) (rank pos' (<ord,pos>) (union (attach ord 1 q1) q2))|}
             {| Gam, loop +- Cons e1 e2 => (q, cs1, empty)|}\\
     \infrule[ac-ConsNil1]
             {| Gam, loop +- e1 => (q1, cs1, empty)|}
