@@ -164,6 +164,20 @@ alg2XML gId = do
                                                         xId <- freshId
                                                         tell [mkBinOpNode xId op res lArg rArg cxId1]
                                                         return xId
+    alg2XML' (EmptyTable schema, []) = do
+                                         xId <- freshId
+                                         tell [mkEmptyTable xId schema]
+                                         return xId
+
+--     EmptyTable :: SchemaInfos -> Algebra
+-- type SchemaInfos = [(AttrName, ATy)]  
+
+mkEmptyTable :: XMLNode -> SchemaInfos -> Element ()
+mkEmptyTable xId schema = let contNode = contentsNode $ map mkColumn schema
+                           in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "empty_tbl"])] [CElem contNode ()]
+
+mkColumn :: (AttrName, ATy) -> Element ()
+mkColumn (n, t) = Elem "column" [("name", AttValue [Left n]), ("type", AttValue [Left $ show t]),("new", AttValue [Left "true"])] []
                                                             
 mkBinOpNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
 mkBinOpNode xId op res lArg rArg cId | elem op ["+", "-", "*", "%", "/"] = mkFnNode xId (arOptoFn op) res lArg rArg cId
@@ -242,6 +256,9 @@ mkEdge n = Elem "edge" [("to", AttValue [Left $ show n])] []
 
 contentNode :: Element () -> Element ()
 contentNode n = Elem "content" [] [CElem n ()]
+
+contentsNode :: [Element ()] -> Element ()
+contentsNode ns = Elem "content" [] $ map (\n -> CElem n ()) ns
 
 mkQueryPlan :: Maybe (Element ()) -> [Element ()] -> XML ()
 mkQueryPlan props els = let logicalPlan = Elem "logical_query_plan" [("unique_names", AttValue [Left "true"])] $ map (\n -> CElem n ()) els

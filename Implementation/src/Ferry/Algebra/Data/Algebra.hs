@@ -38,7 +38,7 @@ instance Show ATy where
   show ADec     = "dec"
   show ADouble  = "dbl"
   show ANat     = "nat"
-  show ASur     = "sur"
+  show ASur     = "int"
                   
 data AVal where
   VInt :: Integer -> AVal
