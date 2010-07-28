@@ -1,25 +1,35 @@
+{-
+This module contains helper function for constructing algebraic plans
+-}
 module Ferry.Algebra.Data.Create where
     
 import Ferry.Algebra.Data.Algebra
 
+-- | Create an algebraic int value
 int :: Integer -> AVal
 int = VInt
 
+-- | Create an algebraic string value
 string :: String -> AVal
 string = VStr
 
+-- | Create an algebraic boolean value
 bool :: Bool -> AVal
 bool = VBool
 
+-- | Create an algebraic double value
 double :: Double -> AVal
 double = VDouble
 
+-- | Create an algebraic decimal value
 dec :: Float -> AVal
 dec = VDec
 
+-- | Create an algebraic nat value
 nat :: Integer -> AVal
 nat = VNat
 
+-- | Types of algebraic values
 intT, stringT, boolT, decT, doubleT, natT :: ATy
 intT = AInt
 stringT = AStr
@@ -28,6 +38,7 @@ decT = ADec
 doubleT = ADouble
 natT = ANat
 
+-- | Construct an empty table node with 
 emptyTable :: SchemaInfos -> AlgNode
 emptyTable = (\x -> (x, [])) . EmptyTable
 

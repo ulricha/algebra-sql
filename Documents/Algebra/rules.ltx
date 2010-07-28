@@ -31,9 +31,11 @@
         {| Gam, loop +- Cons e1 e2 => (q, cs1, empty)|}\\
     \infrule[ac-Nil]
         {| cs = tyToCol t 1|}
-        {| Gam, loop +- Nil :: t => (EmptyTBL (iter, pos, ln cs), cs, empty)|}
+        {| Gam, loop +- Nil :: t => (EmptyTBL (iter, pos, ln cs), cs, empty)|}\\
+    \infrule[ac-Table]
+        {| q = (cross loop (rank pos (<||k1||>) (Table t (x1, ..., xn) (i1, ..., itn) (||k1||, ..., ||km||))))|}
+        {| Gam, loop +- table t (x1 t1, ..., xn tn) with keys (k1, ..., km) => (q, {x1 -> {i1}, ... xn -> {itn}}, empty)|}
 \end{infrules}
-
 \begin{code}
 tyToCol :: Type -> Int -> Columns
 \end{code}

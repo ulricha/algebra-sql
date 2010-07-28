@@ -15,7 +15,29 @@
 \usepackage{../Common/scsyntax}
 \usepackage{../Common/deduction}
 \usepackage{../Common/utilities}
+
+%% TikZ ist kein Zeichenprogramm
+\usepackage{tikz}
+\usetikzlibrary{fit}
+\usetikzlibrary{arrows}
+\usetikzlibrary{snakes} 
+\usetikzlibrary{positioning}
+
 \input{../Common/rules}
+
+\DeclareMathOperator{\tableref}{%
+    \begin{tikzpicture}[line width=0.4pt,baseline=-1ex,join=bevel,
+                        x=1cm,y=1cm,xscale=0.10,yscale=0.15,sharp corners]
+    \useasboundingbox (-0.3,0.0) rectangle (2.3,0.3);
+    \draw (0,0) to [controls=+(90:0.5) and +(90:0.5)] (2,0);
+    \draw (0,0) .. controls +(-90:0.5) and +(-90:0.5) .. (2,0)
+        -- (2,-0.3) .. controls +(-90:0.5) and +(-90:0.5) .. (0,-0.3) -- (0,0);
+          \draw (0,0) .. controls +(-90:0.5) and +(-90:0.5) .. (2,0)
+        -- (2,-0.6) .. controls +(-90:0.5) and +(-90:0.5) .. (0,-0.6) -- (0,0);
+          \draw (0,0) .. controls +(-90:0.5) and +(-90:0.5) .. (2,0)
+        -- (2,-0.9) .. controls +(-90:0.5) and +(-90:0.5) .. (0,-0.9) -- (0,0);
+    \end{tikzpicture}
+}
 
 \RequirePackage{color}
 \lstset{ %

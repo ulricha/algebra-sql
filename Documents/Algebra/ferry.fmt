@@ -146,6 +146,10 @@
 %format ts1 = " ts_{1} "
 %format ts2 = " ts_{2} "
 %format tsi = " ts_{i} "
+%format i1 = " i_{1} "
+%format itn = " i_{n} "
+
+%format (Table (t) (c) (i) (k)) = " \tableref_{" t "_{\stackrel{"c"}{"i"}} "k"} "
 
 %format Gam = "\Gamma"
 %format (attach (x) (y) (b)) = " @_{" x ":" y"}(" b ") "
@@ -155,3 +159,4 @@
 %format (union (x) (y)) = x "\cup" y
 %format (rank (x) (y) (z)) = " \text{rank}_{\stackrel{"x"}{"y"}} (" z ")"
 %format (EmptyTBL (x)) = " \text{EmptyTBL}_{"x"} "
+%format (cross (x) (y)) = " " x " \times " y " "
