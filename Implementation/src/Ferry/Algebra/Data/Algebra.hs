@@ -11,8 +11,12 @@ type Columns = [Column]
 
 data SortDir = Asc
              | Desc
-    deriving (Show, Eq, Ord)
---
+    deriving (Eq, Ord)
+
+instance Show SortDir where
+    show Asc  = "ascending"
+    show Desc = "descending"
+    
 --data JoinCompKind = TJ_EQ 
 --                  | TJ_GT 
 --                  | TJ_GE 

@@ -18,6 +18,7 @@ import qualified Data.Map as M
 
 --Results are stored in column:
 resCol = "item999999001"
+ordCol = "item999999801"
 
 --Construct the ith item columns
 mkPrefixCol i = "item" ++ prefixCol ++ (show i)
@@ -92,22 +93,22 @@ listFirst (Cons t e1 (Nil _)) = coreToAlgebra e1
 listFirst (Cons t e1 e2) = do
                             (q1, cs1, ts1) <- coreToAlgebra e1
                             (q2, cs2, ts2) <- listSequence e2 2
-                            n1 <- insertNode $ attach "ord" intT (int 1) q1
+                            n1 <- insertNode $ attach ordCol intT (int 1) q1
                             n2 <- insertNode $ union n1 q2
-                            n3 <- insertNode $ rank resCol [("ord", Asc), ("pos", Asc)] n2
+                            n3 <- insertNode $ rank resCol [(ordCol, Asc), ("pos", Asc)] n2
                             let projPairs = zip (leafNames cs1) (leafNames cs1)
-                            n4 <- insertNode $ proj (("iter", "iter"):(resCol, "pos"):projPairs) n3
+                            n4 <- insertNode $ proj (("iter", "iter"):("pos", resCol):projPairs) n3
                             return (n4, cs1, EmptySub) 
 
 listSequence :: CoreExpr -> Int -> GraphM AlgRes
 listSequence (Cons t e1 (Nil _)) n = do
                                       (q1, cs1, ts1) <- coreToAlgebra e1
-                                      n1 <- insertNode $ attach "ord" intT (int $ toEnum n) q1
+                                      n1 <- insertNode $ attach ordCol intT (int $ toEnum n) q1
                                       return (n1, cs1, EmptySub)
 listSequence (Cons t e1 e2) n = do
                                     (q1, cs1, ts1) <- coreToAlgebra e1
                                     (q2, cs2, ts2) <- listSequence e2 $ n + 1
-                                    n1 <- insertNode $ attach "ord" intT (int $ toEnum n) q1
+                                    n1 <- insertNode $ attach ordCol intT (int $ toEnum n) q1
                                     n2 <- insertNode $ union n1 q2
                                     return (n2, cs1, EmptySub)
                                     

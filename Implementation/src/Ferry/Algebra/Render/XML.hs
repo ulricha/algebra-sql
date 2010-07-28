@@ -168,9 +168,38 @@ alg2XML gId = do
                                          xId <- freshId
                                          tell [mkEmptyTable xId schema]
                                          return xId
+    alg2XML' (DisjUnion, [cId1, cId2]) = do
+                                          cxId1 <- alg2XML cId1
+                                          cxId2 <- alg2XML cId2
+                                          xId <- freshId
+                                          tell [mkUnion xId cxId1 cxId2]
+                                          return xId
+    alg2XML' (Rank (res, sort), [cId1]) = do
+                                            cxId1 <- alg2XML cId1
+                                            xId <- freshId
+                                            tell [mkRank xId res sort cxId1]
+                                            return xId
+-- (ResAttrName,  SortInf)
+-- [(SortAttrName, SortDir)]
 
---     EmptyTable :: SchemaInfos -> Algebra
--- type SchemaInfos = [(AttrName, ATy)]  
+mkRank :: XMLNode -> ResAttrName -> SortInf -> XMLNode -> Element ()
+mkRank xId res sort cId = let sortCols = map mkSortColumn $ zip sort [1..]
+                              resCol = Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []
+                              contNode = contentsNode (resCol:sortCols)
+                              edge = mkEdge cId
+                           in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "rank"])] [CElem contNode (), CElem edge ()]
+    
+mkSortColumn :: ((SortAttrName, SortDir), Int) -> Element ()
+mkSortColumn ((n, d), p) = Elem "column" [("name", AttValue [Left n]),
+                                          ("function", AttValue [Left "sort"]),
+                                          ("position", AttValue [Left $ show p]),
+                                          ("direction", AttValue [Left $ show d]),
+                                          ("new", AttValue [Left "false"])] []
+                                          
+mkUnion :: XMLNode -> XMLNode -> XMLNode -> Element ()
+mkUnion xId cxId1 cxId2 = let edge1 = mkEdge cxId1
+                              edge2 = mkEdge cxId2
+                           in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "union"])] [CElem edge1 (), CElem edge2 ()]
 
 mkEmptyTable :: XMLNode -> SchemaInfos -> Element ()
 mkEmptyTable xId schema = let contNode = contentsNode $ map mkColumn schema
