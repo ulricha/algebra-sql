@@ -10,7 +10,7 @@ prettyAST :: Expr -> String
 prettyAST e = prettyPrint e
     
 instance Pretty Expr where
-    pretty (UnOp         _ o e)               i = (pretty o i) ++ (pretty e i)
+--    pretty (UnOp         _ o e)               i = (pretty o i) ++ (pretty e i)
     pretty (BinOp        _ o e1 e2)           i = (pretty e1 i) ++ " " ++ (pretty o i) ++ " " ++ (pretty e2 i)
     pretty (Const        _ c)                 i = pretty c i
     pretty (Var          _ i)                 _ = i

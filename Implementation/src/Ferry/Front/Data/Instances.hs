@@ -5,7 +5,7 @@ import Ferry.Front.Data.Meta
 import Ferry.Front.Data.Base
 
 instance HasMeta Expr where              
-    getMeta (UnOp         m _ _)         = m
+--    getMeta (UnOp         m _ _)         = m
     getMeta (BinOp        m _ _ _)       = m
     getMeta (Const        m _)           = m
     getMeta (Var          m _)           = m

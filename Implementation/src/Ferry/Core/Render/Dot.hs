@@ -21,13 +21,13 @@ toDot (BinOp o e1 e2) = do
                           addNode $ Node nId [Label $ SLabel o', Color Green, Shape Circle]
                           addEdge $ Edge nId [id1, id2]
                           return nId
-toDot (UnaOp o e) = do
+{- toDot (UnaOp o e) = do
                       nId <- getFreshId
                       eId <- toDot e
                       let o' = (\(Op o) -> o) o
                       addNode $ Node nId [Label $ SLabel o', Color Green, Shape Circle]
                       addEdge $ Edge nId [eId]
-                      return nId
+                      return nId -}
 toDot (Constant c) = do
                       nId <- getFreshId
                       let s = toString c

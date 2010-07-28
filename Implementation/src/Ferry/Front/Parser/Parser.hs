@@ -30,8 +30,7 @@ opExpr :: Parser Expr
 opExpr = buildExpressionParser operators simpleExpr
   where
     operators =
-        [ [ unop "not"]
-        , [ binop "*"  AssocLeft, binop "/"  AssocLeft ]
+        [ [ binop "*"  AssocLeft, binop "/"  AssocLeft ]
         , [ binop "+"  AssocLeft, binop "-"  AssocLeft ]
 --        , [ unop "-"]
         , [ binop "%"  AssocLeft, binop "contains"  AssocLeft]
@@ -46,14 +45,10 @@ opExpr = buildExpressionParser operators simpleExpr
                                                     pos <- getPosition
                                                     reservedOp name
                                                     return (\e1 e2 -> BinOp (Meta $ getPos e1) (Op (Meta pos) name) e1 e2)
-{-         unop "-"      = Prefix $ do
-                                    pos <- getPosition
-                                    reservedOp "-"
-                                    return (\e -> ) -}
-          unop name     = Prefix  $ do
+{-          unop name     = Prefix  $ do
                                      pos <- getPosition
                                      reservedOp name
-                                     return (\e -> UnOp (Meta pos) (Op (Meta pos) name) e)
+                                     return (\e -> UnOp (Meta pos) (Op (Meta pos) name) e) -}
 
 -- | A simpleExpr is an if, let, relationship, list comprehension or application.
 simpleExpr :: Parser Expr

@@ -218,7 +218,7 @@ recsToCols [] i = ([], i)
 {-
 data CoreExpr where
     X BinOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr -> CoreExpr
-    UnaOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr
+--    UnaOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr
     X Constant :: (Qual FType) -> Const -> CoreExpr
     X Var  :: (Qual FType) -> String -> CoreExpr
     App :: (Qual FType) -> CoreExpr -> Param -> CoreExpr

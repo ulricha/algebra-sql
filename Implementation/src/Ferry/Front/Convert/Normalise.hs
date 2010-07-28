@@ -123,7 +123,7 @@ normaliseBinding (Binding m s e) = do
 
 normalise :: Expr -> Normalisation Expr
 normalise c@(Const _ _) = return c
-normalise (UnOp m o e) = UnOp m o <$> normalise e
+-- normalise (UnOp m o e) = UnOp m o <$> normalise e
 normalise (BinOp m o e1 e2) = BinOp m o <$> normalise e1 <*> normalise e2
 normalise v@(Var m i) = applySubstitution v
 normalise (App m e a) = do 

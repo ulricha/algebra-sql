@@ -41,7 +41,7 @@ instance Substitutable a => Substitutable [a] where
   
 instance Substitutable CoreExpr where
   apply s (BinOp t o c1 c2) = BinOp (apply s t) o (apply s c1) (apply s c2)
-  apply s (UnaOp t o c)      = UnaOp (apply s t) o (apply s c)
+--  apply s (UnaOp t o c)      = UnaOp (apply s t) o (apply s c)
   apply s (Constant t c)    = Constant (apply s t) c
   apply s (Var t x)         = Var (apply s t) x
   apply s (App t c a)       = App (apply s t) (apply s c) (apply s a)
@@ -115,7 +115,7 @@ instance VarContainer RLabel where
   
 instance HasType CoreExpr where
   typeOf (BinOp t o c1 c2) = t
-  typeOf (UnaOp t o c)     = t
+--  typeOf (UnaOp t o c)     = t
   typeOf (Constant t c)    = t
   typeOf (Var t x)         = t
   typeOf (App t c a)       = t
@@ -127,7 +127,7 @@ instance HasType CoreExpr where
   typeOf (Table t n c k)   = t
   typeOf (If t c1 c2 c3)   = t
   setType t (BinOp _ o c1 c2) = BinOp t o c1 c2
-  setType t (UnaOp _ o c)     = UnaOp t o c
+--  setType t (UnaOp _ o c)     = UnaOp t o c
   setType t (Constant _ c)    = Constant t c
   setType t (Var _ x)         = Var t x    
   setType t (App _ c a)       = App t c a  

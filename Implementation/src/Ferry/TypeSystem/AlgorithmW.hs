@@ -103,7 +103,7 @@ algW (C.BinOp (C.Op o) e1 e2) = do
                             unify t2 ot2
                             q' <- mergeQuals' [q, q1, q2] 
                             applySubst $ BinOp (q' :=> otr) (Op o) e1' e2'
-algW (C.UnaOp (C.Op o) e1) = 
+{- algW (C.UnaOp (C.Op o) e1) = 
                           do
                             ot <- inst $ lookupVariable o
                             let (q :=> FFn ot1 otr) = ot
@@ -111,7 +111,7 @@ algW (C.UnaOp (C.Op o) e1) =
                             let (q1 :=> t1) = typeOf e1'
                             unify t1 ot1
                             q' <- mergeQuals q q1 
-                            applySubst $ UnaOp (q :=> otr) (Op o) e1'
+                            applySubst $ UnaOp (q :=> otr) (Op o) e1' -}
 algW (C.App e arg) = do
                          ar <- liftM FVar freshTyVar
                          e' <- algW e

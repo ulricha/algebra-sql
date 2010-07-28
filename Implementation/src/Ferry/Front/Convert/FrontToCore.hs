@@ -26,7 +26,7 @@ runTransformation :: Expr -> Either FerryError C.CoreExpr
 runTransformation x = fst $ flip runState 0 $ runErrorT $ toCore x
 
 toCore :: Expr -> Transformation C.CoreExpr
-toCore (UnOp         _ o e1)     = C.UnaOp <$> opToCore o <*> toCore e1
+-- toCore (UnOp         _ o e1)     = C.UnaOp <$> opToCore o <*> toCore e1
 toCore (BinOp        _ o e1 e2)  = C.BinOp <$> opToCore o <*> toCore e1 <*> toCore e2
 toCore (Const        _ c)        = C.Constant <$> pure c
 toCore (Var          _ i)        = C.Var <$> pure i

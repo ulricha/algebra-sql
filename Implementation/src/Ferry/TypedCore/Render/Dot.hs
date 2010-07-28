@@ -24,14 +24,14 @@ toDot (BinOp t o e1 e2) = do
                           addNode $ Node nId [Label $ SLabel o', Color Green, Shape Circle]
                           addEdge $ Edge nId [id1, id2, tId]
                           return nId
-toDot (UnaOp t o e) = do
+{- toDot (UnaOp t o e) = do
                       nId <- getFreshId
                       tId <- typeToDot t
                       eId <- toDot e
                       let o' = (\(Op o) -> o) o
                       addNode $ Node nId [Label $ SLabel o', Color Green, Shape Circle]
                       addEdge $ Edge nId [eId, tId]
-                      return nId
+                      return nId -}
 toDot (Constant t c) = do
                       nId <- getFreshId
                       tId <- typeToDot t

@@ -9,7 +9,7 @@ data Op where
      deriving (Show, Eq)
 
 data Expr where
-     UnOp         :: Meta -> Op -> Expr -> Expr
+--     UnOp         :: Meta -> Op -> Expr -> Expr
      BinOp        :: Meta -> Op -> Expr -> Expr -> Expr
      Const        :: Meta -> Const -> Expr
      Var          :: Meta -> Identifier -> Expr

@@ -7,7 +7,7 @@ import Control.Monad
 
 
 data FoldCore b p r = FoldCore {binOpF :: Qual FType -> Op -> b -> b -> b
-                             ,unaOpF :: Qual FType -> Op -> b -> b
+--                             ,unaOpF :: Qual FType -> Op -> b -> b
                              ,constantF :: Qual FType -> Const -> b
                              ,varF :: Qual FType -> String -> b
                              ,appF :: Qual FType -> b -> p -> b
@@ -23,11 +23,11 @@ data FoldCore b p r = FoldCore {binOpF :: Qual FType -> Op -> b -> b -> b
                              ,rRecEF :: Qual FType -> String -> b -> r}
 
 idFoldCore :: FoldCore CoreExpr Param RecElem
-idFoldCore = FoldCore BinOp UnaOp Constant Var App Let Rec Cons Nil Elem Table If ParExpr ParAbstr RecElem  
+idFoldCore = FoldCore BinOp {- UnaOp -} Constant Var App Let Rec Cons Nil Elem Table If ParExpr ParAbstr RecElem  
 
 mFoldCore :: Monad m => FoldCore (m CoreExpr) (m Param) (m RecElem)
 mFoldCore = FoldCore (\t o -> liftM2 (BinOp t o))
-                      (\t o -> liftM (UnaOp t o))
+--                      (\t o -> liftM (UnaOp t o))
                       (\t c -> return $ Constant t c)
                       (\t s -> return $ Var t s)
                       (\t -> liftM2 $ App t)
@@ -51,7 +51,7 @@ mFoldCore = FoldCore (\t o -> liftM2 (BinOp t o))
 -- | that the function is applied to all its children.
 traverse :: (FoldCore b p r) -> CoreExpr -> b
 traverse f (BinOp t o e1 e2)              = (binOpF f) t o (traverse f e1) $ traverse f e2
-traverse f (UnaOp t o e1)                 = (unaOpF f) t o $ traverse f e1
+-- traverse f (UnaOp t o e1)                 = (unaOpF f) t o $ traverse f e1
 traverse f (Constant t c)                 = (constantF f) t c
 traverse f (Var t s)                      = (varF f) t s
 traverse f (App t e1 (ParExpr t2 e2))     = (appF f) t (traverse f e1) $ (pExprF f) t2 $ traverse f e2

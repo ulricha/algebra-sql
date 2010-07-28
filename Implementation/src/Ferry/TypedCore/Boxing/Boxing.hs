@@ -142,7 +142,7 @@ box (BinOp t (Op o) e1 e2) = do
                                                 (e1', psi1') <- noContext $ box e1
                                                 (e2', psi2') <- noContext $ box e2
                                                 resultCheck (BinOp t (Op o) (boxOp psi1' psi1 e1') (boxOp psi2' psi2 e2'), psi3)
-box (UnaOp t (Op o) e1) = do
+{- box (UnaOp t (Op o) e1) = do
                             ty <- fromGam o
                             case ty of
                                 Nothing -> error "Non primitive unary operator during boxing phase, this should not happen"
@@ -150,7 +150,7 @@ box (UnaOp t (Op o) e1) = do
                                               let (BFn psi1 psi2) = trans $ inst t'
                                               (e1', psi1') <- noContext $ box e1
                                               resultCheck (UnaOp t (Op o) (boxOp psi1' psi1 e1'), psi2)
- 
+-} 
 
                     
 boxRec :: RecElem -> Boxing RecElem 

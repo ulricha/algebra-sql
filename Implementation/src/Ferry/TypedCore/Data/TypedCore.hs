@@ -10,7 +10,7 @@ data Op where
 
 data CoreExpr where
     BinOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr -> CoreExpr
-    UnaOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr
+--    UnaOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr
     Constant :: (Qual FType) -> Const -> CoreExpr
     Var  :: (Qual FType) -> String -> CoreExpr
     App :: (Qual FType) -> CoreExpr -> Param -> CoreExpr

@@ -8,7 +8,7 @@ data Op where
 
 data CoreExpr where
     BinOp :: Op -> CoreExpr -> CoreExpr -> CoreExpr
-    UnaOp :: Op -> CoreExpr -> CoreExpr
+--    UnaOp :: Op -> CoreExpr -> CoreExpr
     Constant :: Const -> CoreExpr
     Var  :: String -> CoreExpr
     App :: CoreExpr -> Param -> CoreExpr
