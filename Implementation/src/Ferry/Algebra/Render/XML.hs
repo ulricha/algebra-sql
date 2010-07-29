@@ -177,7 +177,39 @@ alg2XML gId = do
                                             xId <- freshId
                                             tell [mkRank xId res sort cxId1]
                                             return xId
+    alg2XML' (Cross, [cId1, cId2]) = do
+                                        cxId1 <- alg2XML cId1
+                                        cxId2 <- alg2XML cId2
+                                        xId <- freshId
+                                        tell [mkCross xId cxId1 cxId2]
+                                        return xId
+    alg2XML' (TableRef (n, cs, ks), []) = do
+                                            xId <- freshId
+                                            tell [mkTable xId n cs ks]
+                                            return xId
 
+
+
+mkTable :: XMLNode -> String -> TableAttrInf -> KeyInfos -> Element ()
+mkTable xId n descr keys = let props = Elem "properties" [] [flip CElem () $ mkKeys keys ]
+                               cont = Elem "content" [] [flip CElem () $ mkTableDescr n descr]
+                            in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "ref_tbl"])]
+                                           [CElem props (), CElem cont ()]
+
+mkTableDescr :: String -> TableAttrInf -> Element ()
+mkTableDescr n descr = Elem "table" [("name", AttValue [Left n])] $ map (\d -> flip CElem () $ toTableCol d ) descr
+    where
+     toTableCol :: (AttrName, AttrName, ATy) -> Element ()
+     toTableCol (cn, xn, t) = Elem "column" [("name", AttValue [Left xn]), ("tname", AttValue [Left cn]), ("type", AttValue [Left $ show t])] []
+
+mkKey :: KeyInfo -> Element ()
+mkKey k = let bd = map (\(k, p) -> CElem (Elem "column" [("name", AttValue [Left k]), ("position", AttValue [Left $ show p])] []) ()) $ zip k [1..]
+           in Elem "key" [] bd
+           
+mkKeys :: KeyInfos -> Element ()
+mkKeys ks = let bd = map (\k -> CElem (mkKey k) ()) ks
+             in Elem "keys" [] bd
+             
 -- Create an xml rank element node. 
 mkRank :: XMLNode -> ResAttrName -> SortInf -> XMLNode -> Element ()
 mkRank xId res sort cId = let sortCols = map mkSortColumn $ zip sort [1..]
@@ -193,6 +225,12 @@ mkSortColumn ((n, d), p) = Elem "column" [("name", AttValue [Left n]),
                                           ("position", AttValue [Left $ show p]),
                                           ("direction", AttValue [Left $ show d]),
                                           ("new", AttValue [Left "false"])] []
+
+-- Create an xml cross node
+mkCross :: XMLNode -> XMLNode -> XMLNode -> Element ()
+mkCross xId cxId1 cxId2 = let edge1 = mkEdge cxId1
+                              edge2 = mkEdge cxId2
+                           in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "cross"])] [CElem edge1 (), CElem edge2 ()]
 
 -- Create an xml union node                                          
 mkUnion :: XMLNode -> XMLNode -> XMLNode -> Element ()

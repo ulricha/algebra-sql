@@ -3,7 +3,7 @@ module Ferry.Algebra.Data.Algebra where
 
 import Numeric (showFFloat)
 
---| The column data type is used to represent the table structure while
+-- | The column data type is used to represent the table structure while
 --  compiling ferry core into an algebraic plan
 --  The col column contains the column number and the type of its contents
 --  The NCol column is used to group columns that together form an element of a record
@@ -12,15 +12,15 @@ data Column where
     Col :: Int -> ATy -> Column
     NCol :: String -> Columns -> Column
 
---| One table can have multiple columns     
+-- | One table can have multiple columns     
 type Columns = [Column]
 
---| Sorting rows in a direction
+-- | Sorting rows in a direction
 data SortDir = Asc
              | Desc
     deriving (Eq, Ord)
 
---| The show instance results in values that are accepted in the xml plan.
+-- | The show instance results in values that are accepted in the xml plan.
 instance Show SortDir where
     show Asc  = "ascending"
     show Desc = "descending"
@@ -33,7 +33,7 @@ instance Show SortDir where
 --                  | TJ_NE
 --
 
---| Algebraic types
+-- | Algebraic types
 --  At this level we do not have any structural types anymore
 --  those are represented by columns. ASur is used for surrogate
 --  values that occur for nested lists.
@@ -47,7 +47,7 @@ data ATy where
     ASur :: ATy
       deriving (Eq, Ord)
       
---| Show the algebraic types in a way that is compatible with 
+-- | Show the algebraic types in a way that is compatible with 
 --  the xml plan.
 instance Show ATy where
   show AInt     = "int"
@@ -58,7 +58,7 @@ instance Show ATy where
   show ANat     = "nat"
   show ASur     = "int"
 
---| Wrapper around values that can occur in an algebraic plan                  
+-- | Wrapper around values that can occur in an algebraic plan                  
 data AVal where
   VInt :: Integer -> AVal
   VStr :: String -> AVal
@@ -68,7 +68,7 @@ data AVal where
   VNat :: Integer -> AVal
     deriving (Eq, Ord)
 
---| Show the values in the way compatible with the xml plan.
+-- | Show the values in the way compatible with the xml plan.
 instance Show AVal where
   show (VInt x)     = show x
   show (VStr x)     = show x
@@ -85,60 +85,67 @@ instance Show AVal where
 --               | FTAggr_Sum
 --            deriving (Eq, Show)
 
---| Pair of a type and a value
+-- | Pair of a type and a value
 type ATyVal = (ATy, AVal)
 
---| Attribute name or column name
+-- | Attribute name or column name
 type AttrName            = String
 
---| Result attribute name, used as type synonym where the name for a result column of a computation is needed              
+-- | Result attribute name, used as type synonym where the name for a result column of a computation is needed              
 type ResAttrName         = AttrName
 
---| Sort attribute name, used as type synonym where a column for sorting is needed
+-- | Sort attribute name, used as type synonym where a column for sorting is needed
 type SortAttrName        = AttrName
 --type PartAttrName        = AttrName
 
---| New attribute name, used to represent the new column name when renaming columns
+-- | New attribute name, used to represent the new column name when renaming columns
 type NewAttrName         = AttrName
 
---| Old attribute name, used to represent the old column name when renaming columns
+-- | Old attribute name, used to represent the old column name when renaming columns
 type OldAttrName         = AttrName
 --type SelAttrName         = AttrName
---| Left attribute name, used to represent the left argument when applying binary operators
+-- | Left attribute name, used to represent the left argument when applying binary operators
 type LeftAttrName        = AttrName
 
---| Right attribute name, used to represent the right argument when applying binary operators
+-- | Right attribute name, used to represent the right argument when applying binary operators
 type RightAttrName       = AttrName
 --
---type TableName           = String  
---type TableAttrInf        = [(AttrName, AttrName, ATy)]
---type KeyInfo             = [AttrName]
---type KeyInfos            = [KeyInfo]
+-- | Name of a database table
+type TableName           = String  
 
---| Sort information, a list (ordered in sorting priority), of pair of columns and their sort direction--
+-- | List of table attribute information consisting of (column name, new column name, type of column)
+type TableAttrInf        = [(AttrName, AttrName, ATy)]
+
+-- | Key of a database table, a key consists of multiple column names
+type KeyInfo             = [AttrName]
+
+-- | Multiple keys
+type KeyInfos            = [KeyInfo]
+
+-- | Sort information, a list (ordered in sorting priority), of pair of columns and their sort direction--
 type SortInf              = [(SortAttrName, SortDir)]
 
---| Projection information, a list of new attribute names, and their old names.
+-- | Projection information, a list of new attribute names, and their old names.
 type ProjInf              = [(NewAttrName, OldAttrName)]  
 
 --type JoinPred = (JoinCompKind, (LeftAttrName,RightAttrName))
 --type JoinPreds  = [JoinPred]
 
---| A tuple is a list of values
+-- | A tuple is a list of values
 type Tuple = [AVal]
 
---| Schema information, represents a table structure, the first element of the tuple is the column name the second its type.
+-- | Schema information, represents a table structure, the first element of the tuple is the column name the second its type.
 type SchemaInfos = [(AttrName, ATy)]    
 
 -- type SemInfRowNum  = (ResAttrName, SortInf, Maybe PartAttrName) 
 -- type SemInfRowId   = ResAttrName
 
---| Information that specifies how to perform the rank operation.
+-- | Information that specifies how to perform the rank operation.
 --  its first element is the column where the output of the operation is inserted
 --  the second element represents the sorting criteria that determine the ranking.
 type SemInfRank    = (ResAttrName,  SortInf)
 
---| Information that specifies a projection
+-- | Information that specifies a projection
 type SemInfProj    = ProjInf
 
 
@@ -158,7 +165,8 @@ type SemInfEqJoin  = (LeftAttrName,RightAttrName)
 type SemInfLitTable = [Tuple]
 
 
--- type SemInfTableRef = (TableName, TableAttrInf, KeyInfos)
+-- | Information for accessing a database table
+type SemInfTableRef = (TableName, TableAttrInf, KeyInfos)
 
 
 -- | Information what column, the first element, to attach to a table and what its content would be, the second element.
@@ -197,7 +205,7 @@ data Algebra where
     Proj       :: SemInfProj -> Algebra       -- should have one child   
 --    Sel        :: SemInfSel  -> Algebra       -- should have one child  
 --    PosSel     :: SemInfPosSel -> Algebra     -- should have one child
---    Cross      :: Algebra                     -- should have two children
+    Cross      :: Algebra                     -- should have two children
     EqJoin     :: SemInfEqJoin -> Algebra     -- should have two children 
 --    SemiJoin   :: SemInfEqJoin -> Algebra     -- should have two children 
 --    ThetaJoin  :: SemInfThetaJoin -> Algebra  -- should have two children
@@ -206,7 +214,7 @@ data Algebra where
 --    Distinct   :: Algebra                     -- should have one child
     LitTable   :: SemInfLitTable -> SchemaInfos -> Algebra
     EmptyTable :: SchemaInfos -> Algebra
---    TableRef   :: SemInfTableRef -> Algebra
+    TableRef   :: SemInfTableRef -> Algebra
     Attach     :: SemInfAttach -> Algebra     -- should have one child
     FunBinOp   :: SemBinOp -> Algebra         -- should have one child
 --    Cast       :: SemInfCast -> Algebra       -- should have one child

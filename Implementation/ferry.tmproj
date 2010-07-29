@@ -7,8 +7,6 @@
 	<key>documents</key>
 	<array>
 		<dict>
-			<key>expanded</key>
-			<true/>
 			<key>name</key>
 			<string>test</string>
 			<key>regexFolderFilter</key>
@@ -36,29 +34,29 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>31</integer>
+				<integer>6</integer>
 				<key>line</key>
-				<integer>112</integer>
+				<integer>216</integer>
 			</dict>
 			<key>columnSelection</key>
 			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>100</integer>
+			<integer>114</integer>
 			<key>selectFrom</key>
 			<dict>
 				<key>column</key>
-				<integer>25</integer>
+				<integer>4</integer>
 				<key>line</key>
-				<integer>112</integer>
+				<integer>216</integer>
 			</dict>
 			<key>selectTo</key>
 			<dict>
 				<key>column</key>
-				<integer>36</integer>
+				<integer>12</integer>
 				<key>line</key>
-				<integer>112</integer>
+				<integer>216</integer>
 			</dict>
 		</dict>
 		<key>src/Ferry/Algebra/Data/Create.hs</key>
@@ -66,59 +64,43 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>2</integer>
+				<integer>31</integer>
 				<key>line</key>
-				<integer>13</integer>
+				<integer>62</integer>
 			</dict>
-			<key>columnSelection</key>
-			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
-			<key>selectFrom</key>
-			<dict>
-				<key>column</key>
-				<integer>0</integer>
-				<key>line</key>
-				<integer>13</integer>
-			</dict>
-			<key>selectTo</key>
-			<dict>
-				<key>column</key>
-				<integer>6</integer>
-				<key>line</key>
-				<integer>13</integer>
-			</dict>
+			<integer>35</integer>
 		</dict>
 		<key>src/Ferry/Algebra/Data/GraphBuilder.hs</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>5</integer>
+				<integer>3</integer>
 				<key>line</key>
-				<integer>65</integer>
+				<integer>29</integer>
 			</dict>
 			<key>columnSelection</key>
 			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>41</integer>
+			<integer>10</integer>
 			<key>selectFrom</key>
 			<dict>
 				<key>column</key>
 				<integer>0</integer>
 				<key>line</key>
-				<integer>65</integer>
+				<integer>29</integer>
 			</dict>
 			<key>selectTo</key>
 			<dict>
 				<key>column</key>
 				<integer>7</integer>
 				<key>line</key>
-				<integer>65</integer>
+				<integer>29</integer>
 			</dict>
 		</dict>
 		<key>src/Ferry/Algebra/Render/XML.hs</key>
@@ -126,72 +108,44 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>36</integer>
+				<integer>13</integer>
 				<key>line</key>
-				<integer>142</integer>
+				<integer>195</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>124</integer>
-		</dict>
-		<key>src/Ferry/Common/Render/Dot.hs</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>18</integer>
-				<key>line</key>
-				<integer>106</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>77</integer>
-		</dict>
-		<key>src/Ferry/Common/Render/Pretty.hs</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>2</integer>
-				<key>line</key>
-				<integer>6</integer>
-			</dict>
-			<key>columnSelection</key>
-			<false/>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-			<key>selectFrom</key>
-			<dict>
-				<key>column</key>
-				<integer>0</integer>
-				<key>line</key>
-				<integer>6</integer>
-			</dict>
-			<key>selectTo</key>
-			<dict>
-				<key>column</key>
-				<integer>11</integer>
-				<key>line</key>
-				<integer>6</integer>
-			</dict>
+			<integer>173</integer>
 		</dict>
 		<key>src/Ferry/Compiler/Compile.hs</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>33</integer>
+				<integer>22</integer>
 				<key>line</key>
-				<integer>63</integer>
+				<integer>66</integer>
 			</dict>
+			<key>columnSelection</key>
+			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>13</integer>
+			<integer>40</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>17</integer>
+				<key>line</key>
+				<integer>66</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>28</integer>
+				<key>line</key>
+				<integer>66</integer>
+			</dict>
 		</dict>
 		<key>src/Ferry/Compiler/Error/Error.hs</key>
 		<dict>
@@ -221,6 +175,20 @@
 			<key>firstVisibleLine</key>
 			<integer>9</integer>
 		</dict>
+		<key>src/Ferry/Compiler/Stages/AlgebraToXMLStage.hs</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>32</integer>
+				<key>line</key>
+				<integer>9</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
 		<key>src/Ferry/Compiler/Stages/BoxingStage.hs</key>
 		<dict>
 			<key>caret</key>
@@ -243,20 +211,6 @@
 				<integer>33</integer>
 				<key>line</key>
 				<integer>9</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>src/Ferry/Compiler/Stages/ParseStage.hs</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>0</integer>
-				<key>line</key>
-				<integer>10</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -306,6 +260,20 @@
 				<key>line</key>
 				<integer>0</integer>
 			</dict>
+		</dict>
+		<key>src/Ferry/Compiler/Stages/ToAlgebraStage.hs</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>32</integer>
+				<key>line</key>
+				<integer>14</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
 		</dict>
 		<key>src/Ferry/Compiler/Stages/ToCoreStage.hs</key>
 		<dict>
@@ -370,28 +338,28 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>18</integer>
+				<integer>2</integer>
 				<key>line</key>
-				<integer>29</integer>
+				<integer>10</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>11</integer>
+			<integer>4</integer>
 		</dict>
 		<key>src/Ferry/Core/Render/Dot.hs</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>41</integer>
+				<integer>35</integer>
 				<key>line</key>
-				<integer>18</integer>
+				<integer>29</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>3</integer>
 		</dict>
 		<key>src/Ferry/Core/Render/Pretty.hs</key>
 		<dict>
@@ -402,70 +370,38 @@
 				<key>line</key>
 				<integer>12</integer>
 			</dict>
-			<key>columnSelection</key>
-			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
 			<integer>0</integer>
-			<key>selectFrom</key>
-			<dict>
-				<key>column</key>
-				<integer>0</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>selectTo</key>
-			<dict>
-				<key>column</key>
-				<integer>27</integer>
-				<key>line</key>
-				<integer>12</integer>
-			</dict>
 		</dict>
 		<key>src/Ferry/Front/Convert/FrontToCore.hs</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>29</integer>
+				<integer>3</integer>
 				<key>line</key>
-				<integer>52</integer>
+				<integer>28</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>35</integer>
+			<integer>49</integer>
 		</dict>
 		<key>src/Ferry/Front/Convert/Normalise.hs</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>35</integer>
+				<integer>3</integer>
 				<key>line</key>
-				<integer>67</integer>
+				<integer>125</integer>
 			</dict>
-			<key>columnSelection</key>
-			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>58</integer>
-			<key>selectFrom</key>
-			<dict>
-				<key>column</key>
-				<integer>34</integer>
-				<key>line</key>
-				<integer>67</integer>
-			</dict>
-			<key>selectTo</key>
-			<dict>
-				<key>column</key>
-				<integer>38</integer>
-				<key>line</key>
-				<integer>67</integer>
-			</dict>
+			<integer>111</integer>
 		</dict>
 		<key>src/Ferry/Front/Data/Base.hs</key>
 		<dict>
@@ -502,28 +438,28 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>33</integer>
+				<integer>2</integer>
 				<key>line</key>
-				<integer>24</integer>
+				<integer>7</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>8</integer>
 		</dict>
 		<key>src/Ferry/Front/Data/Language.hs</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>29</integer>
+				<integer>2</integer>
 				<key>line</key>
-				<integer>103</integer>
+				<integer>11</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>76</integer>
+			<integer>10</integer>
 		</dict>
 		<key>src/Ferry/Front/Data/Meta.hs</key>
 		<dict>
@@ -574,14 +510,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>21</integer>
+				<integer>93</integer>
 				<key>line</key>
-				<integer>40</integer>
+				<integer>50</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>33</integer>
+			<integer>32</integer>
 		</dict>
 		<key>src/Ferry/Front/Parser/Scanner.hs</key>
 		<dict>
@@ -602,28 +538,28 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>34</integer>
-				<key>line</key>
-				<integer>43</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>19</integer>
-		</dict>
-		<key>src/Ferry/TypeSystem/AlgorithmW.hs</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>13</integer>
+				<integer>2</integer>
 				<key>line</key>
 				<integer>12</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>12</integer>
+			<integer>0</integer>
+		</dict>
+		<key>src/Ferry/TypeSystem/AlgorithmW.hs</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>72</integer>
+				<key>line</key>
+				<integer>113</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>95</integer>
 		</dict>
 		<key>src/Ferry/TypeSystem/ContextReduction.hs</key>
 		<dict>
@@ -651,7 +587,7 @@
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>29</integer>
 		</dict>
 		<key>src/Ferry/TypeSystem/Types.hs</key>
 		<dict>
@@ -718,28 +654,28 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>54</integer>
+				<integer>2</integer>
 				<key>line</key>
-				<integer>138</integer>
+				<integer>152</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>130</integer>
+			<integer>126</integer>
 		</dict>
 		<key>src/Ferry/TypedCore/Convert/CoreToAlgebra.hs</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>66</integer>
+				<integer>46</integer>
 				<key>line</key>
-				<integer>43</integer>
+				<integer>100</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>14</integer>
+			<integer>77</integer>
 		</dict>
 		<key>src/Ferry/TypedCore/Convert/Specialize.hs</key>
 		<dict>
@@ -760,60 +696,28 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>7</integer>
+				<integer>3</integer>
 				<key>line</key>
-				<integer>27</integer>
+				<integer>53</integer>
 			</dict>
-			<key>columnSelection</key>
-			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>2</integer>
-			<key>selectFrom</key>
-			<dict>
-				<key>column</key>
-				<integer>0</integer>
-				<key>line</key>
-				<integer>27</integer>
-			</dict>
-			<key>selectTo</key>
-			<dict>
-				<key>column</key>
-				<integer>9</integer>
-				<key>line</key>
-				<integer>27</integer>
-			</dict>
+			<integer>36</integer>
 		</dict>
 		<key>src/Ferry/TypedCore/Data/Instances.hs</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>7</integer>
+				<integer>2</integer>
 				<key>line</key>
-				<integer>1</integer>
+				<integer>129</integer>
 			</dict>
-			<key>columnSelection</key>
-			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
-			<key>selectFrom</key>
-			<dict>
-				<key>column</key>
-				<integer>37</integer>
-				<key>line</key>
-				<integer>1</integer>
-			</dict>
-			<key>selectTo</key>
-			<dict>
-				<key>column</key>
-				<integer>7</integer>
-				<key>line</key>
-				<integer>1</integer>
-			</dict>
+			<integer>101</integer>
 		</dict>
 		<key>src/Ferry/TypedCore/Data/Substitution.hs</key>
 		<dict>
@@ -834,29 +738,29 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>8</integer>
+				<integer>7</integer>
 				<key>line</key>
-				<integer>43</integer>
+				<integer>20</integer>
 			</dict>
 			<key>columnSelection</key>
 			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>24</integer>
+			<integer>0</integer>
 			<key>selectFrom</key>
 			<dict>
 				<key>column</key>
-				<integer>4</integer>
+				<integer>5</integer>
 				<key>line</key>
-				<integer>43</integer>
+				<integer>20</integer>
 			</dict>
 			<key>selectTo</key>
 			<dict>
 				<key>column</key>
-				<integer>10</integer>
+				<integer>9</integer>
 				<key>line</key>
-				<integer>43</integer>
+				<integer>20</integer>
 			</dict>
 		</dict>
 		<key>src/Ferry/TypedCore/Data/TypeClasses.hs</key>
@@ -908,29 +812,29 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>4</integer>
+				<integer>40</integer>
 				<key>line</key>
-				<integer>17</integer>
+				<integer>36</integer>
 			</dict>
 			<key>columnSelection</key>
 			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>9</integer>
+			<integer>11</integer>
 			<key>selectFrom</key>
 			<dict>
 				<key>column</key>
-				<integer>48</integer>
+				<integer>5</integer>
 				<key>line</key>
-				<integer>17</integer>
+				<integer>36</integer>
 			</dict>
 			<key>selectTo</key>
 			<dict>
 				<key>column</key>
-				<integer>4</integer>
+				<integer>40</integer>
 				<key>line</key>
-				<integer>17</integer>
+				<integer>36</integer>
 			</dict>
 		</dict>
 		<key>src/Ferry/TypedCore/Render/Dot.hs</key>
@@ -938,28 +842,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>63</integer>
+				<integer>35</integer>
 				<key>line</key>
-				<integer>150</integer>
+				<integer>33</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>122</integer>
-		</dict>
-		<key>src/Ferry/TypedCore/Render/Pretty.hs</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>46</integer>
-				<key>line</key>
-				<integer>27</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>2</integer>
+			<integer>14</integer>
 		</dict>
 		<key>src/Ferry/TypedCore/Rewrite/Combinators.hs</key>
 		<dict>
@@ -1017,7 +907,7 @@
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>48</integer>
+			<integer>0</integer>
 		</dict>
 		<key>test/Ferry/Front/Parser/ConstructTest1.hs</key>
 		<dict>
@@ -1069,20 +959,6 @@
 				<integer>46</integer>
 				<key>line</key>
 				<integer>4</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/Main.hs</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>33</integer>
-				<key>line</key>
-				<integer>14</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -1173,34 +1049,6 @@
 			<key>firstVisibleLine</key>
 			<integer>0</integer>
 		</dict>
-		<key>test/script/ComplexTypeSystem/Order.ferry</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>63</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/Order.out</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>9</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
 		<key>test/script/ComplexTypeSystem/elem.ferry</key>
 		<dict>
 			<key>caret</key>
@@ -1229,146 +1077,6 @@
 			<key>firstVisibleLine</key>
 			<integer>0</integer>
 		</dict>
-		<key>test/script/ComplexTypeSystem/for2.ferry</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>43</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/for2.out</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>9</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/forLet.ferry</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>75</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/forLet.out</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>9</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/forTable.ferry</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>70</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/forTable.out</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>12</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/forTableLetRec.ferry</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>4</integer>
-				<key>line</key>
-				<integer>3</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/forTableLetRec.out</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>12</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/forWithFilter.ferry</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>40</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/forWithFilter.out</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>9</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
 		<key>test/script/ComplexTypeSystem/group.ferry</key>
 		<dict>
 			<key>caret</key>
@@ -1389,34 +1097,6 @@
 			<dict>
 				<key>column</key>
 				<integer>0</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/moreLets.ferry</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>57</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/moreLets.out</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>7</integer>
 				<key>line</key>
 				<integer>0</integer>
 			</dict>
@@ -1491,48 +1171,6 @@
 				<integer>103</integer>
 				<key>line</key>
 				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/smallFor.ferry</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>27</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/ComplexTypeSystem/smallFor.out</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>9</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>test/script/Core/program1.ferry</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>16</integer>
-				<key>line</key>
-				<integer>4</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -2004,36 +1642,9 @@
 	</dict>
 	<key>openDocuments</key>
 	<array>
-		<string>src/Ferry/Front/Data/Language.hs</string>
+		<string>src/Ferry/Front/Parser/Parser.hs</string>
 		<string>src/Ferry/Front/Convert/FrontToCore.hs</string>
 		<string>src/Ferry/Front/Convert/Normalise.hs</string>
-		<string>src/Ferry/Compiler/Stages/ParseStage.hs</string>
-		<string>src/Ferry/Compiler/Stages/NormaliseStage.hs</string>
-		<string>src/Ferry/TypedCore/Render/Pretty.hs</string>
-		<string>test/script/ComplexTypeSystem/moreLets.ferry</string>
-		<string>test/script/ComplexTypeSystem/moreLets.out</string>
-		<string>test/script/ComplexTypeSystem/smallFor.ferry</string>
-		<string>test/script/ComplexTypeSystem/smallFor.out</string>
-		<string>test/script/ComplexTypeSystem/forWithFilter.ferry</string>
-		<string>test/script/ComplexTypeSystem/forWithFilter.out</string>
-		<string>test/script/ComplexTypeSystem/for2.ferry</string>
-		<string>test/script/ComplexTypeSystem/for2.out</string>
-		<string>test/script/ComplexTypeSystem/forLet.ferry</string>
-		<string>test/script/ComplexTypeSystem/forLet.out</string>
-		<string>test/script/ComplexTypeSystem/forTable.ferry</string>
-		<string>test/script/ComplexTypeSystem/forTable.out</string>
-		<string>test/script/ComplexTypeSystem/forTableLetRec.ferry</string>
-		<string>test/script/ComplexTypeSystem/forTableLetRec.out</string>
-		<string>src/Ferry/Front/Render/Pretty.hs</string>
-		<string>src/Ferry/Common/Render/Dot.hs</string>
-		<string>test/script/ComplexTypeSystem/Order.ferry</string>
-		<string>test/script/ComplexTypeSystem/Order.out</string>
-		<string>test/script/Core/program1.ferry</string>
-		<string>src/Ferry/Common/Render/Pretty.hs</string>
-		<string>src/Ferry/Core/Render/Pretty.hs</string>
-		<string>src/Ferry/Core/Render/Dot.hs</string>
-		<string>src/Ferry/TypedCore/Render/Dot.hs</string>
-		<string>src/Ferry/Front/Parser/Parser.hs</string>
 		<string>src/Ferry/Compiler/ExecuteStep.hs</string>
 		<string>src/Ferry/Compiler/Types.hs</string>
 		<string>test/script/TypeSystem/let.ferry</string>
@@ -2065,9 +1676,12 @@
 		<string>src/Ferry/TypeSystem/Types.hs</string>
 		<string>src/Ferry/TypeSystem/Unification.hs</string>
 		<string>src/Ferry/TypedCore/Convert/Traverse.hs</string>
+		<string>src/Ferry/TypedCore/Render/Dot.hs</string>
 		<string>src/Ferry/TypedCore/Convert/Specialize.hs</string>
 		<string>src/Ferry/Algebra/Data/GraphBuilder.hs</string>
 		<string>src/Ferry/TypedCore/Convert/CoreToAlgebra.hs</string>
+		<string>src/Ferry/Compiler/Stages/ToAlgebraStage.hs</string>
+		<string>src/Ferry/Compiler/Stages/AlgebraToXMLStage.hs</string>
 		<string>src/Ferry/Algebra/Render/XML.hs</string>
 		<string>test/script/runTests</string>
 		<string>test/script/Normalise/program1.out</string>
@@ -2079,6 +1693,8 @@
 		<string>test/script/ComplexTypeSystem/group.out</string>
 		<string>test/script/Normalise/program1.ferry</string>
 		<string>src/Ferry/Core/Data/Core.hs</string>
+		<string>src/Ferry/Core/Render/Dot.hs</string>
+		<string>src/Ferry/Core/Render/Pretty.hs</string>
 		<string>src/Ferry/TypedCore/Data/TypedCore.hs</string>
 		<string>src/Ferry/TypedCore/Data/TypeClasses.hs</string>
 		<string>src/Ferry/TypedCore/Data/Substitution.hs</string>
@@ -2087,7 +1703,7 @@
 		<string>src/Ferry/TypeSystem/ContextReduction.hs</string>
 		<string>src/Ferry/Compiler/Compile.hs</string>
 		<string>src/FerryC.hs</string>
-		<string>test/Main.hs</string>
+		<string>src/Ferry/Front/Data/Language.hs</string>
 		<string>src/Ferry/Compiler/Stages/TypeInferStage.hs</string>
 		<string>src/Ferry/Compiler/Stages/ToCoreStage.hs</string>
 		<string>test/script/TypeSystem/int.ferry</string>
@@ -2116,12 +1732,13 @@
 		<string>src/Ferry/Front/Parser/Applicative.hs</string>
 		<string>src/Ferry/Compiler/Error/Error.hs</string>
 		<string>src/Ferry/Front/Data/Instances.hs</string>
+		<string>src/Ferry/Front/Render/Pretty.hs</string>
 		<string>src/Ferry/Front/Data/Meta.hs</string>
 		<string>src/Ferry/Front/Data/Base.hs</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<true/>
 	<key>windowFrame</key>
-	<string>{{808, 459}, {894, 687}}</string>
+	<string>{{532, 676}, {894, 687}}</string>
 </dict>
 </plist>

@@ -42,6 +42,11 @@ natT = ANat
 emptyTable :: SchemaInfos -> AlgNode
 emptyTable = (\x -> (x, [])) . EmptyTable
 
+dbTable :: String -> Columns -> KeyInfos -> AlgNode
+dbTable n cs ks = (TableRef (n, attr, ks), []) 
+  where
+    attr = map (\(NCol n [Col i t]) -> (n, "item" ++ show i, t)) cs
+
 litTable :: AVal -> String -> ATy -> AlgNode
 litTable v s t = (LitTable [[v]] [(s, t)], [])
 
@@ -53,6 +58,9 @@ eqJoin n1 n2 c1 c2 = (EqJoin (n1, n2), [c1, c2])
 
 rank :: ResAttrName -> SortInf -> Int -> AlgNode
 rank res sort c1 = (Rank (res, sort), [c1])
+
+cross :: Int -> Int -> AlgNode
+cross c1 c2 = (Cross, [c1, c2])
 
 union :: Int -> Int -> AlgNode
 union c1 c2 = (DisjUnion, [c1, c2])

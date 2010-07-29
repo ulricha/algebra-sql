@@ -11,7 +11,7 @@ import Ferry.Algebra.Data.Create
 import Ferry.Algebra.Data.GraphBuilder
 
 import Ferry.TypedCore.Data.Type (Qual (..), FType (..), RLabel (..))
-import Ferry.TypedCore.Data.TypedCore
+import Ferry.TypedCore.Data.TypedCore as T
 
 import qualified Data.Map as M 
 
@@ -89,6 +89,19 @@ coreToAlgebra (Nil (_ :=> t)) = do
                                  return (n1, cs, EmptySub)
 -- List constructor, because of optimisation chances contents has been directed to special functions
 coreToAlgebra (c@(Cons _ _ _)) = listFirst c
+-- Database tables
+coreToAlgebra (Table t n cs ks) = do
+                                    let cs' = coreCol2AlgCol cs
+                                    let keys = key2Key cs' ks
+                                    n1 <- insertNode $ dbTable n cs' keys
+                                    n2 <- insertNode $ rank "pos" (map (\ki -> (ki, Asc)) $ head keys) n1
+                                    loop <- getLoop
+                                    loopN <- insertNode loop
+                                    n3 <- insertNode $ cross loopN n2
+                                    return (n3, cs', EmptySub)
+                                    
+
+--     Table :: (Qual FType) -> String -> [Column] -> [Key] -> CoreExpr
 
 -- Compilation for the first element of a list.
 -- For optimisation purposes we distinguish three cases:
@@ -163,6 +176,17 @@ recElemsToAlgebra alg2 el = do
                                 return (n3, cs1 ++ cs2', EmptySub)
 
 -- Function to transform the column structure
+
+--From a typedcore column list to algebraic columns
+coreCol2AlgCol :: [T.Column] -> Columns
+coreCol2AlgCol cols = map (\(Column s t, i) -> NCol s $ fst $ typeToCols t i) cols'
+    where
+      cols' = zip cols [1..]
+
+--Translate core keys to algebraic keys
+key2Key :: Columns -> [Key] -> KeyInfos
+key2Key cs ks = map (\(Key k) -> map (\ki -> case getCol ki cs of
+                                        [(Col i _)] -> "item" ++ show i) k ) ks
 
 -- Get all the column names from the structure                                    
 leafNames :: Columns -> [String]
