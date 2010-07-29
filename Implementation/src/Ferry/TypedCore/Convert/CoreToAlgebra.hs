@@ -99,9 +99,44 @@ coreToAlgebra (Table t n cs ks) = do
                                     loopN <- insertNode loop
                                     n3 <- insertNode $ cross loopN n2
                                     return (n3, cs', EmptySub)
-                                    
+-- If then else
+coreToAlgebra (If t e1 e2 e3) = do
+                                  (q1, cs1, ts1) <- coreToAlgebra e1
+                                  -- Get current gamma
+                                  gam <- getGamma
+                                  -- Build loop and gamma for then branch
+                                  lt1 <- insertNode $ select "item1" q1
+                                  let loopThen = proj [("iter", "iter")] lt1
+                                  loopThenId <- insertNode loopThen
+                                  gamThen <- mkGamLoop gam loopThenId
+                                  --Evaluate then branch
+                                  (q2, cs2, ts2) <- withContext gamThen loopThen $ coreToAlgebra e2
+                                  -- Build loop and gamma for else branch
+                                  le1 <- insertNode $ notC resCol "item1" q1
+                                  le2 <- insertNode $ select resCol le1
+                                  let loopElse = proj [("iter", "iter")] le2
+                                  loopElseId <- insertNode loopElse
+                                  gamElse <- mkGamLoop gam loopElseId
+                                  --Evaluate else branch
+                                  (q3, cs3, ts3) <- withContext gamElse loopElse $ coreToAlgebra e3
+                                  --Construct result
+                                  let projPairs = zip (leafNames cs2) (leafNames cs2)
+                                  n1 <- insertNode $ attach ordCol intT (int 1) q2
+                                  n2 <- insertNode $ attach ordCol intT (int 2) q3
+                                  n3 <- insertNode $ union n1 n2
+                                  n4 <- insertNode $ proj (("iter","iter"):("pos","pos"):projPairs) n3
+                                  return (n4, cs2, EmptySub)
+                                  
+                -- [(String, AlgRes)]              type AlgRes = (Int, Columns, SubPlan)        
+mkGamLoop :: Gam -> Int -> GraphM Gam
+mkGamLoop gamma loop = mapM (algResLoop loop) gamma
+    
+algResLoop :: Int -> (String, AlgRes) -> GraphM (String, AlgRes)
+algResLoop loop (n, (i, cs, pl)) = do
+                              i' <- insertNode $ eqJoin "iter" "iter" i loop
+                              return (n, (i', cs, pl))
+                              
 
---     Table :: (Qual FType) -> String -> [Column] -> [Key] -> CoreExpr
 
 -- Compilation for the first element of a list.
 -- For optimisation purposes we distinguish three cases:

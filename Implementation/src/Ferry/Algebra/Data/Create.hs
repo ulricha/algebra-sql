@@ -59,8 +59,14 @@ eqJoin n1 n2 c1 c2 = (EqJoin (n1, n2), [c1, c2])
 rank :: ResAttrName -> SortInf -> Int -> AlgNode
 rank res sort c1 = (Rank (res, sort), [c1])
 
+select :: SelAttrName -> Int -> AlgNode
+select sel c1 = (Sel sel, [c1])
+
 cross :: Int -> Int -> AlgNode
 cross c1 c2 = (Cross, [c1, c2])
+
+notC :: AttrName -> AttrName -> Int -> AlgNode
+notC r n c1 = (FunBoolNot (r, n), [c1])
 
 union :: Int -> Int -> AlgNode
 union c1 c2 = (DisjUnion, [c1, c2])

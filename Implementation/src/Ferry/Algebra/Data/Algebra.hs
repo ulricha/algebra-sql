@@ -103,7 +103,10 @@ type NewAttrName         = AttrName
 
 -- | Old attribute name, used to represent the old column name when renaming columns
 type OldAttrName         = AttrName
---type SelAttrName         = AttrName
+
+-- | Selection attribute name, used to represent the column containing the selection boolean
+type SelAttrName         = AttrName
+
 -- | Left attribute name, used to represent the left argument when applying binary operators
 type LeftAttrName        = AttrName
 
@@ -149,7 +152,8 @@ type SemInfRank    = (ResAttrName,  SortInf)
 type SemInfProj    = ProjInf
 
 
--- type SemInfSel     = SelAttrName
+-- | Information that specifies which column contains the conditional
+type SemInfSel     = SelAttrName
 -- type SemInfPosSel  = (Int, SortInf, Maybe PartAttrName) 
 
 
@@ -184,6 +188,7 @@ type SemInfAttach   = (ResAttrName, ATyVal)
 -- The fourth element is the right argument for the operator
 type SemBinOp = (String, ResAttrName, LeftAttrName, RightAttrName)
 
+type SemUnOp = (ResAttrName, AttrName)
 
 -- type SemInfFun1To1  = (FunTy1To1, ResAttrName, [AttrName])   
 -- type SemInfFunAggr  = (FunTyAggr, SemInfosUnOp, Maybe PartAttrName)
@@ -203,7 +208,7 @@ data Algebra where
 --    RowRank    :: SemInfRank -> Algebra       -- should have one child
     Rank       :: SemInfRank -> Algebra       -- should have one child
     Proj       :: SemInfProj -> Algebra       -- should have one child   
---    Sel        :: SemInfSel  -> Algebra       -- should have one child  
+    Sel        :: SemInfSel  -> Algebra       -- should have one child  
 --    PosSel     :: SemInfPosSel -> Algebra     -- should have one child
     Cross      :: Algebra                     -- should have two children
     EqJoin     :: SemInfEqJoin -> Algebra     -- should have two children 
@@ -223,7 +228,7 @@ data Algebra where
 --    Fun1To1    :: SemInfFun1To1 -> Algebra    -- should have one child
 --    FunBoolAnd :: SemInfBinOp -> Algebra      -- should have one child      
 --    FunBoolOr  :: SemInfBinOp -> Algebra      -- should have one child
---    FunBoolNot :: SemInfUnOp -> Algebra       -- should have one child
+    FunBoolNot :: SemUnOp -> Algebra       -- should have one child
 --    FunAggr    :: SemInfFunAggr -> Algebra    -- should have one child
 --    FunAggrCnt :: SemInfFunAggrCnt -> Algebra -- should have one child
 --    SerializeRel :: SemInfSerRel -> Algebra   -- should have two children

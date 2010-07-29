@@ -187,8 +187,31 @@ alg2XML gId = do
                                             xId <- freshId
                                             tell [mkTable xId n cs ks]
                                             return xId
+    alg2XML' (Sel n, [cId1]) = do
+                                cxId <- alg2XML cId1
+                                xId <- freshId
+                                tell [mkSelect xId n cxId]
+                                return xId
+    alg2XML' (FunBoolNot (res, col), [cId1]) = do
+                                                 cxId1 <- alg2XML cId1
+                                                 xId <- freshId
+                                                 tell [mkBoolNot xId res col cxId1]
+                                                 return xId
+                                
+mkBoolNot :: XMLNode -> String -> String -> XMLNode -> Element ()
+mkBoolNot xId res arg cxId = let resCol = Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []
+                                 argCol = Elem "column" [("name", AttValue [Left arg]), ("new", AttValue [Left "false"])] []
+                                 cont = Elem "content" [] [CElem resCol (), CElem argCol ()]
+                                 edge = mkEdge cxId
+                              in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "not"])]
+                                             [CElem cont (), CElem edge ()]
 
-
+mkSelect :: XMLNode -> String -> XMLNode -> Element ()
+mkSelect xId n cxId = let col = Elem "column" [("name", AttValue [Left n]), ("new", AttValue [Left "false"])] []
+                          cont = Elem "content" [] [CElem col ()]
+                          edge = mkEdge cxId
+                       in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "select"])]
+                                      [CElem cont (), CElem edge ()]
 
 mkTable :: XMLNode -> String -> TableAttrInf -> KeyInfos -> Element ()
 mkTable xId n descr keys = let props = Elem "properties" [] [flip CElem () $ mkKeys keys ]

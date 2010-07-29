@@ -31,6 +31,11 @@ getLoop :: GraphM AlgNode
 getLoop = do 
             (_, l) <- ask
             return l
+            
+getGamma :: GraphM Gam
+getGamma = do
+            (g, _) <- ask
+            return g
 
 getFreshId :: GraphM Int
 getFreshId = do
@@ -62,6 +67,9 @@ insertNode' n children = do
 withBinding :: String -> AlgRes -> GraphM a -> GraphM a
 withBinding n v a = do
                      local (\(g, alg) -> ((n, v):g, alg)) a
+                     
+withContext :: Gam -> AlgNode -> GraphM a -> GraphM a
+withContext gam loop = local (\_ -> (gam, loop))
                      
 fromGam :: String -> GraphM AlgRes
 fromGam n = do
