@@ -100,6 +100,7 @@
 %format q4 = " q_4 "
 %format qn = " q_n "
 %format qi = " q_i "
+%format qv' = " q_{v}'' "
 
 %format k1 = "k_1"
 %format k2 = "k_2"
@@ -153,11 +154,17 @@
 %format Gamthen = " \Gamma_{then} "
 %format Gamelse = " \Gamma_{else} "
 
+%format Gamv = " \Gamma_{v} "
 %format qm = " q_{m} "
+%format qv = " q_{v} "
+
+%format mapv = " map_{v} "
+%format loopv = " loop_{v} "
 
 %format (Table (t) (c) (i) (k)) = " \tableref_{" t "_{\stackrel{"c"}{"i"}} "k"} "
 
 %format Gam = "\Gamma"
+%format (rownum (x) (y) (z)) = " \text{rownum}_{\stackrel{"x"}{"y"}}("z")"
 %format (attach (x) (y) (b)) = " @_{" x ":" y"}(" b ") "
 %format (proj (x) (y)) = " \pi_{" x"}(" y ") "
 %format (join (x) (y) (z)) = " " y " \bowtie_{" x "} " z " "

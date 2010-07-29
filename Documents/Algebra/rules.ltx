@@ -41,7 +41,15 @@
          | loopelse = proj iter (sel item1 (not (item1:item1) q1))| \quad | Gamelse = map (\qm -> join iter qm loopelse) Gam |\\
          | Gamthen, loopthen +- e2 => (q2, cs2, empty)|\quad |Gamelse, loopelse +- e3 => (q3, cs3, empty) |\\
          | q = proj (iter, pos ln cs2) (union (attach ord 1 q2) (attach ord 2 q3))|}
-        {| Gam, loop +- if e1 then e2 else e3 => (q, cs2, empty)|}
+        {| Gam, loop +- if e1 then e2 else e3 => (q, cs2, empty)|}\\
+    \infrule[ac-map]
+        {| Gam, loop +- e1 => (q1, cs1, empty) |\quad | qv' = rownum iter' (iter, pos) q1|\\
+         | qv = proj (iter:iter', pos:pos', ln(cs1)) (attach pos' 1 qv')|\\
+         | loopv = proj (iter:iter') qv'| \quad |mapv = proj (outer:iter, inner:iter', pos':pos) qv'|\\
+         | Gamv = map (\(x, (q, cs, ts)) -> (x, (proj (iter:inner, pos, ln cs) (join (iter:outer) q mapv), cs ts))) Gam|\\
+         | Gamv[x +-> qv, cs1, ts1], loopv +- e2 => (q2, cs2, ts2)|\\
+         | q = proj (iter:outer, pos:pos', ln cs2) (join (iter:inner) q2 mapv) |}
+        {| Gam, loop +- map (\x -> e2) e1 => (q, cs2, empty)|}
 \end{infrules}
 \begin{code}
 tyToCol :: Type -> Int -> Columns
