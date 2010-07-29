@@ -33,38 +33,34 @@ prefixCol = "9999"
 coreToAlgebra :: CoreExpr -> GraphM AlgRes
 -- Primitive values
 coreToAlgebra (Constant t (CInt i)) = do 
-                                        loop <- getLoop
-                                        n1 <- insertNode loop
-                                        n2 <- insertNode $ attach "item1" intT (int i) n1
-                                        n3 <- insertNode $ attach "pos" intT (int 1) n2
-                                        return (n3, [Col 1 AInt], EmptySub)
+                                        n1 <- attach "pos" intT (int 1) 
+                                                =<< attach "item1" intT (int i) 
+                                                =<< getLoop
+                                        return (n1, [Col 1 AInt], EmptySub)
 coreToAlgebra (Constant t (CBool i)) = do
-                                         loop <- getLoop
-                                         n1 <- insertNode loop
-                                         n2 <- insertNode $ attach "item1" boolT (bool i) n1
-                                         n3 <- insertNode $ attach "pos" intT (int 1) n2
-                                         return (n3, [Col 1 ABool], EmptySub)
+                                         n1 <- attach "pos" intT (int 1) 
+                                                =<< attach "item1" boolT (bool i) 
+                                                =<< getLoop
+                                         return (n1, [Col 1 ABool], EmptySub)
 coreToAlgebra (Constant t (CFloat i)) = do
-                                         loop <- getLoop
-                                         n1 <- insertNode loop
-                                         n2 <- insertNode $ attach "item1" doubleT (double i) n1
-                                         n3 <- insertNode $ attach "pos" intT (int 1) n2
-                                         return (n3, [Col 1 ADouble], EmptySub)
+                                         n1 <- attach "pos" intT (int 1) 
+                                            =<< attach "item1" doubleT (double i) 
+                                            =<< getLoop
+                                         return (n1, [Col 1 ADouble], EmptySub)
 coreToAlgebra (Constant t (CString i)) = do
-                                          loop <- getLoop
-                                          n1 <- insertNode loop
-                                          n2 <- insertNode $ attach "item1" stringT (string i) n1
-                                          n3 <- insertNode $ attach "pos" intT (int 1) n2
-                                          return (n3, [Col 1 AStr], EmptySub)
+                                          n1 <- attach "pos" intT (int 1) 
+                                                =<< attach "item1" stringT (string i) 
+                                                =<< getLoop
+                                          return (n1, [Col 1 AStr], EmptySub)
 -- Binary operators
 coreToAlgebra (BinOp (_ :=> t) (Op o) e1 e2) = do
                                          (q1, [Col 1 t1], m1) <- coreToAlgebra e1
                                          (q2, [Col 1 t2], m2) <- coreToAlgebra e2
-                                         n1 <- insertNode $ proj [(mkPrefixIter 1, "iter"), (mkPrefixCol 1, "item1")] q2
-                                         n2 <- insertNode $ eqJoin "iter" (mkPrefixIter 1) q1 n1
-                                         n3 <- insertNode $ oper o resCol  "item1" (mkPrefixCol 1) n2
-                                         n4 <- insertNode $ proj [("iter", "iter"), ("pos", "pos"), ("item1", resCol)] n3
-                                         return (n4, fst $ typeToCols t 1, EmptySub)
+                                         n1 <- proj [("iter", "iter"), ("pos", "pos"), ("item1", resCol)] 
+                                                =<< oper o resCol  "item1" (mkPrefixCol 1) 
+                                                =<< eqJoin "iter" (mkPrefixIter 1) q1 
+                                                =<< proj [(mkPrefixIter 1, "iter"), (mkPrefixCol 1, "item1")] q2
+                                         return (n1, fst $ typeToCols t 1, EmptySub)
 -- Let bindings
 coreToAlgebra (Let t s e1 e2) = do
                                     (q1, cs1, m1) <- coreToAlgebra e1
@@ -79,13 +75,13 @@ coreToAlgebra (Elem t e n) = do
                                 let csn = getCol n cs1
                                 let csn' = decrCols csn
                                 let projPairs = zip (leafNames csn') (leafNames csn)
-                                n1 <- insertNode $ proj (("iter", "iter"):("pos", "pos"):projPairs) q1
+                                n1 <- proj (("iter", "iter"):("pos", "pos"):projPairs) q1
                                 return (n1, csn', EmptySub)
 --Empty lists
 coreToAlgebra (Nil (_ :=> t)) = do
                                  let cs = fst $ typeToCols t 1
                                  let schema = ("iter", AInt):("pos", AInt):(colsToSchema cs)
-                                 n1 <- insertNode $ emptyTable schema
+                                 n1 <- emptyTable schema
                                  return (n1, cs, EmptySub)
 -- List constructor, because of optimisation chances contents has been directed to special functions
 coreToAlgebra (c@(Cons _ _ _)) = listFirst c
@@ -93,47 +89,43 @@ coreToAlgebra (c@(Cons _ _ _)) = listFirst c
 coreToAlgebra (Table t n cs ks) = do
                                     let cs' = coreCol2AlgCol cs
                                     let keys = key2Key cs' ks
-                                    n1 <- insertNode $ dbTable n cs' keys
-                                    n2 <- insertNode $ rank "pos" (map (\ki -> (ki, Asc)) $ head keys) n1
                                     loop <- getLoop
-                                    loopN <- insertNode loop
-                                    n3 <- insertNode $ cross loopN n2
-                                    return (n3, cs', EmptySub)
+                                    n1 <- cross loop 
+                                            =<< rank "pos" (map (\ki -> (ki, Asc)) $ head keys) 
+                                            =<< dbTable n cs' keys
+                                    return (n1, cs', EmptySub)
 -- If then else
 coreToAlgebra (If t e1 e2 e3) = do
                                   (q1, cs1, ts1) <- coreToAlgebra e1
                                   -- Get current gamma
                                   gam <- getGamma
-                                  -- Build loop and gamma for then branch
-                                  lt1 <- insertNode $ select "item1" q1
-                                  let loopThen = proj [("iter", "iter")] lt1
-                                  loopThenId <- insertNode loopThen
-                                  gamThen <- mkGamLoop gam loopThenId
+                                  -- Build loop and gamma for then branch 
+                                  loopThen <- proj [("iter", "iter")] =<< select "item1" q1
+                                  gamThen <- mkGamLoop gam loopThen
                                   --Evaluate then branch
                                   (q2, cs2, ts2) <- withContext gamThen loopThen $ coreToAlgebra e2
                                   -- Build loop and gamma for else branch
-                                  le1 <- insertNode $ notC resCol "item1" q1
-                                  le2 <- insertNode $ select resCol le1
-                                  let loopElse = proj [("iter", "iter")] le2
-                                  loopElseId <- insertNode loopElse
-                                  gamElse <- mkGamLoop gam loopElseId
+                                  loopElse <- proj [("iter", "iter")] 
+                                                =<< select resCol 
+                                                =<< notC resCol "item1" q1
+                                  gamElse <- mkGamLoop gam loopElse
                                   --Evaluate else branch
                                   (q3, cs3, ts3) <- withContext gamElse loopElse $ coreToAlgebra e3
                                   --Construct result
                                   let projPairs = zip (leafNames cs2) (leafNames cs2)
-                                  n1 <- insertNode $ attach ordCol intT (int 1) q2
-                                  n2 <- insertNode $ attach ordCol intT (int 2) q3
-                                  n3 <- insertNode $ union n1 n2
-                                  n4 <- insertNode $ proj (("iter","iter"):("pos","pos"):projPairs) n3
-                                  return (n4, cs2, EmptySub)
+                                  n1 <- attach ordCol intT (int 1) q2
+                                  n2 <- proj (("iter","iter"):("pos","pos"):projPairs) 
+                                            =<< union n1 
+                                            =<< attach ordCol intT (int 2) q3
+                                  return (n2, cs2, EmptySub)
                                   
                 -- [(String, AlgRes)]              type AlgRes = (Int, Columns, SubPlan)        
-mkGamLoop :: Gam -> Int -> GraphM Gam
+mkGamLoop :: Gam -> AlgNode -> GraphM Gam
 mkGamLoop gamma loop = mapM (algResLoop loop) gamma
     
-algResLoop :: Int -> (String, AlgRes) -> GraphM (String, AlgRes)
+algResLoop :: AlgNode -> (String, AlgRes) -> GraphM (String, AlgRes)
 algResLoop loop (n, (i, cs, pl)) = do
-                              i' <- insertNode $ eqJoin "iter" "iter" i loop
+                              i' <- eqJoin "iter" "iter" i loop
                               return (n, (i', cs, pl))
                               
 
@@ -152,42 +144,42 @@ listFirst (Cons t e1 (Nil _)) = coreToAlgebra e1
 listFirst (Cons t e1 e2@(Cons _ _ _)) = do
                                          (q1, cs1, ts1) <- coreToAlgebra e1
                                          (q2, cs2, ts2) <- listSequence e2 2
-                                         n1 <- insertNode $ attach ordCol intT (int 1) q1
-                                         n2 <- insertNode $ union n1 q2
-                                         n3 <- insertNode $ rank resCol [(ordCol, Asc), ("pos", Asc)] n2
                                          let projPairs = zip (leafNames cs1) (leafNames cs1)
-                                         n4 <- insertNode $ proj (("iter", "iter"):("pos", resCol):projPairs) n3
-                                         return (n4, cs1, EmptySub)
+                                         n1 <- proj (("iter", "iter"):("pos", resCol):projPairs) 
+                                                =<< rank resCol [(ordCol, Asc), ("pos", Asc)] 
+                                                    =<< flip union q2 
+                                                        =<< attach ordCol intT (int 1) q1
+                                         return (n1, cs1, EmptySub)
 listFirst (Cons t e1 e2) = do
                             (q1, cs1, ts1) <- coreToAlgebra e1
                             (q2, cs2, ts2) <- coreToAlgebra e2
-                            n1 <- insertNode $ attach ordCol intT (int 1) q1
-                            n2 <- insertNode $ attach ordCol intT (int 2) q2
-                            n3 <- insertNode $ union n1 n2
-                            n4 <- insertNode $ rank resCol [(ordCol, Asc), ("pos", Asc)] n3
+                            n1 <- attach ordCol intT (int 1) q1
                             let projPairs = zip (leafNames cs1) (leafNames cs1)
-                            n5 <- insertNode $ proj (("iter", "iter"):("pos", resCol):projPairs) n4
-                            return (n5, cs1, EmptySub)
+                            n2 <- proj (("iter", "iter"):("pos", resCol):projPairs) 
+                                    =<< rank resCol [(ordCol, Asc), ("pos", Asc)]
+                                        =<< union n1 
+                                            =<< attach ordCol intT (int 2) q2
+                            return (n2, cs1, EmptySub)
 
 -- List sequence, doesn't perform the rank operation, that is carried out by listFirst.
 --  Three cases with similar motivation as listFirst.
 listSequence :: CoreExpr -> Int -> GraphM AlgRes
 listSequence (Cons t e1 (Nil _)) n = do
                                       (q1, cs1, ts1) <- coreToAlgebra e1
-                                      n1 <- insertNode $ attach ordCol intT (int $ toEnum n) q1
+                                      n1 <- attach ordCol intT (int $ toEnum n) q1
                                       return (n1, cs1, EmptySub)
 listSequence (Cons t e1 e2@(Cons _ _ _)) n = do
                                                 (q1, cs1, ts1) <- coreToAlgebra e1
                                                 (q2, cs2, ts2) <- listSequence e2 $ n + 1
-                                                n1 <- insertNode $ attach ordCol intT (int $ toEnum n) q1
-                                                n2 <- insertNode $ union n1 q2
+                                                n1 <- attach ordCol intT (int $ toEnum n) q1
+                                                n2 <- union n1 q2
                                                 return (n2, cs1, EmptySub)
 listSequence (Cons t e1 e2) n = do
                                  (q1, cs1, ts1) <- coreToAlgebra e1
                                  (q2, cs2, ts2) <- coreToAlgebra e2
-                                 n1 <- insertNode $ attach ordCol intT (int $ toEnum n) q1
-                                 n2 <- insertNode $ attach ordCol intT (int $ toEnum (n + 1)) q2
-                                 n3 <- insertNode $ union n1 n2
+                                 n1 <- attach ordCol intT (int $ toEnum n) q1
+                                 n2 <- attach ordCol intT (int $ toEnum (n + 1)) q2
+                                 n3 <- union n1 n2
                                  return (n3, cs1, EmptySub)
                                     
 -- Transform a record element into algebraic plan                             
@@ -204,10 +196,10 @@ recElemsToAlgebra alg2 el = do
                                 let offSet = colSize cs1
                                 let cs2' = incrCols offSet cs2
                                 let projPairs = zip (leafNames cs2') (leafNames cs2)
-                                n1 <- insertNode $ proj ((mkPrefixIter 1, "iter"):projPairs) q2
-                                n2 <- insertNode $ eqJoin "iter" (mkPrefixIter 1) q1 n1
+                                n1 <- proj ((mkPrefixIter 1, "iter"):projPairs) q2
+                                n2 <- eqJoin "iter" (mkPrefixIter 1) q1 n1
                                 let projPairs' = zip (leafNames cs1) (leafNames cs1) ++ zip (leafNames cs2') (leafNames cs2')
-                                n3 <- insertNode $ proj (("iter", "iter"):("pos", "pos"):projPairs') n2
+                                n3 <- proj (("iter", "iter"):("pos", "pos"):projPairs') n2
                                 return (n3, cs1 ++ cs2', EmptySub)
 
 -- Function to transform the column structure

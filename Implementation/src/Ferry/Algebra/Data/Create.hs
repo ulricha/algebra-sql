@@ -4,6 +4,7 @@ This module contains helper function for constructing algebraic plans
 module Ferry.Algebra.Data.Create where
     
 import Ferry.Algebra.Data.Algebra
+import Ferry.Algebra.Data.GraphBuilder
 
 -- | Create an algebraic int value
 int :: Integer -> AVal
@@ -39,40 +40,43 @@ doubleT = ADouble
 natT = ANat
 
 -- | Construct an empty table node with 
-emptyTable :: SchemaInfos -> AlgNode
-emptyTable = (\x -> (x, [])) . EmptyTable
+emptyTable :: SchemaInfos -> GraphM AlgNode
+emptyTable = insertNode . (\x -> (x, [])) . EmptyTable
 
-dbTable :: String -> Columns -> KeyInfos -> AlgNode
-dbTable n cs ks = (TableRef (n, attr, ks), []) 
+dbTable :: String -> Columns -> KeyInfos -> GraphM AlgNode
+dbTable n cs ks = insertNode (TableRef (n, attr, ks), []) 
   where
     attr = map (\(NCol n [Col i t]) -> (n, "item" ++ show i, t)) cs
 
-litTable :: AVal -> String -> ATy -> AlgNode
-litTable v s t = (LitTable [[v]] [(s, t)], [])
+litTable :: AVal -> String -> ATy -> GraphM AlgNode
+litTable v s t = insertNode (LitTable [[v]] [(s, t)], [])
 
-attach :: ResAttrName -> ATy -> AVal -> Int -> AlgNode
-attach n t v c = (Attach (n, (t, v)), [c])
+attach :: ResAttrName -> ATy -> AVal -> AlgNode -> GraphM AlgNode
+attach n t v c = insertNode (Attach (n, (t, v)), [c])
 
-eqJoin :: String -> String -> Int -> Int -> AlgNode
-eqJoin n1 n2 c1 c2 = (EqJoin (n1, n2), [c1, c2])
+eqJoin :: String -> String -> AlgNode -> AlgNode -> GraphM AlgNode
+eqJoin n1 n2 c1 c2 = insertNode (EqJoin (n1, n2), [c1, c2])
 
-rank :: ResAttrName -> SortInf -> Int -> AlgNode
-rank res sort c1 = (Rank (res, sort), [c1])
+rank :: ResAttrName -> SortInf -> AlgNode -> GraphM AlgNode
+rank res sort c1 = insertNode (Rank (res, sort), [c1])
 
-select :: SelAttrName -> Int -> AlgNode
-select sel c1 = (Sel sel, [c1])
+select :: SelAttrName -> AlgNode -> GraphM AlgNode
+select sel c1 = insertNode (Sel sel, [c1])
 
-cross :: Int -> Int -> AlgNode
-cross c1 c2 = (Cross, [c1, c2])
+cross :: AlgNode -> AlgNode -> GraphM AlgNode
+cross c1 c2 = insertNode (Cross, [c1, c2])
 
-notC :: AttrName -> AttrName -> Int -> AlgNode
-notC r n c1 = (FunBoolNot (r, n), [c1])
+notC :: AttrName -> AttrName -> AlgNode -> GraphM AlgNode
+notC r n c1 = insertNode (FunBoolNot (r, n), [c1])
 
-union :: Int -> Int -> AlgNode
-union c1 c2 = (DisjUnion, [c1, c2])
+union :: AlgNode -> AlgNode -> GraphM AlgNode
+union c1 c2 = insertNode (DisjUnion, [c1, c2])
 
-proj :: ProjInf -> Int -> AlgNode
-proj cols c = (Proj cols, [c])
+proj :: ProjInf -> AlgNode -> GraphM AlgNode
+proj cols c = insertNode (Proj cols, [c])
 
-oper :: String -> ResAttrName -> LeftAttrName -> RightAttrName -> Int -> AlgNode
-oper o r la ra c = (FunBinOp (o, r, la, ra), [c])
+oper :: String -> ResAttrName -> LeftAttrName -> RightAttrName -> AlgNode -> GraphM AlgNode
+oper o r la ra c = insertNode (FunBinOp (o, r, la, ra), [c])
+
+initLoop :: AlgConstr
+initLoop =  (LitTable [[(nat 1)]] [("iter", natT)], [])   

@@ -2,13 +2,13 @@
 module Ferry.Algebra.Data.GraphBuilder where
     
 import Ferry.Algebra.Data.Algebra
-import Ferry.Algebra.Data.Create
+--import Ferry.Algebra.Data.Create
 
 import qualified Data.Map as M
 import Control.Monad.State
 import Control.Monad.Reader
 
-type GraphM = ReaderT (Gam, AlgNode) (State (Int, M.Map AlgNode Int))
+type GraphM = ReaderT (Gam, AlgNode) (State (Int, M.Map AlgConstr AlgNode))
 
 type Gam = [(String, AlgRes)]
 
@@ -16,16 +16,12 @@ data SubPlan where
     SubPlan :: String -> AlgRes -> SubPlan -> SubPlan
     EmptySub :: SubPlan
 
-type AlgRes = (Int, Columns, SubPlan)
+type AlgRes = (AlgNode, Columns, SubPlan)
 
-type AlgPlan = (M.Map AlgNode Int, AlgRes)
+type AlgPlan = (M.Map AlgConstr AlgNode, AlgRes)
 
-initLoop :: AlgNode
-initLoop = litTable (nat 1) "iter" natT
-
-
-runGraph :: GraphM AlgRes -> AlgPlan
-runGraph = (\(r, (_,m)) -> (m, r) ) . flip runState (1, M.empty) . flip runReaderT ([], initLoop)
+runGraph :: AlgConstr -> GraphM AlgRes -> AlgPlan
+runGraph l = (\(r, (_,m)) -> (m, r) ) . flip runState (2, M.singleton l 1) . flip runReaderT ([], 1)
 
 getLoop :: GraphM AlgNode
 getLoop = do 
@@ -43,12 +39,12 @@ getFreshId = do
                 put $ (n + 1, t)
                 return n
 
-findNode :: AlgNode -> GraphM (Maybe Int)
+findNode :: AlgConstr -> GraphM (Maybe AlgNode)
 findNode n = do
               (_, t) <- get
               return $ M.lookup n t
               
-insertNode :: AlgNode-> GraphM Int
+insertNode :: AlgConstr-> GraphM AlgNode
 insertNode (n, children) = do
                             let ctx = (n, children)
                             v <- findNode ctx             
@@ -56,7 +52,7 @@ insertNode (n, children) = do
                                 (Just n) -> return n
                                 Nothing -> insertNode' n children
                                  
-insertNode' :: Algebra -> [Int] -> GraphM Int
+insertNode' :: Algebra -> [AlgNode] -> GraphM AlgNode
 insertNode' n children = do 
                               i <- getFreshId 
                               (sup, t) <- get

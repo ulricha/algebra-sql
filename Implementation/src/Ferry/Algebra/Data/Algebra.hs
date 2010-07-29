@@ -196,8 +196,10 @@ type SemUnOp = (ResAttrName, AttrName)
 -- type SemInfSerRel   = (AttrName, AttrName, [AttrName])
 
 
+type AlgNode = Int
+
 -- | An algebraic node is an algebraic element, and its children.
-type AlgNode = (Algebra, [Int])
+type AlgConstr = (Algebra, [AlgNode])
 
 
 -- | Algebraic operations. These operation do not reference their own children directly

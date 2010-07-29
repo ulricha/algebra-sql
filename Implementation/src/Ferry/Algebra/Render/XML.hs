@@ -25,7 +25,7 @@ type ColName = String
 
 -- The Graph is represented as a tuple of an int, that represents the first node, and
 -- a list of algebraic nodes with their node numbers.
-type Graph = (Int, [(AlgNode, Int)])
+type Graph = (AlgNode, [(AlgConstr, AlgNode)])
 
 -- Alias for GraphNode ids
 type GraphNode = Int
@@ -41,7 +41,7 @@ type Dictionary = M.Map GraphNode XMLNode
 -- are the node ids from the graph. The state monad keeps track of the supply of fresh ids
 -- for xml nodes and the dictionary for looking up whether a certain graphnode already has
 -- an xml representation.
-type XML = WriterT [Element ()] (ReaderT (M.Map Int AlgNode) (State (Int, Dictionary)))
+type XML = WriterT [Element ()] (ReaderT (M.Map AlgNode AlgConstr) (State (Int, Dictionary)))
 
 -- Has a graphnode already been translated into an xml node. If yes which node?
 isDefined :: GraphNode -> XML (Maybe XMLNode)
@@ -63,14 +63,14 @@ addNodeTrans gId xId = do
                         put (n, M.insert gId xId d)
 
 -- Get a node from the algebraic plan with a certain graphNode id number
-getNode :: Int -> XML AlgNode
+getNode :: Int -> XML AlgConstr
 getNode i = do
              nodes <- ask
              return $ nodes M.! i
 
 
 -- Run the monad and return a list of xml elements from the monad.
-runXML :: M.Map Int AlgNode -> XML a -> [Element ()]
+runXML :: M.Map AlgNode AlgConstr -> XML a -> [Element ()]
 runXML m = snd . fst . flip runState (0, M.empty) . flip runReaderT m . runWriterT 
 
 -- Transform a query plan with result type into a pretty doc.
@@ -136,7 +136,7 @@ alg2XML gId = do
                 
                 
  where
-    alg2XML' :: AlgNode -> XML XMLNode 
+    alg2XML' :: AlgConstr -> XML XMLNode 
     alg2XML' (LitTable [[v]] [(n, ty)], _) = do
                                             xId <- freshId
                                             tell [mkTableNode xId n v ty]

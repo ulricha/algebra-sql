@@ -6,6 +6,7 @@ import Ferry.Compiler.ExecuteStep
 
 import Ferry.Algebra.Data.Algebra
 import Ferry.Algebra.Data.GraphBuilder
+import Ferry.Algebra.Data.Create
 
 import Ferry.TypedCore.Convert.CoreToAlgebra
 import Ferry.TypedCore.Data.Instances
@@ -25,5 +26,5 @@ algebraStage = CompilationStep "ToAlg" Algebra step artefacts
     where
         step :: CoreExpr -> PhaseResult (Qual FType, AlgPlan)
         step e = let eTy = typeOf e
-                  in return $ (eTy, runGraph $ coreToAlgebra e)
+                  in return $ (eTy, runGraph initLoop $ coreToAlgebra e)
         artefacts = []
