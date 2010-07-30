@@ -15,8 +15,9 @@ import Ferry.TypedCore.Data.TypedCore as T
 
 import qualified Data.Map as M 
 
+-- | Section introducing aliases for commonly used columns
 
---Results are stored in column:
+-- | Results are stored in column:
 resCol = "item99999001"
 ordCol = "item99999801"
 iterPrime = "item99999701"
@@ -24,18 +25,18 @@ posPrime = "item99999601"
 outer = "item99999501"
 inner = "item99999401"
 
---Construct the ith item columns
+-- | Construct the ith item columns
 mkPrefixCol i = "item" ++ prefixCol ++ (show i)
 
---Construct the ith iter column
+-- | Construct the ith iter column
 mkPrefixIter i = "iter" ++ prefixCol ++ (show i)
 
---Prefix for intermediate column numbers
+-- | Prefix for intermediate column numbers
 prefixCol = "9999"
 
--- Transform Ferry core into a relation algebra modelled as a DAG
+-- | Transform Ferry core into a relation algebra modelled as a DAG
 coreToAlgebra :: CoreExpr -> GraphM AlgRes
--- Primitive values
+-- | Primitive values
 coreToAlgebra (Constant t (CInt i)) = do 
                                         n1 <- attach "pos" intT (int 1) 
                                                 =<< attach "item1" intT (int i) 
@@ -105,14 +106,14 @@ coreToAlgebra (If t e1 e2 e3) = do
                                   gam <- getGamma
                                   -- Build loop and gamma for then branch 
                                   loopThen <- proj [("iter", "iter")] =<< select "item1" q1
-                                  gamThen <- mkGamLoop gam loopThen
+                                  gamThen <- transformGam algResLoop loopThen gam 
                                   --Evaluate then branch
                                   (q2, cs2, ts2) <- withContext gamThen loopThen $ coreToAlgebra e2
                                   -- Build loop and gamma for else branch
                                   loopElse <- proj [("iter", "iter")] 
                                                 =<< select resCol 
                                                 =<< notC resCol "item1" q1
-                                  gamElse <- mkGamLoop gam loopElse
+                                  gamElse <- transformGam algResLoop loopElse gam 
                                   --Evaluate else branch
                                   (q3, cs3, ts3) <- withContext gamElse loopElse $ coreToAlgebra e3
                                   --Construct result
@@ -122,27 +123,29 @@ coreToAlgebra (If t e1 e2 e3) = do
                                             =<< union n1 
                                             =<< attach ordCol intT (int 2) q3
                                   return (n2, cs2, EmptySub)
+-- Compile function application, as we do not have functions as results the given
+-- argument can be evaluated and then be passed to the compileApp function.
 coreToAlgebra (App t e1 e2) = compileAppE1 e1 =<< compileParam e2
                                 
-                                  
-                -- [(String, AlgRes)]              type AlgRes = (Int, Columns, SubPlan)        
-mkGamLoop :: Gam -> AlgNode -> GraphM Gam
-mkGamLoop gamma loop = mapM (algResLoop loop) gamma
-    
+
+-- | Transform the variable environment                                  
+transformGam :: (AlgNode -> (String, AlgRes) -> GraphM (String, AlgRes)) 
+                -> AlgNode -> Gam -> GraphM Gam
+transformGam f loop gamma  = mapM (f loop) gamma
+
+-- | Transformation of gamma for if then else    
 algResLoop :: AlgNode -> (String, AlgRes) -> GraphM (String, AlgRes)
 algResLoop loop (n, (i, cs, pl)) = do
                               i' <- eqJoin "iter" "iter" i loop
                               return (n, (i', cs, pl))
-                              
+
+-- | Compile a function parameter
+-- | Function is partial, i.e. it doesn't compile lambda's as arguments                              
 compileParam :: Param -> GraphM AlgRes
 compileParam (ParExpr t e1) = coreToAlgebra e1
 
-{-
-ParExpr :: (Qual FType) -> CoreExpr -> Param
-ParAbstr :: (Qual FType) -> Pattern -> CoreExpr -> Param
--}
-
-
+-- | Compile function application.
+-- | Expects a core expression the function, and the evaluated argument
 compileAppE1 :: CoreExpr -> AlgRes -> GraphM AlgRes
 compileAppE1 (App t (Var mt "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) = 
                 do
@@ -152,20 +155,18 @@ compileAppE1 (App t (Var mt "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                                 =<< attach posPrime intT (int 1) qv'
                     loopv <- proj [("iter",iterPrime)] qv'
                     mapv <- proj [(outer, "iter"), (inner, iterPrime), (posPrime, "pos")] qv'
-                    gamV <- mkGamv mapv =<< getGamma
+                    gamV <- transformGam algResv mapv =<< getGamma
                     (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
                     let csProj2 = zip (leafNames cs2) (leafNames cs2)
                     q <- proj (("iter",outer):("pos", posPrime):csProj2)
                             =<< eqJoin "iter" inner q2 mapv
                     return (q, cs2, EmptySub)
-                    
+
+-- | Compile a lambda where the argument variable is bound to the given expression                    
 compileLambda :: AlgRes -> Param -> GraphM AlgRes
 compileLambda arg (ParAbstr t (PVar x) e) = withBinding x arg $ coreToAlgebra e
-                
-                    
-mkGamv :: AlgNode -> Gam -> GraphM Gam
-mkGamv m = mapM (algResv m) 
 
+-- | Transform gamma for map function                
 algResv :: AlgNode -> (String, AlgRes) -> GraphM (String, AlgRes)
 algResv m (n, (q, cs, ts)) = do
                                 let projPairs = zip (leafNames cs) (leafNames cs)
@@ -323,19 +324,3 @@ recsToCols ((RLabel s, ty):xs) i = let (cs, i') = typeToCols ty i
                                        (cs', i'') = recsToCols xs i'
                                     in ((NCol s cs):cs',  i'')
 recsToCols [] i = ([], i)
-     
-{-
-data CoreExpr where
-    X BinOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr -> CoreExpr
---    UnaOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr
-    X Constant :: (Qual FType) -> Const -> CoreExpr
-    X Var  :: (Qual FType) -> String -> CoreExpr
-    App :: (Qual FType) -> CoreExpr -> Param -> CoreExpr
-    X Let :: (Qual FType) -> String -> CoreExpr -> CoreExpr -> CoreExpr
-    X Rec :: (Qual FType) -> [RecElem] -> CoreExpr
-    X Cons :: (Qual FType) -> CoreExpr -> CoreExpr -> CoreExpr
-    X Nil :: (Qual FType) -> CoreExpr
-    X Elem :: (Qual FType) -> CoreExpr -> String -> CoreExpr
-    Table :: (Qual FType) -> String -> [Column] -> [Key] -> CoreExpr
-    If :: (Qual FType) -> CoreExpr -> CoreExpr -> CoreExpr -> CoreExpr
--}
