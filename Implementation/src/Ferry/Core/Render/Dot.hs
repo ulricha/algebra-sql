@@ -14,11 +14,10 @@ import qualified Data.List as L
 
 toDot :: CoreExpr -> Dot Id
 toDot (BinOp o e1 e2) = do
-                          nId <- getFreshId
                           id1 <- toDot e1
                           id2 <- toDot e2
                           let o' = (\(Op o) -> o) o
-                          node nId [Label $ SLabel o', Color Green, Shape Circle]
+                          nId <- node [Label $ SLabel o', Color Green, Shape Circle]
                           edge nId [id1, id2]
                           return nId
 {- toDot (UnaOp o e) = do

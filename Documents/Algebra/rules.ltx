@@ -43,16 +43,28 @@
          | q = proj (iter, pos ln cs2) (union (attach ord 1 q2) (attach ord 2 q3))|}
         {| Gam, loop +- if e1 then e2 else e3 => (q, cs2, empty)|}\\
     \infrule[ac-map]
-        {| Gam, loop +- e1 => (q1, cs1, empty) |\quad | qv' = rownum iter' (iter, pos) q1|\\
-         | qv = proj (iter:iter', pos:pos', ln(cs1)) (attach pos' 1 qv')|\\
-         | loopv = proj (iter:iter') qv'| \quad |mapv = proj (outer:iter, inner:iter', pos':pos) qv'|\\
-         | Gamv = map (\(x, (q, cs, ts)) -> (x, (proj (iter:inner, pos, ln cs) (join (iter:outer) q mapv), cs ts))) Gam|\\
+        {| Gam, loop +- e1 => (q1, cs1, empty) |\quad
+         | (qv', mapv, loopv, Gamv) = mapForward Gam q1 cs1 |\\ 
          | Gamv[x +-> qv, cs1, ts1], loopv +- e2 => (q2, cs2, ts2)|\\
          | q = proj (iter:outer, pos:pos', ln cs2) (join (iter:inner) q2 mapv) |}
-        {| Gam, loop +- map (\x -> e2) e1 => (q, cs2, empty)|}
+        {| Gam, loop +- map (\x -> e2) e1 => (q, cs2, empty)|}\\
+    \infrule[ac-filter]
+        {| Gam, loop +- e1 => (q1, cs1, ts1) | \quad
+         | (qv', mapv, loopv, Gamv) = mapForward Gam q1 cs1 |\\ 
+         | Gamv[x +-> qv], loopv +- e2 => (q2, {item1}, ts2) |\\
+         | q = proj (iter, pos, ln cs1) (sel res (join (iter:iter') qv' (proj (iter':iter, res:item1) q2)))|}
+        {| Gam, loop +- filter (\x -> e2) e1 => (q, cs1, ts1)|}
 \end{infrules}
 \begin{code}
 tyToCol :: Type -> Int -> Columns
+
+mapForward :: Gam -> Query -> Cs -> (Query, Query, Query, Gam)
+mapForward Gam q cs =  let  qv'    = rownum inner (iter, pos) q
+                            qv     = proj (iter:inner, pos:pos', ln cs) (attach pos' 1 qv')
+                            mapv   = proj (outer:iter, inner, pos':pos) qv'
+                            loopv  = proj (iter:inner) qv'
+                            Gamv   = map (\(x, (q, cs, ts)) -> (x, (proj (iter:inner, pos, ln cs) (join (iter:outer) q mapv), cs ts))) Gam
+                        in  (qv', mapv, loopv, Gamv)
 \end{code}
 
 Optimized lists, these rules can replace the ac-Cons rule from the previous section.
