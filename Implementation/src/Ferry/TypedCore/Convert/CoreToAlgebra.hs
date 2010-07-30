@@ -17,12 +17,12 @@ import qualified Data.Map as M
 
 
 --Results are stored in column:
-resCol = "item999999001"
-ordCol = "item999999801"
-iterPrime = "item999999701"
-posPrime = "item999999601"
-outer = "item999999501"
-inner = "item999999401"
+resCol = "item99999001"
+ordCol = "item99999801"
+iterPrime = "item99999701"
+posPrime = "item99999601"
+outer = "item99999501"
+inner = "item99999401"
 
 --Construct the ith item columns
 mkPrefixCol i = "item" ++ prefixCol ++ (show i)
@@ -148,12 +148,12 @@ compileAppE1 (App t (Var mt "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                 do
                     let csProj = zip (leafNames cs1) (leafNames cs1)
                     qv' <- rownum iterPrime ["iter", "pos"] Nothing q1
-                    qv <-  proj (("iter", iterPrime):("pos", "pos'"):csProj)
+                    qv <-  proj (("iter", iterPrime):("pos", posPrime):csProj)
                                 =<< attach posPrime intT (int 1) qv'
                     loopv <- proj [("iter",iterPrime)] qv'
                     mapv <- proj [(outer, "iter"), (inner, iterPrime), (posPrime, "pos")] qv'
                     gamV <- mkGamv mapv =<< getGamma
-                    (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda (mapv, cs1, ts1) l
+                    (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
                     let csProj2 = zip (leafNames cs2) (leafNames cs2)
                     q <- proj (("iter",outer):("pos", posPrime):csProj2)
                             =<< eqJoin "iter" inner q2 mapv

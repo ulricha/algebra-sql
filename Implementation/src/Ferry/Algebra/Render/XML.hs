@@ -197,7 +197,24 @@ alg2XML gId = do
                                                  xId <- freshId
                                                  tell [mkBoolNot xId res col cxId1]
                                                  return xId
-                                
+    alg2XML' (RowNum (res, sort, part), [cId1]) = do
+                                                    cxId1 <- alg2XML cId1
+                                                    xId <- freshId
+                                                    tell [mkRowNum xId res sort part cxId1]
+                                                    return xId
+                                                    
+mkRowNum :: XMLNode -> ResAttrName -> SortInf -> Maybe PartAttrName -> XMLNode -> Element ()
+mkRowNum xId res sort part cxId = let sortCols = map mkSortColumn $ zip sort [1..]
+                                      resCol = Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []
+                                      partCol = case part of
+                                                    Nothing -> []
+                                                    Just x  -> [Elem "column" [("name", AttValue [Left x]),("function", AttValue [Left "partition"]),("new", AttValue [Left "false"])] []]
+                                      contNode = Elem "content" [] $ map (\x -> CElem x ()) $ resCol:(sortCols ++ partCol)
+                                      edge = mkEdge cxId
+                                   in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "rownum"])]
+                                                  [CElem contNode (), CElem edge ()]
+                                                    
+                    -- (ResAttrName, SortInf, Maybe PartAttrName)             
 mkBoolNot :: XMLNode -> String -> String -> XMLNode -> Element ()
 mkBoolNot xId res arg cxId = let resCol = Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []
                                  argCol = Elem "column" [("name", AttValue [Left arg]), ("new", AttValue [Left "false"])] []
