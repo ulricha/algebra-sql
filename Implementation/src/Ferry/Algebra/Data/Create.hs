@@ -39,6 +39,8 @@ decT = ADec
 doubleT = ADouble
 natT = ANat
 
+-- | Graph construction combinators for table algebra
+
 -- | Construct an empty table node with 
 emptyTable :: SchemaInfos -> GraphM AlgNode
 emptyTable = insertNode . (\x -> (x, [])) . EmptyTable
