@@ -41,6 +41,11 @@ data Color = Red
               
 type Dot = ErrorT FerryError (WriterT [Node] (WriterT [Edge] (State Int)))
 
+node :: Id -> [NodeProp] -> Dot ()
+node i props = addNode $ Node i props
+
+edge :: Id -> [Id] -> Dot ()
+edge i is = addEdge $ Edge i is
 
 runDot :: Dot a -> Either FerryError String
 runDot d = case r of
