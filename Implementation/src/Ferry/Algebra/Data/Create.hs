@@ -75,6 +75,10 @@ union c1 c2 = insertNode (DisjUnion, [c1, c2])
 proj :: ProjInf -> AlgNode -> GraphM AlgNode
 proj cols c = insertNode (Proj cols, [c])
 
+
+rownum :: AttrName -> [AttrName] -> Maybe AttrName -> AlgNode -> GraphM AlgNode
+rownum res sort part c1 = insertNode (RowNum (res, zip sort $ repeat Asc, part) , [c1])
+
 oper :: String -> ResAttrName -> LeftAttrName -> RightAttrName -> AlgNode -> GraphM AlgNode
 oper o r la ra c = insertNode (FunBinOp (o, r, la, ra), [c])
 

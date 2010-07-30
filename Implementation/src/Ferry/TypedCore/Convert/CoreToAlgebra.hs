@@ -19,6 +19,10 @@ import qualified Data.Map as M
 --Results are stored in column:
 resCol = "item999999001"
 ordCol = "item999999801"
+iterPrime = "item999999701"
+posPrime = "item999999601"
+outer = "item999999501"
+inner = "item999999401"
 
 --Construct the ith item columns
 mkPrefixCol i = "item" ++ prefixCol ++ (show i)
@@ -118,6 +122,8 @@ coreToAlgebra (If t e1 e2 e3) = do
                                             =<< union n1 
                                             =<< attach ordCol intT (int 2) q3
                                   return (n2, cs2, EmptySub)
+coreToAlgebra (App t e1 e2) = compileAppE1 e1 =<< compileParam e2
+                                
                                   
                 -- [(String, AlgRes)]              type AlgRes = (Int, Columns, SubPlan)        
 mkGamLoop :: Gam -> AlgNode -> GraphM Gam
@@ -128,6 +134,43 @@ algResLoop loop (n, (i, cs, pl)) = do
                               i' <- eqJoin "iter" "iter" i loop
                               return (n, (i', cs, pl))
                               
+compileParam :: Param -> GraphM AlgRes
+compileParam (ParExpr t e1) = coreToAlgebra e1
+
+{-
+ParExpr :: (Qual FType) -> CoreExpr -> Param
+ParAbstr :: (Qual FType) -> Pattern -> CoreExpr -> Param
+-}
+
+
+compileAppE1 :: CoreExpr -> AlgRes -> GraphM AlgRes
+compileAppE1 (App t (Var mt "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) = 
+                do
+                    let csProj = zip (leafNames cs1) (leafNames cs1)
+                    qv' <- rownum iterPrime ["iter", "pos"] Nothing q1
+                    qv <-  proj (("iter", iterPrime):("pos", "pos'"):csProj)
+                                =<< attach posPrime intT (int 1) qv'
+                    loopv <- proj [("iter",iterPrime)] qv'
+                    mapv <- proj [(outer, "iter"), (inner, iterPrime), (posPrime, "pos")] qv'
+                    gamV <- mkGamv mapv =<< getGamma
+                    (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda (mapv, cs1, ts1) l
+                    let csProj2 = zip (leafNames cs2) (leafNames cs2)
+                    q <- proj (("iter",outer):("pos", posPrime):csProj2)
+                            =<< eqJoin "iter" inner q2 mapv
+                    return (q, cs2, EmptySub)
+                    
+compileLambda :: AlgRes -> Param -> GraphM AlgRes
+compileLambda arg (ParAbstr t (PVar x) e) = withBinding x arg $ coreToAlgebra e
+                
+                    
+mkGamv :: AlgNode -> Gam -> GraphM Gam
+mkGamv m = mapM (algResv m) 
+
+algResv :: AlgNode -> (String, AlgRes) -> GraphM (String, AlgRes)
+algResv m (n, (q, cs, ts)) = do
+                                let projPairs = zip (leafNames cs) (leafNames cs)
+                                q' <- proj (("iter", inner):("pos","pos"):projPairs) =<< eqJoin "iter" outer q m
+                                return (n, (q', cs, ts))
 
 
 -- Compilation for the first element of a list.

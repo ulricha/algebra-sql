@@ -96,7 +96,9 @@ type ResAttrName         = AttrName
 
 -- | Sort attribute name, used as type synonym where a column for sorting is needed
 type SortAttrName        = AttrName
---type PartAttrName        = AttrName
+
+-- | Partition attribute name, used as a synonym where the name for the partitioning column is expected by the rownum operator
+type PartAttrName        = AttrName
 
 -- | New attribute name, used to represent the new column name when renaming columns
 type NewAttrName         = AttrName
@@ -140,7 +142,7 @@ type Tuple = [AVal]
 -- | Schema information, represents a table structure, the first element of the tuple is the column name the second its type.
 type SchemaInfos = [(AttrName, ATy)]    
 
--- type SemInfRowNum  = (ResAttrName, SortInf, Maybe PartAttrName) 
+type SemInfRowNum  = (ResAttrName, SortInf, Maybe PartAttrName) 
 -- type SemInfRowId   = ResAttrName
 
 -- | Information that specifies how to perform the rank operation.
@@ -205,7 +207,7 @@ type AlgConstr = (Algebra, [AlgNode])
 -- | Algebraic operations. These operation do not reference their own children directly
 -- they only contain the information that is needed to perform the operation.
 data Algebra where
---    RowNum     :: SemInfRowNum -> Algebra     -- Should have one child
+    RowNum     :: SemInfRowNum -> Algebra     -- Should have one child
 --    RowId      :: SemInfRowId -> Algebra      -- should have one child
 --    RowRank    :: SemInfRank -> Algebra       -- should have one child
     Rank       :: SemInfRank -> Algebra       -- should have one child
