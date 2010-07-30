@@ -150,11 +150,11 @@ compileAppE1 :: CoreExpr -> AlgRes -> GraphM AlgRes
 compileAppE1 (App t (Var mt "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) = 
                 do
                     let csProj = zip (leafNames cs1) (leafNames cs1)
-                    qv' <- rownum iterPrime ["iter", "pos"] Nothing q1
-                    qv <-  proj (("iter", iterPrime):("pos", posPrime):csProj)
+                    qv' <- rownum inner ["iter", "pos"] Nothing q1
+                    qv <-  proj (("iter", inner):("pos", posPrime):csProj)
                                 =<< attach posPrime intT (int 1) qv'
-                    loopv <- proj [("iter",iterPrime)] qv'
-                    mapv <- proj [(outer, "iter"), (inner, iterPrime), (posPrime, "pos")] qv'
+                    loopv <- proj [("iter",inner)] qv'
+                    mapv <- proj [(outer, "iter"), (inner, inner), (posPrime, "pos")] qv'
                     gamV <- transformGam algResv mapv =<< getGamma
                     (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
                     let csProj2 = zip (leafNames cs2) (leafNames cs2)
