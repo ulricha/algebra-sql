@@ -76,12 +76,37 @@ runXML m = snd . fst . flip runState (0, M.empty) . flip runReaderT m . runWrite
 -- Transform a query plan with result type into a pretty doc.
 -- The type is used to add meta information to the XML that is used for pretty printing by ferryDB
 transform :: (Qual FType, AlgPlan) -> Doc
-transform (_ :=> t, (nodes, (top, cols, subs))) = let nodeTable = M.fromList $ map (\(a, b) -> (b, a)) $ M.toList nodes
-                                                      plan = runXML nodeTable $ serializeAlgebra top cols
-                                                      qPlan = runXML M.empty $ mkQueryPlan (Just $ mkProperties t) plan
-                                                      planBundle = mkPlanBundle qPlan
-                                                      props = mkProperties t
-                                                   in (document $ mkXMLDocument planBundle)
+transform (_ :=> t, p) = let plans = runXML M.empty $ planBuilder (mkProperty t) p
+                             planBundle = mkPlanBundle plans
+                          in (document $ mkXMLDocument planBundle)
+
+planBuilder :: Element () -> AlgPlan -> XML ()
+planBuilder prop (nodes, (top, cols, subs)) = buildPlan Nothing (Just prop) (top, cols, subs)
+    where
+        buildPlan :: Maybe (Int, Int) -> Maybe (Element ()) -> AlgRes -> XML ()
+        buildPlan parent props (top, cols, subs) = 
+                                    do
+                                        let colProp = cssToProp cols
+                                        let planProp = case props of
+                                                        Nothing -> Elem "properties" [] [CElem colProp ()]
+                                                        Just p  -> Elem "properties" [] [CElem colProp (), CElem p ()]
+                                        let plan = runXML nodeTable $ serializeAlgebra top cols
+                                        pId <- mkQueryPlan parent planProp plan
+                                        buildSubPlans pId subs
+        buildSubPlans :: Int -> SubPlan -> XML ()
+        buildSubPlans parent (SubPlan m) = let subPlans = M.toList m
+                                            in mapM_ (\(cId, res) -> buildPlan (Just (parent, cId)) Nothing res) subPlans
+        
+        nodeTable = M.fromList $ map (\(a, b) -> (b, a)) $ M.toList nodes
+        
+cssToProp :: Columns -> Element ()
+cssToProp cols = Elem "property" [("name", AttValue [Left "cs"])] $ map (\x -> CElem x ()) $ concatMap csToProp cols
+
+csToProp :: Column -> [Element ()]
+csToProp (Col i ty) = [Elem "property" [("name", AttValue [Left "offset"]), ("value", AttValue [Left $ show i])] []
+                      ,Elem "property" [("name", AttValue [Left "type"  ]), ("value", AttValue [Left $ show ty])] []]
+csToProp (NCol x css) = [Elem "property" [("name", AttValue [Left "mapping"]), ("value", AttValue [Left x])]
+                            [CElem (cssToProp css) ()]]
 
 -- Serialize algebra
 serializeAlgebra :: GraphNode -> Columns -> XML XMLNode
@@ -383,14 +408,16 @@ contentsNode ns = Elem "content" [] $ map (\n -> CElem n ()) ns
 
 -- Transform the given plan nodes into an xml query plan.
 -- The first argument can contain additional property node information
-mkQueryPlan :: Maybe (Element ()) -> [Element ()] -> XML ()
-mkQueryPlan props els = let logicalPlan = Elem "logical_query_plan" [("unique_names", AttValue [Left "true"])] $ map (\n -> CElem n ()) els
-                            propPlan = case props of
-                                            Nothing -> []
-                                            Just e  -> [CElem e ()]
+mkQueryPlan :: Maybe (Int, Int) -> Element () -> [Element ()] -> XML Int
+mkQueryPlan parent props els = let logicalPlan = Elem "logical_query_plan" [("unique_names", AttValue [Left "true"])] $ map (\n -> CElem n ()) els
+                                   propPlan = [CElem props ()]
                          in do
                              planId <- freshId
-                             tell $ [Elem "query_plan" [("id", AttValue [Left $ show planId])] $ propPlan ++ [CElem logicalPlan ()]]
+                             let attrs = case parent of
+                                            Nothing -> [("id", AttValue [Left $ show planId])]
+                                            Just (p, c) -> [("id", AttValue [Left $ show planId]), ("idref", AttValue [Left $ show p]), ("colref", AttValue [Left $ show c])]
+                             tell $ [Elem "query_plan" attrs $ propPlan ++ [CElem logicalPlan ()]]
+                             return planId
                         
 -- Create a plan bundle out of the given query plans
 mkPlanBundle :: [Element ()] -> Element ()
@@ -403,9 +430,8 @@ mkXMLDocument el = let xmlDecl = XMLDecl "1.0" (Just $ EncodingDecl "UTF-8") Not
                     in Document prolog emptyST el []
 
 -- Create an xml property node so that ferryDB knows more or less how to print the result
-mkProperties :: FType -> Element ()
-mkProperties ty = let resTy = Elem "property" [("name", AttValue [Left "overallResultType"]), ("value", AttValue[Left result])] []
-                   in Elem "properties" [] [CElem resTy ()]
+mkProperty :: FType -> Element ()
+mkProperty ty = Elem "property" [("name", AttValue [Left "overallResultType"]), ("value", AttValue[Left result])] []
     where
         result = case ty of
                     FList _ -> "LIST"
