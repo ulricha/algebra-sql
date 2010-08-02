@@ -38,6 +38,7 @@ boolT = ABool
 decT = ADec
 doubleT = ADouble
 natT = ANat
+surT = ASur
 
 -- | Graph construction combinators for table algebra
 

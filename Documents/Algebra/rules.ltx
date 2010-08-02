@@ -61,7 +61,7 @@
     \infrule[ac-unBox]
         {| Gam, loop +- e => (q, {item1}, ts) |\quad
          | (q', cs', ts') = lookup item1 ts |\\
-         | q'' = proj (iter:iter', pos, ln cs')(join item1' iter (proj (iter':iter, item1':item1) q) q')|}
+         | q'' = proj (iter:iter', pos, ln cs')(join (item1':iter) (proj (iter':iter, item1':item1) q) q')|}
         {| Gam, loop +- unbox e => (q'', cs', ts') |}
     \end{infrules}
 \begin{code}

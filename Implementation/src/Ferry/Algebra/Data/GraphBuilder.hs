@@ -22,11 +22,16 @@ type GraphM = ReaderT (Gam, AlgNode) (State (Int, M.Map AlgConstr AlgNode))
 -- | Variable environemtn mapping from variables to compiled nodes.
 type Gam = [(String, AlgRes)]
 
--- | TODO
-data SubPlan where
-    SubPlan :: String -> AlgRes -> SubPlan -> SubPlan
-    EmptySub :: SubPlan
+newtype SubPlan = SubPlan (M.Map Int AlgRes)
 
+emptyPlan :: SubPlan
+emptyPlan = SubPlan M.empty
+
+subPlan :: Int -> AlgRes -> SubPlan
+subPlan i p = SubPlan $ M.singleton i p
+
+getPlan :: Int -> SubPlan -> AlgRes
+getPlan i (SubPlan p) = p M.! i
 -- | An algebraic solution is a triple consisting of the node id, a description of the database columns and all subplans
 type AlgRes = (AlgNode, Columns, SubPlan)
 

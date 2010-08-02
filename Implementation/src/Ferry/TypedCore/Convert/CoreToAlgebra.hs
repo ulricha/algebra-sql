@@ -41,22 +41,22 @@ coreToAlgebra (Constant t (CInt i)) = do
                                         n1 <- attach "pos" intT (int 1) 
                                                 =<< attach "item1" intT (int i) 
                                                 =<< getLoop
-                                        return (n1, [Col 1 AInt], EmptySub)
+                                        return (n1, [Col 1 AInt], emptyPlan)
 coreToAlgebra (Constant t (CBool i)) = do
                                          n1 <- attach "pos" intT (int 1) 
                                                 =<< attach "item1" boolT (bool i) 
                                                 =<< getLoop
-                                         return (n1, [Col 1 ABool], EmptySub)
+                                         return (n1, [Col 1 ABool], emptyPlan)
 coreToAlgebra (Constant t (CFloat i)) = do
                                          n1 <- attach "pos" intT (int 1) 
                                             =<< attach "item1" doubleT (double i) 
                                             =<< getLoop
-                                         return (n1, [Col 1 ADouble], EmptySub)
+                                         return (n1, [Col 1 ADouble], emptyPlan)
 coreToAlgebra (Constant t (CString i)) = do
                                           n1 <- attach "pos" intT (int 1) 
                                                 =<< attach "item1" stringT (string i) 
                                                 =<< getLoop
-                                          return (n1, [Col 1 AStr], EmptySub)
+                                          return (n1, [Col 1 AStr], emptyPlan)
 -- Binary operators
 coreToAlgebra (BinOp (_ :=> t) (Op o) e1 e2) = do
                                          (q1, [Col 1 t1], m1) <- coreToAlgebra e1
@@ -65,7 +65,7 @@ coreToAlgebra (BinOp (_ :=> t) (Op o) e1 e2) = do
                                                 =<< oper o resCol  "item1" (mkPrefixCol 1) 
                                                 =<< eqJoin "iter" (mkPrefixIter 1) q1 
                                                 =<< proj [(mkPrefixIter 1, "iter"), (mkPrefixCol 1, "item1")] q2
-                                         return (n1, fst $ typeToCols t 1, EmptySub)
+                                         return (n1, fst $ typeToCols t 1, emptyPlan)
 -- Let bindings
 coreToAlgebra (Let t s e1 e2) = do
                                     (q1, cs1, m1) <- coreToAlgebra e1
@@ -81,13 +81,13 @@ coreToAlgebra (Elem t e n) = do
                                 let csn' = decrCols csn
                                 let projPairs = zip (leafNames csn') (leafNames csn)
                                 n1 <- proj (("iter", "iter"):("pos", "pos"):projPairs) q1
-                                return (n1, csn', EmptySub)
+                                return (n1, csn', emptyPlan)
 --Empty lists
 coreToAlgebra (Nil (_ :=> t)) = do
                                  let cs = fst $ typeToCols t 1
                                  let schema = ("iter", AInt):("pos", AInt):(colsToSchema cs)
                                  n1 <- emptyTable schema
-                                 return (n1, cs, EmptySub)
+                                 return (n1, cs, emptyPlan)
 -- List constructor, because of optimisation chances contents has been directed to special functions
 coreToAlgebra (c@(Cons _ _ _)) = listFirst c
 -- Database tables
@@ -98,7 +98,7 @@ coreToAlgebra (Table t n cs ks) = do
                                     n1 <- cross loop 
                                             =<< rank "pos" (map (\ki -> (ki, Asc)) $ head keys) 
                                             =<< dbTable n cs' keys
-                                    return (n1, cs', EmptySub)
+                                    return (n1, cs', emptyPlan)
 -- If then else
 coreToAlgebra (If t e1 e2 e3) = do
                                   (q1, cs1, ts1) <- coreToAlgebra e1
@@ -122,7 +122,7 @@ coreToAlgebra (If t e1 e2 e3) = do
                                   n2 <- proj (("iter","iter"):("pos","pos"):projPairs) 
                                             =<< union n1 
                                             =<< attach ordCol intT (int 2) q3
-                                  return (n2, cs2, EmptySub)
+                                  return (n2, cs2, emptyPlan)
 -- Compile function application, as we do not have functions as results the given
 -- argument can be evaluated and then be passed to the compileApp function.
 coreToAlgebra (App t e1 e2) = compileAppE1 e1 =<< compileParam e2
@@ -155,7 +155,7 @@ compileAppE1 (App t (Var mt "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                     let csProj2 = zip (leafNames cs2) (leafNames cs2)
                     q <- proj (("iter",outer):("pos", posPrime):csProj2)
                             =<< eqJoin "iter" inner q2 mapv
-                    return (q, cs2, EmptySub)
+                    return (q, cs2, emptyPlan)
 compileAppE1 (App t (Var mt "filter") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                 do
                     gam <- getGamma
@@ -167,6 +167,20 @@ compileAppE1 (App t (Var mt "filter") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                                 =<< eqJoin inner iterPrime qv' 
                                     =<< proj [(iterPrime, "iter"), (resCol, "item1")] q2
                     return (q, cs1, ts1)
+compileAppE1 (Var mt "box") (q, cs, ts) =
+                    do
+                        q' <- attach "pos" intT (int 1) 
+                                =<< proj [("iter", "iter"),("item1", "iter")] 
+                                    =<< getLoop
+                        return (q', [Col 1 surT], subPlan 1 (q, cs, ts))
+compileAppE1 (Var mt "unBox") (q, [Col 1 ASur], ts) =
+                    do
+                        let (q', cs', ts') = getPlan 1 ts
+                        let csProj = zip (leafNames cs') (leafNames cs')
+                        q'' <- proj (("iter", iterPrime):("pos","pos"):csProj)
+                                =<< eqJoin "iter" resCol q'
+                                    =<< proj [(iterPrime, "iter"),(resCol, "item1")] q
+                        return (q'', cs', ts')
                     
 -- | Compile a lambda where the argument variable is bound to the given expression                    
 compileLambda :: AlgRes -> Param -> GraphM AlgRes
@@ -199,7 +213,7 @@ listFirst (Cons t e1 e2@(Cons _ _ _)) = do
                                                 =<< rank resCol [(ordCol, Asc), ("pos", Asc)] 
                                                     =<< flip union q2 
                                                         =<< attach ordCol intT (int 1) q1
-                                         return (n1, cs1, EmptySub)
+                                         return (n1, cs1, emptyPlan)
 listFirst (Cons t e1 e2) = do
                             (q1, cs1, ts1) <- coreToAlgebra e1
                             (q2, cs2, ts2) <- coreToAlgebra e2
@@ -209,7 +223,7 @@ listFirst (Cons t e1 e2) = do
                                     =<< rank resCol [(ordCol, Asc), ("pos", Asc)]
                                         =<< union n1 
                                             =<< attach ordCol intT (int 2) q2
-                            return (n2, cs1, EmptySub)
+                            return (n2, cs1, emptyPlan)
 
 -- List sequence, doesn't perform the rank operation, that is carried out by listFirst.
 --  Three cases with similar motivation as listFirst.
@@ -217,20 +231,20 @@ listSequence :: CoreExpr -> Int -> GraphM AlgRes
 listSequence (Cons t e1 (Nil _)) n = do
                                       (q1, cs1, ts1) <- coreToAlgebra e1
                                       n1 <- attach ordCol intT (int $ toEnum n) q1
-                                      return (n1, cs1, EmptySub)
+                                      return (n1, cs1, emptyPlan)
 listSequence (Cons t e1 e2@(Cons _ _ _)) n = do
                                                 (q1, cs1, ts1) <- coreToAlgebra e1
                                                 (q2, cs2, ts2) <- listSequence e2 $ n + 1
                                                 n1 <- attach ordCol intT (int $ toEnum n) q1
                                                 n2 <- union n1 q2
-                                                return (n2, cs1, EmptySub)
+                                                return (n2, cs1, emptyPlan)
 listSequence (Cons t e1 e2) n = do
                                  (q1, cs1, ts1) <- coreToAlgebra e1
                                  (q2, cs2, ts2) <- coreToAlgebra e2
                                  n1 <- attach ordCol intT (int $ toEnum n) q1
                                  n2 <- attach ordCol intT (int $ toEnum (n + 1)) q2
                                  n3 <- union n1 n2
-                                 return (n3, cs1, EmptySub)
+                                 return (n3, cs1, emptyPlan)
                                     
 -- Transform a record element into algebraic plan                             
 recElemToAlgebra :: RecElem -> GraphM AlgRes
@@ -250,7 +264,7 @@ recElemsToAlgebra alg2 el = do
                                 n2 <- eqJoin "iter" (mkPrefixIter 1) q1 n1
                                 let projPairs' = zip (leafNames cs1) (leafNames cs1) ++ zip (leafNames cs2') (leafNames cs2')
                                 n3 <- proj (("iter", "iter"):("pos", "pos"):projPairs') n2
-                                return (n3, cs1 ++ cs2', EmptySub)
+                                return (n3, cs1 ++ cs2', emptyPlan)
 
 -- map forward transforms the environment etc into the versions needed to compute in
 -- a loop context. The result is (qv', qv, mapv, loopv, Gamv)
