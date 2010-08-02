@@ -53,8 +53,17 @@
          | (qv', qv, mapv, loopv, Gamv) = mapForward Gam q1 cs1 |\\ 
          | Gamv[x +-> (qv, cs1, ts1)], loopv +- e2 => (q2, {item1}, ts2) |\\
          | q = proj (iter, pos, ln cs1) (sel res (join (inner:iter') qv' (proj (iter':iter, res:item1) q2)))|}
-        {| Gam, loop +- filter (\x -> e2) e1 => (q, cs1, ts1)|}
-\end{infrules}
+        {| Gam, loop +- filter (\x -> e2) e1 => (q, cs1, ts1)|} \\
+    \infrule[ac-Box]
+        {| Gam, loop +- e => (q, cs, ts) |\quad
+         | q' = attach pos 1 (proj (iter, item1:iter) loop) |}
+        {| Gam, loop +- box e => (q', {item1}, {item1 ->  (q, cs, ts)}) |} \\
+    \infrule[ac-unBox]
+        {| Gam, loop +- e => (q, {item1}, ts) |\quad
+         | (q', cs', ts') = lookup item1 ts |\\
+         | q'' = proj (iter:iter', pos, ln cs')(join item1' iter (proj (iter':iter, item1':item1) q) q')|}
+        {| Gam, loop +- unbox e => (q'', cs', ts') |}
+    \end{infrules}
 \begin{code}
 tyToCol :: Type -> Int -> Columns
 
