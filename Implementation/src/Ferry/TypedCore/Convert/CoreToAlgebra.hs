@@ -156,7 +156,18 @@ compileAppE1 (App t (Var mt "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                     q <- proj (("iter",outer):("pos", posPrime):csProj2)
                             =<< eqJoin "iter" inner q2 mapv
                     return (q, cs2, EmptySub)
-
+compileAppE1 (App t (Var mt "filter") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
+                do
+                    gam <- getGamma
+                    (qv', qv, mapv, loopv, gamV) <- mapForward gam q1 cs1
+                    (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
+                    let csProj = zip (leafNames cs1) (leafNames cs1)
+                    q <- proj (("iter", "iter"):("pos", "pos"):csProj)
+                            =<< select resCol  
+                                =<< eqJoin inner iterPrime qv' 
+                                    =<< proj [(iterPrime, "iter"), (resCol, "item1")] q2
+                    return (q, cs1, ts1)
+                    
 -- | Compile a lambda where the argument variable is bound to the given expression                    
 compileLambda :: AlgRes -> Param -> GraphM AlgRes
 compileLambda arg (ParAbstr t (PVar x) e) = withBinding x arg $ coreToAlgebra e

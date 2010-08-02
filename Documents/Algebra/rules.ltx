@@ -45,14 +45,14 @@
     \infrule[ac-map]
         {| Gam, loop +- e1 => (q1, cs1, empty) |\quad
          | (qv', qv, mapv, loopv, Gamv) = mapForward Gam q1 cs1 |\\ 
-         | Gamv[x +-> qv, cs1, ts1], loopv +- e2 => (q2, cs2, ts2)|\\
+         | Gamv[x +-> (qv, cs1, ts1)], loopv +- e2 => (q2, cs2, ts2)|\\
          | q = proj (iter:outer, pos:pos', ln cs2) (join (iter:inner) q2 mapv) |}
         {| Gam, loop +- map (\x -> e2) e1 => (q, cs2, empty)|}\\
     \infrule[ac-filter]
         {| Gam, loop +- e1 => (q1, cs1, ts1) | \quad
          | (qv', qv, mapv, loopv, Gamv) = mapForward Gam q1 cs1 |\\ 
-         | Gamv[x +-> qv], loopv +- e2 => (q2, {item1}, ts2) |\\
-         | q = proj (iter, pos, ln cs1) (sel res (join (iter:iter') qv' (proj (iter':iter, res:item1) q2)))|}
+         | Gamv[x +-> (qv, cs1, ts1)], loopv +- e2 => (q2, {item1}, ts2) |\\
+         | q = proj (iter, pos, ln cs1) (sel res (join (inner:iter') qv' (proj (iter':iter, res:item1) q2)))|}
         {| Gam, loop +- filter (\x -> e2) e1 => (q, cs1, ts1)|}
 \end{infrules}
 \begin{code}
