@@ -149,13 +149,8 @@ compileParam (ParExpr t e1) = coreToAlgebra e1
 compileAppE1 :: CoreExpr -> AlgRes -> GraphM AlgRes
 compileAppE1 (App t (Var mt "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) = 
                 do
-                    let csProj = zip (leafNames cs1) (leafNames cs1)
-                    qv' <- rownum inner ["iter", "pos"] Nothing q1
-                    qv <-  proj (("iter", inner):("pos", posPrime):csProj)
-                                =<< attach posPrime intT (int 1) qv'
-                    loopv <- proj [("iter",inner)] qv'
-                    mapv <- proj [(outer, "iter"), (inner, inner), (posPrime, "pos")] qv'
-                    gamV <- transformGam algResv mapv =<< getGamma
+                    gam <- getGamma
+                    (qv', qv, mapv, loopv, gamV) <- mapForward gam q1 cs1
                     (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
                     let csProj2 = zip (leafNames cs2) (leafNames cs2)
                     q <- proj (("iter",outer):("pos", posPrime):csProj2)
@@ -246,6 +241,19 @@ recElemsToAlgebra alg2 el = do
                                 n3 <- proj (("iter", "iter"):("pos", "pos"):projPairs') n2
                                 return (n3, cs1 ++ cs2', EmptySub)
 
+-- map forward transforms the environment etc into the versions needed to compute in
+-- a loop context. The result is (qv', qv, mapv, loopv, Gamv)
+mapForward :: Gam -> AlgNode -> Columns -> GraphM (AlgNode, AlgNode, AlgNode, AlgNode, Gam)
+mapForward gam q cs = do
+                          let csProj = zip (leafNames cs) (leafNames cs)
+                          qv' <- rownum inner ["iter", "pos"] Nothing q
+                          qv  <- proj (("iter", inner):("pos", posPrime):csProj)
+                                      =<< attach posPrime intT (int 1) qv'
+                          mapv <- proj [(outer, "iter"), (inner, inner), (posPrime, "pos")] qv'
+                          loopv <- proj [("iter",inner)] qv'
+                          gamV <- transformGam algResv mapv gam
+                          return (qv', qv, mapv, loopv, gamV)
+                          
 -- Function to transform the column structure
 
 --From a typedcore column list to algebraic columns
