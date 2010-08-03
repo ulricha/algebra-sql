@@ -74,6 +74,17 @@ mapForward Gam q cs =  let  qv'    = rownum inner (iter, pos) q
                             loopv  = proj (iter:inner) qv'
                             Gamv   = map (\(x, (q, cs, ts)) -> (x, (proj (iter:inner, pos, ln cs) (join (iter:outer) q mapv), cs ts))) Gam
                         in  (qv', qv, mapv, loopv, Gamv)
+                        
+merge qo ts1' ts2' =  {  x1 +-> (q', cs1, merge qr ts1 ts2)  
+                      |  x1 +-> (q1, cs1, ts1) elem ts1'
+                      ,  x2 +-> (q2, cs2, ts2) elem ts2'
+                      ,  x1 == x2 
+                      ,  let  ks    = keys ts1
+                              cols  = ln cs1
+                              qo'   = join (ord, old:iter) ((proj (ord, iterR, old:itemx) qo)) ((union (attach ord 1 q1) (attach ord 2 q2)))
+                              q     = rownum iter' (iter, ord, pos) (proj (iter, ord, pos, cols) qo')
+                              qr    = proj (iterR:iter', ord, cols ) q
+                              q'    = proj (iter:iterR, pos, cols \\ ks, ks:iter') q}
 \end{code}
 
 Optimized lists, these rules can replace the ac-Cons rule from the previous section.

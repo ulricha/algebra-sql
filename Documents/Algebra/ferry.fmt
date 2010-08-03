@@ -157,9 +157,19 @@
 %format Gamv = " \Gamma_{v} "
 %format qm = " q_{m} "
 %format qv = " q_{v} "
+%format qr = " q_{r} "
+%format qo = " q_{o} "
+%format qo' = " q_{o}'' "
+%format iterR = "iter_{R}"
+
+%format \\ = " \ "
 
 %format mapv = " map_{v} "
 %format loopv = " loop_{v} "
+
+%format ts1' = " ts_{1}'' "
+%format ts2' = " ts_{2}'' "
+%format elem = " \in "
 
 %format (Table (t) (c) (i) (k)) = " \tableref_{" t "_{\stackrel{"c"}{"i"}} "k"} "
 
@@ -175,3 +185,4 @@
 %format (cross (x) (y)) = " " x " \times " y " "
 %format (sel (x) (y)) = " \sigma_{"x"} ( "y")"
 %format (not (x) (y)) = " not_{"x"} ("y") "
+%format (merge (f) (x) (y)) = " " x " \oplus^{"f"}" y " "
