@@ -1,3 +1,4 @@
+-- | The missing instance for applicative for Parsec
 module Ferry.Front.Parser.Applicative(
     module Control.Applicative
   , module Text.ParserCombinators.Parsec
@@ -17,7 +18,8 @@ instance Applicative (GenParser s a) where
 instance Alternative (GenParser s a) where
   empty = mzero
   (<|>) = mplus
-  
+
+-- | Get meta information  
 pMeta :: Parser Meta
 pMeta = do
             pos <- getPosition

@@ -1,16 +1,20 @@
 module Ferry.Front.Data.Base where
-    
+
+-- | Identifiers are represented as strings    
 type Identifier = String
 
+-- | Constant values
 data Const = CInt Integer
            | CFloat Double
            | CBool Bool
            | CString String
     deriving (Show, Eq)
 
+-- | Type class for extracting all variables that occur in a value of type a
 class VarContainer a where
     vars :: a -> [Identifier]
-    
+
+-- | Print constants    
 toString :: Const -> String
 toString (CInt i) = show i
 toString (CFloat d) = show d
