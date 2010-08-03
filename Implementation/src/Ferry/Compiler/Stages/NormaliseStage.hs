@@ -1,3 +1,4 @@
+-- | Normalise the parsed result, removes all constructs that cannot be handled by ferry core
 module Ferry.Compiler.Stages.NormaliseStage (normalisePhase) where
     
 import Ferry.Compiler.Types

@@ -7,6 +7,9 @@ import System.Environment
 import Ferry.Compiler.Types
 import Ferry.Compiler.Compile
 
+-- | The stop select function is used to determine at what part of the
+-- | compilation chain the compiler needs to stop. All requested artefacts
+-- | until that stage will be generated
 stopSelect :: String -> Mode
 stopSelect "1"  = Read
 stopSelect "2"  = Parse
@@ -18,8 +21,10 @@ stopSelect "30" = Boxing
 stopSelect "40" = Algebra
 stopSelect _    = AlgebraXML
 
+-- | Synonym for the ferry logo type
 type Logo = [String]
 
+-- | Logo of the ferry compiler
 logo :: Logo
 logo = [
         "     _/_/_/_/                                       ",
@@ -105,6 +110,7 @@ processArgs progName args =
              ++ " [OPTION...] [FILE], with the following options:"
 
 -- | Main thread
+-- | Processes command lines arguments, and then based on these settings starts the compilation process
 main :: IO ()
 main = 
     do

@@ -80,6 +80,8 @@ transform (_ :=> t, p) = let plans = runXML M.empty $ planBuilder (mkProperty t)
                              planBundle = mkPlanBundle plans
                           in (document $ mkXMLDocument planBundle)
 
+-- Transform a potentially nested algebraic plan into xml.
+-- The first argument is the overall result type property of the query.
 planBuilder :: Element () -> AlgPlan -> XML ()
 planBuilder prop (nodes, (top, cols, subs)) = buildPlan Nothing (Just prop) (top, cols, subs)
     where
@@ -98,7 +100,9 @@ planBuilder prop (nodes, (top, cols, subs)) = buildPlan Nothing (Just prop) (top
                                             in mapM_ (\(cId, res) -> buildPlan (Just (parent, cId)) Nothing res) subPlans
         
         nodeTable = M.fromList $ map (\(a, b) -> (b, a)) $ M.toList nodes
-        
+
+
+-- Convert columns structure to xml properties for rendering by ferry DB        
 cssToProp :: Columns -> Element ()
 cssToProp cols = Elem "property" [("name", AttValue [Left "cs"])] $ map (\x -> CElem (csToProp x) ()) cols
 
@@ -227,7 +231,8 @@ alg2XML gId = do
                                                     xId <- freshId
                                                     tell [mkRowNum xId res sort part cxId1]
                                                     return xId
-                                                    
+
+-- | Create an xml rownum node                                                    
 mkRowNum :: XMLNode -> ResAttrName -> SortInf -> Maybe PartAttrName -> XMLNode -> Element ()
 mkRowNum xId res sort part cxId = let sortCols = map mkSortColumn $ zip sort [1..]
                                       resCol = Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []
@@ -239,7 +244,7 @@ mkRowNum xId res sort part cxId = let sortCols = map mkSortColumn $ zip sort [1.
                                    in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "rownum"])]
                                                   [CElem contNode (), CElem edge ()]
                                                     
-                    -- (ResAttrName, SortInf, Maybe PartAttrName)             
+-- | Create an xml boolean not node           
 mkBoolNot :: XMLNode -> String -> String -> XMLNode -> Element ()
 mkBoolNot xId res arg cxId = let resCol = Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []
                                  argCol = Elem "column" [("name", AttValue [Left arg]), ("new", AttValue [Left "false"])] []
@@ -248,6 +253,7 @@ mkBoolNot xId res arg cxId = let resCol = Elem "column" [("name", AttValue [Left
                               in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "not"])]
                                              [CElem cont (), CElem edge ()]
 
+-- | Create an xml select node
 mkSelect :: XMLNode -> String -> XMLNode -> Element ()
 mkSelect xId n cxId = let col = Elem "column" [("name", AttValue [Left n]), ("new", AttValue [Left "false"])] []
                           cont = Elem "content" [] [CElem col ()]
@@ -255,22 +261,26 @@ mkSelect xId n cxId = let col = Elem "column" [("name", AttValue [Left n]), ("ne
                        in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "select"])]
                                       [CElem cont (), CElem edge ()]
 
+-- | Create an xml table binding node
 mkTable :: XMLNode -> String -> TableAttrInf -> KeyInfos -> Element ()
 mkTable xId n descr keys = let props = Elem "properties" [] [flip CElem () $ mkKeys keys ]
                                cont = Elem "content" [] [flip CElem () $ mkTableDescr n descr]
                             in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "ref_tbl"])]
                                            [CElem props (), CElem cont ()]
 
+-- | Create an xml table description node
 mkTableDescr :: String -> TableAttrInf -> Element ()
 mkTableDescr n descr = Elem "table" [("name", AttValue [Left n])] $ map (\d -> flip CElem () $ toTableCol d ) descr
     where
      toTableCol :: (AttrName, AttrName, ATy) -> Element ()
      toTableCol (cn, xn, t) = Elem "column" [("name", AttValue [Left xn]), ("tname", AttValue [Left cn]), ("type", AttValue [Left $ show t])] []
 
+-- | Create an xml table key node
 mkKey :: KeyInfo -> Element ()
 mkKey k = let bd = map (\(k, p) -> CElem (Elem "column" [("name", AttValue [Left k]), ("position", AttValue [Left $ show p])] []) ()) $ zip k [1..]
            in Elem "key" [] bd
-           
+
+-- | Create an xml node containing multiple table keys           
 mkKeys :: KeyInfos -> Element ()
 mkKeys ks = let bd = map (\k -> CElem (mkKey k) ()) ks
              in Elem "keys" [] bd

@@ -1,3 +1,4 @@
+-- | This module wraps the transformation stage from ferry core, to typed ferry core.
 module Ferry.Compiler.Stages.TypeInferStage (typeInferPhase) where
     
 import Ferry.Compiler.Types

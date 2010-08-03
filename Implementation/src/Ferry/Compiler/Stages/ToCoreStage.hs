@@ -1,3 +1,4 @@
+-- | This module wrap the to core stage, transforming ferry front into ferry core
 module Ferry.Compiler.Stages.ToCoreStage (toCorePhase) where
     
 import Ferry.Compiler.Types

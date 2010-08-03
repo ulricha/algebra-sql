@@ -1,3 +1,4 @@
+-- | This module wraps the rewrite stage, performing some rewrites on the ferry core AST.
 module Ferry.Compiler.Stages.RewriteStage (rewritePhase) where
     
 import Ferry.Compiler.Types

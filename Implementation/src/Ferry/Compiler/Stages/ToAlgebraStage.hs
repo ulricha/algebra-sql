@@ -1,3 +1,5 @@
+-- | This module wraps the stage that translates ferry core into an algebraic graph
+
 module Ferry.Compiler.Stages.ToAlgebraStage (algebraPhase) where
     
 import Ferry.Compiler.Types

@@ -1,3 +1,4 @@
+-- | This module wraps the parsing stage, transforming a string into a ferry front AST
 module Ferry.Compiler.Stages.ParseStage (parsePhase) where
     
 import Ferry.Compiler.Types

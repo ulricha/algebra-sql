@@ -1,3 +1,6 @@
+{- | This module wraps the transform algebra into xml compilation stage
+-}
+
 module Ferry.Compiler.Stages.AlgebraToXMLStage (xmlPhase) where
     
 import Ferry.Compiler.Types

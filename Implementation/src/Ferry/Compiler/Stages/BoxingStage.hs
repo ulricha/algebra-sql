@@ -1,3 +1,7 @@
+{- | This module wraps the boxing stage. Boxing is performed to ensure that nested lists are 
+   | handled in a separate table in the database. 
+-}
+
 module Ferry.Compiler.Stages.BoxingStage (boxingPhase) where
     
 import Ferry.Compiler.Types
