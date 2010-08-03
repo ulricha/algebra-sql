@@ -27,8 +27,10 @@
         {| Gam, loop +- e.l => (q, csl', empty)|}\\
     \infrule[ac-Cons]
         {| Gam, loop +- ei => (qi, csi, empty) where i = 1,2|\\
-         | q = proj (iter, pos:pos', ln cs1) (rank pos' (<ord,pos>) (union (attach ord 1 q1) (attach ord 2 q2))) |}
-        {| Gam, loop +- Cons e1 e2 => (q, cs1, empty)|}\\
+         | ks = keys ts1 |\quad | cols = cs cs1 |\\
+         | q' = rownum iter' (iter,ord,pos) (rank pos' (<ord,pos>) (union (attach ord 1 q1) (attach ord 2 q2))) |\\
+         | q = proj (iter, pos:pos', cols \\ ks, ks:iter') q'|\quad | qr = proj (ord, iterR:iter', cols) q'|}
+        {| Gam, loop +- Cons e1 e2 => (q, cs1, merge qr ts1 ts2)|}\\
     \infrule[ac-Nil]
         {| cs = tyToCol t 1|}
         {| Gam, loop +- Nil :: t => (EmptyTBL (iter, pos, ln cs), cs, empty)|}\\
