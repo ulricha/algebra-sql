@@ -100,13 +100,13 @@ planBuilder prop (nodes, (top, cols, subs)) = buildPlan Nothing (Just prop) (top
         nodeTable = M.fromList $ map (\(a, b) -> (b, a)) $ M.toList nodes
         
 cssToProp :: Columns -> Element ()
-cssToProp cols = Elem "property" [("name", AttValue [Left "cs"])] $ map (\x -> CElem x ()) $ concatMap csToProp cols
+cssToProp cols = Elem "property" [("name", AttValue [Left "cs"])] $ map (\x -> CElem (csToProp x) ()) cols
 
-csToProp :: Column -> [Element ()]
-csToProp (Col i ty) = [Elem "property" [("name", AttValue [Left "offset"]), ("value", AttValue [Left $ show i])] []
-                      ,Elem "property" [("name", AttValue [Left "type"  ]), ("value", AttValue [Left $ show ty])] []]
-csToProp (NCol x css) = [Elem "property" [("name", AttValue [Left "mapping"]), ("value", AttValue [Left x])]
-                            [CElem (cssToProp css) ()]]
+csToProp :: Column -> Element ()
+csToProp (Col i ty) = Elem "property" [("name", AttValue [Left "offset"]), ("value", AttValue [Left $ show i])] 
+                        [flip CElem () $ Elem "property" [("name", AttValue [Left "type"  ]), ("value", AttValue [Left $ show ty])] []]
+csToProp (NCol x css) = Elem "property" [("name", AttValue [Left "mapping"]), ("value", AttValue [Left x])]
+                            [CElem (cssToProp css) ()]
 
 -- Serialize algebra
 serializeAlgebra :: GraphNode -> Columns -> XML XMLNode
