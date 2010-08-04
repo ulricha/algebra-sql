@@ -60,6 +60,21 @@ attach n t v c = insertNode (Attach (n, (t, v)), [c])
 eqJoin :: String -> String -> AlgNode -> AlgNode -> GraphM AlgNode
 eqJoin n1 n2 c1 c2 = insertNode (EqJoin (n1, n2), [c1, c2])
 
+eqTJoin :: [(String, String)] -> ProjInf -> AlgNode -> AlgNode -> GraphM AlgNode
+eqTJoin eqs projI q1 q2 = let (a, b) = head eqs
+                          in foldr filterEqs (eqJoin a b q1 q2) $ tail eqs
+        where resCol = "item99999002"
+              filterEqs :: (String, String) -> GraphM AlgNode -> GraphM AlgNode
+              filterEqs (l, r) res = proj projI =<< select resCol =<< oper "==" resCol l r =<< res
+{-
+resCol = "item99999001"
+ordCol = "item99999801"
+iterPrime = "item99999701"
+posPrime = "item99999601"
+outer = "item99999501"
+inner = "item99999401"
+-}
+
 rank :: ResAttrName -> SortInf -> AlgNode -> GraphM AlgNode
 rank res sort c1 = insertNode (Rank (res, sort), [c1])
 
