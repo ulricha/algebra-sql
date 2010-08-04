@@ -121,18 +121,19 @@ mergef qo ts1' ts2'  =  {  x1 -> (q'. cs1, mergef qr ts1 ts2)
     \infrule[ac-Cons1]
             {| Gam, loop +- e1 => (q1, cs1, empty) |\quad
              | Gam, loop, 2 +- e2 => (q2, cs2, empty)|\\
-             | q = proj (iter, pos:pos', ln cs1) (rank pos' (<ord,pos>) (union (attach ord 1 q1) q2))|}
-            {| Gam, loop +- Cons e1 e2 => (q, cs1, empty)|}\\
+             | q' = rownum iter' (iter,ord,pos) (rank pos' (<ord, pos>) (union (attach ord 1 q1) q2))| \\
+             | q = proj (iter, pos:pos', cols\\ks, ks:iter') q'|}
+            {| Gam, loop +- Cons e1 e2 => (q, cs1, mergef q' ts1 ts2)|}\\
     \infrule[ac-ConsNil1]
             {| Gam, loop +- e1 => (q1, cs1, empty)|}
             {| Gam, loop +- Cons e1 Nil => (q1, cs1, empty)|}\\
     \infrule[ac-Cons2]
             {| Gam, loop +- e1 => (q1, cs1, empty) |\quad
-             | Gam, loop, i + 1 +- e2 => (q2, cs2, empty) |\quad
+             | Gam, loop, i + 1 +- e2 => (q2, cs2, empty) |\\
              | q = union (attach ord i q1) q2 |}
-            {| Gam, loop, i +- Cons e1 e2 => (q, cs1, empty) |}\\
+            {| Gam, loop, i +- Cons e1 e2 => (q, cs1, merges i ts1 ts2) |}\\
     \infrule[ac-ConsNil2]
             {| Gam, loop +- e1 => (q1, cs1, empty)|\quad
              | q = (attach ord i q1) |}
-            {| Gam, loop, i +- Cons e1 Nil => (q, cs1, empty) |}
+            {| Gam, loop, i +- Cons e1 Nil => (q, cs1, mergen n ts1) |}
 \end{infrules}
