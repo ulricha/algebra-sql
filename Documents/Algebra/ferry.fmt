@@ -162,7 +162,7 @@
 %format qo' = " q_{o}'' "
 %format iterR = "iter_{R}"
 
-%format \\ = " \ "
+%format \\ = " \textbackslash "
 
 %format mapv = " map_{v} "
 %format loopv = " loop_{v} "
@@ -186,3 +186,6 @@
 %format (sel (x) (y)) = " \sigma_{"x"} ( "y")"
 %format (not (x) (y)) = " not_{"x"} ("y") "
 %format (merge (f) (x) (y)) = " " x " \oplus^{"f"}" y " "
+%format (merges (n) (x) (y)) = " " x " \oplus^{"n"}_{seq}" y " "
+%format (mergen (n) (x)) = " \oplus^{"n"}_{last}" x " "
+%format (mergef (q) (x) (y)) = " " x " \oplus^{"q"}_{first}" y " "
