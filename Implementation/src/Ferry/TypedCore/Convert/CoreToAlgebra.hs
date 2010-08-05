@@ -21,6 +21,7 @@ import qualified Data.List as L
 -- | Results are stored in column:
 resCol    = "item99999001"
 ordCol    = "item99999801"
+ordPrime  = "item99999804"
 iterPrime = "item99999701"
 iterR     = "item99999703"
 posPrime  = "item99999601"
@@ -197,7 +198,7 @@ algResv m (n, (q, cs, ts)) = do
                                 return (n, (q', cs, ts))
 
 keys :: SubPlan -> [String]
-keys = undefined
+keys (SubPlan ts) = map (\i -> "item" ++ show i) $ M.keys ts 
 
 mergeTableStructureFirst :: AlgNode -> SubPlan -> SubPlan -> GraphM SubPlan
 mergeTableStructureFirst qo (SubPlan ts1') (SubPlan ts2') = do
@@ -214,13 +215,13 @@ mergeTableStructureFirst qo (SubPlan ts1') (SubPlan ts2') = do
                                             let projPairs = zip cols cols
                                             let projPairsD = zip colsDiff colsDiff
                                             let projPairsKs = zip ks $ repeat iterPrime
-                                            qo'' <- (proj [(ordCol, ordCol),(iterR, iterR),(oldCol, "item" ++ show i)] qo)
-                                            qo' <- eqTJoin [(ordCol, ordCol), (oldCol, "iter")] 
-                                                           (("iter", "iter"):("pos", "pos"):(ordCol, ordCol) : projPairs) 
+                                            qo'' <- (proj [(ordPrime, ordCol),(iterR, iterPrime),(oldCol, "item" ++ show i)] qo)
+                                            qo' <- eqTJoin [(ordPrime, ordCol), (oldCol, "iter")] 
+                                                           (("iter", "iter"):(iterR,iterR):("pos", "pos"):(ordCol, ordCol) : projPairs) 
                                                            qo''
-                                                           =<< flip union q2 =<< attach "ord" intT (int 1) q1
+                                                           =<< flip union q2 =<< attach ordCol intT (int 1) q1
                                             q <- rownum iterPrime ["iter", ordCol, "pos"] Nothing qo'
-                                            qr <- proj ((iterR, iterPrime):(ordCol, ordCol):projPairs) q
+                                            qr <- proj ((iterPrime, iterPrime):(ordCol, ordCol):projPairs) q
                                             q' <- proj (("iter", iterR):("pos", "pos"):(projPairsD ++ projPairsKs)) q
                                             ts' <- mergeTableStructureFirst qr ts1 ts2
                                             return (i, (q', cs1, ts'))
@@ -266,13 +267,17 @@ listFirst (Cons t e1 (Nil _)) = coreToAlgebra e1
 listFirst (Cons t e1 e2@(Cons _ _ _)) = do
                                          (q1, cs1, ts1) <- coreToAlgebra e1
                                          (q2, cs2, ts2) <- listSequence e2 2
-                                         let projPairs = zip (leafNames cs1) (leafNames cs1)
-                                         n1 <- proj (("iter", "iter"):("pos", resCol):projPairs) 
-                                                =<< rank resCol [(ordCol, Asc), ("pos", Asc)] 
-                                                    =<< flip union q2 
-                                                        =<< attach ordCol intT (int 1) q1
-                                         return (n1, cs1, emptyPlan)
-listFirst (Cons t e1 e2) = do
+                                         let cols = leafNames cs1
+                                         let ks = keys ts1
+                                         let colsDiff = cols L.\\ ks
+                                         let projPairs = (zip colsDiff colsDiff) ++ (zip ks $ repeat iterPrime) 
+                                         q' <- rownum iterPrime ["iter", ordCol, "pos"] Nothing
+                                                 =<< rank posPrime [(ordCol, Asc), ("pos", Asc)] 
+                                                     =<< flip union q2 =<< attach ordCol intT (int 1) q1
+                                         q <- proj (("iter", "iter"):("pos", posPrime) : projPairs) q'
+                                         ts <- mergeTableStructureFirst q' ts1 ts2
+                                         return (q, cs1, ts)
+{- listFirst (Cons t e1 e2) = do
                             (q1, cs1, ts1) <- coreToAlgebra e1
                             (q2, cs2, ts2) <- coreToAlgebra e2
                             n1 <- attach ordCol intT (int 1) q1
@@ -282,7 +287,7 @@ listFirst (Cons t e1 e2) = do
                                         =<< union n1 
                                             =<< attach ordCol intT (int 2) q2
                             return (n2, cs1, emptyPlan)
-
+-}
 
 -- List sequence, doesn't perform the rank operation, that is carried out by listFirst.
 --  Three cases with similar motivation as listFirst.
@@ -290,21 +295,23 @@ listSequence :: CoreExpr -> Int -> GraphM AlgRes
 listSequence (Cons t e1 (Nil _)) n = do
                                       (q1, cs1, ts1) <- coreToAlgebra e1
                                       n1 <- attach ordCol intT (int $ toEnum n) q1
-                                      return (n1, cs1, emptyPlan)
+                                      ts <- mergeTableStructureLast n ts1
+                                      return (n1, cs1, ts)
 listSequence (Cons t e1 e2@(Cons _ _ _)) n = do
                                                 (q1, cs1, ts1) <- coreToAlgebra e1
                                                 (q2, cs2, ts2) <- listSequence e2 $ n + 1
                                                 n1 <- attach ordCol intT (int $ toEnum n) q1
                                                 n2 <- union n1 q2
-                                                return (n2, cs1, emptyPlan)
-listSequence (Cons t e1 e2) n = do
+                                                ts <- mergeTableStructureSeq n ts1 ts2
+                                                return (n2, cs1, ts)
+{-listSequence (Cons t e1 e2) n = do
                                  (q1, cs1, ts1) <- coreToAlgebra e1
                                  (q2, cs2, ts2) <- coreToAlgebra e2
                                  n1 <- attach ordCol intT (int $ toEnum n) q1
                                  n2 <- attach ordCol intT (int $ toEnum (n + 1)) q2
                                  n3 <- union n1 n2
                                  return (n3, cs1, emptyPlan)
-                                    
+-}                                    
 -- Transform a record element into algebraic plan                             
 recElemToAlgebra :: RecElem -> GraphM AlgRes
 recElemToAlgebra (RecElem t n e) = do

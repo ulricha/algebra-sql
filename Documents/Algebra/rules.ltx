@@ -105,7 +105,7 @@ merges n ts1' ts2'   =  {  x1 -> (q, cs1, merges n ts1 ts2)
 mergen n ts1'        =  {  x1 -> (q, cs1 mergen n ts1)
                         |  x1 -> (q1, cs1, ts1) elem ts1'
                         ,  let  q = attach ord n q1 }
-mergef qo ts1' ts2'  =  {  x1 -> (q'. cs1, mergef qr ts1 ts2)
+mergef qo ts1' ts2'  =  {  x1 -> (q', cs1, mergef qr ts1 ts2)
                         |  x1 -> (q1, cs1, ts1) elem ts1'
                         ,  x2 -> (q2, cs2, ts2) elem ts2'
                         ,  x1 == x2
