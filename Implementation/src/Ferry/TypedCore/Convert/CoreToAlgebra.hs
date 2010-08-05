@@ -14,16 +14,19 @@ import Ferry.TypedCore.Data.Type (Qual (..), FType (..), RLabel (..))
 import Ferry.TypedCore.Data.TypedCore as T
 
 import qualified Data.Map as M 
+import qualified Data.List as L
 
 -- | Section introducing aliases for commonly used columns
 
 -- | Results are stored in column:
-resCol = "item99999001"
-ordCol = "item99999801"
+resCol    = "item99999001"
+ordCol    = "item99999801"
 iterPrime = "item99999701"
-posPrime = "item99999601"
-outer = "item99999501"
-inner = "item99999401"
+iterR     = "item99999703"
+posPrime  = "item99999601"
+outer     = "item99999501"
+inner     = "item99999401"
+oldCol    = "item99999301"
 
 -- | Construct the ith item columns
 mkPrefixCol i = "item" ++ prefixCol ++ (show i)
@@ -193,6 +196,61 @@ algResv m (n, (q, cs, ts)) = do
                                 q' <- proj (("iter", inner):("pos","pos"):projPairs) =<< eqJoin "iter" outer q m
                                 return (n, (q', cs, ts))
 
+keys :: SubPlan -> [String]
+keys = undefined
+
+mergeTableStructureFirst :: AlgNode -> SubPlan -> SubPlan -> GraphM SubPlan
+mergeTableStructureFirst qo (SubPlan ts1') (SubPlan ts2') = do
+                                                             rs <- mapM mergeBinds items
+                                                             return $ SubPlan $ M.fromList rs
+     where
+        items = M.toList ts1'
+        mergeBinds :: (Int, AlgRes) -> GraphM (Int, AlgRes)
+        mergeBinds (i, (q1, cs1, ts1)) = do 
+                                            let (q2, cs2, ts2) = ts2' M.! i
+                                            let ks = keys ts1
+                                            let cols = leafNames cs1
+                                            let colsDiff = cols L.\\ ks
+                                            let projPairs = zip cols cols
+                                            let projPairsD = zip colsDiff colsDiff
+                                            let projPairsKs = zip ks $ repeat iterPrime
+                                            qo'' <- (proj [(ordCol, ordCol),(iterR, iterR),(oldCol, "item" ++ show i)] qo)
+                                            qo' <- eqTJoin [(ordCol, ordCol), (oldCol, "iter")] 
+                                                           (("iter", "iter"):("pos", "pos"):(ordCol, ordCol) : projPairs) 
+                                                           qo''
+                                                           =<< flip union q2 =<< attach "ord" intT (int 1) q1
+                                            q <- rownum iterPrime ["iter", ordCol, "pos"] Nothing qo'
+                                            qr <- proj ((iterR, iterPrime):(ordCol, ordCol):projPairs) q
+                                            q' <- proj (("iter", iterR):("pos", "pos"):(projPairsD ++ projPairsKs)) q
+                                            ts' <- mergeTableStructureFirst qr ts1 ts2
+                                            return (i, (q', cs1, ts'))
+                                            
+
+mergeTableStructureLast :: Int -> SubPlan -> GraphM SubPlan
+mergeTableStructureLast n (SubPlan ts1') = do
+                                             rs <- mapM updateBinds items
+                                             return $ SubPlan $ M.fromList rs
+    where
+        items = M.toList ts1'
+        updateBinds :: (Int, AlgRes) -> GraphM (Int, AlgRes)
+        updateBinds (i, (q1, cs1, ts1)) = do
+                                            q <- attach ordCol intT (int $ toInteger n) q1
+                                            ts <- mergeTableStructureLast n ts1
+                                            return (i, (q, cs1, ts))
+                                            
+mergeTableStructureSeq :: Int -> SubPlan -> SubPlan -> GraphM SubPlan
+mergeTableStructureSeq n (SubPlan ts1') (SubPlan ts2') = do
+                                                          rs <- mapM mergeBinds items
+                                                          return $ SubPlan $ M.fromList rs
+    where
+        items = M.toList ts1'
+        mergeBinds :: (Int, AlgRes) -> GraphM (Int, AlgRes)
+        mergeBinds (i, (q1, cs1, ts1)) = do
+                                            let (q2, cs2, ts2) = ts2' M.! i
+                                            q <- flip union q2 
+                                                    =<< attach ordCol intT (int $ toInteger n) q1
+                                            ts <- mergeTableStructureSeq n ts1 ts2
+                                            return (i, (q, cs1, ts))
 
 -- Compilation for the first element of a list.
 -- For optimisation purposes we distinguish three cases:
@@ -224,6 +282,7 @@ listFirst (Cons t e1 e2) = do
                                         =<< union n1 
                                             =<< attach ordCol intT (int 2) q2
                             return (n2, cs1, emptyPlan)
+
 
 -- List sequence, doesn't perform the rank operation, that is carried out by listFirst.
 --  Three cases with similar motivation as listFirst.
