@@ -200,6 +200,35 @@ algResv m (n, (q, cs, ts)) = do
 keys :: SubPlan -> [String]
 keys (SubPlan ts) = map (\i -> "item" ++ show i) $ M.keys ts 
 
+
+mergeTableStructure :: AlgNode -> SubPlan -> SubPlan -> GraphM SubPlan
+mergeTableStructure qo (SubPlan ts1') (SubPlan ts2') = do
+                                                        rs <- mapM mergeBinds items
+                                                        return $ SubPlan $ M.fromList rs    
+    where
+        items = M.toList ts1'
+        mergeBinds :: (Int, AlgRes) -> GraphM (Int, AlgRes)
+        mergeBinds (i, (q1, cs1, ts1)) = do
+                                            let (q2, cs2, ts2) = ts2' M.! i
+                                            let ks = keys ts1
+                                            let cols = leafNames cs1
+                                            let colsDiff = cols L.\\ ks
+                                            let projPairs = zip cols cols
+                                            let projPairsD = zip colsDiff colsDiff
+                                            let projPairsKs = zip ks $ repeat iterPrime
+                                            n1 <- attach ordCol intT (int 1) q1
+                                            n2 <- attach ordCol intT (int 2) q2
+                                            qo'' <- proj [(ordPrime, ordCol), (iterR, iterPrime), (oldCol, "item" ++ show i)] qo
+                                            qo' <- eqTJoin [(ordPrime, ordCol), (oldCol, "iter")] 
+                                                           (("iter", "iter"):(iterR, iterR):("pos", "pos"):(ordCol, ordCol):projPairs)
+                                                           qo''
+                                                           =<< union n1 n2
+                                            q <- rownum iterPrime ["iter", ordCol, "pos"] Nothing qo'
+                                            qr <- proj ((iterPrime, iterPrime):(ordCol, ordCol):projPairs) q
+                                            q' <- proj (("iter", iterR):("pos", "pos"):(projPairsD ++ projPairsKs)) q
+                                            ts' <- mergeTableStructure qr ts1 ts2
+                                            return (i, (q', cs1, ts'))
+                                            
 mergeTableStructureFirst :: AlgNode -> SubPlan -> SubPlan -> GraphM SubPlan
 mergeTableStructureFirst qo (SubPlan ts1') (SubPlan ts2') = do
                                                              rs <- mapM mergeBinds items
@@ -286,8 +315,8 @@ listFirst (Cons t e1 e2@(Cons _ _ _)) = do
                                     =<< rank resCol [(ordCol, Asc), ("pos", Asc)]
                                         =<< union n1 
                                             =<< attach ordCol intT (int 2) q2
-                            return (n2, cs1, emptyPlan)
--}
+                            return (n2, cs1, emptyPlan) -}
+
 
 -- List sequence, doesn't perform the rank operation, that is carried out by listFirst.
 --  Three cases with similar motivation as listFirst.
