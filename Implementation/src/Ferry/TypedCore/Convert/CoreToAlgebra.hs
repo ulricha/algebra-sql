@@ -253,12 +253,12 @@ mergeTableStructureFirst qo (SubPlan ts1') (SubPlan ts2')
                                             let projPairsKs = zip ks $ repeat iterPrime
                                             qo'' <- (proj [(ordPrime, ordCol),(iterR, iterPrime),(oldCol, "item" ++ show i)] qo)
                                             qo' <- eqTJoin [(ordPrime, ordCol), (oldCol, "iter")] 
-                                                           (("iter", "iter"):(iterR,iterR):("pos", "pos"):(ordCol, ordCol) : projPairs) 
+                                                           (("iter", "iter"):(iterR,iterR):("pos", "pos"):(ordCol, ordCol):(iterPrime, iterPrime) : projPairs) 
                                                            qo''
-                                                           =<< flip union q2 =<< attach ordCol intT (int 1) q1
-                                            q <- rownum iterPrime ["iter", ordCol, "pos"] Nothing qo'
-                                            qr <- proj ((iterPrime, iterPrime):(ordCol, ordCol):projPairs) q
-                                            q' <- proj (("iter", iterR):("pos", "pos"):(projPairsD ++ projPairsKs)) q
+                                                           =<< rownum iterPrime ["iter", ordCol, "pos"] Nothing
+                                                            =<< flip union q2 =<< attach ordCol intT (int 1) q1
+                                            qr <- proj ((iterPrime, iterPrime):(ordCol, ordCol):projPairs) qo'
+                                            q' <- proj (("iter", iterR):("pos", "pos"):(projPairsD ++ projPairsKs)) qo'
                                             ts' <- mergeTableStructureFirst qr ts1 ts2
                                             return (i, (q', cs1, ts'))
                                             
