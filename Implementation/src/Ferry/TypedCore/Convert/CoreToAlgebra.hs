@@ -42,22 +42,22 @@ prefixCol = "9999"
 coreToAlgebra :: CoreExpr -> GraphM AlgRes
 -- | Primitive values
 coreToAlgebra (Constant t (CInt i)) = do 
-                                        n1 <- attach "pos" intT (int 1) 
+                                        n1 <- attach "pos" natT (nat 1) 
                                                 =<< attach "item1" intT (int i) 
                                                 =<< getLoop
                                         return (n1, [Col 1 AInt], emptyPlan)
 coreToAlgebra (Constant t (CBool i)) = do
-                                         n1 <- attach "pos" intT (int 1) 
+                                         n1 <- attach "pos" natT (nat 1) 
                                                 =<< attach "item1" boolT (bool i) 
                                                 =<< getLoop
                                          return (n1, [Col 1 ABool], emptyPlan)
 coreToAlgebra (Constant t (CFloat i)) = do
-                                         n1 <- attach "pos" intT (int 1) 
+                                         n1 <- attach "pos" natT (nat 1) 
                                             =<< attach "item1" doubleT (double i) 
                                             =<< getLoop
                                          return (n1, [Col 1 ADouble], emptyPlan)
 coreToAlgebra (Constant t (CString i)) = do
-                                          n1 <- attach "pos" intT (int 1) 
+                                          n1 <- attach "pos" natT (nat 1) 
                                                 =<< attach "item1" stringT (string i) 
                                                 =<< getLoop
                                           return (n1, [Col 1 AStr], emptyPlan)
@@ -89,7 +89,7 @@ coreToAlgebra (Elem t e n) = do
 --Empty lists
 coreToAlgebra (Nil (_ :=> t)) = do
                                  let cs = fst $ typeToCols t 1
-                                 let schema = ("iter", ANat):("pos", AInt):(colsToSchema cs)
+                                 let schema = ("iter", natT):("pos", natT):(colsToSchema cs)
                                  n1 <- emptyTable schema
                                  return (n1, cs, emptyPlan)
 -- List constructor, because of optimisation chances contents has been directed to special functions
@@ -173,7 +173,7 @@ compileAppE1 (App t (Var mt "filter") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                     return (q, cs1, ts1)
 compileAppE1 (Var mt "box") (q, cs, ts) =
                     do
-                        q' <- attach "pos" intT (int 1) 
+                        q' <- attach "pos" natT (nat 1) 
                                 =<< proj [("iter", "iter"),("item1", "iter")] 
                                     =<< getLoop
                         return (q', [Col 1 surT], subPlan 1 (q, cs, ts))
@@ -202,7 +202,9 @@ keys (SubPlan ts) = map (\i -> "item" ++ show i) $ M.keys ts
 
 
 mergeTableStructure :: AlgNode -> SubPlan -> SubPlan -> GraphM SubPlan
-mergeTableStructure qo (SubPlan ts1') (SubPlan ts2') = do
+mergeTableStructure qo (SubPlan ts1') (SubPlan ts2') | M.null ts1' = return $ SubPlan ts2'
+                                                     | M.null ts2' = return $ SubPlan ts1'
+                                                     | otherwise = do
                                                         rs <- mapM mergeBinds items
                                                         return $ SubPlan $ M.fromList rs    
     where
@@ -232,9 +234,12 @@ mergeTableStructure qo (SubPlan ts1') (SubPlan ts2') = do
                                             return (i, (q', cs1, ts'))
                                             
 mergeTableStructureFirst :: AlgNode -> SubPlan -> SubPlan -> GraphM SubPlan
-mergeTableStructureFirst qo (SubPlan ts1') (SubPlan ts2') = do
-                                                             rs <- mapM mergeBinds items
-                                                             return $ SubPlan $ M.fromList rs
+mergeTableStructureFirst qo (SubPlan ts1') (SubPlan ts2') 
+                            | M.null ts1' = return $ SubPlan ts2'
+                            | M.null ts2' = return $ SubPlan ts1'
+                            | otherwise= do
+                                          rs <- mapM mergeBinds items
+                                          return $ SubPlan $ M.fromList rs
      where
         items = M.toList ts1'
         mergeBinds :: (Int, AlgRes) -> GraphM (Int, AlgRes)
@@ -260,8 +265,8 @@ mergeTableStructureFirst qo (SubPlan ts1') (SubPlan ts2') = do
 
 mergeTableStructureLast :: Int -> SubPlan -> GraphM SubPlan
 mergeTableStructureLast n (SubPlan ts1') = do
-                                             rs <- mapM updateBinds items
-                                             return $ SubPlan $ M.fromList rs
+                                            rs <- mapM updateBinds items
+                                            return $ SubPlan $ M.fromList rs
     where
         items = M.toList ts1'
         updateBinds :: (Int, AlgRes) -> GraphM (Int, AlgRes)
@@ -271,9 +276,12 @@ mergeTableStructureLast n (SubPlan ts1') = do
                                             return (i, (q, cs1, ts))
                                             
 mergeTableStructureSeq :: Int -> SubPlan -> SubPlan -> GraphM SubPlan
-mergeTableStructureSeq n (SubPlan ts1') (SubPlan ts2') = do
-                                                          rs <- mapM mergeBinds items
-                                                          return $ SubPlan $ M.fromList rs
+mergeTableStructureSeq n (SubPlan ts1') (SubPlan ts2') 
+                                | M.null ts1' = return $ SubPlan ts2'
+                                | M.null ts2' = return $ SubPlan ts1'
+                                | otherwise= do
+                                              rs <- mapM mergeBinds items
+                                              return $ SubPlan $ M.fromList rs
     where
         items = M.toList ts1'
         mergeBinds :: (Int, AlgRes) -> GraphM (Int, AlgRes)
@@ -295,7 +303,7 @@ mergeTableStructureSeq n (SubPlan ts1') (SubPlan ts2') = do
 --      with the head of the list and then ranked.    
 listFirst :: CoreExpr -> GraphM AlgRes
 listFirst (Cons t e1 (Nil _)) = coreToAlgebra e1
-{-listFirst (Cons t e1 e2@(Cons _ _ _)) = do
+listFirst (Cons t e1 e2@(Cons _ _ _)) = do
                                          (q1, cs1, ts1) <- coreToAlgebra e1
                                          (q2, cs2, ts2) <- listSequence e2 2
                                          let cols = leafNames cs1
@@ -307,7 +315,7 @@ listFirst (Cons t e1 (Nil _)) = coreToAlgebra e1
                                                      =<< flip union q2 =<< attach ordCol intT (int 1) q1
                                          q <- proj (("iter", "iter"):("pos", posPrime) : projPairs) q'
                                          ts <- mergeTableStructureFirst q' ts1 ts2
-                                         return (q, cs1, ts) -}
+                                         return (q, cs1, ts) 
 listFirst (Cons t e1 e2) = do
                             (q1, cs1, ts1) <- coreToAlgebra e1
                             (q2, cs2, ts2) <- coreToAlgebra e2
@@ -316,7 +324,6 @@ listFirst (Cons t e1 e2) = do
                             let colsDiff = cols L.\\ ks
                             let projPairs = (zip colsDiff colsDiff) ++ (zip ks $ repeat iterPrime)
                             n1 <- attach ordCol intT (int 1) q1
-                            let projPairs = zip (leafNames cs1) (leafNames cs1)
                             q' <- rownum iterPrime ["iter", ordCol, "pos"] Nothing
                                     =<< rank posPrime [(ordCol, Asc), ("pos", Asc)]
                                         =<< union n1 
@@ -375,7 +382,7 @@ mapForward gam q cs = do
                           let csProj = zip (leafNames cs) (leafNames cs)
                           qv' <- rownum inner ["iter", "pos"] Nothing q
                           qv  <- proj (("iter", inner):("pos", posPrime):csProj)
-                                      =<< attach posPrime intT (int 1) qv'
+                                      =<< attach posPrime natT (nat 1) qv'
                           mapv <- proj [(outer, "iter"), (inner, inner), (posPrime, "pos")] qv'
                           loopv <- proj [("iter",inner)] qv'
                           gamV <- transformGam algResv mapv gam

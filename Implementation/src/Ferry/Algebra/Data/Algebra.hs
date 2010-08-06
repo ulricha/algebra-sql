@@ -56,7 +56,7 @@ instance Show ATy where
   show ADec     = "dec"
   show ADouble  = "dbl"
   show ANat     = "nat"
-  show ASur     = "int"
+  show ASur     = "nat"
 
 -- | Wrapper around values that can occur in an algebraic plan                  
 data AVal where
