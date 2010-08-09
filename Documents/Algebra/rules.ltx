@@ -29,7 +29,7 @@
         {| Gam, loop +- ei => (qi, csi, empty) where i = 1,2|\\
          | ks = keys ts1 |\quad | cols = cs cs1 |\\
          | q' = rownum iter' (iter,ord,pos) (rank pos' (<ord,pos>) (union (attach ord 1 q1) (attach ord 2 q2))) |\\
-         | q = proj (iter, pos:pos', cols \\ ks, ks:iter') q'|\quad | qr = proj (ord, iterR:iter', cols) q'|}
+         | q = proj (iter, pos:pos', cols \\ ks, ks:iter') q'|\quad | qr = proj (ord, iter', cols) q'|}
         {| Gam, loop +- Cons e1 e2 => (q, cs1, merge qr ts1 ts2)|}\\
     \infrule[ac-Nil]
         {| cs = tyToCol t 1|}
@@ -83,9 +83,9 @@ merge qo ts1' ts2' =  {  x1 +-> (q', cs1, merge qr ts1 ts2)
                       ,  x1 == x2 
                       ,  let  ks    = keys ts1
                               cols  = ln cs1
-                              qo'   = join (ord, old:iter) ((proj (ord, iterR, old:itemx) qo)) ((union (attach ord 1 q1) (attach ord 2 q2)))
+                              qo'   = join (ord, old:iter) ((proj (ord, iterR:iter', old:itemx) qo)) ((union (attach ord 1 q1) (attach ord 2 q2)))
                               q     = rownum iter' (iter, ord, pos) (proj (iter, ord, pos, cols) qo')
-                              qr    = proj (iterR:iter', ord, cols ) q
+                              qr    = proj (iter', ord, cols ) q
                               q'    = proj (iter:iterR, pos, cols \\ ks, ks:iter') q}
 \end{code}
 
@@ -102,7 +102,7 @@ merges n ts1' ts2'   =  {  x1 -> (q, cs1, merges n ts1 ts2)
                         ,  x2 -> (q2, cs2, ts2) elem ts2'
                         ,  x1 == x2
                         ,  let  q = union (attach ord n q1) q2 }
-mergen n ts1'        =  {  x1 -> (q, cs1 mergen n ts1)
+mergen n ts1'        =  {  x1 -> (q, cs1, mergen n ts1)
                         |  x1 -> (q1, cs1, ts1) elem ts1'
                         ,  let  q = attach ord n q1 }
 mergef qo ts1' ts2'  =  {  x1 -> (q', cs1, mergef qr ts1 ts2)
@@ -111,9 +111,9 @@ mergef qo ts1' ts2'  =  {  x1 -> (q', cs1, mergef qr ts1 ts2)
                         ,  x1 == x2
                         ,  let  ks    = keys ts1
                                 cols  = ln cs1
-                                qo'   = join (ord, old:iter) ((proj (ord, iterR, old:itemx) qo)) ((union (attach ord 1 q1) q2))
-                                q     = rownum iter' (iter, ord, pos) (proj (iter, ord, pos, cols) qo')
-                                qr    = proj (iterR:iter', ord, cols) q
+                                qo'   = join (ord, old:iter) ((proj (ord, iterR:iter', old:itemx) qo)) ((rownum iter' (iter, ord, pos) (union (attach ord 1 q1) q2)))
+                                q     = proj (iter, ord, pos, cols) qo'
+                                qr    = proj (iter', ord, cols) q
                                 q'    = proj (iter:iterR, pos, cols\\ks, ks:iter') q}
 \end{code}
 
