@@ -1,5 +1,5 @@
 digraph g {
-ordering=out;n1[label=" =\> [a1]",fillcolor=gray,style=filled,shape=record];
-n0[label="Nil",fillcolor=blue,style=filled,shape=ellipse];
+ordering=out;n0[label="Nil",fillcolor=blue,style=filled,shape=ellipse];
+n1[label=" =\> [a1]",fillcolor=gray,style=filled,shape=record];
 n0 -> n1;
 }

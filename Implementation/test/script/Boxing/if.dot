@@ -1,16 +1,16 @@
 digraph g {
-ordering=out;n1[label=" =\> String",fillcolor=gray,style=filled,shape=record];
-n3[label="Eq Int =\> Bool",fillcolor=gray,style=filled,shape=record];
-n5[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
-n4[label="1",fillcolor=yellow,style=filled,shape=triangle];
-n7[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
-n6[label="2",fillcolor=yellow,style=filled,shape=triangle];
+ordering=out;n0[label="If",fillcolor=blue,style=filled,shape=circle];
+n1[label=" =\> String",fillcolor=gray,style=filled,shape=record];
 n2[label="==",fillcolor=green,style=filled,shape=circle];
-n9[label=" =\> String",fillcolor=gray,style=filled,shape=record];
+n3[label="Eq Int =\> Bool",fillcolor=gray,style=filled,shape=record];
+n4[label="1",fillcolor=yellow,style=filled,shape=triangle];
+n5[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
+n6[label="2",fillcolor=yellow,style=filled,shape=triangle];
+n7[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
 n8[label="Hello world",fillcolor=yellow,style=filled,shape=triangle];
-n11[label=" =\> String",fillcolor=gray,style=filled,shape=record];
+n9[label=" =\> String",fillcolor=gray,style=filled,shape=record];
 n10[label="Schni schna schnappie",fillcolor=yellow,style=filled,shape=triangle];
-n0[label="If",fillcolor=blue,style=filled,shape=circle];
+n11[label=" =\> String",fillcolor=gray,style=filled,shape=record];
 n4 -> n5;
 n6 -> n7;
 n2 -> n4;
