@@ -11,7 +11,7 @@ import qualified Data.Map as M (lookup)
 import Data.Maybe (listToMaybe, fromJust)
 
 runBoxing :: TyEnv -> CoreExpr -> CoreExpr
-runBoxing env = fst . flip runReader (env, Nothing, emptyEnv) . box
+runBoxing env = fst . flip runReader (env, Nothing, emptyEnv) . topBox
 
 data Box = Atom
          | List
@@ -91,7 +91,14 @@ resultCheck (e, psi) = do
                                           | otherwise -> error "Expected box sort doesn't match inferred sort"
                             (Nothing, psi) -> return (e, psi)
 
-    
+topBox :: CoreExpr -> Boxing (CoreExpr, Box)
+topBox e = do 
+            (e', psi) <- box e
+            let t = typeOf e'
+            case t of
+                (_ :=> (FList _)) -> return (boxOp psi List e', List)
+                _                 -> return (e', psi)
+
 box :: CoreExpr -> Boxing (CoreExpr, Box)
 box c@(Constant _ _) = resultCheck (c, Atom)
 box n@(Nil _)        = resultCheck (n, List)

@@ -15,6 +15,7 @@ import Ferry.TypedCore.Data.TypedCore as T
 
 import qualified Data.Map as M 
 import qualified Data.List as L
+import Data.Maybe (fromJust, isJust)
 
 -- | Section introducing aliases for commonly used columns
 
@@ -80,12 +81,14 @@ coreToAlgebra (Var t n) = fromGam n
 coreToAlgebra (Rec t (e:els)) = foldl recElemsToAlgebra (recElemToAlgebra e) els
 -- Record element access.
 coreToAlgebra (Elem t e n) = do
-                                (q1, cs1 ,ts1) <- coreToAlgebra e
+                                (q1, cs1 ,(SubPlan ts1)) <- coreToAlgebra e
                                 let csn = getCol n cs1
-                                let csn' = decrCols csn
+                                let (csn', i) = decrCols csn
+                                let ln = leafNumbers csn'
+                                let ts = SubPlan $ M.fromList [ (l, fromJust r) | l <- ln, let r = M.lookup (l+i) ts1, isJust r]
                                 let projPairs = zip (leafNames csn') (leafNames csn)
                                 n1 <- proj (("iter", "iter"):("pos", "pos"):projPairs) q1
-                                return (n1, csn', emptyPlan)
+                                return (n1, csn', ts)
 --Empty lists
 coreToAlgebra (Nil (_ :=> t)) = do
                                  let cs = fst $ typeToCols t 1
@@ -406,6 +409,9 @@ key2Key cs ks = map (\(Key k) -> map (\ki -> case getCol ki cs of
 leafNames :: Columns -> [String]
 leafNames cs = map (\(Col i _) -> "item" ++ show i) $ colLeafs cs
 
+leafNumbers :: Columns -> [Int]
+leafNumbers cs = map (\(Col i _) -> i) $ colLeafs cs
+
 -- Get all the leaf columns, that is the columns that are actually a column
 colLeafs :: Columns -> Columns
 colLeafs (c@(Col i _):xs) = (:) c $ colLeafs xs
@@ -427,9 +433,9 @@ minCol :: Columns -> Int
 minCol c = minimum $ (:) 1 $ map (\(Col i _) -> i) $ colLeafs c
 
 -- Decrement the column numbers so that the lowest column number is 1 after applying
-decrCols :: Columns -> Columns
+decrCols :: Columns -> (Columns, Int)
 decrCols cols = let minV = minCol cols
-                 in decr' (minV - 1) cols
+                 in (decr' (minV - 1) cols, minV  - 1)
     where
      decr' :: Int -> Columns -> Columns
      decr' decr ((Col i t):xs)    = (flip Col t $ i - decr) : (decr' decr xs)
