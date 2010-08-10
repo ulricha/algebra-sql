@@ -124,12 +124,17 @@ coreToAlgebra (If t e1 e2 e3) = do
                                   --Evaluate else branch
                                   (q3, cs3, ts3) <- withContext gamElse loopElse $ coreToAlgebra e3
                                   --Construct result
-                                  let projPairs = zip (leafNames cs2) (leafNames cs2)
+                                  let ks = keys ts2
+                                  let cols = leafNames cs2
+                                  let colsDiff = cols L.\\ ks
                                   n1 <- attach ordCol intT (int 1) q2
-                                  n2 <- proj (("iter","iter"):("pos","pos"):projPairs) 
+                                  q' <- rownum iterPrime ["iter", ordCol, "pos"] Nothing
                                             =<< union n1 
-                                            =<< attach ordCol intT (int 2) q3
-                                  return (n2, cs2, emptyPlan)
+                                                =<< attach ordCol intT (int 2) q3
+                                  let projPairs = zip colsDiff colsDiff ++ zip ks (repeat iterPrime)
+                                  n2 <- proj (("iter","iter"):("pos","pos"):projPairs) q'
+                                  ts <- mergeTableStructure q' ts2 ts3
+                                  return (n2, cs2, ts)
 -- Compile function application, as we do not have functions as results the given
 -- argument can be evaluated and then be passed to the compileApp function.
 coreToAlgebra (App t e1 e2) = compileAppE1 e1 =<< compileParam e2
@@ -162,7 +167,7 @@ compileAppE1 (App t (Var mt "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                     let csProj2 = zip (leafNames cs2) (leafNames cs2)
                     q <- proj (("iter",outer):("pos", posPrime):csProj2)
                             =<< eqJoin "iter" inner q2 mapv
-                    return (q, cs2, emptyPlan)
+                    return (q, cs2, ts2)
 compileAppE1 (App t (Var mt "filter") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                 do
                     gam <- getGamma

@@ -91,6 +91,9 @@ resultCheck (e, psi) = do
                                           | otherwise -> error "Expected box sort doesn't match inferred sort"
                             (Nothing, psi) -> return (e, psi)
 
+-- | Deal with corner case of lazy unboxing, the result 
+-- | type is a list but the boxing says it's an atom
+-- | in that case we perform the unboxing
 topBox :: CoreExpr -> Boxing (CoreExpr, Box)
 topBox e = do 
             (e', psi) <- box e
