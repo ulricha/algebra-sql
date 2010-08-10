@@ -364,16 +364,17 @@ recElemToAlgebra (RecElem t n e) = do
 -- Transform a record into an algebraic plan                                     
 recElemsToAlgebra :: GraphM AlgRes -> RecElem -> GraphM AlgRes
 recElemsToAlgebra alg2 el = do
-                                (q1, cs1, ts1) <- alg2
-                                (q2, cs2, ts2) <- recElemToAlgebra el
+                                (q1, cs1, (SubPlan ts1)) <- alg2
+                                (q2, cs2, (SubPlan ts2)) <- recElemToAlgebra el
                                 let offSet = colSize cs1
                                 let cs2' = incrCols offSet cs2
                                 let projPairs = zip (leafNames cs2') (leafNames cs2)
+                                let ts = SubPlan $ M.union ts1 $ M.mapKeysMonotonic (+ offSet) ts2
                                 n1 <- proj ((mkPrefixIter 1, "iter"):projPairs) q2
                                 n2 <- eqJoin "iter" (mkPrefixIter 1) q1 n1
                                 let projPairs' = zip (leafNames cs1) (leafNames cs1) ++ zip (leafNames cs2') (leafNames cs2')
                                 n3 <- proj (("iter", "iter"):("pos", "pos"):projPairs') n2
-                                return (n3, cs1 ++ cs2', emptyPlan)
+                                return (n3, cs1 ++ cs2', ts)
 
 -- map forward transforms the environment etc into the versions needed to compute in
 -- a loop context. The result is (qv', qv, mapv, loopv, Gamv)
