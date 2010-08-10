@@ -120,18 +120,28 @@
       ><node id="20" kind="union"
         ><edge to="13"
         /><edge to="19"/></node
-      ><node id="21" kind="project"
+      ><node id="21" kind="rownum"
+        ><content
+          ><column name="item99999701" new="true"
+          /><column name="iter" function="sort" position="1"
+                    direction="ascending" new="false"
+          /><column name="item99999801" function="sort" position="2"
+                    direction="ascending" new="false"
+          /><column name="pos" function="sort" position="3"
+                    direction="ascending" new="false"/></content
+        ><edge to="20"/></node
+      ><node id="22" kind="project"
         ><content
           ><column name="iter" old_name="iter" new="true"
           /><column name="pos" old_name="pos" new="true"
           /><column name="item1" old_name="item1" new="true"/></content
-        ><edge to="20"/></node
-      ><node id="22" kind="nil"
-      /><node id="23" kind="serialize relation"
+        ><edge to="21"/></node
+      ><node id="23" kind="nil"
+      /><node id="24" kind="serialize relation"
         ><content
           ><column name="iter" new="false" function="iter"
           /><column name="pos" new="false" function="pos"
           /><column name="item1" new="false" function="item"
                     position="1"/></content
-        ><edge to="22"
-        /><edge to="21"/></node></logical_query_plan></query_plan></query_plan_bundle>
+        ><edge to="23"
+        /><edge to="22"/></node></logical_query_plan></query_plan></query_plan_bundle>
