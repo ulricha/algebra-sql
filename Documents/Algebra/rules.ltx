@@ -17,12 +17,14 @@
         {| Gam, loop +- x => (q, cs, ts)|}\\
     \infrule[ac-rec]
         {| Gam, loop +- ei => (qi, csi, tsi)|\quad |i = 1, 2 |\quad%
-         | cs2' = incr cs2 (card cs1) |\\
+         | cs2' = incr cs2 (card cs1) |\quad%
+         | ts = ts1 ++ (incr ts2 (card cs1))|\\
          | q = proj (iter, pos, ln cs1, ln cs2)(join (iter1:iter1') q1 (proj (iter':iter, ln cs2': ln cs2) q2))|}
-        {| Gam, loop +- {x1 = e1, x2 = e2} => (q, {x1 -> cs1, x2 -> cs2'}, empty)|}\\
+        {| Gam, loop +- {x1 = e1, x2 = e2} => (q, {x1 -> cs1, x2 -> cs2'}, ts)|}\\
     \infrule[ac-lookup]
         {| Gam, loop +- e => (q1, cs@{..., l -> csl, ...}, ts)|\quad%
-         | csl' = decr csl |\\
+         | (csl', i) = decr csl |\quad
+         | ts = {l +-> ts!(l + i) || l elem ln csl'} | \\
          | q = proj (iter, pos, ln csl': ln csl) q1 |}
         {| Gam, loop +- e.l => (q, csl', empty)|}\\
     \infrule[ac-Cons]
@@ -41,19 +43,21 @@
         {| Gam, loop +- e1 => (q1, {item1}, empty)|\\
          | loopthen = proj iter (sel item1 q1) | \quad | Gamthen = map (\qm -> join iter qm loopthen) Gam |\\
          | loopelse = proj iter (sel item1 (not (item1:item1) q1))| \quad | Gamelse = map (\qm -> join iter qm loopelse) Gam |\\
-         | Gamthen, loopthen +- e2 => (q2, cs2, empty)|\quad |Gamelse, loopelse +- e3 => (q3, cs3, empty) |\\
-         | q = proj (iter, pos ln cs2) (union (attach ord 1 q2) (attach ord 2 q3))|}
-        {| Gam, loop +- if e1 then e2 else e3 => (q, cs2, empty)|}\\
+         | Gamthen, loopthen +- e2 => (q2, cs2, ts2)|\quad |Gamelse, loopelse +- e3 => (q3, cs3, ts3) |\\
+         | ks = keys ts2| \quad | cols = ln cs2 | \\
+         | q' = rownum iter' (iter, ord, pos) (union (attach ord 1 q2) (attach ord 2 q3)) |\\
+         | q = proj (iter, pos cols \\ ks, ks:iter') q'|}
+        {| Gam, loop +- if e1 then e2 else e3 => (q, cs2, merge q' ts2 ts3)|}\\
     \infrule[ac-map]
-        {| Gam, loop +- e1 => (q1, cs1, empty) |\quad
+        {| Gam, loop +- e1 => (q1, cs1, ts1) |\quad
          | (qv', qv, mapv, loopv, Gamv) = mapForward Gam q1 cs1 |\\ 
          | Gamv[x +-> (qv, cs1, ts1)], loopv +- e2 => (q2, cs2, ts2)|\\
          | q = proj (iter:outer, pos:pos', ln cs2) (join (iter:inner) q2 mapv) |}
-        {| Gam, loop +- map (\x -> e2) e1 => (q, cs2, empty)|}\\
+        {| Gam, loop +- map (\x -> e2) e1 => (q, cs2, ts2)|}\\
     \infrule[ac-filter]
         {| Gam, loop +- e1 => (q1, cs1, ts1) | \quad
          | (qv', qv, mapv, loopv, Gamv) = mapForward Gam q1 cs1 |\\ 
-         | Gamv[x +-> (qv, cs1, ts1)], loopv +- e2 => (q2, {item1}, ts2) |\\
+         | Gamv[x +-> (qv, cs1, ts1)], loopv +- e2 => (q2, {item1}, empty) |\\
          | q = proj (iter, pos, ln cs1) (sel res (join (inner:iter') qv' (proj (iter':iter, res:item1) q2)))|}
         {| Gam, loop +- filter (\x -> e2) e1 => (q, cs1, ts1)|} \\
     \infrule[ac-Box]
