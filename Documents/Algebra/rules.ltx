@@ -68,7 +68,17 @@
         {| Gam, loop +- e => (q, {item1}, ts) |\quad
          | (q', cs', ts') = lookup item1 ts |\\
          | q'' = proj (iter:iter', pos, ln cs')(join (item1':iter) (proj (iter':iter, item1':item1) q) q')|}
-        {| Gam, loop +- unbox e => (q'', cs', ts') |}
+        {| Gam, loop +- unbox e => (q'', cs', ts') |}\\
+    \infrule[ac-groupWith]
+        {| Gam, loop +- e3 => (q3, cs3, ts3) |\\
+         | (qv', qv, map', loop', Gam') = mapForward Gam q3 cs3 |\\
+         | Gam'[x1 +-> (qv, cs3, ts3)], loop' +- e1 => (q1, cs1, ts1) |\\
+         | Gam'[x2 +-> (qv, cs3, ts3)], loop' +- e2 => (q2, cs2, ts2) |\\
+         | cs2' = incr cs2 (card cs1) |\\
+         | q = rowrank gk (iter, ln cs2') (join (inner:iter') (proj (iter, pos, inner) qv) (join (iter'':iter') (proj (iter'':iter, ln cs1) q1) (proj (iter':iter, ln cs2' : ln cs2) q2)))|\\
+         | qout = distinct (proj (iter, pos:gk, ln cs2 : ln cs2', item':gk) q)|\\
+         | qin = proj (iter:gk, pos, ln cs1) q|}
+        {| Gam, loop +- groupWith (\x1 -> e1) (\x2 -> e2) e3 => (qout, {1 +-> cs2, 2 +-> item'}, {item' +-> (qin, cs1, ts1)}) |}
     \end{infrules}
 \begin{code}
 tyToCol :: Type -> Int -> Columns
