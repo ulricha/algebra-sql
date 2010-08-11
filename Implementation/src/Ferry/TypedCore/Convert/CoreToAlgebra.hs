@@ -17,6 +17,8 @@ import qualified Data.Map as M
 import qualified Data.List as L
 import Data.Maybe (fromJust, isJust)
 
+import System.IO.Unsafe 
+
 -- | Section introducing aliases for commonly used columns
 
 -- | Results are stored in column:
@@ -193,6 +195,7 @@ compileAppE1 (Var mt "unBox") (q, [Col 1 ASur], ts) =
                                 =<< eqJoin "iter" resCol q'
                                     =<< proj [(iterPrime, "iter"),(resCol, "item1")] q
                         return (q'', cs', ts')
+
                     
 -- | Compile a lambda where the argument variable is bound to the given expression                    
 compileLambda :: AlgRes -> Param -> GraphM AlgRes
@@ -435,7 +438,7 @@ incrCols inc []              = []
 
 -- Find the lowest column number
 minCol :: Columns -> Int
-minCol c = minimum $ (:) 1 $ map (\(Col i _) -> i) $ colLeafs c
+minCol c = minimum $ map (\(Col i _) -> i) $ colLeafs c
 
 -- Decrement the column numbers so that the lowest column number is 1 after applying
 decrCols :: Columns -> (Columns, Int)

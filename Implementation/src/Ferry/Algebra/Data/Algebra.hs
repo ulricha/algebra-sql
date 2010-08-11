@@ -11,6 +11,7 @@ import Numeric (showFFloat)
 data Column where
     Col :: Int -> ATy -> Column
     NCol :: String -> Columns -> Column
+  deriving (Show)
 
 -- | One table can have multiple columns     
 type Columns = [Column]

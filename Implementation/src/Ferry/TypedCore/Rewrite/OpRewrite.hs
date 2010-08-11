@@ -33,7 +33,18 @@ rewrite = runRewrite . rewrite'
 rewrite' :: CoreExpr -> Rewrite CoreExpr
 rewrite' = traverse rules
     where
-     rules = mFoldCore {binOpF = opRewrite}
+     rules = mFoldCore {binOpF = opRewrite, appF = appRewrite}
+
+appRewrite :: Qual FType -> Rewrite CoreExpr -> Rewrite Param -> Rewrite CoreExpr
+appRewrite qt e arg = do
+                        e' <- e
+                        arg' <- arg
+                        case (e', arg') of
+                            (Var _ "fst", ParExpr _ e2) -> return $ Elem qt e2 "1"
+                            (Var _ "snd", ParExpr _ e2) -> return $ Elem qt e2 "2"
+                            _                           -> return $ App qt e' arg'
+
+--     Elem :: (Qual FType) -> CoreExpr -> String -> CoreExpr
 
 opRewrite :: Qual FType -> Op -> Rewrite CoreExpr -> Rewrite CoreExpr -> Rewrite CoreExpr
 opRewrite qt (Op op) e1 e2 = do
