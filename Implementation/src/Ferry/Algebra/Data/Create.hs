@@ -70,8 +70,14 @@ eqTJoin eqs projI q1 q2 = let (a, b) = head eqs
 rank :: ResAttrName -> SortInf -> AlgNode -> GraphM AlgNode
 rank res sort c1 = insertNode (Rank (res, sort), [c1])
 
+rowrank :: ResAttrName -> SortInf -> AlgNode -> GraphM AlgNode
+rowrank res sort c1 = insertNode (RowRank (res, sort), [c1])
+
 select :: SelAttrName -> AlgNode -> GraphM AlgNode
 select sel c1 = insertNode (Sel sel, [c1])
+
+distinct :: AlgNode -> GraphM AlgNode
+distinct c1 = insertNode (Distinct, [c1])
 
 cross :: AlgNode -> AlgNode -> GraphM AlgNode
 cross c1 c2 = insertNode (Cross, [c1, c2])

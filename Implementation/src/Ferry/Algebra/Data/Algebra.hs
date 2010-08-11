@@ -210,7 +210,7 @@ type AlgConstr = (Algebra, [AlgNode])
 data Algebra where
     RowNum     :: SemInfRowNum -> Algebra     -- Should have one child
 --    RowId      :: SemInfRowId -> Algebra      -- should have one child
---    RowRank    :: SemInfRank -> Algebra       -- should have one child
+    RowRank    :: SemInfRank -> Algebra       -- should have one child
     Rank       :: SemInfRank -> Algebra       -- should have one child
     Proj       :: SemInfProj -> Algebra       -- should have one child   
     Sel        :: SemInfSel  -> Algebra       -- should have one child  
@@ -221,7 +221,7 @@ data Algebra where
 --    ThetaJoin  :: SemInfThetaJoin -> Algebra  -- should have two children
     DisjUnion  :: Algebra                     -- should have two children
 --    Diff       :: Algebra                     -- should have two children
---    Distinct   :: Algebra                     -- should have one child
+    Distinct   :: Algebra                     -- should have one child
     LitTable   :: SemInfLitTable -> SchemaInfos -> Algebra
     EmptyTable :: SchemaInfos -> Algebra
     TableRef   :: SemInfTableRef -> Algebra

@@ -231,6 +231,30 @@ alg2XML gId = do
                                                     xId <- freshId
                                                     tell [mkRowNum xId res sort part cxId1]
                                                     return xId
+    alg2XML' (Distinct, [cId1]) = do
+                                    cxId <- alg2XML cId1
+                                    xId <- freshId
+                                    tell [mkDistinct xId cxId]
+                                    return xId
+    alg2XML' (RowRank (res, sort), [cId1]) = do
+                                              cxId1 <- alg2XML cId1
+                                              xId <- freshId
+                                              tell [mkRowRank xId res sort cxId1]
+                                              return xId
+
+-- Create an xml rank element node. 
+mkRowRank :: XMLNode -> ResAttrName -> SortInf -> XMLNode -> Element ()
+mkRowRank xId res sort cId = let sortCols = map mkSortColumn $ zip sort [1..]
+                                 resCol = Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []
+                                 contNode = contentsNode (resCol:sortCols)
+                                 edge = mkEdge cId
+                              in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "rowrank"])] [CElem contNode (), CElem edge ()]
+
+
+-- | Create an xml distinct node
+mkDistinct :: XMLNode -> XMLNode -> Element ()
+mkDistinct xId cxId = let edge1 = mkEdge cxId
+                       in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "distinct"])] [CElem edge1 ()]
 
 -- | Create an xml rownum node                                                    
 mkRowNum :: XMLNode -> ResAttrName -> SortInf -> Maybe PartAttrName -> XMLNode -> Element ()
