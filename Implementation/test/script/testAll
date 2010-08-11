@@ -11,9 +11,10 @@ FERRYC=../../dist/build/ferryc/ferryc
 /bin/sh runTests Core $FERRYC "--dotCore -s10" "out" ; X3=$?
 /bin/sh runTests TypeSystem $FERRYC "-t -s20" "out" ; X4=$?
 /bin/sh runTests ComplexTypeSystem $FERRYC "-t -s20" "out" ; X5=$?
+/bin/sh runTests Rewrite $FERRYC "--dotRewrite -s25" "dot" ; X8=$?
 /bin/sh runTests Boxing $FERRYC "--dotBox -s30" "dot" ; X6=$?
 /bin/sh runTests Algebra $FERRYC "" "xml" ; X7=$? 
-TOTAL=$[$X1 + $X2 + $X3 + $X4 + $X5 + $X6 + $X7]
+TOTAL=$[$X1 + $X2 + $X3 + $X4 + $X5 + $X6 + $X7 + $X8]
 echo "Test failures: $TOTAL"
 if [ "$TOTAL" = "0" ];
 then exit 0

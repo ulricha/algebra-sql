@@ -44,8 +44,6 @@ appRewrite qt e arg = do
                             (Var _ "snd", ParExpr _ e2) -> return $ Elem qt e2 "2"
                             _                           -> return $ App qt e' arg'
 
---     Elem :: (Qual FType) -> CoreExpr -> String -> CoreExpr
-
 opRewrite :: Qual FType -> Op -> Rewrite CoreExpr -> Rewrite CoreExpr -> Rewrite CoreExpr
 opRewrite qt (Op op) e1 e2 = do
                               e1' <- e1

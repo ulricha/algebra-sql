@@ -23,7 +23,7 @@
       ><node id="1" kind="attach"
         ><content
           ><column name="item1" new="true"
-            ><value type="nat"
+            ><value type="int"
             >1</value></column></content
         ><edge to="0"/></node
       ><node id="2" kind="attach"
@@ -64,13 +64,13 @@
       ><node id="8" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >1</value></column></content
         ><edge to="7"/></node
       ><node id="9" kind="attach"
         ><content
           ><column name="item1" new="true"
-            ><value type="nat"
+            ><value type="int"
             >4</value></column></content
         ><edge to="0"/></node
       ><node id="10" kind="attach"
@@ -95,13 +95,13 @@
       ><node id="13" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >2</value></column></content
         ><edge to="12"/></node
       ><node id="14" kind="attach"
         ><content
           ><column name="item1" new="true"
-            ><value type="nat"
+            ><value type="int"
             >5</value></column></content
         ><edge to="0"/></node
       ><node id="15" kind="attach"
@@ -126,7 +126,7 @@
       ><node id="18" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >3</value></column></content
         ><edge to="17"/></node
       ><node id="19" kind="union"
@@ -186,7 +186,7 @@
       ><node id="1" kind="attach"
         ><content
           ><column name="item1" new="true"
-            ><value type="nat"
+            ><value type="int"
             >1</value></column></content
         ><edge to="0"/></node
       ><node id="2" kind="attach"
@@ -227,13 +227,13 @@
       ><node id="8" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >1</value></column></content
         ><edge to="7"/></node
       ><node id="9" kind="attach"
         ><content
           ><column name="item1" new="true"
-            ><value type="nat"
+            ><value type="int"
             >4</value></column></content
         ><edge to="0"/></node
       ><node id="10" kind="attach"
@@ -258,13 +258,13 @@
       ><node id="13" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >2</value></column></content
         ><edge to="12"/></node
       ><node id="14" kind="attach"
         ><content
           ><column name="item1" new="true"
-            ><value type="nat"
+            ><value type="int"
             >5</value></column></content
         ><edge to="0"/></node
       ><node id="15" kind="attach"
@@ -289,7 +289,7 @@
       ><node id="18" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >3</value></column></content
         ><edge to="17"/></node
       ><node id="19" kind="union"
@@ -326,7 +326,7 @@
       ><node id="24" kind="attach"
         ><content
           ><column name="item1" new="true"
-            ><value type="nat"
+            ><value type="int"
             >2</value></column></content
         ><edge to="0"/></node
       ><node id="25" kind="attach"
@@ -338,13 +338,13 @@
       ><node id="26" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >1</value></column></content
         ><edge to="25"/></node
       ><node id="27" kind="attach"
         ><content
           ><column name="item1" new="true"
-            ><value type="nat"
+            ><value type="int"
             >3</value></column></content
         ><edge to="0"/></node
       ><node id="28" kind="attach"
@@ -356,7 +356,7 @@
       ><node id="29" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >2</value></column></content
         ><edge to="28"/></node
       ><node id="30" kind="union"
@@ -389,7 +389,7 @@
       ><node id="34" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >1</value></column></content
         ><edge to="33"/></node
       ><node id="35" kind="empty_tbl"
@@ -400,13 +400,13 @@
       ><node id="36" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >2</value></column></content
         ><edge to="35"/></node
       ><node id="37" kind="attach"
         ><content
           ><column name="item1" new="true"
-            ><value type="nat"
+            ><value type="int"
             >6</value></column></content
         ><edge to="0"/></node
       ><node id="38" kind="attach"
@@ -418,13 +418,13 @@
       ><node id="39" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >1</value></column></content
         ><edge to="38"/></node
       ><node id="40" kind="attach"
         ><content
           ><column name="item1" new="true"
-            ><value type="nat"
+            ><value type="int"
             >7</value></column></content
         ><edge to="0"/></node
       ><node id="41" kind="attach"
@@ -436,13 +436,13 @@
       ><node id="42" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >2</value></column></content
         ><edge to="41"/></node
       ><node id="43" kind="attach"
         ><content
           ><column name="item1" new="true"
-            ><value type="nat"
+            ><value type="int"
             >8</value></column></content
         ><edge to="0"/></node
       ><node id="44" kind="attach"
@@ -454,7 +454,7 @@
       ><node id="45" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >3</value></column></content
         ><edge to="44"/></node
       ><node id="46" kind="union"
@@ -490,7 +490,7 @@
       ><node id="51" kind="attach"
         ><content
           ><column name="item99999801" new="true"
-            ><value type="nat"
+            ><value type="int"
             >3</value></column></content
         ><edge to="50"/></node
       ><node id="52" kind="union"

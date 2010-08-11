@@ -17,8 +17,6 @@ import qualified Data.Map as M
 import qualified Data.List as L
 import Data.Maybe (fromJust, isJust)
 
-import System.IO.Unsafe 
-
 -- | Section introducing aliases for commonly used columns
 
 -- | Results are stored in column:
