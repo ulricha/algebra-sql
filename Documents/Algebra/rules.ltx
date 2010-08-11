@@ -75,7 +75,7 @@
          | Gam'[x1 +-> (qv, cs3, ts3)], loop' +- e1 => (q1, cs1, ts1) |\\
          | Gam'[x2 +-> (qv, cs3, ts3)], loop' +- e2 => (q2, cs2, ts2) |\\
          | cs2' = incr cs2 (card cs1) |\\
-         | q = rowrank gk (iter, ln cs2') (join (inner:iter') (proj (iter, pos, inner) qv) (join (iter'':iter') (proj (iter'':iter, ln cs1) q1) (proj (iter':iter, ln cs2' : ln cs2) q2)))|\\
+         | q = rowrank gk (iter, ln cs2') (join (inner:iter') ((proj (iter, pos, inner) qv)) ((join (iter'':iter') ((proj (iter'':iter, ln cs1) q1)) ((proj (iter':iter, ln cs2' : ln cs2) q2)))))|\\
          | qout = distinct (proj (iter, pos:gk, ln cs2 : ln cs2', item':gk) q)|\\
          | qin = proj (iter:gk, pos, ln cs1) q|}
         {| Gam, loop +- groupWith (\x1 -> e1) (\x2 -> e2) e3 => (qout, {1 +-> cs2, 2 +-> item'}, {item' +-> (qin, cs1, ts1)}) |}
