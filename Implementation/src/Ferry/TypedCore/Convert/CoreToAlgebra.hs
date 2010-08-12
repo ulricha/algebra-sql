@@ -172,6 +172,23 @@ compileAppE1 (App t (Var mt "zip") l@(ParExpr _ e1)) (q2, cs2, (SubPlan ts2)) =
                     let cs = [NCol "1" cs1, NCol "2" cs2']
                     let ts = SubPlan $ M.union ts1 $ M.mapKeysMonotonic (+ offSet) ts2
                     return (q, cs, ts)
+compileAppE1 (Var mt "unzip") (q, [NCol "1" cs1, NCol "2" cs2], (SubPlan ts)) =
+               do
+                   let (cs2d, d) = decrCols cs2
+                   let projPairs1 = zip (leafNames cs1) (leafNames cs1)
+                   let projPairs2 = zip (leafNames cs2d) (leafNames cs2)
+                   q' <- proj [("iter", "iter"),("pos", "pos"), ("item1", "iter"), ("item2", "iter")]
+                            =<< attach "pos" natT (nat 1) =<< getLoop
+                   q1 <- proj (("iter", "iter"):("pos", "pos"):projPairs1) q
+                   q2 <- proj (("iter", "iter"):("pos", "pos"):projPairs2) q
+                   let cs = [NCol "1" [Col 1 surT], NCol "2" [Col 2 surT]]
+                   let ln1 = leafNumbers cs1
+                   let ln2 = leafNumbers cs2d
+                   let ts1 = SubPlan $ M.fromList [(l, ts M.! l)  | l <- ln1, isJust $ M.lookup l ts]
+                   let ts2 = SubPlan $ M.fromList [(l, ts M.! (l + d)) | l <- ln2, isJust $ M.lookup (l +d) ts]
+                   let ts = SubPlan $ M.fromList [(1, (q1, cs1, ts1)),(2, (q2, cs2d,ts2))]
+                   return (q', cs, ts)
+                    
 compileAppE1 (App t (Var mt "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) = 
                 do
                     gam <- getGamma
