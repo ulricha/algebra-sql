@@ -67,6 +67,7 @@ primitives = M.fromList $
              ,("groupBy5", Forall 7 5 $ [] :=> (genT 1 .-> rec [(RGen 1 ,genT 2), (RGen 2, genT 4), (RGen 3, genT 5), (RGen 4, genT 6), (RGen 5, genT 7)]) .-> (genT 1 .-> genT 3) .-> list (genT 1) .-> (list $ rec [(RGen 1 , list $ genT 2), (RGen 2, list $ genT 4), (RGen 3, list $ genT 5), (RGen 4, list $ genT 6), (RGen 5, list $ genT 7)]))
              ,("groupBy6", Forall 8 6 $ [] :=> (genT 1 .-> rec [(RGen 1 ,genT 2), (RGen 2, genT 4), (RGen 3, genT 5), (RGen 4, genT 6), (RGen 5, genT 7), (RGen 6, genT 8)]) .-> (genT 1 .-> genT 3) .-> list (genT 1) .-> (list $ rec [(RGen 1 , list $ genT 2), (RGen 2, list $ genT 4), (RGen 3, list $ genT 5), (RGen 4, list $ genT 6), (RGen 5, list $ genT 7), (RGen 6, list $ genT 8)]))
              ,("zip", Forall 2 0 $ [] :=> (list $ genT 1) .-> (list $ genT 2) .-> list (rec [(RLabel "1", genT 1),(RLabel "2", genT 2)]))
+             ,("unzip", Forall 2 0 $ [] :=> (list $ rec [(RLabel "1", genT 1), (RLabel "2", genT 2)]) .-> rec [(RLabel "1", list $ genT 1), (RLabel "2", list $ genT 2)])
              ,("orderBy", Forall 2 0 $ [] :=> (genT 1 .-> genT 2) .-> (list $ genT 1) .-> (list $ genT 2))
              ,("orderByDescending", Forall 2 0 $ [] :=> (genT 1 .-> genT 2) .-> (list $ genT 1) .-> (list $ genT 2))
              ,("thenBy", Forall 2 0 $ [] :=> (genT 1 .-> genT 2) .-> (list $ genT 1) .-> (list $ genT 2))
