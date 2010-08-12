@@ -159,6 +159,19 @@ compileParam (ParExpr t e1) = coreToAlgebra e1
 -- | Compile function application.
 -- | Expects a core expression the function, and the evaluated argument
 compileAppE1 :: CoreExpr -> AlgRes -> GraphM AlgRes
+compileAppE1 (App t (Var mt "zip") l@(ParExpr _ e1)) (q2, cs2, (SubPlan ts2)) =
+                do
+                    (q1, cs1, (SubPlan ts1)) <- coreToAlgebra e1
+                    let offSet = colSize cs1
+                    let cs2' = incrCols offSet cs2
+                    let projPairs1 = zip (leafNames cs1) (leafNames cs1)
+                    let projPairs2 = zip (leafNames cs2') (leafNames cs2')
+                    let projPairs2' = zip (leafNames cs2') (leafNames cs2) 
+                    q <- eqTJoin [("iter", iterPrime), ("pos", posPrime)] (("iter", "iter"):("pos", "pos"):(projPairs1 ++ projPairs2)) q1
+                            =<< proj ((iterPrime, "iter"):(posPrime, "pos"):projPairs2') q2
+                    let cs = [NCol "1" cs1, NCol "2" cs2']
+                    let ts = SubPlan $ M.union ts1 $ M.mapKeysMonotonic (+ offSet) ts2
+                    return (q, cs, ts)
 compileAppE1 (App t (Var mt "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) = 
                 do
                     gam <- getGamma
