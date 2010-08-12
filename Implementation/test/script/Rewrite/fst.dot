@@ -1,0 +1,37 @@
+digraph g {
+ordering=out;n0[label="Let",fillcolor=blue,style=filled,shape=record];
+n1[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
+n2[label="x",fillcolor=red,style=filled,shape=record,color=white];
+n3[label="Rec",fillcolor=blue,style=filled,shape=ellipse];
+n4[label=" =\> (Int, Int)",fillcolor=gray,style=filled,shape=record];
+n5[label="1",fillcolor=red,style=filled,shape=ellipse];
+n6[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
+n7[label="5",fillcolor=yellow,style=filled,shape=triangle];
+n8[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
+n9[label="2",fillcolor=red,style=filled,shape=ellipse];
+n10[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
+n11[label="6",fillcolor=yellow,style=filled,shape=triangle];
+n12[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
+n13[label=".",fillcolor=green,style=filled,shape=circle];
+n14[label="1",fillcolor=red,style=filled,shape=triangle];
+n15[label=" =\> Int",fillcolor=gray,style=filled,shape=record];
+n16[label="x",fillcolor=red,style=filled,shape=triangle];
+n17[label=" =\> (Int, Int)",fillcolor=gray,style=filled,shape=record];
+n7 -> n8;
+n5 -> n7;
+n5 -> n6;
+n11 -> n12;
+n9 -> n11;
+n9 -> n10;
+n3 -> n5;
+n3 -> n9;
+n3 -> n4;
+n16 -> n17;
+n13 -> n16;
+n13 -> n14;
+n13 -> n15;
+n0 -> n2;
+n0 -> n3;
+n0 -> n13;
+n0 -> n1;
+}
