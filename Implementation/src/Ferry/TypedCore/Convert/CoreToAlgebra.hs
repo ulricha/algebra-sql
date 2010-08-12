@@ -216,7 +216,24 @@ compileAppE1 (App t2 (App t1 (Var mt "groupWith") e1@(ParAbstr _ _ _)) e2@(ParAb
                 let cs = [NCol "1" cs2, NCol "2" [Col newCol surT]]
                 let ts = subPlan newCol (qin, cs1, ts1)
                 return (qout, cs, ts)
-                
+{-compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1@(ParAbstr _ _ _)) e2@(ParAbstr _ _ _)) (q3, cs3, ts3) =
+            do
+                gam <- getGamma
+                (qv', qv, map', loop', gam') <- mapForward gam q3 cs3
+                (q1, cs1, ts1) <- withContext gam' loop' $ compileLambda (qv, cs3, ts3) e1
+                (q2, cs2, ts2) <- withContext gam' loop' $ compileLambda (qv, cs3, ts3) e2
+                let offSet = colSize cs1
+                let cs2' = incrCols offSet cs2
+                let projPairs1 = zip (leafNames cs1) (leafNames cs1)
+                let projPairs2 = zip (leafNames cs2') (leafNames cs2)
+                q1' <- proj ((iterR, "iter"):projPairs1) q1
+                q2' <- proj ((iterPrime, "iter"):projPairs2) q2
+                qs <- eqJoin iterR iterPrime q1' q2'
+                qvs <- proj [("iter", "iter"), ("pos", "pos"), (inner, inner)] qv'
+                q <- rowrank resCol (map (\ki -> (ki, Asc)) ((:) "iter" $ leafNames cs2'))
+                        =<< eqJoin inner iterPrime qvs qs
+-}                
+                    
 -- | Compile a lambda where the argument variable is bound to the given expression                    
 compileLambda :: AlgRes -> Param -> GraphM AlgRes
 compileLambda arg (ParAbstr t (PVar x) e) = withBinding x arg $ coreToAlgebra e

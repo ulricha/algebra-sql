@@ -69,6 +69,13 @@
          | (q', cs', ts') = lookup item1 ts |\\
          | q'' = proj (iter:iter', pos, ln cs')(join (item1':iter) (proj (iter':iter, item1':item1) q) q')|}
         {| Gam, loop +- unbox e => (q'', cs', ts') |}\\
+    \infrule[ac-zip]
+        {| Gam, loop +- e1 => (q1, cs1, ts1) |\quad
+         | Gam, loop +- e2 => (q2, cs2, ts2) |\\
+         | cs2' = incr cs2 (card cs1) |\\
+         | q = proj (iter, pos, ln cs, ln cs2') (join (iter:iter', pos:pos') q1 (proj (iter':iter, pos':pos, ln cs2':ln cs2) q2))|\\
+         | cs = {1 +-> cs1, 2 +-> cs2'}|\quad | ts = ts ++ ts2'|}
+        {| Gam, loop +- zip e1 e2 => (q, cs, ts)|}\\
     \infrule[ac-groupWith]
         {| Gam, loop +- e3 => (q3, cs3, ts3) |\\
          | (qv', qv, map', loop', Gam') = mapForward Gam q3 cs3 |\\
