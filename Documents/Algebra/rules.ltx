@@ -76,6 +76,13 @@
          | q = proj (iter, pos, ln cs, ln cs2') (join (iter:iter', pos:pos') q1 (proj (iter':iter, pos':pos, ln cs2':ln cs2) q2))|\\
          | cs = {1 +-> cs1, 2 +-> cs2'}|\quad | ts = ts ++ ts2'|}
         {| Gam, loop +- zip e1 e2 => (q, cs, ts)|}\\
+    \infrule[ac-unzip]
+        {| Gam, loop +- e1 => (q, {1 -> cs1, 2 -> cs2}, ts)|\\
+         | q' = proj (iter, pos, item1:iter, item2:iter) (attach pos 1 loop)|\\
+         | q1 = proj (iter, pos, ln cs1) q|\\
+         | q2 = proj (iter, pos, ln (decr cs2):ln cs2) q|\\
+         | ts = {1 -> (q1, cs1, {i -> ts!i || i elem cs1, i elem ts}), 2 -> (q2, decr cs2, decr {i -> ts!i || i elem cs2, i elem ts}) }|}
+        {| Gam, loop +- unzip e1 => (q', {1 -> item1, 2 -> item2}, ts)|}\\
     \infrule[ac-groupWith]
         {| Gam, loop +- e3 => (q3, cs3, ts3) |\\
          | (qv', qv, map', loop', Gam') = mapForward Gam q3 cs3 |\\
