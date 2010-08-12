@@ -246,7 +246,7 @@ compileAppE1 (App t2 (App t1 (Var mt "groupWith") e1@(ParAbstr _ _ _)) e2@(ParAb
                 let cs = [NCol "1" cs2, NCol "2" [Col newCol surT]]
                 let ts = subPlan newCol (qin, cs1, ts1)
                 return (qout, cs, ts)
-{-compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1@(ParAbstr _ _ _)) e2@(ParAbstr _ _ _)) (q3, cs3, ts3) =
+compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1@(ParAbstr _ _ _)) e2@(ParAbstr _ _ _)) (q3, cs3, ts3) =
             do
                 gam <- getGamma
                 (qv', qv, map', loop', gam') <- mapForward gam q3 cs3
@@ -262,7 +262,31 @@ compileAppE1 (App t2 (App t1 (Var mt "groupWith") e1@(ParAbstr _ _ _)) e2@(ParAb
                 qvs <- proj [("iter", "iter"), ("pos", "pos"), (inner, inner)] qv'
                 q <- rowrank resCol (map (\ki -> (ki, Asc)) ((:) "iter" $ leafNames cs2'))
                         =<< eqJoin inner iterPrime qvs qs
--}                
+                let nrFields = length cs1
+                let projOut = zip ["item" ++ show i | i <- [1..nrFields]] $ repeat resCol
+                qout <- distinct =<< proj (("iter", iterPrime):("pos", resCol):projOut) q
+                (ts, cs) <- makeSubPlan 1 cs1 ts1 q
+                return (qout, cs, ts)
+                
+
+
+makeSubPlan :: Int -> Columns -> SubPlan -> AlgNode -> GraphM (SubPlan, Columns)
+makeSubPlan 1 [Col n t] (SubPlan ts) q = do
+                                            qi <- proj [("iter", resCol),("pos", posPrime),("item1", "item1")] q
+                                            let tsi = case M.lookup 1 ts of
+                                                        Nothing -> emptyPlan
+                                                        (Just p) -> subPlan 1 p
+                                            return (subPlan 1 (qi, [Col 1 t], tsi), [Col 1 surT])
+makeSubPlan i ((NCol n csi):css) (SubPlan ts) q = do
+                                                    (SubPlan ts', cs') <- makeSubPlan (i + 1) css (SubPlan ts) q
+                                                    let (csi', d) = decrCols csi
+                                                    let ln = leafNumbers csi'
+                                                    let projPairs = zip (leafNames csi') (leafNames csi)
+                                                    qi <- proj (("iter", resCol):("pos", posPrime):projPairs) q
+                                                    let tsi = SubPlan $ M.fromList [(l, ts M.! (l + d)) | l <- ln, isJust $ M.lookup (l + d) ts]
+                                                    return (SubPlan $ M.insert i (qi, csi', tsi) ts', (NCol n [Col i surT]):cs')
+                                                    
+makeSubPlan _ [] _  _ = return (emptyPlan, [])
                     
 -- | Compile a lambda where the argument variable is bound to the given expression                    
 compileLambda :: AlgRes -> Param -> GraphM AlgRes
