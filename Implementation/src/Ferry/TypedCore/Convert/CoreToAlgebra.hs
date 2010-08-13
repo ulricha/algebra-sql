@@ -289,7 +289,7 @@ makeSubPlan i ((NCol n csi):css) (SubPlan ts) q = do
                                                     let (csi', d) = decrCols csi
                                                     let ln = leafNumbers csi'
                                                     let projPairs = zip (leafNames csi') (leafNames csi)
-                                                    qi <- proj (("iter", resCol):("pos", posPrime):projPairs) q
+                                                    qi <- proj (("iter", resCol):("pos", "pos"):projPairs) q
                                                     let tsi = SubPlan $ M.fromList [(l, ts M.! (l + d)) | l <- ln, isJust $ M.lookup (l + d) ts]
                                                     return (SubPlan $ M.insert i (qi, csi', tsi) ts', (NCol n [Col i surT]):cs')
                                                     
