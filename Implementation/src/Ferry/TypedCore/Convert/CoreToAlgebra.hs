@@ -246,6 +246,13 @@ compileAppE1 (App t2 (App t1 (Var mt "groupWith") e1@(ParAbstr _ _ _)) e2@(ParAb
                 let cs = [NCol "1" cs2, NCol "2" [Col newCol surT]]
                 let ts = subPlan newCol (qin, cs1, ts1)
                 return (qout, cs, ts)
+compileAppE1 (App t2 (App t1 (Var mt "groupByN") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
+compileAppE1 (App t2 (App t1 (Var mt "groupBy1") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
+compileAppE1 (App t2 (App t1 (Var mt "groupBy2") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
+compileAppE1 (App t2 (App t1 (Var mt "groupBy3") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
+compileAppE1 (App t2 (App t1 (Var mt "groupBy4") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
+compileAppE1 (App t2 (App t1 (Var mt "groupBy5") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
+compileAppE1 (App t2 (App t1 (Var mt "groupBy6") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
 compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1@(ParAbstr _ _ _)) e2@(ParAbstr _ _ _)) (q3, cs3, ts3) =
             do
                 gam <- getGamma
