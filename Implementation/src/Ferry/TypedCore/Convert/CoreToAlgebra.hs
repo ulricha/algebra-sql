@@ -271,7 +271,7 @@ compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1@(ParAbstr _ _ _)) e2@(ParAbst
                         =<< eqJoin inner iterPrime qvs qs
                 let nrFields = length cs1
                 let projOut = zip ["item" ++ show i | i <- [1..nrFields]] $ repeat resCol
-                qout <- distinct =<< proj (("iter", iterPrime):("pos", resCol):projOut) q
+                qout <- distinct =<< proj (("iter", "iter"):("pos", resCol):projOut) q
                 (ts, cs) <- makeSubPlan 1 cs1 ts1 q
                 return (qout, cs, ts)
                 
