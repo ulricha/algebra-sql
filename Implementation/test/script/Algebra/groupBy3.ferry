@@ -1,0 +1,1 @@
+groupBy3 (\x -> {v = snd x, y = fst x, z = snd x}) (\x -> snd x) [(1,2),(2,2),(3,1),(4,1)]
