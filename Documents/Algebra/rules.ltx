@@ -100,15 +100,13 @@
          | Gam'[x2 +-> (qv, cs3, ts3)], loop' +- e2 => (q2, cs2, ts2)|\\
          | cs2' = incr cs2 (card cs1) |\\
          | q = rowrank gk (iter, ln cs2') (join (inner:iter') ((proj (iter, pos, inner) qv)) ((join (iter'':iter') ((proj (iter'':iter, ln cs1) q1)) ((proj (iter':iter, ln cs2' : ln cs2) q2))))) |\\
-         | n = length csv |\\
+         | n = length cs1 |\\
          | qout = distinct (proj (iter, pos:gk, item1:gk, ..., itemn:gk) q)|\\
          | cs = { n -> i || (n -> _, i) <- zip cs1 [1..]} |\\
-         | ts = {  i ->  (qi = proj (iter:gk, decr csi:csi, pos) q, 
-                         decr csi, 
-                         {n -> ts1!o || (o, n) <- zip (ln csi) (ln decr csi)) }) 
-                   || (n -> csi, i) <- zip cs1 [1..]}
-          |
-        }
+         | csi = lookup cs1 i | \quad | where i elem [1..n] | \\ 
+         | qi = (qi = proj (iter:gk, decr csi:csi, pos) q | \quad | where i elem [1..n] |\\
+         | tsi = {n -> ts1!o || (o, n) <- zip (ln csi) (ln decr csi)) }| \quad | where i elem [1..n]|\\ 
+         | ts = {  i ->  (qi, decr csi, tsi) || i <- [1..n]} |}
         {| Gam, loop +- groupBy (\x1 -> e1) (\x2 -> e2) e3 => (qout, cs, ts)|}
     \end{infrules}
 \begin{code}
