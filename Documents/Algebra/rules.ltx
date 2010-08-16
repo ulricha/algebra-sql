@@ -104,9 +104,9 @@
          | qout = distinct (proj (iter, pos:gk, item1:gk, ..., itemn:gk) q)|\\
          | cs = { n -> i || (n -> _, i) <- zip cs1 [1..]} |\\
          | csi = lookup cs1 i | \quad | where i elem [1..n] | \\ 
-         | qi = (qi = proj (iter:gk, decr csi:csi, pos) q | \quad | where i elem [1..n] |\\
-         | tsi = {n -> ts1!o || (o, n) <- zip (ln csi) (ln decr csi)) }| \quad | where i elem [1..n]|\\ 
-         | ts = {  i ->  (qi, decr csi, tsi) || i <- [1..n]} |}
+         | qi = proj (iter:gk, decr csi:csi, pos) q | \quad | where i elem [1..n] |\\
+         | tsi = { n -> ts1!o || (o, n) <- zip (ln csi) (ln $ decr csi) } | \quad | where i elem [1..n]|\\ 
+         | ts = { i ->  (qi, decr csi, tsi) || i <- [1..n]} |}
         {| Gam, loop +- groupBy (\x1 -> e1) (\x2 -> e2) e3 => (qout, cs, ts)|}
     \end{infrules}
 \begin{code}
