@@ -185,6 +185,7 @@
 
 %format Gam = "\Gamma"
 %format (rownum (x) (y) (z)) = " \text{rownum}_{\stackrel{"x"}{"y"}}("z")"
+%format (rownum' (x) (y) (p) (z)) = " \text{rownum}_{\stackrel{"x"}{"y"^"p"}}("z")"
 %format (attach (x) (y) (b)) = " @_{" x ":" y"}(" b ") "
 %format (proj (x) (y)) = " \pi_{" x"}(" y ") "
 %format (join (x) (y) (z)) = " " y " \bowtie_{" x "} " z " "

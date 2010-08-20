@@ -72,8 +72,9 @@
     \infrule[ac-zip]
         {| Gam, loop +- e1 => (q1, cs1, ts1) |\quad
          | Gam, loop +- e2 => (q2, cs2, ts2) |\\
+         | q1' = abspos q1 cs1 | \quad | q2' = abspos q2 cs2 |\\
          | cs2' = incr cs2 (card cs1) |\\
-         | q = proj (iter, pos, ln cs, ln cs2') (join (iter:iter', pos:pos') q1 (proj (iter':iter, pos':pos, ln cs2':ln cs2) q2))|\\
+         | q = proj (iter, pos, ln cs, ln cs2') (join (iter:iter', pos:pos') q1' (proj (iter':iter, pos':pos, ln cs2':ln cs2) q2'))|\\
          | cs = {1 +-> cs1, 2 +-> cs2'}|\quad | ts = ts ++ ts2'|}
         {| Gam, loop +- zip e1 e2 => (q, cs, ts)|}\\
     \infrule[ac-unzip]
@@ -111,6 +112,9 @@
     \end{infrules}
 \begin{code}
 tyToCol :: Type -> Int -> Columns
+
+absPos :: Query -> Columns -> Query
+absPos q cs = proj (iter, pos, ln cs) (rownum' pos pos' iter (proj (iter:iter, pos':pos, ln cs) q))
 
 mapForward :: Gam -> Query -> Cs -> (Query, Query, Query, Query, Gam)
 mapForward Gam q cs =  let  qv'    = rownum inner (iter, pos) q

@@ -1,4 +1,4 @@
-all: ferryc haddock
+all: ferryc
 
 ./dist/setup-config: ferry.cabal LICENSE Setup.hs
 	cabal clean

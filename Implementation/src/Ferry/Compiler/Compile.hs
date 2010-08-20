@@ -5,16 +5,7 @@ import Ferry.Compiler.Error.Error
 import Ferry.Front.Parser.Parser
 import Ferry.Front.Render.Pretty
 
-
-import Ferry.Compiler.Stages.ReadStage
-import Ferry.Compiler.Stages.ParseStage
-import Ferry.Compiler.Stages.NormaliseStage
-import Ferry.Compiler.Stages.ToCoreStage
-import Ferry.Compiler.Stages.TypeInferStage
-import Ferry.Compiler.Stages.RewriteStage
-import Ferry.Compiler.Stages.BoxingStage
-import Ferry.Compiler.Stages.ToAlgebraStage
-import Ferry.Compiler.Stages.AlgebraToXMLStage
+import Ferry.Compiler.Pipeline (pipeline)
 
 import System.FilePath.Posix(takeFileName)
 import System.IO
@@ -55,16 +46,6 @@ outputFile (f, b) =
                      if fm then hClose h else return ()
                     
 
--- | The compiler pipeline. The given string is transformed dependent on the configuration of the Phaseresult
---   monad.
-pipeline :: String -> PhaseResult ()
-pipeline src = readPhase src >>=
-                 parsePhase >>=
-                 normalisePhase >>=
-                 toCorePhase >>=
-                 typeInferPhase >>=
-                 rewritePhase >>=
-                 boxingPhase >>=
-                 algebraPhase >>=
-                 xmlPhase >>
-                 return () 
+
+                 
+               
