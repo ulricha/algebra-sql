@@ -497,7 +497,14 @@ mapForward gam q cs = do
                           loopv <- proj [("iter",inner)] qv'
                           gamV <- transformGam algResv mapv gam
                           return (qv', qv, mapv, loopv, gamV)
-                          
+ 
+-- Recalculate the position column, making it densely populated after this operation
+absPos :: AlgNode -> Columns -> GraphM AlgNode
+absPos q cs = let projPairs = zip (leafNames cs) (leafNames cs)
+               in proj (("iter", "iter"):("pos", "pos"):projPairs) 
+                    =<< rownum "pos" [posPrime] (Just "iter")
+                        =<< proj (("iter", "iter"):(posPrime, "pos"):projPairs) q
+                         
 -- Function to transform the column structure
 
 --From a typedcore column list to algebraic columns
