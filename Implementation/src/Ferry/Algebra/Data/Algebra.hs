@@ -20,6 +20,26 @@ type Columns = [Column]
 data SortDir = Asc
              | Desc
     deriving (Eq, Ord)
+    
+data AggrType = Avg 
+              | Max 
+              | Min 
+              | Sum 
+              | Count 
+              | All 
+              | Prod 
+              | Dist
+    deriving (Eq, Ord)
+
+instance Show AggrType where
+    show Avg      = "avg"
+    show Max      = "max"
+    show Min      = "min"
+    show Sum      = "sum"
+    show Count    = "count"
+    show All      = "all"
+    show Prod     = "prod"
+    show Dist     = "distinct"
 
 -- | The show instance results in values that are accepted in the xml plan.
 instance Show SortDir where
@@ -196,7 +216,9 @@ type SemBinOp = (String, ResAttrName, LeftAttrName, RightAttrName)
 type SemUnOp = (ResAttrName, AttrName)
 
 -- type SemInfFun1To1  = (FunTy1To1, ResAttrName, [AttrName])   
--- type SemInfFunAggr  = (FunTyAggr, SemInfosUnOp, Maybe PartAttrName)
+
+type SemInfAggr  = ([(AggrType, ResAttrName, AttrName)], Maybe PartAttrName)
+
 -- type SemInfFunAggrCnt = (ResAttrName, Maybe PartAttrName)
 -- type SemInfSerRel   = (AttrName, AttrName, [AttrName])
 
@@ -236,7 +258,7 @@ data Algebra where
 --    FunBoolAnd :: SemInfBinOp -> Algebra      -- should have one child      
 --    FunBoolOr  :: SemInfBinOp -> Algebra      -- should have one child
     FunBoolNot :: SemUnOp -> Algebra       -- should have one child
---    FunAggr    :: SemInfFunAggr -> Algebra    -- should have one child
+    Aggr       :: SemInfAggr -> Algebra    -- should have one child
 --    FunAggrCnt :: SemInfFunAggrCnt -> Algebra -- should have one child
 --    SerializeRel :: SemInfSerRel -> Algebra   -- should have two children
   deriving (Show, Eq, Ord)

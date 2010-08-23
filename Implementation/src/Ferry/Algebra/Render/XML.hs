@@ -246,6 +246,27 @@ alg2XML gId = do
                                               xId <- freshId
                                               tell [mkRowRank xId res sort cxId1]
                                               return xId
+    alg2XML' (Aggr (aggrs, part), [cId1])
+                            = do
+                                cxId1 <- alg2XML cId1
+                                xId <- freshId
+                                tell [mkAggrs xId aggrs part cxId1]
+                                return xId
+
+-- (AggrType, ResAttrName, AttrName, Maybe PartAttrName)
+mkAggrs :: XMLNode -> [(AggrType, ResAttrName, AttrName)] -> Maybe PartAttrName -> XMLNode -> Element ()
+mkAggrs xId aggrs part cId = let partCol = case part of
+                                            Nothing -> []
+                                            Just x  -> [Elem "column" [("name", AttValue [Left x]),("function", AttValue [Left "partition"]),("new", AttValue [Left "false"])] []]
+                                 aggr = map mkAggr aggrs
+                                 contNodes = map (\x -> CElem x ()) (partCol ++ aggr)
+                              in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "aggr"])] contNodes
+    where
+        mkAggr :: (AggrType, ResAttrName, AttrName) -> Element ()
+        mkAggr (aggr, res, arg) = Elem "aggregate" [("kind", AttValue [Left $ show aggr])] [flip CElem () $ Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []
+                                                                                           ,flip CElem () $ Elem "column" [("name", AttValue [Left arg]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"])] []]
+        
+
 
 mkPosSel :: XMLNode -> Int -> SortInf -> Maybe PartAttrName -> XMLNode -> Element ()
 mkPosSel xId n sort part cId = let sortCols = map mkSortColumn $ zip sort [1..]
