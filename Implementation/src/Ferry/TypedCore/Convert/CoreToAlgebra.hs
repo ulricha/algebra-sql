@@ -26,6 +26,7 @@ ordPrime  = "item99999804"
 iterPrime = "item99999701"
 iterR     = "item99999703"
 posPrime  = "item99999601"
+posPrimePrime = "item99999602"
 outer     = "item99999501"
 inner     = "item99999401"
 oldCol    = "item99999301"
@@ -225,6 +226,15 @@ compileAppE1 (Var mt "tail") (q1', cs1, ts1) =
                                     =<< oper ">" resCol "pos" oldCol 
                                         =<< attach oldCol natT (nat 1) q1
                         return (q, cs1, ts1)
+compileAppE1 (Var mt "concat") (q, cs, SubPlan ts) =
+                    do
+                        let [(1, (qs, css, tss))] = M.toList ts
+                        let projPairs = zip (leafNames css) (leafNames css)
+                        q' <- proj (("iter", iterPrime):("pos", posPrimePrime):projPairs)
+                                =<< rank posPrimePrime [(posPrime, Asc), ("pos", Asc)]
+                                    =<< eqJoin "iter" resCol qs
+                                        =<< proj [(iterPrime, "iter"),(posPrime, "pos"), (resCol, "item1")] q
+                        return (q', css, tss)                
 compileAppE1 (Var mt "box") (q, cs, ts) =
                     do
                         q' <- attach "pos" natT (nat 1) 

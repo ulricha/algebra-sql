@@ -53,6 +53,7 @@ primitives = M.fromList $
              ,("all", Forall 0 0 $ [] :=> (list bool) .-> bool)
              ,("map", Forall 2 0 $ [] :=> (genT 1 .-> genT 2) .-> list (genT 1) .-> list (genT 2))
              ,("concatMap", Forall 2 0 $ [] :=> (genT 1 .-> list (genT 2)) .-> list (genT 1) .-> list (genT 2))
+             ,("concat", Forall 1 0 $ [] :=> (list $ list $ genT 1) .-> (list $ genT 1))
              ,("single", Forall 1 0 $ [] :=> (list $ genT 1) .-> genT 1)
              ,("filter", Forall 1 0 $ [] :=> (genT 1 .-> bool) .-> (list $ genT 1) .-> (list $ genT 1))
              ,("lookup", Forall 2 0 $ [IsIn "Eq" (genT 1)] :=> list (rec [(RLabel "1", genT 1), (RLabel "2", genT 2)]) .-> genT 1 .-> genT 2)
