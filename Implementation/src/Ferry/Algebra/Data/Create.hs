@@ -73,6 +73,9 @@ rank res sort c1 = insertNode (Rank (res, sort), [c1])
 rowrank :: ResAttrName -> SortInf -> AlgNode -> GraphM AlgNode
 rowrank res sort c1 = insertNode (RowRank (res, sort), [c1])
 
+posSelect :: Int -> SortInf -> Maybe AttrName -> AlgNode -> GraphM AlgNode
+posSelect n sort part c1 = insertNode (PosSel (n, sort, part), [c1])
+
 select :: SelAttrName -> AlgNode -> GraphM AlgNode
 select sel c1 = insertNode (Sel sel, [c1])
 

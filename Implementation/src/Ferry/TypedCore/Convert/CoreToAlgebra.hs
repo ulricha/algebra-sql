@@ -159,9 +159,11 @@ compileParam (ParExpr t e1) = coreToAlgebra e1
 -- | Compile function application.
 -- | Expects a core expression the function, and the evaluated argument
 compileAppE1 :: CoreExpr -> AlgRes -> GraphM AlgRes
-compileAppE1 (App t (Var mt "zip") l@(ParExpr _ e1)) (q2, cs2, (SubPlan ts2)) =
+compileAppE1 (App t (Var mt "zip") l@(ParExpr _ e1)) (q2', cs2, (SubPlan ts2)) =
                 do
-                    (q1, cs1, (SubPlan ts1)) <- coreToAlgebra e1
+                    (q1', cs1, (SubPlan ts1)) <- coreToAlgebra e1
+                    q1 <- absPos q1' cs1
+                    q2 <- absPos q2' cs2
                     let offSet = colSize cs1
                     let cs2' = incrCols offSet cs2
                     let projPairs1 = zip (leafNames cs1) (leafNames cs1)
@@ -209,6 +211,20 @@ compileAppE1 (App t (Var mt "filter") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                                 =<< eqJoin inner iterPrime qv' 
                                     =<< proj [(iterPrime, "iter"), (resCol, "item1")] q2
                     return (q, cs1, ts1)
+compileAppE1 (Var mt "head") (q1', cs1, ts1) =
+                do
+                    q1 <- absPos q1' cs1
+                    q <- posSelect 1 [("pos", Asc)] (Just "iter") q1
+                    return (q, cs1, ts1)
+compileAppE1 (Var mt "tail") (q1', cs1, ts1) =
+                    do
+                        let projPairs = zip (leafNames cs1) (leafNames cs1)
+                        q1 <- absPos q1' cs1
+                        q <- proj (("iter", "iter"):("pos", "pos"):projPairs)
+                                =<< select resCol 
+                                    =<< oper ">" resCol "pos" oldCol 
+                                        =<< attach oldCol natT (nat 1) q1
+                        return (q, cs1, ts1)
 compileAppE1 (Var mt "box") (q, cs, ts) =
                     do
                         q' <- attach "pos" natT (nat 1) 

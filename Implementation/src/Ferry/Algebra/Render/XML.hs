@@ -221,6 +221,11 @@ alg2XML gId = do
                                 xId <- freshId
                                 tell [mkSelect xId n cxId]
                                 return xId
+    alg2XML' (PosSel (n, sort, part), [cId1]) = do
+                                                  cxId1 <- alg2XML cId1
+                                                  xId <- freshId
+                                                  tell [mkPosSel xId n sort part cxId1]
+                                                  return xId
     alg2XML' (FunBoolNot (res, col), [cId1]) = do
                                                  cxId1 <- alg2XML cId1
                                                  xId <- freshId
@@ -241,6 +246,16 @@ alg2XML gId = do
                                               xId <- freshId
                                               tell [mkRowRank xId res sort cxId1]
                                               return xId
+
+mkPosSel :: XMLNode -> Int -> SortInf -> Maybe PartAttrName -> XMLNode -> Element ()
+mkPosSel xId n sort part cId = let sortCols = map mkSortColumn $ zip sort [1..]
+                                   partCol = case part of
+                                                   Nothing -> []
+                                                   Just x  -> [Elem "column" [("name", AttValue [Left x]),("function", AttValue [Left "partition"]),("new", AttValue [Left "false"])] []]
+                                   posNode = Elem "position" [] [CString False (show n) ()]
+                                   contNode = contentsNode ((posNode:sortCols) ++ partCol)
+                                   edge = mkEdge cId
+                                in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "pos_select"])] [CElem contNode (), CElem edge ()]
 
 -- Create an xml rank element node. 
 mkRowRank :: XMLNode -> ResAttrName -> SortInf -> XMLNode -> Element ()

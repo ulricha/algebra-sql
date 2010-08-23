@@ -171,7 +171,7 @@
 %format qo = " q_{o} "
 %format qo' = " q_{o}'' "
 %format iterR = "iter_{R}"
-
+%format q1' = " q_{1}'' "
 %format \\ = " \textbackslash "
 
 %format mapv = " map_{v} "
@@ -200,3 +200,5 @@
 %format (merges (n) (x) (y)) = " " x " \oplus^{"n"}_{seq}" y " "
 %format (mergen (n) (x)) = " \oplus^{"n"}_{last}" x " "
 %format (mergef (q) (x) (y)) = " " x " \oplus^{"q"}_{first}" y " "
+%format (posSel (n) (p) (q)) = " (posSel_{\stackrel{"n"}{"p"}} "q") "
+%format (gt (r) (a1) (a2) (q)) = " ( "a1" \stackrel{>}{"r"} "a2" ("q")) "

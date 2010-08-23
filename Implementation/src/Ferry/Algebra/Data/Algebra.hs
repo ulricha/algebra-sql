@@ -157,7 +157,9 @@ type SemInfProj    = ProjInf
 
 -- | Information that specifies which column contains the conditional
 type SemInfSel     = SelAttrName
--- type SemInfPosSel  = (Int, SortInf, Maybe PartAttrName) 
+
+-- | Information that specifies how to select element at a certain position
+type SemInfPosSel  = (Int, SortInf, Maybe PartAttrName) 
 
 
 -- | Information on how to perform an eq-join. The first element represents the column from the
@@ -214,7 +216,7 @@ data Algebra where
     Rank       :: SemInfRank -> Algebra       -- should have one child
     Proj       :: SemInfProj -> Algebra       -- should have one child   
     Sel        :: SemInfSel  -> Algebra       -- should have one child  
---    PosSel     :: SemInfPosSel -> Algebra     -- should have one child
+    PosSel     :: SemInfPosSel -> Algebra     -- should have one child
     Cross      :: Algebra                     -- should have two children
     EqJoin     :: SemInfEqJoin -> Algebra     -- should have two children 
 --    SemiJoin   :: SemInfEqJoin -> Algebra     -- should have two children 
