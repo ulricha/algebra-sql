@@ -94,6 +94,8 @@ union c1 c2 = insertNode (DisjUnion, [c1, c2])
 proj :: ProjInf -> AlgNode -> GraphM AlgNode
 proj cols c = insertNode (Proj cols, [c])
 
+aggr :: [(AggrType, ResAttrName, AttrName)] -> Maybe PartAttrName -> AlgNode -> GraphM AlgNode
+aggr aggrs part c1 = insertNode (Aggr (aggrs, part), [c1])
 
 rownum :: AttrName -> [AttrName] -> Maybe AttrName -> AlgNode -> GraphM AlgNode
 rownum res sort part c1 = insertNode (RowNum (res, zip sort $ repeat Asc, part) , [c1])
