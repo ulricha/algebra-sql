@@ -239,9 +239,16 @@ compileAppE1 (Var mt "nub") (q, cs, ts) =
                     do
                         let projPairs = ("iter", "iter"):("pos", "pos"):(zip (leafNames cs) (leafNames cs))
                         q' <- eqTJoin [("pos", posPrime), ("iter", iterPrime)]  projPairs q
-                                =<< aggr [(Min, posPrime, "pos"), (Min, iterPrime, "iter")] (Just resCol)
+                                =<< aggr [(Min, posPrime, Just "pos"), (Min, iterPrime, Just "iter")] (Just resCol)
                                     =<< rowrank resCol (map (\x -> (x, Asc)) ("iter":(leafNames cs))) q
                         return (q', cs, ts)
+compileAppE1 (Var mt "length") (q, cs, ts) = 
+                    do
+                        q' <- attach "pos" natT (nat 1)
+                                =<< proj [("iter", "iter"), ("item1", resCol)] 
+                                    =<< aggr [(Count, resCol, Nothing)] (Just "iter") q
+                        return (q', [Col 1 AInt], emptyPlan)
+                        
 compileAppE1 (Var mt "box") (q, cs, ts) =
                     do
                         q' <- attach "pos" natT (nat 1) 

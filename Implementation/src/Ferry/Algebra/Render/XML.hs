@@ -253,7 +253,7 @@ alg2XML gId = do
                                 tell [mkAggrs xId aggrs part cxId1]
                                 return xId
 
-mkAggrs :: XMLNode -> [(AggrType, ResAttrName, AttrName)] -> Maybe PartAttrName -> XMLNode -> Element ()
+mkAggrs :: XMLNode -> [(AggrType, ResAttrName, Maybe AttrName)] -> Maybe PartAttrName -> XMLNode -> Element ()
 mkAggrs xId aggrs part cId = let partCol = case part of
                                             Nothing -> []
                                             Just x  -> [Elem "column" [("name", AttValue [Left x]),("function", AttValue [Left "partition"]),("new", AttValue [Left "false"])] []]
@@ -263,9 +263,11 @@ mkAggrs xId aggrs part cId = let partCol = case part of
                                  contents = [flip CElem () $ Elem "content" [] contNodes, CElem edge ()] 
                               in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "aggr"])] contents
     where
-        mkAggr :: (AggrType, ResAttrName, AttrName) -> Element ()
-        mkAggr (aggr, res, arg) = Elem "aggregate" [("kind", AttValue [Left $ show aggr])] [flip CElem () $ Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []
-                                                                                           ,flip CElem () $ Elem "column" [("name", AttValue [Left arg]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"])] []]
+        mkAggr :: (AggrType, ResAttrName, Maybe AttrName) -> Element ()
+        mkAggr (aggr, res, arg) = let argCol = case arg of
+                                                    Just arg -> [flip CElem () $ Elem "column" [("name", AttValue [Left arg]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"])] []]
+                                                    Nothing -> [] 
+                                   in Elem "aggregate" [("kind", AttValue [Left $ show aggr])] ((flip CElem () $ Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []):argCol)
         
 
 

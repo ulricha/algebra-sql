@@ -217,7 +217,7 @@ type SemUnOp = (ResAttrName, AttrName)
 
 -- type SemInfFun1To1  = (FunTy1To1, ResAttrName, [AttrName])   
 
-type SemInfAggr  = ([(AggrType, ResAttrName, AttrName)], Maybe PartAttrName)
+type SemInfAggr  = ([(AggrType, ResAttrName, Maybe AttrName)], Maybe PartAttrName)
 
 -- type SemInfFunAggrCnt = (ResAttrName, Maybe PartAttrName)
 -- type SemInfSerRel   = (AttrName, AttrName, [AttrName])

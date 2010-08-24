@@ -60,6 +60,10 @@
          | Gamv[x +-> (qv, cs1, ts1)], loopv +- e2 => (q2, {item1}, empty) |\\
          | q = proj (iter, pos, ln cs1) (sel res (join (inner:iter') qv' (proj (iter':iter, res:item1) q2)))|}
         {| Gam, loop +- filter (\x -> e2) e1 => (q, cs1, ts1)|} \\
+    \infrule[ac-nub]
+        {| Gam, loop +- e => (q, cs, ts) |\\
+         | q' = proj (iter, pos, ln cs) (join (pos:pos', iter:iter') q (aggr (pos':min pos/p', iter':min iter/p') (rowrank p' (<iter, ln cs>) q))) |}
+        {| Gam, loop +- nub e => (q', cs, ts) |}\\
     \infrule[ac-Box]
         {| Gam, loop +- e => (q, cs, ts) |\quad
          | q' = attach pos 1 (proj (iter, item1:iter) loop) |}

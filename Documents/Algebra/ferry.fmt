@@ -183,12 +183,15 @@
 %format css = " cs_{s} "
 %format tss = " ts_{s} "
 %format elem = " \in "
+%format min = " \textbf{min} "
 
 %format (Table (t) (c) (i) (k)) = " \tableref_{" t "_{\stackrel{"c"}{"i"}} "k"} "
 
 %format Gam = "\Gamma"
-%format (rownum (x) (y) (z)) = " \text{rownum}_{\stackrel{"x"}{"y"}}("z")"
-%format (rownum' (x) (y) (p) (z)) = " \text{rownum}_{\stackrel{"x"}{"y"^"p"}}("z")"
+%format (rownum (x) (y) (z)) = " \text{rownum}_{\stackrel{"x"}{"y"}}("z") "
+%format (rownum' (x) (y) (p) (z)) = " \text{rownum}_{\stackrel{"x"}{"y"^"p"}}("z") "
+%format (rowrank (x) (y) (z)) = " \text{rowrank}_{\stackrel{"x"}{"y"}}("z") "
+%format (aggr (a) (x)) = " \text{aggr}_{"a"}("x") "
 %format (attach (x) (y) (b)) = " @_{" x ":" y"}(" b ") "
 %format (proj (x) (y)) = " \pi_{" x"}(" y ") "
 %format (join (x) (y) (z)) = " " y " \bowtie_{" x "} " z " "
