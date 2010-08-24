@@ -208,3 +208,4 @@
 %format (mergef (q) (x) (y)) = " " x " \oplus^{"q"}_{first}" y " "
 %format (posSel (n) (p) (q)) = " (posSel_{\stackrel{"n"}{"p"}} "q") "
 %format (gt (r) (a1) (a2) (q)) = " ( "a1" \stackrel{>}{"r"} "a2" ("q")) "
+%format (eq (r) (a1) (a2) (q)) = " ( "a1" \stackrel{==}{"r"} "a2" ("q")) "
