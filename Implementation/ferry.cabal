@@ -25,7 +25,6 @@ library
         Ferry.Algebra.Render.XML 
         Ferry.Common.Render.Dot 
         Ferry.Common.Render.Pretty 
-        Ferry.Compiler.Compile 
         Ferry.Compiler.Error.Error 
         Ferry.Compiler.ExecuteStep 
         Ferry.Compiler.Pipeline 
