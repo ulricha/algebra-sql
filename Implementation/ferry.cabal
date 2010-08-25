@@ -9,7 +9,7 @@ Maintainer:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>
 Build-Type:     Simple
 executable ferryc
     build-depends:  base >= 4.2, HaXml >= 1.20.2, pretty >= 1.0.1.1, parsec == 2.1.0.1, HUnit == 1.2.2.1, filepath >= 1.1.0.3, mtl >= 1.1.0.2, containers >= 0.3.0.0, haskell98 >= 1.0.1.1
-    main-is:        FerryC.hs
+    main-is:        FerryC.hs 
     hs-source-dirs: src
     other-modules:
 library
@@ -19,4 +19,56 @@ library
                       Ferry.Compiler.Transform
     hs-source-dirs: src
     other-modules:
-
+        Ferry.Algebra.Data.Algebra 
+        Ferry.Algebra.Data.Create 
+        Ferry.Algebra.Data.GraphBuilder 
+        Ferry.Algebra.Render.XML 
+        Ferry.Common.Render.Dot 
+        Ferry.Common.Render.Pretty 
+        Ferry.Compiler.Compile 
+        Ferry.Compiler.Error.Error 
+        Ferry.Compiler.ExecuteStep 
+        Ferry.Compiler.Pipeline 
+        Ferry.Compiler.Stages.AlgebraToXMLStage 
+        Ferry.Compiler.Stages.BoxingStage 
+        Ferry.Compiler.Stages.NormaliseStage 
+        Ferry.Compiler.Stages.ParseStage 
+        Ferry.Compiler.Stages.ReadStage 
+        Ferry.Compiler.Stages.RewriteStage 
+        Ferry.Compiler.Stages.ToAlgebraStage 
+        Ferry.Compiler.Stages.ToCoreStage 
+        Ferry.Compiler.Stages.TypeInferStage 
+        Ferry.Compiler.Types 
+        Ferry.Core.Data.Core 
+        Ferry.Core.Render.Dot 
+        Ferry.Core.Render.Pretty 
+        Ferry.Front.Convert.FrontToCore 
+        Ferry.Front.Convert.Normalise 
+        Ferry.Front.Data.Base 
+        Ferry.Front.Data.Instances 
+        Ferry.Front.Data.Language 
+        Ferry.Front.Data.Meta 
+        Ferry.Front.Parser.Applicative 
+        Ferry.Front.Parser.Parser 
+        Ferry.Front.Parser.Scanner 
+        Ferry.Front.Render.Pretty 
+        Ferry.TypedCore.Boxing.Boxing 
+        Ferry.TypedCore.Convert.CoreToAlgebra 
+        Ferry.TypedCore.Convert.Specialize 
+        Ferry.TypedCore.Convert.Traverse 
+        Ferry.TypedCore.Data.Base 
+        Ferry.TypedCore.Data.Instances 
+        Ferry.TypedCore.Data.Substitution 
+        Ferry.TypedCore.Data.Type 
+        Ferry.TypedCore.Data.TypeClasses 
+        Ferry.TypedCore.Data.TypedCore 
+        Ferry.TypedCore.Data.TypeFunction 
+        Ferry.TypedCore.Render.Dot 
+        Ferry.TypedCore.Render.Pretty 
+        Ferry.TypedCore.Rewrite.Combinators 
+        Ferry.TypedCore.Rewrite.OpRewrite 
+        Ferry.TypeSystem.AlgorithmW 
+        Ferry.TypeSystem.ContextReduction 
+        Ferry.TypeSystem.Prelude 
+        Ferry.TypeSystem.Types 
+        Ferry.TypeSystem.Unification 
