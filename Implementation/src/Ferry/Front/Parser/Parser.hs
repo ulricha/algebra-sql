@@ -74,7 +74,7 @@ arg = try argExpr
         <|> try abstract
 
 argExpr :: Parser Arg
-argExpr = AExpr <$> pMeta <*> atom
+argExpr = AExpr <$> pMeta <*> atom'
 
 -- | Parse function abstraction
 abstract :: Parser Arg
@@ -163,6 +163,14 @@ groupWith = (\m ->Group m GWith) <$> pMeta <* reserved "group" <*> option Nothin
 returnClause :: Parser ReturnElem
 returnClause = Return <$> pMeta <* reserved "return" <*> expr
                 <*> option Nothing ((\p bs r -> Just (p, bs, r)) <$ reserved "into" <*> pattern <*> many bodyClause <*> returnClause )
+-- | Parser for non negative atomic values
+atom' :: Parser Expr
+atom' = process <$> (try tuple <|> record <|> list <|> table <|> constParser' <|> parenExpr <|> variable) <*> many lookupListRec
+     where process e el = case el of
+                           [] -> e
+                           _  -> foldl (\l r -> case r of
+                                                 Left e' -> Elem (Meta $ getPos e) l e'
+                                                 Right e' -> Lookup (Meta $ getPos e) l e') e el
 
 -- | Parser atomic values.
 atom :: Parser Expr
@@ -245,6 +253,17 @@ constParser = do
                               try boolParser
                               ]
              return $ Const (Meta p) c
+             
+-- | Parse non negative constant values. A constant is either a float, integer, string or boolean value.
+constParser' :: Parser Expr
+constParser' = do
+          (c, p) <- choice [
+                           try floatParser,
+                           try intParser,
+                           try stringParser,
+                           try boolParser
+                           ]
+          return $ Const (Meta p) c
 
 -- | Parse a parenthesised expression. This is just an expression 'expr' surrounded by "( ... )"
 parenExpr :: Parser Expr
