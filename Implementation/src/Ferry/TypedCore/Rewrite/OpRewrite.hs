@@ -40,6 +40,7 @@ appRewrite qt e arg = do
                         e' <- e
                         arg' <- arg
                         case (e', arg') of
+                            (App qt' (Var _ "concatMap") f, e2) -> return $ concatMapR qt f e2
                             (Var _ "fst", ParExpr _ e2) -> return $ Elem qt e2 "1"
                             (Var _ "snd", ParExpr _ e2) -> return $ Elem qt e2 "2"
                             _                           -> return $ App qt e' arg'
@@ -62,6 +63,13 @@ opRewrite qt (Op op) e1 e2 = do
                                   (t, "<=") -> liftM (addBindings v1 v2 e1' e2') $ opOrEq "<" v1 v2 e1' e2'
                                   (t, ">=") -> liftM (addBindings v1 v2 e1' e2') $ opOrEq ">" v1 v2 e1' e2'
                                   (t, o) -> return $ BinOp qt (Op o) e1' e2'
+
+concatMapR :: Qual FType -> Param -> Param -> CoreExpr
+concatMapR qt@(q :=> rt) f e = let ft@(_ :=> mft) = typeOf f
+                                   et@(_ :=> lt) = typeOf e
+                                in App qt (Var (q :=> (list rt .-> rt)) "concat")
+                                         (ParExpr (q :=> list rt) (App (q :=> rt) 
+                                                                    (App (q :=> (lt .-> rt))  (Var (q :=> (mft .-> lt .-> rt)) "map") f) e))
 
 addBindings :: String -> String -> CoreExpr -> CoreExpr -> CoreExpr -> CoreExpr
 addBindings v1 v2 val1 val2 val3 = Let ([] :=> FBool) v1 val1 
