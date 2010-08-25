@@ -255,6 +255,19 @@ compileAppE1 (Var mt "box") (q, cs, ts) =
                                 =<< proj [("iter", "iter"),("item1", "iter")] 
                                     =<< getLoop
                         return (q', [Col 1 surT], subPlan 1 (q, cs, ts))
+compileAppE1 (Var mt "the") (q, cs, ts) = compileAppE1 (Var mt "nub") (q, cs, ts)
+compileAppE1 (Var mt "and") (q, cs, ts) =
+                    do
+                        q' <- attach "pos" natT (nat 1)
+                                =<< proj [("iter", iterPrime), ("item1", resCol)]
+                                    =<< aggr [(Min, resCol, Just "item1"), (Min, iterPrime, Just "iter")] (Just "iter") q
+                        return (q', cs, ts)
+compileAppE1 (Var mt "or") (q, cs, ts) =
+                    do
+                        q' <- attach "pos" natT (nat 1)
+                                =<< proj [("iter", iterPrime), ("item1", resCol)]
+                                    =<< aggr [(Max, resCol, Just "item1"), (Min, iterPrime, Just "iter")] (Just "iter") q
+                        return (q', cs, ts)
 compileAppE1 (Var mt "unBox") (q, [Col 1 ASur], ts) =
                     do
                         let (q', cs', ts') = getPlan 1 ts
