@@ -1,6 +1,6 @@
 cabal-version: >=1.2
 Name:           Ferryc
-Version:        0.2
+Version:        0.2.1
 Description:    The Ferry 2.0 compilers
 License:             GPL
 License-file:   LICENSE
