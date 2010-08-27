@@ -250,7 +250,8 @@ constParser = do
                               try intParser,
                               try negIntParser,
                               try stringParser,
-                              try boolParser
+                              try boolParser,
+                              try unitParser
                               ]
              return $ Const (Meta p) c
              
@@ -261,7 +262,8 @@ constParser' = do
                            try floatParser,
                            try intParser,
                            try stringParser,
-                           try boolParser
+                           try boolParser,
+                           try unitParser
                            ]
           return $ Const (Meta p) c
 
@@ -407,6 +409,13 @@ descending = do
 
 -- | Type FParser is used to parse primitive values.
 type FParser a = Parser (a, SourcePos)
+
+
+unitParser :: FParser Const
+unitParser = do
+                pos <- getPosition
+                symbol "()"
+                return (CUnit, pos)
 
 -- | Parse an integer, currently only positive ints are allowed
 intParser :: FParser Const

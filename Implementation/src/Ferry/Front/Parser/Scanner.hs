@@ -17,7 +17,7 @@ ferryDef  = P.LanguageDef
             , P.identLetter    = alphaNum <|> oneOf "_'" -- The rest of an identifier is alphanumerical or contains _ or '
             , P.opStart        = P.opLetter ferryDef -- operators start with a letter from the reserved names
             , P.opLetter       = oneOf (concat (P.reservedOpNames ferryDef))
-            , P.reservedOpNames= [ "\"", "%", "^", "<", "<=", ">", ">=", "==", "+", "*", "-", "/", "and", "or", "not", "contains", ".", "->"] -- operators
+            , P.reservedOpNames= [ "\"", "%", "^", "<", "<=", ">", ">=", "==", "+", "*", "-", "/", "and", "or", "not", "contains", ".", "->", "()"] -- operators
             , P.reservedNames  = ["ascending", "descending", "many", "one", "True", "False"
                                    , "if", "then", "else", "let", "in", "table", "with", "keys"
                                    , "relationship", "from", "to", "by", "eq", "for", "where"

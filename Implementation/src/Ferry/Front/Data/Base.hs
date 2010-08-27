@@ -8,6 +8,7 @@ data Const = CInt Integer
            | CFloat Double
            | CBool Bool
            | CString String
+           | CUnit
     deriving (Show, Eq)
 
 -- | Type class for extracting all variables that occur in a value of type a
