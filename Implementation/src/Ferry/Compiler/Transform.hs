@@ -1,9 +1,11 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Ferry.Compiler.Transform (typedCoreToAlgebra) where
     
 import Ferry.Compiler.Pipeline (backEndPipeline)
 import Ferry.TypedCore.Data.TypedCore (CoreExpr)
 import Ferry.Compiler.Types
 import Ferry.Compiler.Error.Error
+import Ferry.Impossible
 
 typedCoreToAlgebra :: CoreExpr -> String
 typedCoreToAlgebra = compile defaultConfig 
@@ -16,4 +18,5 @@ compile opts inp = do
                         case (r, f) of
                             (Right (), [(_, o)]) -> o
                             (Left ProcessComplete, [(_, o)]) -> o
-                            (Left r, _)         -> error $ show r
+                            (Left err, _)       -> error $ show err
+                            _                   -> $impossible

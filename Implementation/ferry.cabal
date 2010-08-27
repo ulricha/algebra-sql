@@ -1,4 +1,4 @@
-cabal-version: >=1.2
+cabal-version: >=1.8
 Name:           Ferryc
 Version:        0.2.2
 Description:    The Ferry 2.0 compilers
@@ -9,10 +9,11 @@ Maintainer:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>
 Build-Type:     Simple
 library
     buildable:        True
-    build-depends:    base >= 4.2, HaXml >= 1.20.2, pretty >= 1.0.1.1, parsec == 2.1.0.1, HUnit == 1.2.2.1, mtl >= 1.1.0.2, containers >= 0.3.0.0, haskell98 >= 1.0.1.1
+    build-depends:    base >= 4.2, HaXml >= 1.20.2, pretty >= 1.0.1.1, parsec == 2.1.0.1, HUnit == 1.2.2.1, mtl >= 1.1.0.2, containers >= 0.3.0.0, haskell98 >= 1.0.1.1, template-haskell >= 2.4.0.0
     exposed-modules:  Ferry.Syntax
                       Ferry.Compiler
     hs-source-dirs:   src
+    GHC-Options:       -Wall -fno-warn-orphans
     other-modules:
         Ferry.Algebra.Data.Algebra 
         Ferry.Algebra.Data.Create 
@@ -67,11 +68,14 @@ library
         Ferry.TypeSystem.ContextReduction 
         Ferry.TypeSystem.Prelude 
         Ferry.TypeSystem.Types 
-        Ferry.TypeSystem.Unification 
+        Ferry.TypeSystem.Unification
+        Ferry.Impossible 
+
 
 executable ferryc
-    build-depends:  base >= 4.2, filepath >= 1.1.0.4
+    build-depends:  filepath >= 1.1.0.4, base >= 4.2, HaXml >= 1.20.2, pretty >= 1.0.1.1, parsec == 2.1.0.1, HUnit == 1.2.2.1, mtl >= 1.1.0.2, containers >= 0.3.0.0, haskell98 >= 1.0.1.1, template-haskell >= 2.4.0.0
     main-is:        FerryC.hs 
     hs-source-dirs: src
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-unused-do-bind
     other-modules:
         Ferry.Compiler.Compile

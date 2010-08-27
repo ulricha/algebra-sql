@@ -21,3 +21,4 @@ toString (CInt i) = show i
 toString (CFloat d) = show d
 toString (CBool b) = show b
 toString (CString s) = s
+toString (CUnit) = "()"

@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Ferry.TypedCore.Convert.CoreToAlgebra where
 
 {-
@@ -5,6 +6,7 @@ This module transforms typed ferry core into a relational algebra DAG.
 The transformation assumes that given programs are type correct and some
 functions on lists have been inlined (transformations performed by RewriteStage).
 -}
+import Ferry.Impossible
 import Ferry.Front.Data.Base
 import Ferry.Algebra.Data.Algebra
 import Ferry.Algebra.Data.Create
@@ -20,6 +22,7 @@ import Data.Maybe (fromJust, isJust)
 -- | Section introducing aliases for commonly used columns
 
 -- | Results are stored in column:
+resCol, ordCol, ordPrime, iterPrime, iterR, posPrime, posPrimePrime, outer, inner, oldCol :: String
 resCol    = "item99999001"
 ordCol    = "item99999801"
 ordPrime  = "item99999804"
@@ -32,56 +35,65 @@ inner     = "item99999401"
 oldCol    = "item99999301"
 
 -- | Construct the ith item columns
+mkPrefixCol :: Int -> String
 mkPrefixCol i = "item" ++ prefixCol ++ (show i)
 
 -- | Construct the ith iter column
+mkPrefixIter :: Int -> String
 mkPrefixIter i = "iter" ++ prefixCol ++ (show i)
 
 -- | Prefix for intermediate column numbers
+prefixCol :: String
 prefixCol = "9999"
 
 -- | Transform Ferry core into a relation algebra modelled as a DAG
 coreToAlgebra :: CoreExpr -> GraphM AlgRes
 -- | Primitive values
-coreToAlgebra (Constant t (CInt i)) = do 
+coreToAlgebra (Constant _ CUnit) = do
+                                    n1 <- attach "pos" natT (nat 1) 
+                                            =<< attach "item1" intT (int 0) 
+                                            =<< getLoop
+                                    return (n1, [Col 1 AInt], emptyPlan)
+coreToAlgebra (Constant _ (CInt i)) = do 
                                         n1 <- attach "pos" natT (nat 1) 
                                                 =<< attach "item1" intT (int i) 
                                                 =<< getLoop
                                         return (n1, [Col 1 AInt], emptyPlan)
-coreToAlgebra (Constant t (CBool i)) = do
+coreToAlgebra (Constant _ (CBool i)) = do
                                          n1 <- attach "pos" natT (nat 1) 
                                                 =<< attach "item1" boolT (bool i) 
                                                 =<< getLoop
                                          return (n1, [Col 1 ABool], emptyPlan)
-coreToAlgebra (Constant t (CFloat i)) = do
+coreToAlgebra (Constant _ (CFloat i)) = do
                                          n1 <- attach "pos" natT (nat 1) 
                                             =<< attach "item1" doubleT (double i) 
                                             =<< getLoop
                                          return (n1, [Col 1 ADouble], emptyPlan)
-coreToAlgebra (Constant t (CString i)) = do
+coreToAlgebra (Constant _ (CString i)) = do
                                           n1 <- attach "pos" natT (nat 1) 
                                                 =<< attach "item1" stringT (string i) 
                                                 =<< getLoop
                                           return (n1, [Col 1 AStr], emptyPlan)
 -- Binary operators
 coreToAlgebra (BinOp (_ :=> t) (Op o) e1 e2) = do
-                                         (q1, [Col 1 t1], m1) <- coreToAlgebra e1
-                                         (q2, [Col 1 t2], m2) <- coreToAlgebra e2
+                                         (q1, [Col 1 _t1], _m1) <- coreToAlgebra e1
+                                         (q2, [Col 1 _t2], _m2) <- coreToAlgebra e2
                                          n1 <- proj [("iter", "iter"), ("pos", "pos"), ("item1", resCol)] 
                                                 =<< oper o resCol  "item1" (mkPrefixCol 1) 
                                                 =<< eqJoin "iter" (mkPrefixIter 1) q1 
                                                 =<< proj [(mkPrefixIter 1, "iter"), (mkPrefixCol 1, "item1")] q2
                                          return (n1, fst $ typeToCols t 1, emptyPlan)
 -- Let bindings
-coreToAlgebra (Let t s e1 e2) = do
+coreToAlgebra (Let _ s e1 e2) = do
                                     (q1, cs1, m1) <- coreToAlgebra e1
                                     withBinding s (q1, cs1, m1) $ coreToAlgebra e2
 -- Variable lookup
-coreToAlgebra (Var t n) = fromGam n
+coreToAlgebra (Var _ n) = fromGam n
 -- Record construction, body of the rule can be found in recElemsToAlgebra
-coreToAlgebra (Rec t (e:els)) = foldl recElemsToAlgebra (recElemToAlgebra e) els
+coreToAlgebra (Rec _ (e:els)) = foldl recElemsToAlgebra (recElemToAlgebra e) els
+coreToAlgebra (Rec _ []) = $impossible
 -- Record element access.
-coreToAlgebra (Elem t e n) = do
+coreToAlgebra (Elem _ e n) = do
                                 (q1, cs1 ,(SubPlan ts1)) <- coreToAlgebra e
                                 let csn = getCol n cs1
                                 let (csn', i) = decrCols csn
@@ -99,17 +111,17 @@ coreToAlgebra (Nil (_ :=> t)) = do
 -- List constructor, because of optimisation chances contents has been directed to special functions
 coreToAlgebra (c@(Cons _ _ _)) = listFirst c
 -- Database tables
-coreToAlgebra (Table t n cs ks) = do
+coreToAlgebra (Table _ n cs ks) = do
                                     let cs' = coreCol2AlgCol cs
-                                    let keys = key2Key cs' ks
+                                    let keys' = key2Key cs' ks
                                     loop <- getLoop
                                     n1 <- cross loop 
-                                            =<< rank "pos" (map (\ki -> (ki, Asc)) $ head keys) 
-                                            =<< dbTable n cs' keys
+                                            =<< rank "pos" (map (\ki -> (ki, Asc)) $ head keys') 
+                                            =<< dbTable n cs' keys'
                                     return (n1, cs', emptyPlan)
 -- If then else
-coreToAlgebra (If t e1 e2 e3) = do
-                                  (q1, cs1, ts1) <- coreToAlgebra e1
+coreToAlgebra (If _ e1 e2 e3) = do
+                                  (q1, _cs1, _ts1) <- coreToAlgebra e1
                                   -- Get current gamma
                                   gam <- getGamma
                                   -- Build loop and gamma for then branch 
@@ -123,7 +135,7 @@ coreToAlgebra (If t e1 e2 e3) = do
                                                 =<< notC resCol "item1" q1
                                   gamElse <- transformGam algResLoop loopElse gam 
                                   --Evaluate else branch
-                                  (q3, cs3, ts3) <- withContext gamElse loopElse $ coreToAlgebra e3
+                                  (q3, _cs3, ts3) <- withContext gamElse loopElse $ coreToAlgebra e3
                                   --Construct result
                                   let ks = keys ts2
                                   let cols = leafNames cs2
@@ -138,7 +150,7 @@ coreToAlgebra (If t e1 e2 e3) = do
                                   return (n2, cs2, ts)
 -- Compile function application, as we do not have functions as results the given
 -- argument can be evaluated and then be passed to the compileApp function.
-coreToAlgebra (App t e1 e2) = compileAppE1 e1 =<< compileParam e2
+coreToAlgebra (App _ e1 e2) = compileAppE1 e1 =<< compileParam e2
                                 
 
 -- | Transform the variable environment                                  
@@ -155,12 +167,13 @@ algResLoop loop (n, (i, cs, pl)) = do
 -- | Compile a function parameter
 -- | Function is partial, i.e. it doesn't compile lambda's as arguments                              
 compileParam :: Param -> GraphM AlgRes
-compileParam (ParExpr t e1) = coreToAlgebra e1
+compileParam (ParExpr _ e1) = coreToAlgebra e1
+compileParam (ParAbstr _ _ _) = $impossible
 
 -- | Compile function application.
 -- | Expects a core expression the function, and the evaluated argument
 compileAppE1 :: CoreExpr -> AlgRes -> GraphM AlgRes
-compileAppE1 (App t (Var mt "zip") l@(ParExpr _ e1)) (q2', cs2, (SubPlan ts2)) =
+compileAppE1 (App _ (Var _ "zip") (ParExpr _ e1)) (q2', cs2, (SubPlan ts2)) =
                 do
                     (q1', cs1, (SubPlan ts1)) <- coreToAlgebra e1
                     q1 <- absPos q1' cs1
@@ -175,7 +188,7 @@ compileAppE1 (App t (Var mt "zip") l@(ParExpr _ e1)) (q2', cs2, (SubPlan ts2)) =
                     let cs = [NCol "1" cs1, NCol "2" cs2']
                     let ts = SubPlan $ M.union ts1 $ M.mapKeysMonotonic (+ offSet) ts2
                     return (q, cs, ts)
-compileAppE1 (Var mt "unzip") (q, [NCol "1" cs1, NCol "2" cs2], (SubPlan ts)) =
+compileAppE1 (Var _ "unzip") (q, [NCol "1" cs1, NCol "2" cs2], (SubPlan ts)) =
                do
                    let (cs2d, d) = decrCols cs2
                    let projPairs1 = zip (leafNames cs1) (leafNames cs1)
@@ -189,35 +202,35 @@ compileAppE1 (Var mt "unzip") (q, [NCol "1" cs1, NCol "2" cs2], (SubPlan ts)) =
                    let ln2 = leafNumbers cs2d
                    let ts1 = SubPlan $ M.fromList [(l, ts M.! l)  | l <- ln1, isJust $ M.lookup l ts]
                    let ts2 = SubPlan $ M.fromList [(l, ts M.! (l + d)) | l <- ln2, isJust $ M.lookup (l +d) ts]
-                   let ts = SubPlan $ M.fromList [(1, (q1, cs1, ts1)),(2, (q2, cs2d,ts2))]
-                   return (q', cs, ts)
+                   let ts' = SubPlan $ M.fromList [(1, (q1, cs1, ts1)),(2, (q2, cs2d,ts2))]
+                   return (q', cs, ts')
                     
-compileAppE1 (App t (Var mt "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) = 
+compileAppE1 (App _ (Var _ "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) = 
                 do
                     gam <- getGamma
-                    (qv', qv, mapv, loopv, gamV) <- mapForward gam q1 cs1
+                    (_qv', qv, mapv, loopv, gamV) <- mapForward gam q1 cs1
                     (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
                     let csProj2 = zip (leafNames cs2) (leafNames cs2)
                     q <- proj (("iter",outer):("pos", posPrime):csProj2)
                             =<< eqJoin "iter" inner q2 mapv
                     return (q, cs2, ts2)
-compileAppE1 (App t (Var mt "filter") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
+compileAppE1 (App _ (Var _ "filter") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                 do
                     gam <- getGamma
-                    (qv', qv, mapv, loopv, gamV) <- mapForward gam q1 cs1
-                    (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
+                    (qv', qv, _mapv, loopv, gamV) <- mapForward gam q1 cs1
+                    (q2, _cs2, _ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
                     let csProj = zip (leafNames cs1) (leafNames cs1)
                     q <- proj (("iter", "iter"):("pos", "pos"):csProj)
                             =<< select resCol  
                                 =<< eqJoin inner iterPrime qv' 
                                     =<< proj [(iterPrime, "iter"), (resCol, "item1")] q2
                     return (q, cs1, ts1)
-compileAppE1 (Var mt "head") (q1', cs1, ts1) =
+compileAppE1 (Var _ "head") (q1', cs1, ts1) =
                 do
                     q1 <- absPos q1' cs1
                     q <- posSelect 1 [("pos", Asc)] (Just "iter") q1
                     return (q, cs1, ts1)
-compileAppE1 (Var mt "tail") (q1', cs1, ts1) =
+compileAppE1 (Var _ "tail") (q1', cs1, ts1) =
                     do
                         let projPairs = zip (leafNames cs1) (leafNames cs1)
                         q1 <- absPos q1' cs1
@@ -226,7 +239,7 @@ compileAppE1 (Var mt "tail") (q1', cs1, ts1) =
                                     =<< oper ">" resCol "pos" oldCol 
                                         =<< attach oldCol natT (nat 1) q1
                         return (q, cs1, ts1)
-compileAppE1 (Var mt "concat") (q, cs, SubPlan ts) =
+compileAppE1 (Var _ "concat") (q, _cs, SubPlan ts) =
                     do
                         let [(1, (qs, css, tss))] = M.toList ts
                         let projPairs = zip (leafNames css) (leafNames css)
@@ -235,40 +248,40 @@ compileAppE1 (Var mt "concat") (q, cs, SubPlan ts) =
                                     =<< eqJoin "iter" resCol qs
                                         =<< proj [(iterPrime, "iter"),(posPrime, "pos"), (resCol, "item1")] q
                         return (q', css, tss)    
-compileAppE1 (Var mt "nub") (q, cs, ts) =
+compileAppE1 (Var _ "nub") (q, cs, ts) =
                     do
                         let projPairs = ("iter", "iter"):("pos", "pos"):(zip (leafNames cs) (leafNames cs))
                         q' <- eqTJoin [("pos", posPrime), ("iter", iterPrime)]  projPairs q
                                 =<< aggr [(Min, posPrime, Just "pos"), (Min, iterPrime, Just "iter")] (Just resCol)
                                     =<< rowrank resCol (map (\x -> (x, Asc)) ("iter":(leafNames cs))) q
                         return (q', cs, ts)
-compileAppE1 (Var mt "length") (q, cs, ts) = 
+compileAppE1 (Var _ "length") (q, _cs, _ts) = 
                     do
                         q' <- attach "pos" natT (nat 1)
                                 =<< proj [("iter", "iter"), ("item1", resCol)] 
                                     =<< aggr [(Count, resCol, Nothing)] (Just "iter") q
                         return (q', [Col 1 AInt], emptyPlan)
                         
-compileAppE1 (Var mt "box") (q, cs, ts) =
+compileAppE1 (Var _ "box") (q, cs, ts) =
                     do
                         q' <- attach "pos" natT (nat 1) 
                                 =<< proj [("iter", "iter"),("item1", "iter")] 
                                     =<< getLoop
                         return (q', [Col 1 surT], subPlan 1 (q, cs, ts))
 compileAppE1 (Var mt "the") (q, cs, ts) = compileAppE1 (Var mt "nub") (q, cs, ts)
-compileAppE1 (Var mt "and") (q, cs, ts) =
+compileAppE1 (Var _ "and") (q, cs, ts) =
                     do
                         q' <- attach "pos" natT (nat 1)
                                 =<< proj [("iter", iterPrime), ("item1", resCol)]
                                     =<< aggr [(Min, resCol, Just "item1"), (Min, iterPrime, Just "iter")] (Just "iter") q
                         return (q', cs, ts)
-compileAppE1 (Var mt "or") (q, cs, ts) =
+compileAppE1 (Var _ "or") (q, cs, ts) =
                     do
                         q' <- attach "pos" natT (nat 1)
                                 =<< proj [("iter", iterPrime), ("item1", resCol)]
                                     =<< aggr [(Max, resCol, Just "item1"), (Min, iterPrime, Just "iter")] (Just "iter") q
                         return (q', cs, ts)
-compileAppE1 (Var mt "unBox") (q, [Col 1 ASur], ts) =
+compileAppE1 (Var _ "unBox") (q, [Col 1 ASur], ts) =
                     do
                         let (q', cs', ts') = getPlan 1 ts
                         let csProj = zip (leafNames cs') (leafNames cs')
@@ -276,12 +289,12 @@ compileAppE1 (Var mt "unBox") (q, [Col 1 ASur], ts) =
                                 =<< eqJoin "iter" resCol q'
                                     =<< proj [(iterPrime, "iter"),(resCol, "item1")] q
                         return (q'', cs', ts')
-compileAppE1 (App t2 (App t1 (Var mt "groupWith") e1@(ParAbstr _ _ _)) e2@(ParAbstr _ _ _)) (q3, cs3, ts3) =
+compileAppE1 (App _ (App _ (Var _ "groupWith") e1@(ParAbstr _ _ _)) e2@(ParAbstr _ _ _)) (q3, cs3, ts3) =
             do
                 gam <- getGamma
-                (qv', qv, map', loop', gam') <- mapForward gam q3 cs3
+                (qv', qv, _map', loop', gam') <- mapForward gam q3 cs3
                 (q1, cs1, ts1) <- withContext gam' loop' $ compileLambda (qv, cs3, ts3) e1
-                (q2, cs2, ts2) <- withContext gam' loop' $ compileLambda (qv, cs3, ts3) e2
+                (q2, cs2, _ts2) <- withContext gam' loop' $ compileLambda (qv, cs3, ts3) e2
                 let offSet = colSize cs1
                 let cs2' = incrCols offSet cs2
                 let projPairs1 = zip (leafNames cs1) (leafNames cs1)
@@ -306,12 +319,12 @@ compileAppE1 (App t2 (App t1 (Var mt "groupBy3") e1) e2) e3 = compileAppE1 (App 
 compileAppE1 (App t2 (App t1 (Var mt "groupBy4") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
 compileAppE1 (App t2 (App t1 (Var mt "groupBy5") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
 compileAppE1 (App t2 (App t1 (Var mt "groupBy6") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
-compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1@(ParAbstr _ _ _)) e2@(ParAbstr _ _ _)) (q3, cs3, ts3) =
+compileAppE1 (App _ (App _ (Var _ "groupBy") e1@(ParAbstr _ _ _)) e2@(ParAbstr _ _ _)) (q3, cs3, ts3) =
             do
                 gam <- getGamma
-                (qv', qv, map', loop', gam') <- mapForward gam q3 cs3
+                (qv', qv, _map', loop', gam') <- mapForward gam q3 cs3
                 (q1, cs1, ts1) <- withContext gam' loop' $ compileLambda (qv, cs3, ts3) e1
-                (q2, cs2, ts2) <- withContext gam' loop' $ compileLambda (qv, cs3, ts3) e2
+                (q2, cs2, _ts2) <- withContext gam' loop' $ compileLambda (qv, cs3, ts3) e2
                 let offSet = colSize cs1
                 let cs2' = incrCols offSet cs2
                 let projPairs1 = zip (leafNames cs1) (leafNames cs1)
@@ -327,11 +340,11 @@ compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1@(ParAbstr _ _ _)) e2@(ParAbst
                 qout <- distinct =<< proj (("iter", "iter"):("pos", resCol):projOut) q
                 (ts, cs) <- makeSubPlan 1 cs1 ts1 q
                 return (qout, cs, ts)
-                
+compileAppE1 _ _ = $impossible                
 
 
 makeSubPlan :: Int -> Columns -> SubPlan -> AlgNode -> GraphM (SubPlan, Columns)
-makeSubPlan 1 [Col n t] (SubPlan ts) q = do
+makeSubPlan 1 [Col _ t] (SubPlan ts) q = do
                                             qi <- proj [("iter", resCol),("pos", posPrime),("item1", "item1")] q
                                             let tsi = case M.lookup 1 ts of
                                                         Nothing -> emptyPlan
@@ -347,10 +360,12 @@ makeSubPlan i ((NCol n csi):css) (SubPlan ts) q = do
                                                     return (SubPlan $ M.insert i (qi, csi', tsi) ts', (NCol n [Col i surT]):cs')
                                                     
 makeSubPlan _ [] _  _ = return (emptyPlan, [])
+makeSubPlan _ _ _ _ = $impossible
                     
 -- | Compile a lambda where the argument variable is bound to the given expression                    
 compileLambda :: AlgRes -> Param -> GraphM AlgRes
-compileLambda arg (ParAbstr t (PVar x) e) = withBinding x arg $ coreToAlgebra e
+compileLambda arg (ParAbstr _ (PVar x) e) = withBinding x arg $ coreToAlgebra e
+compileLambda _ _ = $impossible
 
 -- | Transform gamma for map function                
 algResv :: AlgNode -> (String, AlgRes) -> GraphM (String, AlgRes)
@@ -373,7 +388,7 @@ mergeTableStructure qo (SubPlan ts1') (SubPlan ts2') | M.null ts1' = return $ Su
         items = M.toList ts1'
         mergeBinds :: (Int, AlgRes) -> GraphM (Int, AlgRes)
         mergeBinds (i, (q1, cs1, ts1)) = do
-                                            let (q2, cs2, ts2) = case M.lookup i ts2' of
+                                            let (q2, _cs2, ts2) = case M.lookup i ts2' of
                                                                     Nothing -> error "jikes"
                                                                     Just a -> a
                                             let ks = keys ts1
@@ -406,7 +421,7 @@ mergeTableStructureFirst qo (SubPlan ts1') (SubPlan ts2')
         items = M.toList ts1'
         mergeBinds :: (Int, AlgRes) -> GraphM (Int, AlgRes)
         mergeBinds (i, (q1, cs1, ts1)) = do 
-                                            let (q2, cs2, ts2) = ts2' M.! i
+                                            let (q2, _cs2, ts2) = ts2' M.! i
                                             let ks = keys ts1
                                             let cols = leafNames cs1
                                             let colsDiff = cols L.\\ ks
@@ -448,7 +463,7 @@ mergeTableStructureSeq n (SubPlan ts1') (SubPlan ts2')
         items = M.toList ts1'
         mergeBinds :: (Int, AlgRes) -> GraphM (Int, AlgRes)
         mergeBinds (i, (q1, cs1, ts1)) = do
-                                            let (q2, cs2, ts2) = ts2' M.! i
+                                            let (q2, _cs2, ts2) = ts2' M.! i
                                             q <- flip union q2 
                                                     =<< attach ordCol intT (int $ toInteger n) q1
                                             ts <- mergeTableStructureSeq n ts1 ts2
@@ -464,10 +479,10 @@ mergeTableStructureSeq n (SubPlan ts1') (SubPlan ts2')
 --      normal expression. The result get an ord column attached and the is unified
 --      with the head of the list and then ranked.    
 listFirst :: CoreExpr -> GraphM AlgRes
-listFirst (Cons t e1 (Nil _)) = coreToAlgebra e1
-listFirst (Cons t e1 e2@(Cons _ _ _)) = do
+listFirst (Cons _ e1 (Nil _)) = coreToAlgebra e1
+listFirst (Cons _ e1 e2@(Cons _ _ _)) = do
                                          (q1, cs1, ts1) <- coreToAlgebra e1
-                                         (q2, cs2, ts2) <- listSequence e2 2
+                                         (q2, _cs2, ts2) <- listSequence e2 2
                                          let cols = leafNames cs1
                                          let ks = keys ts1
                                          let colsDiff = cols L.\\ ks
@@ -478,9 +493,9 @@ listFirst (Cons t e1 e2@(Cons _ _ _)) = do
                                          q <- proj (("iter", "iter"):("pos", posPrime) : projPairs) q'
                                          ts <- mergeTableStructureFirst q' ts1 ts2
                                          return (q, cs1, ts) 
-listFirst (Cons t e1 e2) = do
+listFirst (Cons _ e1 e2) = do
                             (q1, cs1, ts1) <- coreToAlgebra e1
-                            (q2, cs2, ts2) <- coreToAlgebra e2
+                            (q2, _cs2, ts2) <- coreToAlgebra e2
                             let cols = leafNames cs1
                             let ks = keys ts1
                             let colsDiff = cols L.\\ ks
@@ -494,32 +509,34 @@ listFirst (Cons t e1 e2) = do
                             q <- proj (("iter", "iter"):("pos", posPrime):projPairs) q'
                             ts <- mergeTableStructure qr ts1 ts2
                             return (q, cs1, ts)
+listFirst _ = $impossible
 
 
 -- List sequence, doesn't perform the rank operation, that is carried out by listFirst.
 --  Three cases with similar motivation as listFirst.
 listSequence :: CoreExpr -> Int -> GraphM AlgRes
-listSequence (Cons t e1 (Nil _)) n = do
+listSequence (Cons _ e1 (Nil _)) n = do
                                       (q1, cs1, ts1) <- coreToAlgebra e1
                                       n1 <- attach ordCol intT (int $ toEnum n) q1
                                       ts <- mergeTableStructureLast n ts1
                                       return (n1, cs1, ts)
-listSequence (Cons t e1 e2@(Cons _ _ _)) n = do
+listSequence (Cons _ e1 e2@(Cons _ _ _)) n = do
                                                 (q1, cs1, ts1) <- coreToAlgebra e1
-                                                (q2, cs2, ts2) <- listSequence e2 $ n + 1
+                                                (q2, _cs2, ts2) <- listSequence e2 $ n + 1
                                                 n1 <- attach ordCol intT (int $ toEnum n) q1
                                                 n2 <- union n1 q2
                                                 ts <- mergeTableStructureSeq n ts1 ts2
                                                 return (n2, cs1, ts)
-listSequence c@(Cons t e1 e2) n = do
+listSequence c@(Cons _ _ _) n = do
                                  (q, cs, ts) <- listFirst c
                                  n1 <- attach ordCol intT (int $ toEnum n) q
                                  ts' <- mergeTableStructureLast n ts
                                  return (n1, cs, ts')
+listSequence _ _ = $impossible
                                     
 -- Transform a record element into algebraic plan                             
 recElemToAlgebra :: RecElem -> GraphM AlgRes
-recElemToAlgebra (RecElem t n e) = do
+recElemToAlgebra (RecElem _ n e) = do
                                      (q1, cs1, ts1) <- coreToAlgebra e
                                      return (q1, [NCol n cs1], ts1)
 
@@ -569,7 +586,10 @@ coreCol2AlgCol cols = map (\(Column s t, i) -> NCol s $ fst $ typeToCols t i) co
 --Translate core keys to algebraic keys
 key2Key :: Columns -> [Key] -> KeyInfos
 key2Key cs ks = map (\(Key k) -> map (\ki -> case getCol ki cs of
-                                        [(Col i _)] -> "item" ++ show i) k ) ks
+                                                [(Col i _)] -> "item" ++ show i
+                                                [] -> $impossible
+                                                (NCol _ _) : _ -> $impossible
+                                                (Col _ _) : (_ : _) -> $impossible) k ) ks
 
 -- Get all the column names from the structure                                    
 leafNames :: Columns -> [String]
@@ -580,7 +600,7 @@ leafNumbers cs = map (\(Col i _) -> i) $ colLeafs cs
 
 -- Get all the leaf columns, that is the columns that are actually a column
 colLeafs :: Columns -> Columns
-colLeafs (c@(Col i _):xs) = (:) c $ colLeafs xs
+colLeafs (c@(Col _ _):xs) = (:) c $ colLeafs xs
 colLeafs ((NCol _ cs):xs) = colLeafs cs ++ colLeafs xs
 colLeafs []               = []
 
@@ -592,7 +612,7 @@ colSize = length . colLeafs
 incrCols :: Int -> Columns -> Columns
 incrCols inc ((Col i t):xs)    = (Col (i + inc) t):(incrCols inc xs)
 incrCols inc ((NCol x i):xs) = (NCol x (incrCols inc i)):(incrCols inc xs)
-incrCols inc []              = [] 
+incrCols _   []              = [] 
 
 -- Find the lowest column number
 minCol :: Columns -> Int
@@ -613,7 +633,7 @@ getCol :: String -> Columns -> Columns
 getCol n cs = getCol' cs
     where
      getCol' :: Columns -> Columns
-     getCol' ((Col i _):xs)              = getCol' xs
+     getCol' ((Col _ _):xs)              = getCol' xs
      getCol' ((NCol x i):xs) | x == n    = i
                              | otherwise = getCol' xs
      getCol' []                          = []
@@ -631,7 +651,9 @@ typeToCols FInt i = ([Col i AInt], i + 1)
 typeToCols FBool i = ([Col i ABool], i + 1)
 typeToCols FFloat i = ([Col i ADouble], i + 1)
 typeToCols FString i = ([Col i AStr], i + 1)
+typeToCols FUnit i = ([Col i AInt], i + 1)
 typeToCols (FList _) i = ([Col i ASur], i + 1)
+typeToCols _ _ = $impossible
 
 -- Compile a record type to a column structure
 recsToCols :: [(RLabel, FType)] -> Int -> (Columns, Int)
@@ -639,3 +661,5 @@ recsToCols ((RLabel s, ty):xs) i = let (cs, i') = typeToCols ty i
                                        (cs', i'') = recsToCols xs i'
                                     in ((NCol s cs):cs',  i'')
 recsToCols [] i = ([], i)
+recsToCols ((RGen _, _) : _) _ = $impossible
+recsToCols ((RVar _, _) : _) _ = $impossible

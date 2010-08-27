@@ -25,6 +25,7 @@ unify a  b = do
 -- | unify' is not a total function types star cannot be unified
 -- | with anything.
 unify' :: FType -> FType -> AlgW ()
+unify' FUnit       FUnit       = pure ()
 unify' FInt        FInt        = pure ()
 unify' FFloat      FFloat      = pure ()
 unify' FBool       FBool       = pure ()

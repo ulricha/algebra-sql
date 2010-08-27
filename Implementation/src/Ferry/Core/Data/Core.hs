@@ -39,6 +39,7 @@ data Type
     | TFloat 
     | TString 
     | TBool
+    | TUnit
     
 data Key where
     Key :: [String] -> Key

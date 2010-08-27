@@ -78,3 +78,4 @@ typeToCore (TInt    _) = pure C.TInt
 typeToCore (TFloat  _) = pure C.TFloat
 typeToCore (TString _) = pure C.TString
 typeToCore (TBool   _) = pure C.TBool
+typeToCore (TUnit   _) = pure C.TUnit

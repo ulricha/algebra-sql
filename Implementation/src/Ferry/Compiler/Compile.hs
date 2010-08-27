@@ -2,21 +2,17 @@ module Ferry.Compiler.Compile (compile) where
     
 import Ferry.Compiler
 
-import System.FilePath.Posix(takeFileName)
 import System.IO
 
 -- | The compiler pipeline
 --   Note that there should be a monadic style for handling all the steps in the pipeline
 compile :: Config -> [String] -> IO ()
-compile opts inp = do
+compile opts _ = do
                         src <- case (input opts) of
                                 File f -> readFile f
                                 Arg  -> do
                                             src <- getContents
                                             return src
-                        let file = case (input opts) of
-                                    File f -> takeFileName f
-                                    Arg  -> "StdIn"
                         let (r, l, f) = runPhase opts $ pipeline src   
                         sequence $ map outputFile f
                         if (debug opts)
@@ -33,8 +29,8 @@ outputFile (f, b) =
                     do
                      (h, fm) <- case f of
                             Nothing -> return (stdout, False)
-                            Just f  -> do
-                                        h <- openFile f WriteMode
+                            Just f'  -> do
+                                        h <- openFile f' WriteMode
                                         return (h, True)
                      hPutStrLn h b
                      hFlush h

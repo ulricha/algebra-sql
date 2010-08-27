@@ -113,6 +113,7 @@ data Type where
      TFloat  :: Meta -> Type
      TString :: Meta -> Type
      TBool   :: Meta -> Type 
+     TUnit   :: Meta -> Type
      deriving (Show, Eq)
 
 -- | Arguments in function application     

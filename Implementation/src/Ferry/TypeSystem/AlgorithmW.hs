@@ -5,10 +5,10 @@ import qualified Ferry.Core.Data.Core as C
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Data.Type
 import Ferry.TypedCore.Data.Substitution 
-import Ferry.TypedCore.Data.Base
+--import Ferry.TypedCore.Data.Base 
 import Ferry.Compiler.Error.Error
-import Ferry.TypedCore.Data.Instances
-import Ferry.Front.Data.Base hiding (VarContainer)
+--import Ferry.TypedCore.Data.Instances
+import Ferry.Front.Data.Base (Const (..)) 
 import Ferry.TypeSystem.Unification
 import Ferry.TypeSystem.ContextReduction
 
@@ -18,9 +18,9 @@ import qualified Data.List as L
 import qualified Data.Map as M
 
 import Control.Applicative hiding (Const(..))
-import Control.Monad (MonadPlus(..), ap)
+--import Control.Monad (MonadPlus(..), ap)
 import Control.Monad.Reader
-import Control.Monad.State
+--import Control.Monad.State
 import Control.Monad.Error
 
 typeInfer :: TyEnv -> C.CoreExpr -> (Either FerryError CoreExpr, Subst)
@@ -29,7 +29,7 @@ typeInfer gam c = runAlgW gam $ do
                                    -- (p, s@(Forall _ t)) <- gen $ pure $ typeOf e
                                    let (q :=> t) = typeOf e
                                    q' <- consistents $ pure q
-                                   let (qs, q'' :=> t') = reduce (q' :=> t) M.empty
+                                   let (qs, q'' :=> _t') = reduce (q' :=> t) M.empty
                                    qual <- mergeQuals qs q''
                                    applySubst $ setType (qual :=> t) e
                                    --pure e
@@ -65,10 +65,9 @@ algW (C.If c1 c2 c3) = do
                          unify (apply s $ t1) FBool
                          s' <- getSubst
                          unify (apply s' $ t2) (apply s' $ t3) 
-                         s'' <- getSubst
                          q <- mergeQuals' [q1, q2, q3]
                          applySubst $ If (q :=> t2) c1' c2' c3'
-algW (C.Table n cs ks) = let recTys = L.sortBy (\(n1, t1) (n2, t2) -> compare n1 n2) $ map columnToRecElem cs
+algW (C.Table n cs ks) = let recTys = L.sortBy (\(n1, _t1) (n2, _t2) -> compare n1 n2) $ map columnToRecElem cs
                              in if length (uniqueKeys recTys) == length recTys 
                                  then applySubst $ Table ([] :=> (list $ FRec recTys)) n (map columnToTyColumn cs) (map keyToTyKey ks)
                                  else throwError $ RecordDuplicateFields (Just n) $ map columnToRecElem cs
@@ -77,7 +76,7 @@ algW (C.Elem e i) = do
                        c1' <- algW e
                        let (q1 :=> t1) = typeOf c1'
                        case t1 of
-                            (FVar v) -> do 
+                            (FVar _v) -> do 
                                           q <- insertQual (Has t1 (RLabel i) fresh) q1 
                                           applySubst $ Elem (q :=> fresh) c1' i
                             (FRec els) -> case lookup (RLabel i) els of
@@ -86,8 +85,8 @@ algW (C.Elem e i) = do
                             _       -> throwError $ NotARecordType t1
 algW (C.Rec elems) = do
                         els <- recElemsToTyRecElems elems
-                        let (qs, nt) = foldr (\(RecElem (q :=> t) n _) (qs, nt) -> (q:qs, (RLabel n, t):nt)) ([], []) els
-                        let t = FRec $ L.sortBy (\(n1, t1) (n2, t2) -> compare n1 n2) nt
+                        let (qs, nt) = foldr (\(RecElem (q :=> t) n _) (qs', nt') -> (q:qs', (RLabel n, t):nt')) ([], []) els
+                        let t = FRec $ L.sortBy (\(n1, _t1) (n2, _t2) -> compare n1 n2) nt
                         q <- mergeQuals' qs
                         if (length (uniqueKeys nt) == length nt) 
                                 then applySubst $ Rec (q :=> t) els
@@ -132,16 +131,16 @@ algWArg (C.ParExpr e) = do
                          e' <- algW e
                          applySubst $ ParExpr (typeOf e') e'  
 algWArg (C.ParAbstr p e) = do
-                             let vars = getVars p
+                             let vars' = getVars p
                              bindings <- foldr (\v r -> do
-                                                          t <- liftM (\v -> [] :=> FVar v) freshTyVar
+                                                          t <- liftM (\var' -> [] :=> FVar var') freshTyVar
                                                           r' <- r
                                                           return $ (v, t):r' 
-                                                          ) (pure []) vars
+                                                          ) (pure []) vars'
                              e' <- foldr (\(v, t) r -> addToEnv v (Forall 0 0 t) r) (algW e) bindings
                              let (q :=> rt) = typeOf e'
-                             let t = q :=> (foldr (\(_, _ :=> t) r -> FFn t r) rt bindings)  
-                             applySubst $ ParAbstr t (toPattern vars) e'
+                             let t = q :=> (foldr (\(_, _ :=> ty) r -> FFn ty r) rt bindings)  
+                             applySubst $ ParAbstr t (toPattern vars') e'
                              
 toPattern :: [String] -> Pattern
 toPattern [x]   = PVar x
@@ -178,7 +177,8 @@ typeToFType :: C.Type -> FType
 typeToFType C.TInt = FInt
 typeToFType C.TFloat = FFloat
 typeToFType C.TString = FString
-typeToFType C.TBool = FBool   
+typeToFType C.TBool = FBool
+typeToFType C.TUnit = FUnit   
 
 keyToTyKey :: C.Key -> Key
 keyToTyKey (C.Key k) = Key k                     
@@ -188,6 +188,7 @@ typeOfConst (CInt _) = pure $ [] :=> FInt
 typeOfConst (CFloat _) = pure $ [] :=> FFloat
 typeOfConst (CBool _) = pure $ [] :=>  FBool
 typeOfConst (CString _) = pure $ [] :=> FString
+typeOfConst (CUnit) = pure $ [] :=> FUnit
 
 
 gen :: AlgW (Qual FType) -> AlgW ([Pred], TyScheme)
@@ -210,7 +211,6 @@ gen s = do
 inst :: AlgW TyScheme -> AlgW (Qual FType)
 inst s = do
             s' <- s
-            subst <- getSubst
             case s' of
                 Forall 0 0 t -> applyS $ pure t
                 Forall 0 t ty -> do

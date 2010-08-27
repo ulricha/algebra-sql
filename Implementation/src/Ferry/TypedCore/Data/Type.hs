@@ -29,6 +29,7 @@ data Pred where
 
 data FType where
     FGen :: Int -> FType
+    FUnit :: FType
     FInt :: FType
     FFloat :: FType
     FString :: FType

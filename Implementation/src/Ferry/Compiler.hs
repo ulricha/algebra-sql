@@ -11,4 +11,3 @@ import Ferry.Compiler.Stages
 import Ferry.Compiler.Transform
 import Ferry.Compiler.Types
 import Ferry.Compiler.Pipeline
-import Ferry.Compiler.Transform

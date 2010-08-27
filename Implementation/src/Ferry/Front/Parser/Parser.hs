@@ -349,7 +349,7 @@ primType = choice [typeParser n c | (n, c) <- types]
                             pos <- getPosition
                             reserved n
                             return $ c (Meta pos)
-          types = [("String", TString), ("Bool", TBool), ("Int", TInt), ("Float", TFloat)]
+          types = [("String", TString), ("Bool", TBool), ("Int", TInt), ("Float", TFloat), ("()", TUnit)]
 
 -- | Parse a database column declaration
 column :: Parser Column
