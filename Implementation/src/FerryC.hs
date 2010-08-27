@@ -4,7 +4,7 @@ module Main where
 import System.Console.GetOpt
 import System.Environment
 
-import Ferry.Compiler.Types
+import Ferry.Compiler
 import Ferry.Compiler.Compile
 
 -- | The stop select function is used to determine at what part of the

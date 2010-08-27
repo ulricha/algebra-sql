@@ -1,11 +1,6 @@
 module Ferry.Compiler.Compile (compile) where
     
-import Ferry.Compiler.Types
-import Ferry.Compiler.Error.Error
-import Ferry.Front.Parser.Parser
-import Ferry.Front.Render.Pretty
-
-import Ferry.Compiler.Pipeline (pipeline)
+import Ferry.Compiler
 
 import System.FilePath.Posix(takeFileName)
 import System.IO
@@ -44,8 +39,3 @@ outputFile (f, b) =
                      hPutStrLn h b
                      hFlush h
                      if fm then hClose h else return ()
-                    
-
-
-                 
-               
