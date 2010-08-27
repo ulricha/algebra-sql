@@ -6,7 +6,6 @@ import Ferry.Compiler.Error.Error
 import Ferry.TypedCore.Data.TypeFunction
 
 import Control.Applicative hiding (Const(..))
-import Control.Monad (MonadPlus(..), ap)
 import Control.Monad.Error
 
 import qualified Data.List as L
@@ -94,11 +93,11 @@ consistents :: AlgW [Pred] -> AlgW [Pred]
 consistents pss = do 
                        ps <- pss
                        case ps of
-                        (p:ps) -> do
+                        (p:ps') -> do
                                     p' <- consistent p
-                                    applySubst ps
-                                    ps' <- consistents $ pure ps
-                                    applySubst (p':ps')
+                                    applySubst ps'
+                                    ps'' <- consistents $ pure ps'
+                                    applySubst (p':ps'')
                         [] -> pure []
 
 consistent :: Pred -> AlgW Pred

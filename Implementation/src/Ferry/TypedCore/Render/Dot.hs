@@ -6,7 +6,7 @@ import Ferry.Common.Render.Pretty
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Data.Type
 import Ferry.Front.Data.Base
-import Ferry.TypedCore.Render.Pretty
+import Ferry.TypedCore.Render.Pretty()
 
 import qualified Data.List as L
 
@@ -16,7 +16,7 @@ import qualified Data.List as L
 
 toDot :: CoreExpr -> Dot Id
 toDot (BinOp t o e1 e2) = do
-                           let o' = (\(Op o) -> o) o  
+                           let o' = (\(Op op) -> op) o  
                            nId <- node [Label $ SLabel o', Color Green, Shape Circle]
                            tId <- typeToDot t
                            id1 <- toDot e1
@@ -84,7 +84,7 @@ toDot (Elem t c s) = do
                     return nId
 toDot (Table ty n cs ks) = do
                          let label = VLabel $ ((HLabel [SLabel "Table:", SLabel n])
-                                            : [HLabel [SLabel $ n ++ "::", SLabel $ prettyPrint t ] | (Column n t) <- cs])
+                                            : [HLabel [SLabel $ n' ++ "::", SLabel $ prettyPrint t ] | (Column n' t) <- cs])
                                             ++ [SLabel $ keyToString k | k <- ks]
                          nId <- node [Shape Rect, Label label, Color Yellow]
                          tId <- typeToDot ty
@@ -101,7 +101,7 @@ toDot (If t e1 e2 e3) = do
                         
 
 paramToDot :: Param -> Dot Id
-paramToDot (ParExpr t e) = toDot e
+paramToDot (ParExpr _ e) = toDot e
 paramToDot (ParAbstr t p e) = do
                              nId <- node [Label $ SLabel "\\   ->", Color Blue, Shape Circle]
                              tId <- typeToDot t
@@ -114,6 +114,7 @@ patToDot :: Pattern -> Dot Id
 patToDot (PVar s) = node [Label $ SLabel s, Color Red, Shape Triangle]
 patToDot (Pattern s) = node [Label $ SLabel $  "(" ++ (concat $ L.intersperse ", " s) ++ ")", Color Red, Shape Triangle]
                         
+recToDot :: RecElem -> Dot Id
 recToDot (RecElem t s e) = do
                           nId <- node [Label $ SLabel s, Color Red, Shape Oval]
                           tId <- typeToDot t

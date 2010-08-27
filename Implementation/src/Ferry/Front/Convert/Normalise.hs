@@ -1,6 +1,7 @@
-{-# LANGUAGE TypeSynonymInstances#-}
+{-# LANGUAGE TypeSynonymInstances, TemplateHaskell #-}
 module Ferry.Front.Convert.Normalise (runNormalisation) where
 
+import Ferry.Impossible
 import Ferry.Front.Data.Language
 import Ferry.Front.Data.Base
 import Ferry.Front.Data.Meta
@@ -249,6 +250,7 @@ normaliseGroup m (p, e) (Group _ g me [eg] mi) bd r =
                                                     , AExpr emptyMeta e]
       let pr = case mi of {Nothing -> p; (Just p2) -> p2}
       normaliseQCompr $ FerryCompr m [(pr, eb)] bd r
+normaliseGroup _ _ _ _ _ = $impossible
 
 
 normaliseOrder :: Meta -> (Pattern, Expr) -> [ExprOrder] -> [BodyElem] -> ReturnElem -> Normalisation Expr
@@ -256,13 +258,13 @@ normaliseOrder m (p, e) ords bd r = (\(AExpr _ app) -> normaliseQCompr $ FerryCo
                                      $ foldr f (AExpr emptyMeta e) $ (ordToFn1 $ head ords):(map ordToFn $ tail ords)
   where    
     f :: (Expr, Expr) -> Arg -> Arg
-    f (fn, e) a = AExpr emptyMeta (App emptyMeta fn [AAbstr emptyMeta [p] e, a]) 
-    ordToFn (ExprOrder m e o) = (Var m $ case o of
+    f (fn, ex) a = AExpr emptyMeta (App emptyMeta fn [AAbstr emptyMeta [p] ex, a]) 
+    ordToFn (ExprOrder m' ex o) = (Var m' $ case o of
                                           Ascending _ -> "thenBy"
-                                          Descending _ -> "thenByDescending", e) 
-    ordToFn1 (ExprOrder m e o) = (Var m $ case o of
+                                          Descending _ -> "thenByDescending", ex) 
+    ordToFn1 (ExprOrder m' ex o) = (Var m' $ case o of
                                            Ascending _ -> "orderBy"
-                                           Descending _ -> "orderByDescending", e)
+                                           Descending _ -> "orderByDescending", ex)
     
 normaliseLet :: Meta -> (Pattern, Expr) -> [(Pattern, Expr)] -> [BodyElem] -> ReturnElem -> Normalisation Expr
 normaliseLet m (p, e) letB bd r = do
@@ -277,6 +279,7 @@ normaliseLet m (p, e) letB bd r = do
     flatRec = Record emptyMeta $ [TrueRec emptyMeta (Right n) (Just $ Var emptyMeta n) | n <- vars p] 
                                     ++ [TrueRec emptyMeta (Right n) (Just e') | (n, e') <- splitBinds letB]
     splitBinds ((PVar _ v, e'):bs) = (v, e'):(splitBinds bs)
+    splitBinds ((PPat _ _, _) : _) = $impossible
     splitBinds []                  = []
     
     
@@ -294,17 +297,11 @@ normaliseCompr (p1, e1) (p2, e2) = do
                                  e2' <- normalise e2
                                  pure $ (PVar m star, rExpr e1' e2')
     where m = Meta emptyPos
-          v1s = case p1 of
-                 PVar _ s -> [s]
-                 PPat _ vs -> vs
-          v2s = case p2 of
-                 PVar _ s -> [s]
-                 PPat _ vs -> vs
-          rExpr e1 e2 = App m (Var m "concatMap'" ) [arg1 e2, arg2, arg3 e1]
-          arg1 e2 = AAbstr m [p1] e2
+          rExpr e1' e2' = App m (Var m "concatMap'" ) [arg1 e2', arg2, arg3 e1']
+          arg1 e = AAbstr m [p1] e
           arg2 = AAbstr m [p1, p2] $ Record m $ [TrueRec m (Right n) (Just $ Var m n) | n <- vars p1] 
                                                ++ [TrueRec m (Right n) (Just $ Var m n) | n <- vars p2]
-          arg3 e1 = AExpr (getMeta e1) e1
+          arg3 e = AExpr (getMeta e) e
                     
 
 

@@ -1,19 +1,20 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Ferry.Algebra.Render.XML where
 {-
 Transform a query plan DAG into an XML representation.
 -}    
+import Ferry.Impossible
 import Ferry.Algebra.Data.Algebra
 import Ferry.Algebra.Data.GraphBuilder
 
 import Text.XML.HaXml.Types
-import Text.XML.HaXml.Pretty
+import Text.XML.HaXml.Pretty (document)
 
-import Ferry.TypedCore.Data.Type
+import Ferry.TypedCore.Data.Type (FType (..), Qual (..))
 
 import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Reader
-import Control.Monad
 
 
 import Text.PrettyPrint.HughesPJ
@@ -86,15 +87,15 @@ planBuilder :: Element () -> AlgPlan -> XML ()
 planBuilder prop (nodes, (top, cols, subs)) = buildPlan Nothing (Just prop) (top, cols, subs)
     where
         buildPlan :: Maybe (Int, Int) -> Maybe (Element ()) -> AlgRes -> XML ()
-        buildPlan parent props (top, cols, subs) = 
+        buildPlan parent props (top', cols', subs') = 
                                     do
-                                        let colProp = cssToProp cols
+                                        let colProp = cssToProp cols'
                                         let planProp = case props of
                                                         Nothing -> Elem "properties" [] [CElem colProp ()]
                                                         Just p  -> Elem "properties" [] [CElem colProp (), CElem p ()]
-                                        let plan = runXML nodeTable $ serializeAlgebra top cols
+                                        let plan = runXML nodeTable $ serializeAlgebra top' cols'
                                         pId <- mkQueryPlan parent planProp plan
-                                        buildSubPlans pId subs
+                                        buildSubPlans pId subs'
         buildSubPlans :: Int -> SubPlan -> XML ()
         buildSubPlans parent (SubPlan m) = let subPlans = M.toList m
                                             in mapM_ (\(cId, res) -> buildPlan (Just (parent, cId)) Nothing res) subPlans
@@ -137,7 +138,7 @@ colsToNodes :: Int -> Columns -> ([Element ()], Int)
 colsToNodes i ((Col n _):cs) = let col = Elem "column" [("name", AttValue [Left $ "item" ++ (show n)]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"]), ("position", AttValue [Left $ show i])] []
                                    (els, i') = colsToNodes (i+1) cs
                                 in (col:els, i') 
-colsToNodes i ((NCol n cs):cs') = let (els, i') = colsToNodes i cs 
+colsToNodes i ((NCol _ cs):cs') = let (els, i') = colsToNodes i cs 
                                       (els', i'') = colsToNodes i' cs'
                                    in (els ++ els', i'')
 colsToNodes i []                = ([], i)
@@ -252,6 +253,7 @@ alg2XML gId = do
                                 xId <- freshId
                                 tell [mkAggrs xId aggrs part cxId1]
                                 return xId
+    alg2XML' _ = $impossible
 
 mkAggrs :: XMLNode -> [(AggrType, ResAttrName, Maybe AttrName)] -> Maybe PartAttrName -> XMLNode -> Element ()
 mkAggrs xId aggrs part cId = let partCol = case part of
@@ -265,7 +267,7 @@ mkAggrs xId aggrs part cId = let partCol = case part of
     where
         mkAggr :: (AggrType, ResAttrName, Maybe AttrName) -> Element ()
         mkAggr (aggr, res, arg) = let argCol = case arg of
-                                                    Just arg -> [flip CElem () $ Elem "column" [("name", AttValue [Left arg]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"])] []]
+                                                    Just arg' -> [flip CElem () $ Elem "column" [("name", AttValue [Left arg']), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"])] []]
                                                     Nothing -> [] 
                                    in Elem "aggregate" [("kind", AttValue [Left $ show aggr])] ((flip CElem () $ Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []):argCol)
         
@@ -340,7 +342,7 @@ mkTableDescr n descr = Elem "table" [("name", AttValue [Left n])] $ map (\d -> f
 
 -- | Create an xml table key node
 mkKey :: KeyInfo -> Element ()
-mkKey k = let bd = map (\(k, p) -> CElem (Elem "column" [("name", AttValue [Left k]), ("position", AttValue [Left $ show p])] []) ()) $ zip k [1..]
+mkKey k = let bd = map (\(k', p) -> CElem (Elem "column" [("name", AttValue [Left k']), ("position", AttValue [Left $ show p])] []) ()) $ zip k [1..]
            in Elem "key" [] bd
 
 -- | Create an xml node containing multiple table keys           
@@ -394,6 +396,7 @@ mkBinOpNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName
 mkBinOpNode xId op res lArg rArg cId | elem op ["+", "-", "*", "%", "/"] = mkFnNode xId (arOptoFn op) res lArg rArg cId
                                      | elem op [">", "==", "and", "or", "&&", "||"] = mkRelFnNode xId (relOptoFn op) res lArg rArg cId
                                      | elem op ["<" ] = mkBinOpNode xId ">" res rArg lArg cId
+                                     | otherwise = $impossible
         where
             arOptoFn :: String -> String
             arOptoFn "+" = "add"
@@ -401,6 +404,7 @@ mkBinOpNode xId op res lArg rArg cId | elem op ["+", "-", "*", "%", "/"] = mkFnN
             arOptoFn "/" = "divide"
             arOptoFn "*" = "multiply"
             arOptoFn "%" = "modulo"
+            arOptoFn _ = $impossible
             relOptoFn :: String -> String
             relOptoFn ">" = "gt"
             relOptoFn "==" = "eq"
@@ -408,6 +412,7 @@ mkBinOpNode xId op res lArg rArg cId | elem op ["+", "-", "*", "%", "/"] = mkFnN
             relOptoFn "or" = "or"
             relOptoFn "&&" = "and"
             relOptoFn "||" = "or"
+            relOptoFn _ = $impossible
 
 -- Create an XML relational function node
 mkRelFnNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
@@ -421,13 +426,13 @@ mkRelFnNode xId fn res lArg rArg cId = let content = Elem "content" [] [CElem (E
 -- Create an XML function node            
 mkFnNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
 mkFnNode xId fn res lArg rArg cId = let kNode = Elem "kind" [("name", AttValue [Left fn])] []
-                                        content = Elem "content" [] [CElem kNode (),
+                                        cont = Elem "content" [] [CElem kNode (),
                                                                      CElem (Elem "column" [("name", AttValue [Left res]), ("new", AttValue [Left "true"])] []) (),
                                                                      CElem (Elem "column" [("name", AttValue [Left lArg]), ("new", AttValue [Left "false"]), ("position", AttValue [Left "1"])] []) (),
                                                                      CElem (Elem "column" [("name", AttValue [Left rArg]), ("new", AttValue [Left "false"]), ("position", AttValue [Left "2"])] []) ()]
                                         edge = mkEdge cId
                                      in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "fun"])]
-                                                    [CElem content (), CElem edge ()]
+                                                    [CElem cont (), CElem edge ()]
 
 -- Create an XML eq-join node.             
 mkEqJoinNode :: XMLNode -> (LeftAttrName,RightAttrName) -> XMLNode -> XMLNode -> Element ()
@@ -499,8 +504,8 @@ mkPlanBundle plans = Elem "query_plan_bundle" [] $ map (\p -> CElem p ()) plans
 -- Create an xml document out of the given root tag.
 mkXMLDocument :: Element () -> Document ()
 mkXMLDocument el = let xmlDecl = XMLDecl "1.0" (Just $ EncodingDecl "UTF-8") Nothing
-                       prolog = Prolog (Just xmlDecl) [] Nothing []
-                    in Document prolog emptyST el []
+                       prol = Prolog (Just xmlDecl) [] Nothing []
+                    in Document prol emptyST el []
 
 -- Create an xml property node so that ferryDB knows more or less how to print the result
 mkProperty :: FType -> Element ()

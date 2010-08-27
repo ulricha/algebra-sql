@@ -13,7 +13,7 @@ library
     exposed-modules:  Ferry.Syntax
                       Ferry.Compiler
     hs-source-dirs:   src
-    GHC-Options:       -Wall -fno-warn-orphans
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind
     other-modules:
         Ferry.Algebra.Data.Algebra 
         Ferry.Algebra.Data.Create 
@@ -76,6 +76,6 @@ executable ferryc
     build-depends:  filepath >= 1.1.0.4, base >= 4.2, HaXml >= 1.20.2, pretty >= 1.0.1.1, parsec == 2.1.0.1, HUnit == 1.2.2.1, mtl >= 1.1.0.2, containers >= 0.3.0.0, haskell98 >= 1.0.1.1, template-haskell >= 2.4.0.0
     main-is:        FerryC.hs 
     hs-source-dirs: src
-    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-unused-do-bind
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-unused-do-bind -fno-warn-type-defaults
     other-modules:
         Ferry.Compiler.Compile

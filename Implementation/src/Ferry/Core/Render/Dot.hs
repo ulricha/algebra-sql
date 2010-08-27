@@ -16,7 +16,7 @@ toDot :: CoreExpr -> Dot Id
 toDot (BinOp o e1 e2) = do
                           id1 <- toDot e1
                           id2 <- toDot e2
-                          let o' = (\(Op o) -> o) o
+                          let o' = (\(Op op) -> op) o
                           nId <- node [Label $ SLabel o', Color Green, Shape Circle]
                           edge nId [id1, id2]
                           return nId
@@ -62,7 +62,7 @@ toDot (Elem c s) = do
                     edge nId [cId, sId]
                     return nId
 toDot (Table n cs ks) = let label = VLabel $ ((HLabel [SLabel "Table:", SLabel n])
-                                            : [HLabel [SLabel $ n ++ "::", SLabel $ prettyTy t ] | (Column n t) <- cs])
+                                            : [HLabel [SLabel $ n' ++ "::", SLabel $ prettyTy t ] | (Column n' t) <- cs])
                                             ++ [SLabel $ keyToString k | k <- ks]
                          in node [Shape Rect, Label label, Color Yellow]
 toDot (If e1 e2 e3) = do
@@ -70,7 +70,7 @@ toDot (If e1 e2 e3) = do
                         eId1 <- toDot e1
                         eId2 <- toDot e2
                         eId3 <- toDot e3
-                        edge nId [eId1, eId2, eId2]
+                        edge nId [eId1, eId2, eId3]
                         return nId
                         
 
@@ -86,6 +86,8 @@ paramToDot (ParAbstr p e) = do
 patToDot :: Pattern -> Dot Id
 patToDot (PVar s) = node [Label $ SLabel s, Color Red, Shape Triangle]
 patToDot (Pattern s) = node [Label $ SLabel $  "(" ++ (concat $ L.intersperse ", " s) ++ ")", Color Red, Shape Triangle]
+
+recToDot :: RecElem -> Dot Id
 recToDot (RecElem s e) = do
                           nId <- node [Label $ SLabel s, Color Red, Shape Oval]
                           eId <- toDot e

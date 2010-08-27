@@ -2,7 +2,6 @@
 module Ferry.Compiler.Stages.ToCoreStage (toCorePhase) where
     
 import Ferry.Compiler.Types
-import Ferry.Compiler.Error.Error
 import Ferry.Compiler.ExecuteStep
 
 import Ferry.Common.Render.Dot
@@ -11,7 +10,6 @@ import Ferry.Core.Render.Dot
 import Ferry.Front.Convert.FrontToCore
 import Ferry.Front.Data.Language
 import qualified Ferry.Core.Data.Core as C
-import System.IO
 
 
 toCorePhase :: Expr -> PhaseResult C.CoreExpr
@@ -30,4 +28,4 @@ normaliseStage = CompilationStep "FrontToCore" Transform step artefacts
 makeDot :: C.CoreExpr -> String
 makeDot c = case runDot $ toDot c of
             Right s -> s
-            Left e -> error "Jikes"
+            Left _ -> error "Jikes"

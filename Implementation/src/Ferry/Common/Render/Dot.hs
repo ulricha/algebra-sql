@@ -84,6 +84,7 @@ propsDot (TextColor Green)    = "color=green"
 propsDot (TextColor Yellow)   = "color=yellow"
 propsDot (TextColor Black)    = "color=black"
 propsDot (TextColor White)    = "color=white"
+propsDot (TextColor Gray)     = "color=gray"
 propsDot (Label l)            = "label=\"" ++ labelDot l ++ "\""
 
 labelDot :: Label -> String
@@ -110,6 +111,6 @@ escape (x:xs) = case x of
                   '}' -> "\\}"
                   '>' -> "\\>"
                   '<' -> "\\<"
-                  otherwise -> [x]
+                  _ -> [x]
                  ++ escape xs
 escape []     = []

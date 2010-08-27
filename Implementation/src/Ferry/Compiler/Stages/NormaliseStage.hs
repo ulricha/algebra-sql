@@ -2,12 +2,11 @@
 module Ferry.Compiler.Stages.NormaliseStage (normalisePhase) where
     
 import Ferry.Compiler.Types
-import Ferry.Compiler.Error.Error
 import Ferry.Compiler.ExecuteStep
 
 import Ferry.Front.Convert.Normalise
 import Ferry.Front.Data.Language
-import Ferry.Front.Render.Pretty
+import Ferry.Front.Render.Pretty()
 import Ferry.Common.Render.Pretty
 
 

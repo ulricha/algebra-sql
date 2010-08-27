@@ -2,20 +2,18 @@ module Ferry.TypeSystem.ContextReduction where
     
 import Ferry.TypedCore.Data.Type
 import Ferry.TypedCore.Data.TypeClasses
-import Ferry.TypedCore.Data.Instances
+import Ferry.TypedCore.Data.Instances()
 
 import qualified Data.List as L
 import qualified Data.Set as S
 
-import System.IO.Unsafe
-
 reduce :: Qual FType -> ClassEnv -> ([Pred], Qual FType)
-reduce (preds :=> tau) cEnv = (gamPreds, tyPreds :=> tau)
+reduce (preds :=> tau) _ = (gamPreds, tyPreds :=> tau)
     where
         (tyPreds, gamPreds) = L.partition hasQVar (simplifyPreds $ foldr filterImpossiblePreds [] recPr)
-        (recPr, classPr) = L.partition (\p -> case p of
+        (recPr, _classPr) = L.partition (\p -> case p of
                                                 Has _ _ _ -> True
-                                                otherwise -> False) preds
+                                                _ -> False) preds
 
 {-
 classExists :: Pred -> ClassEnv -> Pred
@@ -31,16 +29,16 @@ simplifyPreds :: [Pred] -> [Pred]
 simplifyPreds ps = foldr (\x l -> (flatten x) : l)  [] groups
    where
     flatten x = case x of
-                 [x] -> x
+                 [x'] -> x'
                  _   -> error "Multiple types for one field"
     groups = map L.nub $ L.groupBy (\(Has f1 r1 _) (Has f2 r2 _) -> f1 == f2 && r1 == r2) ps
 
 
 filterImpossiblePreds :: Pred -> [Pred] -> [Pred]
-filterImpossiblePreds p@(Has (FVar v) f t) ps = case S.member v (ftv t) of
+filterImpossiblePreds p@(Has (FVar v) _ t) ps = case S.member v (ftv t) of
                                     True -> error "infinite type in record"
                                     False -> p:ps
-filterImpossiblePreds p@(Has (FRec rs) f (FVar v)) ps = (p:ps)
+filterImpossiblePreds p@(Has (FRec _) _ (FVar _)) ps = (p:ps)
                                                          
 filterImpossiblePreds p@(Has (FRec rs) f t) ps = case L.lookup f rs of
                                        Nothing -> error "record does not contain file"

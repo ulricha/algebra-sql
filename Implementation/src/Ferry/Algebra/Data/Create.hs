@@ -31,7 +31,7 @@ nat :: Integer -> AVal
 nat = VNat
 
 -- | Types of algebraic values
-intT, stringT, boolT, decT, doubleT, natT :: ATy
+intT, stringT, boolT, decT, doubleT, natT, surT :: ATy
 intT = AInt
 stringT = AStr
 boolT = ABool
@@ -49,7 +49,7 @@ emptyTable = insertNode . (\x -> (x, [])) . EmptyTable
 dbTable :: String -> Columns -> KeyInfos -> GraphM AlgNode
 dbTable n cs ks = insertNode (TableRef (n, attr, ks), []) 
   where
-    attr = map (\(NCol n [Col i t]) -> (n, "item" ++ show i, t)) cs
+    attr = map (\(NCol n' [Col i t]) -> (n', "item" ++ show i, t)) cs
 
 litTable :: AVal -> String -> ATy -> GraphM AlgNode
 litTable v s t = insertNode (LitTable [[v]] [(s, t)], [])

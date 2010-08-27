@@ -29,7 +29,7 @@ instance Pretty Expr where
     pretty (Let          _ bs e)              i = let body = mapIntersperseConcat (flip pretty $ i + 4) ((:) ',' $ newLine (i + 4)) bs
                                                    in "let " ++ body ++ (newLine i) ++ " in " ++ pretty e (i + 4)                                                     
     pretty (Table        _ n cs ks)           i = "table " ++ n ++ (mapIntersperseConcat (flip pretty i) ", " cs) ++
-                                                   newLine (i + 1) ++ "with keys (" ++ (mapIntersperseConcat (flip pretty i) ", " cs) ++ ")"
+                                                   newLine (i + 1) ++ "with keys (" ++ (mapIntersperseConcat (flip pretty i) ", " ks) ++ ")"
     pretty (Relationship _ c1 e1 c2 e2 k1 k2) i = "relationship from " ++ pretty c1 i ++ " " ++ pretty e1 i ++
                                                     newLine (i+15) ++ "to " ++ pretty c2 (i + 18) ++ " " ++ pretty e2 (i + 18) ++
                                                     newLine (i+15) ++ "by " ++ pretty k1 (i + 18) ++ " eq " ++ pretty k2 (i + 18)
@@ -37,7 +37,7 @@ instance Pretty Expr where
 
 instance Pretty a => Pretty [a] where
     pretty (x:xs) i = pretty x i ++ " " ++ pretty xs i
-    pretty [] i = ""
+    pretty [] _ = ""
     
 instance Pretty Arg where
     pretty (AExpr _ e) i = pretty e i
@@ -51,7 +51,7 @@ instance Pretty RecElem where
                                 Left ex -> pretty ex i
                                 Right s -> s ++ case e of
                                                     Nothing -> ""
-                                                    Just e ->  " = " ++ pretty e i
+                                                    Just e' ->  " = " ++ pretty e' i
     pretty (TuplRec _ _ e) i = pretty e i
     
 instance Pretty Type where
@@ -59,6 +59,7 @@ instance Pretty Type where
     pretty (TFloat _) _ = "Float"
     pretty (TString _) _ = "String"
     pretty (TBool _) _ = "Bool"
+    pretty (TUnit _) _ = "()"
     
 instance Pretty Order where
     pretty (Ascending _) _ = "ascending"
@@ -115,14 +116,15 @@ instance Pretty BodyElem where
                                                 GWith -> "with "
                                       into = case p of
                                                    Nothing -> ""
-                                                   Just p  -> newLine (i+4) ++ "into " ++ pretty p (i+9)
+                                                   Just p'  -> newLine (i+4) ++ "into " ++ pretty p' (i+9)
                                    in
                                     "group " ++ (case e of
                                                 Nothing -> ""
-                                                Just e -> pretty e (i+6) ++ newLine(i+1))  ++ mid ++ intersperseComma es (i+9) ++ into
+                                                Just ex -> pretty ex (i+6) ++ newLine(i+1))  ++ mid ++ intersperseComma es (i+9) ++ into
 
 instance Pretty Const where
     pretty (CInt i) _ = (show i)
     pretty (CFloat d) _ = (show d)
     pretty (CBool b) _ = (show b)
-    pretty (CString s) _ = "\"" ++ s ++ "\""    
+    pretty (CString s) _ = "\"" ++ s ++ "\""   
+    pretty (CUnit) _ = "()" 

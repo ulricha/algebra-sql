@@ -7,6 +7,7 @@ instance Pretty Type where
     pretty a _ = prettyTy a
 
 prettyTy :: Type -> String
+prettyTy TUnit = "()"
 prettyTy TInt = "Int"
 prettyTy TFloat = "Float" 
 prettyTy TString = "String" 

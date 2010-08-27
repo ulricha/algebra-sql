@@ -1,5 +1,7 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Ferry.TypeSystem.Prelude where
-    
+
+import Ferry.Impossible    
 import Ferry.TypedCore.Data.TypeClasses
 import Ferry.TypedCore.Data.Type
 
@@ -8,6 +10,7 @@ import qualified Data.Map as M
 baseEnv :: ClassEnv
 baseEnv = case addAll emptyClassEnv of
             Right a -> a
+            _       -> $impossible
     where
         addAll =
                 do

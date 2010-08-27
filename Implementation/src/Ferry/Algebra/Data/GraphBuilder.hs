@@ -76,7 +76,7 @@ insertNode (n, children) = do
                             let ctx = (n, children)
                             v <- findNode ctx             
                             case v of
-                                (Just n) -> return n
+                                (Just n') -> return n'
                                 Nothing -> insertNode' n children
 
 -- | Blindly insert a node, get a fresh id and return that                                 

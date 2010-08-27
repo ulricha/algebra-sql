@@ -2,11 +2,8 @@
 module Ferry.Compiler.Stages.RewriteStage (rewritePhase) where
     
 import Ferry.Compiler.Types
-import Ferry.Compiler.Error.Error
 import Ferry.Compiler.ExecuteStep
 
-import Ferry.TypedCore.Data.Instances
-import Ferry.TypeSystem.Prelude
 import Ferry.TypedCore.Render.Dot
 import Ferry.Common.Render.Dot
                                            
@@ -26,4 +23,4 @@ inferStage = CompilationStep "Rewrite" OpRewrite step artefacts
 makeDot :: CoreExpr -> String
 makeDot c = case runDot $ toDot c of
             Right s -> s
-            Left e -> error "Jikes"
+            Left _ -> error "Jikes"

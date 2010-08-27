@@ -4,10 +4,8 @@
 module Ferry.Compiler.Stages.AlgebraToXMLStage (xmlPhase) where
     
 import Ferry.Compiler.Types
-import Ferry.Compiler.Error.Error
 import Ferry.Compiler.ExecuteStep
 
-import Ferry.Algebra.Data.Algebra
 import Ferry.Algebra.Data.GraphBuilder
 import Ferry.Algebra.Render.XML
 import Ferry.TypedCore.Data.Type

@@ -5,14 +5,12 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Error
 import Control.Applicative hiding (Const(..))
-import Control.Monad (MonadPlus(..), ap)
 
-import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Data.Type
 import Ferry.TypedCore.Data.Substitution 
 import Ferry.TypedCore.Data.Base
 import Ferry.Compiler.Error.Error
-import Ferry.TypedCore.Data.Instances
+import Ferry.TypedCore.Data.Instances()
 
 import qualified Data.Map as M
 
@@ -52,7 +50,7 @@ lookupVariable i = do
 
 addToEnv :: Ident -> TyScheme -> AlgW a -> AlgW a
 addToEnv x t a = do
-                  theta <- getSubst
+                  _ <- getSubst
                   gam <- getGamma
                   local (\ _ -> M.insert x t gam) a
 
