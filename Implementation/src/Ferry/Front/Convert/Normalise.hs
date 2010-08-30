@@ -5,17 +5,15 @@ import Ferry.Impossible
 import Ferry.Front.Data.Language
 import Ferry.Front.Data.Base
 import Ferry.Front.Data.Meta
-import Ferry.Front.Data.Instances
+import Ferry.Front.Data.Instances()
 import Ferry.Compiler.Error.Error
 
 import Control.Monad.State
 import Control.Monad.Error
-import Control.Applicative (Applicative(..), (<**>), (<$>), (<*>))
+import Control.Applicative (Applicative(..), (<$>), (<*>))
 
 import qualified Data.Map as M
-import qualified Data.Foldable as F
 import qualified Data.List as L
-import Data.Maybe (fromJust)
 
 
 -- Substitutions are stored in a map, a variable name is always substituted by a new one
@@ -52,6 +50,7 @@ applySubstitution v@(Var _ i) = do
                         case M.lookup i m of
                             Nothing -> return v
                             Just i' -> normalise i'
+applySubstitution _ = $impossible
 
 -- Remove the list of given identifiers from the substitution list
 removeSubstitution :: [Identifier] -> Normalisation ()
@@ -84,7 +83,6 @@ normaliseArg (AExpr m e) = do
 normaliseArg (AAbstr m p e) = restoreState $
                             do
                              let vss = concatMap vars p
-                             let vs = map vars p
                              ns <- normIdent p
                              let newSubsts = concat $ map makeSubstitution ns
                              removeSubstitution vss
@@ -98,20 +96,20 @@ normIdent [] = return []
 normIdent (x:xs) = (\y ys -> (x, y):ys) <$> getFreshIdentifier <*> normIdent xs
 
 replacePattern :: [Pattern] -> [Identifier] -> Pattern
-replacePattern [p] [v] = PVar emptyMeta v
-replacePattern ps vs = PPat emptyMeta vs     
+replacePattern [_] [v] = PVar emptyMeta v
+replacePattern _ vs = PPat emptyMeta vs     
                             
 makeSubstitution :: (Pattern, Identifier) -> [(Identifier, Expr)]
 makeSubstitution ((PVar m i), f) = [(i, Var m f)]
-makeSubstitution ((PPat m vs), f) = [(v, Elem emptyMeta (Var emptyMeta f) $ Right i) | (v, i) <- zip vs [1..]]
+makeSubstitution ((PPat _ vs), f) = [(v, Elem emptyMeta (Var emptyMeta f) $ Right i) | (v, i) <- zip vs [1..]]
 
 normaliseRec :: RecElem -> Normalisation RecElem
 normaliseRec r@(TrueRec m s e) = 
                             case (s, e) of
-                             (Right i, Just ex) -> (\e' -> TrueRec m s $ Just e') <$> normalise ex
+                             (Right _, Just ex) -> (\e' -> TrueRec m s $ Just e') <$> normalise ex
                              (Right i, Nothing) -> pure $ TrueRec m s $ Just (Var m i)
                              (Left i, Nothing) -> case i of
-                                                    (Elem m e (Left x)) -> (\i' -> TrueRec m (Right x) $ Just i') <$> normalise i
+                                                    (Elem m' _e (Left x)) -> (\i' -> TrueRec m' (Right x) $ Just i') <$> normalise i
                                                     (_)                 ->  throwError $ IllegalRecSyntax r
                              (_) -> throwError $ IllegalRecSyntax r
 normaliseRec (TuplRec m i e) = TuplRec m i <$> normalise e
@@ -126,11 +124,11 @@ normalise :: Expr -> Normalisation Expr
 normalise c@(Const _ _) = return c
 -- normalise (UnOp m o e) = UnOp m o <$> normalise e
 normalise (BinOp m o e1 e2) = BinOp m o <$> normalise e1 <*> normalise e2
-normalise v@(Var m i) = applySubstitution v
+normalise v@(Var _ _) = applySubstitution v
 normalise (App m e a) = do 
                          v <- getFreshIdentifier 
                          case e of
-                          (Var m "lookup") -> normalise $ Elem m ex $ Right 2                                                 
+                          (Var m' "lookup") -> normalise $ Elem m' ex $ Right 2                                                 
                            where
                                ex = App m (Var m "single") [AExpr m filterApp]
                                filterApp = App m (Var m "filter") [AAbstr m [(PVar m v)] comp, AExpr m el]
@@ -138,8 +136,10 @@ normalise (App m e a) = do
                                [e1, e2] = a 
                                el = case e2 of
                                      AExpr _ e' -> e'
+                                     AAbstr _ _ _ -> $impossible
                                ek = case e1 of
                                      AExpr _ e' -> e'
+                                     AAbstr _ _ _ -> $impossible
                           _ -> do
                                 e' <- restoreState $ normalise e
                                 as <- mapM normaliseArg a
@@ -153,13 +153,13 @@ normalise (Paren _ e) = normalise e
 normalise (List m es) = List m <$> mapM normalise es
 normalise (Elem m e i) = do 
                            e' <- normalise e
-                           (_, s) <- get
-                           return $ Elem m e' i -- <$> normalise e <*> return i
+                           return $ Elem m e' i 
 normalise (Lookup m e1 e2) = normalise $ App m (Var m "lookup") [AExpr (getMeta e2) e2, AExpr (getMeta e1) e1]
 normalise (Let m bs e) = restoreState $ 
                           case bs of
                             [b] -> (\b' n -> Let m [b'] n) <$> normaliseBinding b <*> normalise e
                             (b:bss) -> (\b' tl -> Let m [b'] tl) <$> normaliseBinding b <*> (normalise $ Let m bss e)
+                            [] -> $impossible
 normalise (Table m s cs ks) = pure $ Table m s (L.sortBy sortColumn cs) ks
 normalise (Relationship m c1 e1 c2 e2 k1 k2) = do
                 v1 <- getFreshIdentifier
@@ -181,7 +181,8 @@ normalise (Relationship m c1 e1 c2 e2 k1 k2) = do
                                                                                               , TuplRec m 2 filterApp
                                                                                               ])
                                                                          , AExpr m e1]
-normalise (QComp m q) = normaliseQCompr q
+                    _ -> $impossible
+normalise (QComp _ q) = normaliseQCompr q
     
 compgen :: String -> String -> Key -> Key -> Normalisation Expr
 compgen v1 v2 k1@(Key m1 ks1) k2@(Key m2 ks2) = if (length ks1 == length ks2)
@@ -219,16 +220,16 @@ normaliseQCompr (FerryCompr m bs bd r) =
                                                            _ -> normaliseQCompr $ FerryCompr m [bs'] (gb:bd') r
                                                             where
                                                                gb = Group m' g me [(Record m' [TuplRec m' i e | (e, i) <- (zip es [1..])])] mp
-                    bs    -> do
+                    bs'    -> do
                               let b1 = head bs
-                              let b2 = head $ tail bs
-                              let bt = tail $ tail bs
-                              bs' <- normaliseCompr b1 b2
+                              let b2 = head $ tail bs'
+                              let bt = tail $ tail bs'
+                              bs'' <- normaliseCompr b1 b2
                               r' <- case r of
                                       (Return m' e mi) -> do 
                                                             e' <- normalise e
                                                             return $ Return m' e' mi 
-                              normaliseQCompr $ FerryCompr m (bs':bt) bd r'
+                              normaliseQCompr $ FerryCompr m (bs'':bt) bd r'
                                                                                 
 normaliseQCompr (HaskellCompr _ _ _) = error "Not implemented HaskellCompr"
 

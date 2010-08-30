@@ -1,12 +1,12 @@
-let cus = table prod.CustomersidInt, nameString, addressString
-            with keys (idInt, nameString, addressString)
-  in let ord = table prod.OrdsidInt, cIdInt, artString, priceFloat
-                with keys (idInt, cIdInt, artString, priceFloat)
-      in let customerOrds = relationship from one cus
-                                           to many ord
-                                           by (id) eq (cId)
-          in for x in [1, 2, 3, 4, 5]
-                 let y = 4
-                 where (x % 2 == 1)
-                 order by x ascending
-             return x + 1
+let cus = table prod.Customers (id Int, name String, address String)
+           with keys ((id))
+ in let ord = table prod.Ords (id Int, cId Int, art String, price Float)
+               with keys ((id))
+     in let customerOrds = relationship from one cus
+                                          to many ord
+                                          by (id) eq (cId)
+         in for x in [1, 2, 3, 4, 5]
+                let y = 4
+                where (x % 2 == 1)
+                order by x ascending
+            return x + 1

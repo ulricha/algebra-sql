@@ -28,7 +28,7 @@ instance Pretty Expr where
     pretty (Lookup       _ e1 e2)             i = pretty e1 i ++ "<" ++ pretty e2 i ++ ">"
     pretty (Let          _ bs e)              i = let body = mapIntersperseConcat (flip pretty $ i + 4) ((:) ',' $ newLine (i + 4)) bs
                                                    in "let " ++ body ++ (newLine i) ++ " in " ++ pretty e (i + 4)                                                     
-    pretty (Table        _ n cs ks)           i = "table " ++ n ++ (mapIntersperseConcat (flip pretty i) ", " cs) ++
+    pretty (Table        _ n cs ks)           i = "table " ++ n ++ " (" ++ (mapIntersperseConcat (flip pretty i) ", " cs) ++ ")" ++
                                                    newLine (i + 1) ++ "with keys (" ++ (mapIntersperseConcat (flip pretty i) ", " ks) ++ ")"
     pretty (Relationship _ c1 e1 c2 e2 k1 k2) i = "relationship from " ++ pretty c1 i ++ " " ++ pretty e1 i ++
                                                     newLine (i+15) ++ "to " ++ pretty c2 (i + 18) ++ " " ++ pretty e2 (i + 18) ++
@@ -77,7 +77,7 @@ instance Pretty Key where
     pretty  (Key _ k) _ = "(" ++ (concat $ L.intersperse ", " k ) ++ ")"   
     
 instance Pretty Column where
-    pretty (Column _ n t) i = n ++ (pretty t i)
+    pretty (Column _ n t) i = n ++ " " ++ (pretty t i)
     
 instance Pretty Binding where
     pretty (Binding _ x e) i = x ++ " = " ++ (pretty e (i + (length x) + 3))
