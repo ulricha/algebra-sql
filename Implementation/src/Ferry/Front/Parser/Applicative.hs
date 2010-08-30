@@ -9,7 +9,6 @@ import Control.Monad (MonadPlus(..), ap)
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 
 import Ferry.Front.Data.Meta
-import Ferry.Front.Parser.Scanner
                                       
 instance Applicative (GenParser s a) where
   pure  = return

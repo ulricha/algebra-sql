@@ -1,11 +1,10 @@
 {-# LANGUAGE GADTs, TypeSynonymInstances #-}
 module Ferry.TypedCore.Data.Type where
 
-import Ferry.TypedCore.Data.Base
-
 import qualified Data.Set as S
 import qualified Data.Map as M
-import qualified Data.List as L
+
+type Ident = String
 
 type TyEnv = M.Map Ident TyScheme
 

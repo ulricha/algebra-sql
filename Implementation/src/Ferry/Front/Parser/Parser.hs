@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Ferry.Front.Parser.Parser where
 
 
@@ -7,8 +8,9 @@ import Ferry.Front.Parser.Applicative hiding (Const, Column)
 import Ferry.Front.Parser.Scanner
 import Ferry.Front.Data.Language
 import Ferry.Front.Data.Meta
-import Ferry.Front.Data.Instances
+import Ferry.Front.Data.Instances()
 import Ferry.Front.Data.Base
+import Ferry.Impossible
 
 parseFerry :: SourceName -> [Char] -> Either ParseError Expr
 parseFerry file src = parse parseInput file src
@@ -144,10 +146,10 @@ whereClause :: Parser BodyElem
 whereClause = ForWhere <$> pMeta <* reserved "where" <*> expr
 
 orderByClause :: Parser BodyElem
-orderByClause = ForOrder <$> pMeta <* reserved "order" <* reserved "by" <*> commaSep1 elem
+orderByClause = ForOrder <$> pMeta <* reserved "order" <* reserved "by" <*> commaSep1 elems
         where
-            elem :: Parser ExprOrder
-            elem = ExprOrder <$> pMeta <*> expr <*> option (Ascending $ Meta emptyPos) ordering
+            elems :: Parser ExprOrder
+            elems = ExprOrder <$> pMeta <*> expr <*> option (Ascending $ Meta emptyPos) ordering
 
 groupClause :: Parser BodyElem
 groupClause = try groupBy <|> try groupWith
@@ -198,6 +200,7 @@ tuple = do
         listToRecElem :: [Expr] -> [Int] -> [RecElem]
         listToRecElem (e:es) (i:is) = (:) (TuplRec (Meta $ getPos e) i e) $ listToRecElem es is
         listToRecElem []     _      = []
+        listToRecElem _ _           = $impossible
 
 -- | Parse a record.
 record :: Parser Expr
@@ -338,8 +341,8 @@ pattern = choice [
                    return $ PVar (Meta pos) v,
                   do
                    pos <- getPosition
-                   vars <- parens (commaSep1 identifier)
-                   return $ PPat (Meta pos) vars
+                   vars' <- parens (commaSep1 identifier)
+                   return $ PPat (Meta pos) vars'
                  ]
 
 -- | Parse primitive types
@@ -442,7 +445,7 @@ negFloatParser :: FParser Const
 negFloatParser = do
                     pos <- getPosition
                     symbol "-"
-                    ((CFloat f), p) <- floatParser
+                    ((CFloat f), _) <- floatParser
                     return (CFloat $ negate f, pos)
 -- | Parse a string, a string is anything surrounded by " ... "
 stringParser :: FParser Const

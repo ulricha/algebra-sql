@@ -53,7 +53,6 @@ library
         Ferry.TypedCore.Convert.CoreToAlgebra 
         Ferry.TypedCore.Convert.Specialize 
         Ferry.TypedCore.Convert.Traverse 
-        Ferry.TypedCore.Data.Base 
         Ferry.TypedCore.Data.Instances 
         Ferry.TypedCore.Data.Substitution 
         Ferry.TypedCore.Data.Type 

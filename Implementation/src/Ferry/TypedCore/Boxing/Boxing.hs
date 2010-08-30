@@ -1,14 +1,14 @@
 module Ferry.TypedCore.Boxing.Boxing where
 
 import Ferry.TypedCore.Data.TypedCore
-import Ferry.TypedCore.Data.Instances
+import Ferry.TypedCore.Data.Instances()
 import Ferry.TypedCore.Data.Type
 import Ferry.Front.Data.Base
 
 import Control.Monad.Reader
                                
 import qualified Data.Map as M (lookup)
-import Data.Maybe (listToMaybe, fromJust)
+import Data.Maybe (fromJust)
 
 runBoxing :: TyEnv -> CoreExpr -> CoreExpr
 runBoxing env = fst . flip runReader (env, Nothing, emptyEnv) . topBox
@@ -87,9 +87,9 @@ resultCheck :: (CoreExpr, Box) -> Boxing (CoreExpr, Box)
 resultCheck (e, psi) = do
                         psir <- getFromContext 
                         case (psir, psi) of
-                            (Just p, psi) | p == psi -> return (e, psi) 
+                            (Just p, psi') | p == psi' -> return (e, psi') 
                                           | otherwise -> error "Expected box sort doesn't match inferred sort"
-                            (Nothing, psi) -> return (e, psi)
+                            (Nothing, psi') -> return (e, psi')
 
 -- | Deal with corner case of lazy unboxing, the result 
 -- | type is a list but the boxing says it's an atom
@@ -139,9 +139,9 @@ box (Rec t els) = do
 box (App t e1 e2) = do
                      (e1', psi) <- noContext $ box e1
                      let (psia, psir ) = case psi of
-                                           (BFn psia psir) -> (psia, psir)
+                                           (BFn psia' psir') -> (psia', psir')
                                            _               -> error $ show psi ++ "not a function box"   
-                     (e2', psi2) <- withContext psia $ boxParam e2
+                     (e2', _psi2) <- withContext psia $ boxParam e2
                      resultCheck (App t e1' e2', psir)
 box (BinOp t (Op o) e1 e2) = do
                                ty <- fromGam o
@@ -177,7 +177,7 @@ boxParam (ParAbstr t p e) = do
                              let args = getVars p
                              psie <- getFromContext
                              let (asso, boxR) = varsWithBox args $ fromJust psie
-                             (e', psi) <- foldr (\(v, t) r -> addToEnv v t r) (withContext boxR $ box e) asso
+                             (e', psi) <- foldr (\(v, t') r -> addToEnv v t' r) (withContext boxR $ box e) asso
                              return (ParAbstr t p e', psi)
                              
     
@@ -188,4 +188,4 @@ getVars (Pattern p) = p
 varsWithBox :: [String] -> Box -> ([(String, Box)], Box)
 varsWithBox []             b = ([], b)
 varsWithBox (x:xs) (BFn b1 b2) = (\(l, b) -> ((x, b1):l, b)) (varsWithBox xs b2)
-varsWithBox _      b           = error $ "varswithBox err, should not happen"   
+varsWithBox _      _           = error $ "varswithBox err, should not happen"   

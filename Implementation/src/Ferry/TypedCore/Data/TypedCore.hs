@@ -1,9 +1,10 @@
 {-# LANGUAGE GADTs #-}
 module Ferry.TypedCore.Data.TypedCore where
     
-import Ferry.Front.Data.Base
-import Ferry.TypedCore.Data.Base
+import Ferry.Front.Data.Base(Const)
 import Ferry.TypedCore.Data.Type
+
+type Ident = String
 
 data Op where
     Op :: String -> Op

@@ -1,7 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 module Ferry.TypedCore.Data.Instances where
     
-import Ferry.TypedCore.Data.Base
 import Ferry.TypedCore.Data.Type
 import Ferry.TypedCore.Data.Substitution
 import Ferry.TypedCore.Data.TypedCore
@@ -15,10 +14,10 @@ instance Substitutable FType where
   apply s (FFn t1 t2)           = FFn (apply s t1) (apply s t2)
   apply s (FRec rs)             = FRec $ map (\(n, t) -> (apply s n, apply s t)) rs
   apply s (FTF f t)             = evalTy $ FTF f $ apply s t
-  apply s@(t, _) v@(FVar i) = case M.notMember v t of
+  apply (t, _) v@(FVar _) = case M.notMember v t of
                                     True -> v
                                     False -> t M.! v
-  apply s@(t, _) v@(FGen i) = case M.notMember v t of
+  apply (t, _) v@(FGen _) = case M.notMember v t of
                                 True -> v
                                 False -> t M.! v
   apply _    t                  = t -- If the substitution is not applied to a container type or variable just stop primitives cannot be substituted
@@ -61,7 +60,7 @@ instance Substitutable RecElem where
     apply s (RecElem t x c) = RecElem (apply s t) x (apply s c)
 
 instance Substitutable RLabel where
-    apply s@(_, r) v = case M.notMember v r of
+    apply (_, r) v = case M.notMember v r of
                                       True -> v
                                       False -> r M.! v
     
@@ -84,9 +83,9 @@ instance VarContainer FType where
   hasQVar _        = False
   
 instance VarContainer TyScheme where
-  ftv (Forall i r t)  = ftv t 
-  frv (Forall i r t)  = frv t
-  hasQVar (Forall i r t) = if i > 0 then True else False
+  ftv (Forall _ _ t)  = ftv t 
+  frv (Forall _ _ t)  = frv t
+  hasQVar (Forall i _ _) = if i > 0 then True else False
 
 instance VarContainer t => VarContainer (Qual t) where
   ftv (preds :=> t) = S.unions $ (ftv t):(map ftv preds)
@@ -94,9 +93,9 @@ instance VarContainer t => VarContainer (Qual t) where
   hasQVar (preds :=> t) = (&&) (hasQVar t) $ and $ map hasQVar preds 
 
 instance VarContainer Pred where
-  ftv (IsIn c t) = ftv t
+  ftv (IsIn _ t) = ftv t
   ftv (Has t _ t2) = ftv t `S.union` ftv t2
-  frv (IsIn c t) = frv t
+  frv (IsIn _ t) = frv t
   frv (Has t _ t2) = frv t `S.union` frv t2
   hasQVar (IsIn _ t) = hasQVar t
   hasQVar (Has t _ t2) = hasQVar t && hasQVar t2
@@ -110,22 +109,22 @@ instance VarContainer RLabel where
   ftv _ = S.empty
   frv (RVar i) = S.singleton i
   frv _        = S.empty
-  hasQVar (RGen i) = True
+  hasQVar (RGen _) = True
   hasQVar _        = False
   
 instance HasType CoreExpr where
-  typeOf (BinOp t o c1 c2) = t
+  typeOf (BinOp t _ _ _) = t
 --  typeOf (UnaOp t o c)     = t
-  typeOf (Constant t c)    = t
-  typeOf (Var t x)         = t
-  typeOf (App t c a)       = t
-  typeOf (Let t x c1 c2)   = t
-  typeOf (Rec t es)        = t
-  typeOf (Cons t c1 c2)    = t
+  typeOf (Constant t _)    = t
+  typeOf (Var t _)         = t
+  typeOf (App t _ _)       = t
+  typeOf (Let t _ _ _)   = t
+  typeOf (Rec t _)        = t
+  typeOf (Cons t _ _)    = t
   typeOf (Nil t)           = t
-  typeOf (Elem t c f)      = t
-  typeOf (Table t n c k)   = t
-  typeOf (If t c1 c2 c3)   = t
+  typeOf (Elem t _ _)      = t
+  typeOf (Table t _ _ _)   = t
+  typeOf (If t _ _ _)   = t
   setType t (BinOp _ o c1 c2) = BinOp t o c1 c2
 --  setType t (UnaOp _ o c)     = UnaOp t o c
   setType t (Constant _ c)    = Constant t c
@@ -141,7 +140,7 @@ instance HasType CoreExpr where
   
   
 instance HasType Param where
-    typeOf (ParExpr t e) = t
-    typeOf (ParAbstr t p e) = t
+    typeOf (ParExpr t _) = t
+    typeOf (ParAbstr t _ _) = t
     setType t (ParExpr _ e) = ParExpr t e
     setType t (ParAbstr _ p e) = ParAbstr t p e

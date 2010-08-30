@@ -8,7 +8,6 @@ import Control.Applicative hiding (Const(..))
 
 import Ferry.TypedCore.Data.Type
 import Ferry.TypedCore.Data.Substitution 
-import Ferry.TypedCore.Data.Base
 import Ferry.Compiler.Error.Error
 import Ferry.TypedCore.Data.Instances()
 

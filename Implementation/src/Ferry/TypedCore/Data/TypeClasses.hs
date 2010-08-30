@@ -1,7 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Ferry.TypedCore.Data.TypeClasses where
     
-import Ferry.TypedCore.Data.Base
 import Ferry.TypedCore.Data.Type
 import Ferry.Compiler.Error.Error
 import Ferry.Impossible

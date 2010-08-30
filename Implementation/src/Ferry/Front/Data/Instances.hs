@@ -19,6 +19,7 @@ instance HasMeta Expr where
     getMeta (Table        m _ _ _)       = m
     getMeta (Relationship m _ _ _ _ _ _) = m 
     getMeta (QComp        m _)           = m
+    getMeta (Lookup m _ _)               = m
 
 instance HasMeta QCompr where
     getMeta (FerryCompr m _ _ _) = m

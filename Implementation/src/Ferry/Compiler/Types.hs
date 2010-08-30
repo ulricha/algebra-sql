@@ -4,7 +4,6 @@ module Ferry.Compiler.Types where
 import Control.Monad.Error
 import Control.Monad.Writer
 import Control.Monad.Reader
-import System.IO
 
 import Ferry.Compiler.Error.Error
 
@@ -52,6 +51,7 @@ data Artefact = Echo   -- ^ Echo mode prints the given input to the console
               | Type
     deriving (Show, Eq)
 
+allArtefacts :: [Artefact]
 allArtefacts = [Echo, PrettyAST, PrettyCore, DotAST, DotCore, DotType, DotBox, DotAlg, XML]
 -- | The input mode determines whether the source program is given through a file or via stdin
 data Input  = File String-- ^ File mode, the program is read from a file 

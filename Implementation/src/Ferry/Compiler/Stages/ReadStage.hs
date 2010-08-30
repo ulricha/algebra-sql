@@ -2,7 +2,6 @@
 module Ferry.Compiler.Stages.ReadStage (readPhase) where
     
 import Ferry.Compiler.Types
-import Ferry.Compiler.Error.Error
 import Ferry.Compiler.ExecuteStep
 
 readPhase :: String -> PhaseResult String

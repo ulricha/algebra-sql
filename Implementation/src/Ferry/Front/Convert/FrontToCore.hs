@@ -8,7 +8,7 @@ import Ferry.Compiler.Error.Error
 
 import Control.Monad.State
 import Control.Monad.Error
-import Control.Applicative (Applicative(..), (<**>), (<$>), (<*>))
+import Control.Applicative (Applicative(..), (<$>), (<*>))
 
 type Transformation = ErrorT FerryError (State Int)
 
@@ -55,7 +55,7 @@ argToCore a@(AAbstr _ ps e) = case ps of
 
 recToCore :: RecElem -> Transformation C.RecElem
 recToCore r@(TrueRec _ i e) = case (i, e) of
-                             (Right s, Just e) -> C.RecElem <$> pure s <*> toCore e
+                             (Right s, Just e') -> C.RecElem <$> pure s <*> toCore e'
                              _                 -> throwError $ FrontToCoreRecError "Record element of wrong form" r
 recToCore (TuplRec _ i e)   = C.RecElem <$> (pure $ show i) <*> toCore e
 

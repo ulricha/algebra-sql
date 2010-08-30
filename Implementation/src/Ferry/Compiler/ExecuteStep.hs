@@ -2,7 +2,6 @@
 module Ferry.Compiler.ExecuteStep (executeStep) where
     
 import Ferry.Compiler.Types
-import Ferry.Compiler.Error.Error
 
 -- | Apply a compilation step to an expression of type a. The result of type b is returned in a phaseresult monad
 executeStep :: CompilationStep a b -> a -> PhaseResult b
@@ -10,7 +9,6 @@ executeStep step i = do
                             opts <- getConfig
                             phaseHeader (stageName step) (stageMode step)
                             b <- stageStep step i
-                            c <- getConfig
                             mapM_ (createArtefacts b) $ stageArtefacts step
                             if (mode opts == stageMode step)
                              then endProcess
@@ -26,7 +24,7 @@ createArtefacts i (a, e, f) = do
                                    then do 
                                          let file = case output opts of
                                                   Nothing -> Nothing
-                                                  (Just file) -> Just $ file ++ "." ++ e
+                                                  (Just file') -> Just $ file' ++ "." ++ e
                                          logMsg "Creating artefact"
                                          s <- artefactToPhaseResult $ f i
                                          addFile file s

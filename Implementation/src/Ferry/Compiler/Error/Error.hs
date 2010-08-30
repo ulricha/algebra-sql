@@ -4,7 +4,7 @@ import Control.Monad.Error
 import Ferry.Front.Data.Language
 import Ferry.TypedCore.Data.Type
 
-import Text.ParserCombinators.Parsec (ParseError(..))
+import Text.ParserCombinators.Parsec (ParseError())
 
 -- | The FerryError datatype represents errors that occur during compilation
 data FerryError = NoSuchFile String
