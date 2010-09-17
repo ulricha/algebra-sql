@@ -268,7 +268,7 @@ compileAppE1 (Var _ "box") (q, cs, ts) =
                                 =<< proj [("iter", "iter"),("item1", "iter")] 
                                     =<< getLoop
                         return (q', [Col 1 surT], subPlan 1 (q, cs, ts))
-compileAppE1 (Var mt "the") (q, cs, ts) = compileAppE1 (Var mt "nub") (q, cs, ts)
+compileAppE1 (Var mt "the") (q, cs, ts) = compileAppE1 (Var mt "head") (q, cs, ts)
 compileAppE1 (Var _ "and") (q, cs, ts) =
                     do
                         q' <- attach "pos" natT (nat 1)
@@ -313,6 +313,7 @@ compileAppE1 (App _ (App _ (Var _ "groupWith") e1@(ParAbstr _ _ _)) e2@(ParAbstr
                 let ts = subPlan newCol (qin, cs1, ts1)
                 return (qout, cs, ts)
 compileAppE1 (App t2 (App t1 (Var mt "groupByN") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
+compileAppE1 (App t2 (App t1 (Var mt "groupBy'") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
 compileAppE1 (App t2 (App t1 (Var mt "groupBy1") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
 compileAppE1 (App t2 (App t1 (Var mt "groupBy2") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
 compileAppE1 (App t2 (App t1 (Var mt "groupBy3") e1) e2) e3 = compileAppE1 (App t2 (App t1 (Var mt "groupBy") e1) e2) e3
@@ -340,7 +341,7 @@ compileAppE1 (App _ (App _ (Var _ "groupBy") e1@(ParAbstr _ _ _)) e2@(ParAbstr _
                 qout <- distinct =<< proj (("iter", "iter"):("pos", resCol):projOut) q
                 (ts, cs) <- makeSubPlan 1 cs1 ts1 q
                 return (qout, cs, ts)
-compileAppE1 _ _ = $impossible                
+compileAppE1 e1 e2 = error $ "Not implemented yet: " ++ show e1           
 
 
 makeSubPlan :: Int -> Columns -> SubPlan -> AlgNode -> GraphM (SubPlan, Columns)
@@ -365,7 +366,7 @@ makeSubPlan _ _ _ _ = $impossible
 -- | Compile a lambda where the argument variable is bound to the given expression                    
 compileLambda :: AlgRes -> Param -> GraphM AlgRes
 compileLambda arg (ParAbstr _ (PVar x) e) = withBinding x arg $ coreToAlgebra e
-compileLambda _ _ = $impossible
+compileLambda _ p = error $ show p -- $impossible
 
 -- | Transform gamma for map function                
 algResv :: AlgNode -> (String, AlgRes) -> GraphM (String, AlgRes)

@@ -88,7 +88,7 @@ resultCheck (e, psi) = do
                         psir <- getFromContext 
                         case (psir, psi) of
                             (Just p, psi') | p == psi' -> return (e, psi') 
-                                          | otherwise -> error "Expected box sort doesn't match inferred sort"
+                                           | otherwise -> error $ "Expected box sort doesn't match inferred sort in expression: " ++ show e
                             (Nothing, psi') -> return (e, psi')
 
 -- | Deal with corner case of lazy unboxing, the result 
@@ -177,8 +177,8 @@ boxParam (ParAbstr t p e) = do
                              let args = getVars p
                              psie <- getFromContext
                              let (asso, boxR) = varsWithBox args $ fromJust psie
-                             (e', psi) <- foldr (\(v, t') r -> addToEnv v t' r) (withContext boxR $ box e) asso
-                             return (ParAbstr t p e', psi)
+                             (e', psi) <- foldr (\(v, t') r -> addToEnv v t' r) (noContext $ box e) asso
+                             return (ParAbstr t p (boxOp psi boxR e'), boxR)
                              
     
 getVars :: Pattern -> [String]
