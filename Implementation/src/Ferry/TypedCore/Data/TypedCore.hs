@@ -8,6 +8,7 @@ type Ident = String
 
 data Op where
     Op :: String -> Op
+        deriving (Show)
 
 data CoreExpr where
     BinOp :: (Qual FType) -> Op -> CoreExpr -> CoreExpr -> CoreExpr
@@ -22,21 +23,27 @@ data CoreExpr where
     Elem :: (Qual FType) -> CoreExpr -> String -> CoreExpr
     Table :: (Qual FType) -> String -> [Column] -> [Key] -> CoreExpr
     If :: (Qual FType) -> CoreExpr -> CoreExpr -> CoreExpr -> CoreExpr
+    deriving (Show)
 
 data RecElem where
     RecElem :: (Qual FType) -> String -> CoreExpr -> RecElem
+    deriving (Show)
 
 data Param where
      ParExpr :: (Qual FType) -> CoreExpr -> Param
      ParAbstr :: (Qual FType) -> Pattern -> CoreExpr -> Param
+         deriving (Show)
 
 data Pattern where
     PVar :: String -> Pattern
     Pattern :: [String] -> Pattern
+        deriving (Show)
 
 data Column where
      Column :: String -> FType -> Column
+         deriving (Show)
 
 data Key where
     Key :: [String] -> Key
+        deriving (Show)
 

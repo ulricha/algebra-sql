@@ -17,9 +17,7 @@ wrapArg :: CoreExpr -> Param
 wrapArg e = ParExpr (typeOf e) e
 
 eq :: CoreExpr -> CoreExpr -> CoreExpr
-eq e1 e2 = let (q1 :=> t1) = typeOf e1
-               (q2 :=> t2) = typeOf e2
-            in BinOp (q1 `L.union` q2 :=> t1 .-> t2 .-> FBool) (Op "==") e1 e2
+eq e1 e2 = BinOp ([] :=> FBool) (Op "==") e1 e2
 
 notF :: CoreExpr -> CoreExpr
 notF e = App ([] :=> FBool) (Var ([] :=> FBool .-> FBool) "not") (ParExpr (typeOf e) e)    

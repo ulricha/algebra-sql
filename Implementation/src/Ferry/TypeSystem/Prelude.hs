@@ -53,6 +53,7 @@ primitives = M.fromList $
              ,("||", Forall 0 0 $ [] :=> bool .-> bool .-> bool)
              ,("minP", Forall 1 0 $ [] :=> (list $ genT 1) .-> (list $ genT 1) .-> FInt)
              ,("count", Forall 1 0 $ [] :=> (list $ genT 1) .-> FInt)
+             ,("length", Forall 1 0 $ [] :=> (list $ genT 1) .-> FInt)
              ,("all", Forall 0 0 $ [] :=> (list bool) .-> bool)
              ,("map", Forall 2 0 $ [] :=> (genT 1 .-> genT 2) .-> list (genT 1) .-> list (genT 2))
              ,("concatMap", Forall 2 0 $ [] :=> (genT 1 .-> list (genT 2)) .-> list (genT 1) .-> list (genT 2))
