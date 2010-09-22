@@ -19,7 +19,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"Tom"</value></column></content
+            >Tom</value></column></content
         ><edge to="0"/></node
       ><node id="2" kind="attach"
         ><content
@@ -31,7 +31,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"DE"</value></column></content
+            >DE</value></column></content
         ><edge to="0"/></node
       ><node id="4" kind="attach"
         ><content
@@ -67,7 +67,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"Melanie"</value></column></content
+            >Melanie</value></column></content
         ><edge to="0"/></node
       ><node id="10" kind="attach"
         ><content
@@ -79,7 +79,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"FR"</value></column></content
+            >FR</value></column></content
         ><edge to="0"/></node
       ><node id="12" kind="attach"
         ><content
@@ -115,7 +115,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"Torsten"</value></column></content
+            >Torsten</value></column></content
         ><edge to="0"/></node
       ><node id="18" kind="attach"
         ><content
@@ -146,7 +146,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"Manuel"</value></column></content
+            >Manuel</value></column></content
         ><edge to="0"/></node
       ><node id="23" kind="attach"
         ><content
@@ -158,7 +158,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"IT"</value></column></content
+            >IT</value></column></content
         ><edge to="0"/></node
       ><node id="25" kind="attach"
         ><content
@@ -194,7 +194,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"Jeroen"</value></column></content
+            >Jeroen</value></column></content
         ><edge to="0"/></node
       ><node id="31" kind="attach"
         ><content
@@ -206,7 +206,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"NL"</value></column></content
+            >NL</value></column></content
         ><edge to="0"/></node
       ><node id="33" kind="attach"
         ><content
@@ -379,7 +379,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"Tom"</value></column></content
+            >Tom</value></column></content
         ><edge to="0"/></node
       ><node id="2" kind="attach"
         ><content
@@ -391,7 +391,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"DE"</value></column></content
+            >DE</value></column></content
         ><edge to="0"/></node
       ><node id="4" kind="attach"
         ><content
@@ -427,7 +427,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"Melanie"</value></column></content
+            >Melanie</value></column></content
         ><edge to="0"/></node
       ><node id="10" kind="attach"
         ><content
@@ -439,7 +439,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"FR"</value></column></content
+            >FR</value></column></content
         ><edge to="0"/></node
       ><node id="12" kind="attach"
         ><content
@@ -475,7 +475,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"Torsten"</value></column></content
+            >Torsten</value></column></content
         ><edge to="0"/></node
       ><node id="18" kind="attach"
         ><content
@@ -506,7 +506,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"Manuel"</value></column></content
+            >Manuel</value></column></content
         ><edge to="0"/></node
       ><node id="23" kind="attach"
         ><content
@@ -518,7 +518,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"IT"</value></column></content
+            >IT</value></column></content
         ><edge to="0"/></node
       ><node id="25" kind="attach"
         ><content
@@ -554,7 +554,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"Jeroen"</value></column></content
+            >Jeroen</value></column></content
         ><edge to="0"/></node
       ><node id="31" kind="attach"
         ><content
@@ -566,7 +566,7 @@
         ><content
           ><column name="item1" new="true"
             ><value type="str"
-            >"NL"</value></column></content
+            >NL</value></column></content
         ><edge to="0"/></node
       ><node id="33" kind="attach"
         ><content

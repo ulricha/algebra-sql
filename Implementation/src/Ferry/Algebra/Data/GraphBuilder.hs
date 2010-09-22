@@ -24,6 +24,9 @@ type Gam = [(String, AlgRes)]
 
 newtype SubPlan = SubPlan (M.Map Int AlgRes)
 
+instance Show SubPlan where
+    show (SubPlan p) = "SubPlans " ++ (show $ map (\(_,y,z) -> show (y, z)) $ M.elems p)
+    
 emptyPlan :: SubPlan
 emptyPlan = SubPlan M.empty
 

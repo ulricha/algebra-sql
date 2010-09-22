@@ -639,7 +639,7 @@ getCol n cs = getCol' cs
      getCol' ((Col _ _):xs)              = getCol' xs
      getCol' ((NCol x i):xs) | x == n    = i
                              | otherwise = getCol' xs
-     getCol' []                          = []
+     getCol' []                          = $impossible -- error $ show n ++ " in " ++ show cs --[]
 
 -- Transform Columns info into schema info for algebraic compilation
 colsToSchema :: Columns -> SchemaInfos

@@ -20,3 +20,4 @@ compile opts inp = do
                             (Left ProcessComplete, [(_, o)]) -> o
                             (Left err, _)       -> error $ show err
                             _                   -> $impossible
+                            

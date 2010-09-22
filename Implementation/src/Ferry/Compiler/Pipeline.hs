@@ -14,8 +14,6 @@ pipeline src = readPhase src >>=
                  toCorePhase >>=
                  typeInferPhase >>=
                  backEndPipeline
-                 
-
 
 backEndPipeline :: CoreExpr -> PhaseResult ()
 backEndPipeline c = rewritePhase c >>=

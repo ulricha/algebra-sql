@@ -61,7 +61,7 @@ instance Show SortDir where
 data ATy where
     AInt :: ATy             
     AStr :: ATy             
-    ABool :: ATy            
+    ABool :: ATy
     ADec :: ATy             
     ADouble :: ATy          
     ANat :: ATy             
@@ -92,7 +92,7 @@ data AVal where
 -- | Show the values in the way compatible with the xml plan.
 instance Show AVal where
   show (VInt x)     = show x
-  show (VStr x)     = show x
+  show (VStr x)     = x 
   show (VBool True)  = "true"
   show (VBool False) = "false"
   show (VDouble x)     =  show x
