@@ -9,8 +9,11 @@ import Ferry.Algebra.Data.GraphBuilder
 
 import Text.XML.HaXml.Types
 import Text.XML.HaXml.Pretty (document)
+import Text.XML.HaXml.Escape (xmlEscapeContent, mkXmlEscaper, XmlEscaper ())
 
 import Ferry.TypedCore.Data.Type (FType (..), Qual (..))
+
+import Data.Char (ord)
 
 import Control.Monad.State
 import Control.Monad.Writer
@@ -458,7 +461,7 @@ mkAttachNode :: XMLNode -> ColName -> AVal -> ATy -> XMLNode -> Element ()
 mkAttachNode xId n val ty cxId = let valNode = Elem "value" [("type", AttValue [Left $ show ty])] [CString False (show val) ()]
                                      colNode = Elem "column" [("name", AttValue [Left n])
                                                              ,("new", AttValue [Left "true"])]
-                                                             [CElem valNode ()]
+                                                             (xmlEscapeContent xmlEscaper [CElem valNode ()])
                                      conNode = contentNode colNode
                                      edgeNode = mkEdge cxId
                                   in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "attach"])] [CElem conNode (), CElem edgeNode ()]
@@ -468,7 +471,7 @@ mkTableNode :: XMLNode -> ColName -> AVal -> ATy -> Element ()
 mkTableNode xId n val ty = let valNode = Elem "value" [("type", AttValue [Left $ show ty])] [CString False (show val) ()]
                                colNode = Elem "column" [("name", AttValue [Left n])
                                                        ,("new", AttValue [Left "true"])]
-                                                       [CElem valNode ()]
+                                                       (xmlEscapeContent xmlEscaper [CElem valNode ()])
                                conNode = contentNode colNode
                             in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "table"])] [CElem conNode ()] 
 
@@ -514,3 +517,21 @@ mkProperty ty = Elem "property" [("name", AttValue [Left "overallResultType"]), 
         result = case ty of
                     FList _ -> "LIST"
                     _       -> "TUPLE"
+                    
+xmlEscaper :: XmlEscaper
+xmlEscaper = mkXmlEscaper
+   [('\60',"lt"),('\62',"gt"),('\38',"amp"),('\39',"apos"),('\34',"quot"), ('\92', "\\")]
+   (\ ch ->
+      let
+         i = ord ch
+      in
+         i < 10 || (10<i && i<32) || i >= 127 ||
+            case ch of
+               '\'' -> True
+               '\"' -> True
+               '&' -> True
+               '<' -> True
+               '>' -> True
+               '\\' -> True 
+               _ -> False
+      )
