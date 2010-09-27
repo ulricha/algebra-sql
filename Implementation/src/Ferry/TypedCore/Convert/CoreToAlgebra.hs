@@ -259,9 +259,13 @@ compileAppE1 (Var _ "nub") (q, cs, ts) =
 compileAppE1 (Var mt "count") (q, cs, ts) = compileAppE1 (Var mt "length") (q, cs, ts)
 compileAppE1 (Var _ "length") (q, _cs, _ts) = 
                     do
+                        emptyLists <- attach resCol intT (int 0) =<< getLoop
                         q' <- attach "pos" natT (nat 1)
-                                =<< proj [("iter", "iter"), ("item1", resCol)] 
-                                    =<< aggr [(Count, resCol, Nothing)] (Just "iter") q
+                                =<< proj [("iter", "iter"), ("item1", "item1")] 
+                                    =<< aggr [(Max, "item1", Just resCol)] (Just "iter")
+                                        =<< union emptyLists 
+                                            =<< aggr [(Count, resCol, Nothing)] (Just "iter") q
+                                    
                         return (q', [Col 1 AInt], emptyPlan)
                         
 compileAppE1 (Var _ "box") (q, cs, ts) =
@@ -284,7 +288,9 @@ compileAppE1 (Var _ "or") (q, cs, ts) =
                     do
                         q' <- attach "pos" natT (nat 1)
                                 =<< proj [("iter", iterPrime), ("item1", resCol)]
-                                    =<< aggr [(Max, resCol, Just "item1"), (Min, iterPrime, Just "iter")] (Just "iter") q
+                                    =<< aggr [(Max, resCol, Just "item1"), (Min, iterPrime, Just "iter")] (Just "iter") 
+                                        =<< union q
+                                            =<< attach "pos" natT (nat 1) =<< attach "item1" boolT (bool False) =<< getLoop
                         return (q', cs, ts)
 compileAppE1 (Var _ "unBox") (q, [Col 1 ASur], ts) =
                     do
@@ -659,6 +665,7 @@ typeToCols FFloat i = ([Col i ADouble], i + 1)
 typeToCols FString i = ([Col i AStr], i + 1)
 typeToCols FUnit i = ([Col i AInt], i + 1)
 typeToCols (FList _) i = ([Col i ASur], i + 1)
+typeToCols (FVar _) i = ([Col i ANat], i + 1)
 typeToCols _ _ = $impossible
 
 -- Compile a record type to a column structure
