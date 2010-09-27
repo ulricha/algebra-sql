@@ -103,11 +103,12 @@ coreToAlgebra (Elem _ e n) = do
                                 n1 <- proj (("iter", "iter"):("pos", "pos"):projPairs) q1
                                 return (n1, csn', ts)
 --Empty lists
-coreToAlgebra (Nil (_ :=> t)) = do
+coreToAlgebra (Nil (_ :=> (FList t))) = do
                                  let cs = fst $ typeToCols t 1
                                  let schema = ("iter", natT):("pos", natT):(colsToSchema cs)
                                  n1 <- emptyTable schema
                                  return (n1, cs, emptyPlan)
+coreToAlgebra (Nil _) = $impossible -- After type checking the only thing that reaches this stage has a list type
 -- List constructor, because of optimisation chances contents has been directed to special functions
 coreToAlgebra (c@(Cons _ _ _)) = listFirst c
 -- Database tables
@@ -275,7 +276,9 @@ compileAppE1 (Var _ "and") (q, cs, ts) =
                     do
                         q' <- attach "pos" natT (nat 1)
                                 =<< proj [("iter", iterPrime), ("item1", resCol)]
-                                    =<< aggr [(Min, resCol, Just "item1"), (Min, iterPrime, Just "iter")] (Just "iter") q
+                                    =<< aggr [(Min, resCol, Just "item1"), (Min, iterPrime, Just "iter")] (Just "iter")
+                                        =<< union q
+                                            =<< attach "pos" natT (nat 1) =<< attach "item1" boolT (bool True) =<< getLoop 
                         return (q', cs, ts)
 compileAppE1 (Var _ "or") (q, cs, ts) =
                     do

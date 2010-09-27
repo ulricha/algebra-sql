@@ -67,13 +67,12 @@
     \infrule[ac-the]
         {| Gam, loop +- e => (q, cs, ts) |\\
          | q' = attach one 1 (rownum' pos (ln cs) iter (distinct (proj (iter, ln cs) q))) |\\
-         | qe = error (sel res (gt res pos one q')) |\\
-         | qr = proj (iter, pos, ln cs) (union (sel res (eq res pos one q')) qe)|}
+         | qr = proj (iter, pos, ln cs) (sel res (eq res pos one q'))|}
         {| Gam, loop +- the e => (qr, cs, ts) |}\\
     \infrule[ac-length]
         {| Gam, loop +- e => (q, cs, ts) |\\
-         | q' = attach pos 1 (aggr (item1:count/iter) q) |}
-        {| Gam, loop +- length e => (q', cs, ts) |}
+         | q' = attach pos 1 (agrr (item1:max(item1)/iter) (union (attach item1 0 loop) (aggr (item1:count/iter) q))) |}
+        {| Gam, loop +- length e => (q', {item1}, empty) |}\\
     \infrule[ac-Box]
         {| Gam, loop +- e => (q, cs, ts) |\quad
          | q' = attach pos 1 (proj (iter, item1:iter) loop) |}

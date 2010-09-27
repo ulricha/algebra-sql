@@ -20,3 +20,6 @@ test:  ferryc
 haddock: 
 	cabal haddock --internal --executables --hoogle
 	cabal haddock --internal --executables
+
+install:
+	cabal install
