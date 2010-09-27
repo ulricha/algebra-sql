@@ -261,7 +261,7 @@ compileAppE1 (Var _ "length") (q, _cs, _ts) =
                     do
                         emptyLists <- attach resCol intT (int 0) =<< getLoop
                         q' <- attach "pos" natT (nat 1)
-                                =<< proj [("iter", "iter"), ("item1", "item1")] 
+                                =<< proj [("iter", "iter"), ("item1", resCol)] 
                                     =<< aggr [(Max, "item1", Just resCol)] (Just "iter")
                                         =<< union emptyLists 
                                             =<< aggr [(Count, resCol, Nothing)] (Just "iter") q
@@ -279,16 +279,16 @@ compileAppE1 (Var mt "all") (q, cs, ts) = compileAppE1 (Var mt "and") (q, cs, ts
 compileAppE1 (Var _ "and") (q, cs, ts) =
                     do
                         q' <- attach "pos" natT (nat 1)
-                                =<< proj [("iter", iterPrime), ("item1", resCol)]
-                                    =<< aggr [(Min, resCol, Just "item1"), (Min, iterPrime, Just "iter")] (Just "iter")
+                                =<< proj [("iter", "iter"), ("item1", resCol)]
+                                    =<< aggr [(Min, resCol, Just "item1")] (Just "iter")
                                         =<< union q
                                             =<< attach "pos" natT (nat 1) =<< attach "item1" boolT (bool True) =<< getLoop 
                         return (q', cs, ts)
 compileAppE1 (Var _ "or") (q, cs, ts) =
                     do
                         q' <- attach "pos" natT (nat 1)
-                                =<< proj [("iter", iterPrime), ("item1", resCol)]
-                                    =<< aggr [(Max, resCol, Just "item1"), (Min, iterPrime, Just "iter")] (Just "iter") 
+                                =<< proj [("iter", "iter"), ("item1", resCol)]
+                                    =<< aggr [(Max, resCol, Just "item1")] (Just "iter") 
                                         =<< union q
                                             =<< attach "pos" natT (nat 1) =<< attach "item1" boolT (bool False) =<< getLoop
                         return (q', cs, ts)

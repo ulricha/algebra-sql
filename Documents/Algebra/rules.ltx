@@ -109,6 +109,18 @@
         {| Gam, loop +- e1 => (q1, {item1}, {1 +-> (qs, css, tss)}) |\\
          | q = proj (iter:iter', pos:pos'', ln css) (rank (pos'') (<pos', pos>) (join (item1':iter) (proj (iter':iter, pos':pos, item1':item1) q1) qs)) |}
         {| Gam, loop +- concat e1 => (q, css, tss)|}\\
+    \infrule[ac-and]
+        {| Gam, loop +- e1 => (q1, cs1, ts1)|\\
+         | q = attach pos 1 (proj (iter, item1) (aggr (item1:min(item1)/iter) (union q1 (attach pos 1 (attach item1 True loop)))))|}
+        {| Gam, loop +- and e1 => (q, cs1, empty)|}\\
+    \infrule[ac-or]
+        {| Gam, loop +- e1 => (q1, cs1, ts1)|\\
+         | q = attach pos 1 (proj (iter, item1) (aggr (item1:max(item1)/iter) (union q1 (attach pos 1 (attach item1 False loop)))))|}
+        {| Gam, loop +- and e1 => (q, cs1, empty)|}\\
+    \infrule[ac-length]
+        {| Gam, loop +- e1 (q1, cs1, ts1)|\\
+         | q = attach pos 1 (proj (iter, item1) (aggr (item1:max(item1)/iter) (union (attach item1 0 loop) (aggr (item1:count/iter) q1))))|}
+        {| Gam, loop +- length e1 => (q, {item1}, empty)|}\\
     \infrule[ac-groupWith]
         {| Gam, loop +- e3 => (q3, cs3, ts3) |\\
          | (qv', qv, map', loop', Gam') = mapForward Gam q3 cs3 |\\
