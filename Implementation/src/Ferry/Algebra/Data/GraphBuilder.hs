@@ -17,7 +17,7 @@ import Control.Monad.Reader
 -- | nodes to node ids. When a node is inserted and an equal node (equal means, equal node 
 -- | and equal child nodes) already exists in the map the node id for that already existing
 -- | node is returned. This allows maximal sharing.
-type GraphM = ReaderT (Gam, AlgNode) (State (Int, M.Map AlgConstr AlgNode))
+type GraphM = ReaderT (Gam, AlgNode) (State (Int, M.Map Algebra AlgNode))
 
 -- | Variable environemtn mapping from variables to compiled nodes.
 type Gam = [(String, AlgRes)]
@@ -41,10 +41,10 @@ type AlgRes = (AlgNode, Columns, SubPlan)
 -- | An algebraic plan is the result of constructing a graph.
 -- | The pair consists of the mapping from nodes to their respective ids
 -- | and the algres from the top node.
-type AlgPlan = (M.Map AlgConstr AlgNode, AlgRes)
+type AlgPlan = (M.Map Algebra AlgNode, AlgRes)
 
 -- | Evaluate the monadic graph into an algebraic plan, given a loop relation.
-runGraph :: AlgConstr -> GraphM AlgRes -> AlgPlan
+runGraph :: Algebra -> GraphM AlgRes -> AlgPlan
 runGraph l = (\(r, (_,m)) -> (m, r) ) . flip runState (2, M.singleton l 1) . flip runReaderT ([], 1)
 
 -- | Get the current loop table
@@ -67,27 +67,26 @@ getFreshId = do
                 return n
 
 -- | Check if a node already exists in the graph construction environment, if so return its id.
-findNode :: AlgConstr -> GraphM (Maybe AlgNode)
+findNode :: Algebra -> GraphM (Maybe AlgNode)
 findNode n = do
               (_, t) <- get
               return $ M.lookup n t
 
 -- | Insert a node into the graph construction environment, first check if the node already exists
 -- | if so return its id, otherwise insert it and return its id.              
-insertNode :: AlgConstr-> GraphM AlgNode
-insertNode (n, children) = do
-                            let ctx = (n, children)
-                            v <- findNode ctx             
+insertNode :: Algebra -> GraphM AlgNode
+insertNode n = do
+                            v <- findNode n             
                             case v of
                                 (Just n') -> return n'
-                                Nothing -> insertNode' n children
+                                Nothing -> insertNode' n
 
 -- | Blindly insert a node, get a fresh id and return that                                 
-insertNode' :: Algebra -> [AlgNode] -> GraphM AlgNode
-insertNode' n children = do 
+insertNode' :: Algebra  -> GraphM AlgNode
+insertNode' n = do 
                               i <- getFreshId 
                               (sup, t) <- get
-                              let t' = M.insert (n, children) i t
+                              let t' = M.insert n i t
                               put $ (sup, t')
                               return i
 

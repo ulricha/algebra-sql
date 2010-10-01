@@ -226,39 +226,39 @@ type SemInfAggr  = ([(AggrType, ResAttrName, Maybe AttrName)], Maybe PartAttrNam
 type AlgNode = Int
 
 -- | An algebraic node is an algebraic element, and its children.
-type AlgConstr = (Algebra, [AlgNode])
+-- type AlgConstr = (Algebra, [AlgNode])
 
 
 -- | Algebraic operations. These operation do not reference their own children directly
 -- they only contain the information that is needed to perform the operation.
 data Algebra where
-    RowNum     :: SemInfRowNum -> Algebra     -- Should have one child
+    RowNum     :: SemInfRowNum -> AlgNode -> Algebra     -- Should have one child
 --    RowId      :: SemInfRowId -> Algebra      -- should have one child
-    RowRank    :: SemInfRank -> Algebra       -- should have one child
-    Rank       :: SemInfRank -> Algebra       -- should have one child
-    Proj       :: SemInfProj -> Algebra       -- should have one child   
-    Sel        :: SemInfSel  -> Algebra       -- should have one child  
-    PosSel     :: SemInfPosSel -> Algebra     -- should have one child
-    Cross      :: Algebra                     -- should have two children
-    EqJoin     :: SemInfEqJoin -> Algebra     -- should have two children 
+    RowRank    :: SemInfRank -> AlgNode -> Algebra       -- should have one child
+    Rank       :: SemInfRank -> AlgNode -> Algebra       -- should have one child
+    Proj       :: SemInfProj -> AlgNode -> Algebra       -- should have one child   
+    Sel        :: SemInfSel  -> AlgNode -> Algebra       -- should have one child  
+    PosSel     :: SemInfPosSel -> AlgNode -> Algebra     -- should have one child
+    Cross      :: AlgNode -> AlgNode -> Algebra                     -- should have two children
+    EqJoin     :: SemInfEqJoin -> AlgNode -> AlgNode -> Algebra     -- should have two children 
 --    SemiJoin   :: SemInfEqJoin -> Algebra     -- should have two children 
 --    ThetaJoin  :: SemInfThetaJoin -> Algebra  -- should have two children
-    DisjUnion  :: Algebra                     -- should have two children
+    DisjUnion  :: AlgNode -> AlgNode -> Algebra                     -- should have two children
 --    Diff       :: Algebra                     -- should have two children
-    Distinct   :: Algebra                     -- should have one child
+    Distinct   :: AlgNode -> Algebra                     -- should have one child
     LitTable   :: SemInfLitTable -> SchemaInfos -> Algebra
     EmptyTable :: SchemaInfos -> Algebra
     TableRef   :: SemInfTableRef -> Algebra
-    Attach     :: SemInfAttach -> Algebra     -- should have one child
-    FunBinOp   :: SemBinOp -> Algebra         -- should have one child
+    Attach     :: SemInfAttach -> AlgNode -> Algebra     -- should have one child
+    FunBinOp   :: SemBinOp -> AlgNode -> Algebra         -- should have one child
 --    Cast       :: SemInfCast -> Algebra       -- should have one child
 --    FunNumEq   :: SemInfBinOp -> Algebra      -- should have one child
 --    FunNumGt   :: SemInfBinOp -> Algebra      -- should have one child
 --    Fun1To1    :: SemInfFun1To1 -> Algebra    -- should have one child
 --    FunBoolAnd :: SemInfBinOp -> Algebra      -- should have one child      
 --    FunBoolOr  :: SemInfBinOp -> Algebra      -- should have one child
-    FunBoolNot :: SemUnOp -> Algebra       -- should have one child
-    Aggr       :: SemInfAggr -> Algebra    -- should have one child
+    FunBoolNot :: SemUnOp -> AlgNode -> Algebra       -- should have one child
+    Aggr       :: SemInfAggr -> AlgNode -> Algebra    -- should have one child
 --    FunAggrCnt :: SemInfFunAggrCnt -> Algebra -- should have one child
 --    SerializeRel :: SemInfSerRel -> Algebra   -- should have two children
   deriving (Show, Eq, Ord)

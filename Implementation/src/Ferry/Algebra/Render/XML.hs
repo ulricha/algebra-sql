@@ -29,7 +29,7 @@ type ColName = String
 
 -- The Graph is represented as a tuple of an int, that represents the first node, and
 -- a list of algebraic nodes with their node numbers.
-type Graph = (AlgNode, [(AlgConstr, AlgNode)])
+type Graph = (AlgNode, [(Algebra, AlgNode)])
 
 -- Alias for GraphNode ids
 type GraphNode = Int
@@ -45,7 +45,7 @@ type Dictionary = M.Map GraphNode XMLNode
 -- are the node ids from the graph. The state monad keeps track of the supply of fresh ids
 -- for xml nodes and the dictionary for looking up whether a certain graphnode already has
 -- an xml representation.
-type XML = WriterT [Element ()] (ReaderT (M.Map AlgNode AlgConstr) (State (Int, Dictionary)))
+type XML = WriterT [Element ()] (ReaderT (M.Map AlgNode Algebra) (State (Int, Dictionary)))
 
 -- Has a graphnode already been translated into an xml node. If yes which node?
 isDefined :: GraphNode -> XML (Maybe XMLNode)
@@ -67,14 +67,14 @@ addNodeTrans gId xId = do
                         put (n, M.insert gId xId d)
 
 -- Get a node from the algebraic plan with a certain graphNode id number
-getNode :: Int -> XML AlgConstr
+getNode :: Int -> XML Algebra
 getNode i = do
              nodes <- ask
              return $ nodes M.! i
 
 
 -- Run the monad and return a list of xml elements from the monad.
-runXML :: M.Map AlgNode AlgConstr -> XML a -> [Element ()]
+runXML :: M.Map AlgNode Algebra -> XML a -> [Element ()]
 runXML m = snd . fst . flip runState (0, M.empty) . flip runReaderT m . runWriterT 
 
 -- Transform a query plan with result type into a pretty doc.
@@ -169,88 +169,88 @@ alg2XML gId = do
                 
                 
  where
-    alg2XML' :: AlgConstr -> XML XMLNode 
-    alg2XML' (LitTable [[v]] [(n, ty)], _) = do
+    alg2XML' :: Algebra -> XML XMLNode 
+    alg2XML' (LitTable [[v]] [(n, ty)]) = do
                                             xId <- freshId
                                             tell [mkTableNode xId n v ty]
                                             return xId 
-    alg2XML' (Attach (n, (ty, val)),[cId1]) = do
+    alg2XML' (Attach (n, (ty, val)) cId1) = do
                                                 cxId1 <- alg2XML cId1
                                                 xId <- freshId
                                                 tell [mkAttachNode xId n val ty cxId1]
                                                 return xId
-    alg2XML' (Proj proj, [cId1]) = do
+    alg2XML' (Proj proj cId1) = do
                                     cxId1 <- alg2XML cId1
                                     xId <- freshId
                                     tell [mkProjNode xId proj cxId1]
                                     return xId
-    alg2XML' (EqJoin jc, [cId1, cId2]) = do
+    alg2XML' (EqJoin jc cId1 cId2) = do
                                                 cxId1 <- alg2XML cId1
                                                 cxId2 <- alg2XML cId2
                                                 xId <- freshId
                                                 tell [mkEqJoinNode xId jc cxId1 cxId2]
                                                 return xId
-    alg2XML' (FunBinOp (op, res, lArg, rArg), [cId]) = do
+    alg2XML' (FunBinOp (op, res, lArg, rArg) cId) = do
                                                         cxId1 <- alg2XML cId
                                                         xId <- freshId
                                                         tell [mkBinOpNode xId op res lArg rArg cxId1]
                                                         return xId
-    alg2XML' (EmptyTable schema, []) = do
+    alg2XML' (EmptyTable schema) = do
                                          xId <- freshId
                                          tell [mkEmptyTable xId schema]
                                          return xId
-    alg2XML' (DisjUnion, [cId1, cId2]) = do
+    alg2XML' (DisjUnion cId1 cId2) = do
                                           cxId1 <- alg2XML cId1
                                           cxId2 <- alg2XML cId2
                                           xId <- freshId
                                           tell [mkUnion xId cxId1 cxId2]
                                           return xId
-    alg2XML' (Rank (res, sort), [cId1]) = do
+    alg2XML' (Rank (res, sort) cId1) = do
                                             cxId1 <- alg2XML cId1
                                             xId <- freshId
                                             tell [mkRank xId res sort cxId1]
                                             return xId
-    alg2XML' (Cross, [cId1, cId2]) = do
+    alg2XML' (Cross cId1 cId2) = do
                                         cxId1 <- alg2XML cId1
                                         cxId2 <- alg2XML cId2
                                         xId <- freshId
                                         tell [mkCross xId cxId1 cxId2]
                                         return xId
-    alg2XML' (TableRef (n, cs, ks), []) = do
+    alg2XML' (TableRef (n, cs, ks)) = do
                                             xId <- freshId
                                             tell [mkTable xId n cs ks]
                                             return xId
-    alg2XML' (Sel n, [cId1]) = do
+    alg2XML' (Sel n cId1) = do
                                 cxId <- alg2XML cId1
                                 xId <- freshId
                                 tell [mkSelect xId n cxId]
                                 return xId
-    alg2XML' (PosSel (n, sort, part), [cId1]) = do
+    alg2XML' (PosSel (n, sort, part) cId1) = do
                                                   cxId1 <- alg2XML cId1
                                                   xId <- freshId
                                                   tell [mkPosSel xId n sort part cxId1]
                                                   return xId
-    alg2XML' (FunBoolNot (res, col), [cId1]) = do
+    alg2XML' (FunBoolNot (res, col) cId1) = do
                                                  cxId1 <- alg2XML cId1
                                                  xId <- freshId
                                                  tell [mkBoolNot xId res col cxId1]
                                                  return xId
-    alg2XML' (RowNum (res, sort, part), [cId1]) = do
+    alg2XML' (RowNum (res, sort, part) cId1) = do
                                                     cxId1 <- alg2XML cId1
                                                     xId <- freshId
                                                     tell [mkRowNum xId res sort part cxId1]
                                                     return xId
-    alg2XML' (Distinct, [cId1]) = do
+    alg2XML' (Distinct cId1) = do
                                     cxId <- alg2XML cId1
                                     xId <- freshId
                                     tell [mkDistinct xId cxId]
                                     return xId
-    alg2XML' (RowRank (res, sort), [cId1]) = do
+    alg2XML' (RowRank (res, sort) cId1) = do
                                               cxId1 <- alg2XML cId1
                                               xId <- freshId
                                               tell [mkRowRank xId res sort cxId1]
                                               return xId
-    alg2XML' (Aggr (aggrs, part), [cId1])
+    alg2XML' (Aggr (aggrs, part) cId1)
                             = do
                                 cxId1 <- alg2XML cId1
                                 xId <- freshId

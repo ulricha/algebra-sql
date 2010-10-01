@@ -13,7 +13,8 @@ library
     exposed-modules:  Ferry.Syntax
                       Ferry.Compiler
     hs-source-dirs:   src
-    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind
+    extensions:       MonoLocalBinds
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
     other-modules:
         Ferry.Algebra.Data.Algebra 
         Ferry.Algebra.Data.Create 
