@@ -145,7 +145,11 @@
          | qi = proj (iter:gk, decr csi:csi, pos) q | \quad | where i elem [1..n] |\\
          | tsi = { n -> ts1!o || (o, n) <- zip (ln csi) (ln $ decr csi) } | \quad | where i elem [1..n]|\\ 
          | ts = { i ->  (qi, decr csi, tsi) || i <- [1..n]} |}
-        {| Gam, loop +- groupBy (\x1 -> e1) (\x2 -> e2) e3 => (qout, cs, ts)|}
+        {| Gam, loop +- groupBy (\x1 -> e1) (\x2 -> e2) e3 => (qout, cs, ts)|}\\
+    \infrule[ac-sum]
+        {| Gam, loop +- e1 => (q, {item1}, empty)|\\
+         | q' = attach pos 1 (aggr (item1:sum(item)/iter) (union (attach item1 0 loop) (proj (iter, item1) (aggr (item1:sum(item1)/iter) q))))|}
+        {| Gam, loop +- sum e1 => (q', {item1}, empty)|}
     \end{infrules}
 \begin{code}
 tyToCol :: Type -> Int -> Columns
