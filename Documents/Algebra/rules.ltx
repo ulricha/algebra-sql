@@ -148,7 +148,7 @@
         {| Gam, loop +- groupBy (\x1 -> e1) (\x2 -> e2) e3 => (qout, cs, ts)|}\\
     \infrule[ac-sum]
         {| Gam, loop +- e1 => (q, {item1}, empty)|\\
-         | q' = attach pos 1 (aggr (item1:sum(item)/iter) (union (attach item1 0 loop) (proj (iter, item1) (aggr (item1:sum(item1)/iter) q))))|}
+         | q' = attach pos 1 (aggr (item1:max(item)/iter) (union (attach item1 0 loop) (proj (iter, item1) (aggr (item1:sum(item1)/iter) q))))|}
         {| Gam, loop +- sum e1 => (q', {item1}, empty)|}
     \end{infrules}
 \begin{code}
