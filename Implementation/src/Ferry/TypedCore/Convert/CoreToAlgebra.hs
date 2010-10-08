@@ -261,8 +261,7 @@ compileAppE1 (Var _ "length") (q, _cs, _ts) =
                     do
                         emptyLists <- attach resCol intT (int 0) =<< getLoop
                         q' <- attach "pos" natT (nat 1)
-                                =<< proj [("iter", "iter"), ("item1", resCol)] 
-                                    =<< aggr [(Max, "item1", Just resCol)] (Just "iter")
+                                =<< aggr [(Max, "item1", Just resCol)] (Just "iter")
                                         =<< union emptyLists 
                                             =<< aggr [(Count, resCol, Nothing)] (Just "iter") q
                                     
