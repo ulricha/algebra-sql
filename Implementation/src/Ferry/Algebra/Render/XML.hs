@@ -338,10 +338,10 @@ mkTable xId n descr keys = let props = Elem "properties" [] [flip CElem () $ mkK
 
 -- | Create an xml table description node
 mkTableDescr :: String -> TableAttrInf -> Element ()
-mkTableDescr n descr = Elem "table" [("name", AttValue [Left n])] $ map (\d -> flip CElem () $ toTableCol d ) descr
+mkTableDescr n descr = Elem "table" [("name", AttValue [Left $ "&quot;" ++n ++ "&quot;"])] $ map (\d -> flip CElem () $ toTableCol d ) descr
     where
      toTableCol :: (AttrName, AttrName, ATy) -> Element ()
-     toTableCol (cn, xn, t) = Elem "column" [("name", AttValue [Left xn]), ("tname", AttValue [Left cn]), ("type", AttValue [Left $ show t])] []
+     toTableCol (cn, xn, t) = Elem "column" [("name", AttValue [Left xn]), ("tname", AttValue [Left $ "&quot;" ++ cn ++ "&quot;"]), ("type", AttValue [Left $ show t])] []
 
 -- | Create an xml table key node
 mkKey :: KeyInfo -> Element ()
