@@ -40,6 +40,7 @@ primitives = M.fromList $
              ,("/", Forall 1 0 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
              ,("%", Forall 1 0 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
              ,("^", Forall 1 0 $ [IsIn "Num" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) (FGen 1)))
+             ,("sum", Forall 1 0 $ [IsIn "Num" (FGen 1)] :=> (list $ genT 1) .-> genT 1)
              ,("==", Forall 1 0 $ [IsIn "Eq" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) bool))
              ,("!=", Forall 1 0 $ [IsIn "Eq" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) bool))
              ,("<=", Forall 1 0 $ [IsIn "Ord" (FGen 1)] :=> FFn (FGen 1) (FFn (FGen 1) bool))
