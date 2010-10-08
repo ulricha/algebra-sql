@@ -283,14 +283,18 @@ compileAppE1 (Var _ "and") (q, cs, ts) =
                                         =<< union q
                                             =<< attach "pos" natT (nat 1) =<< attach "item1" boolT (bool True) =<< getLoop 
                         return (q', cs, ts)
-compileAppE1 (Var _ "sum") (q, cs, _) =
+compileAppE1 (Var (_ :=> FFn _ t) "sum") (q, cs, _) =
                     do
+                        let ty = case t of
+                                    FInt -> intT
+                                    FFloat -> doubleT
+                                    _ -> $impossible
                         q'' <- proj [("iter", "iter"), ("item1", "item1")] q
                         q' <- attach "pos" natT (nat 1)
                                 =<< proj [("iter", "iter"), ("item1", resCol)]
                                     =<< aggr [(Sum, resCol, Just "item1")] (Just "iter")
                                         =<< union q''
-                                            =<< attach "item1" intT (int 0) =<< getLoop
+                                            =<< attach "item1" ty (int 0) =<< getLoop
                         return (q', cs, emptyPlan)
 compileAppE1 (Var _ "or") (q, cs, ts) =
                     do
