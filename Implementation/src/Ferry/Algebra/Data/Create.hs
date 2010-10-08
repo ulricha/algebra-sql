@@ -57,6 +57,9 @@ litTable v s t = insertNode $ LitTable [[v]] [(s, t)]
 attach :: ResAttrName -> ATy -> AVal -> AlgNode -> GraphM AlgNode
 attach n t v c = insertNode $ Attach (n, (t, v)) c
 
+cast :: AttrName -> ResAttrName -> ATy -> AlgNode -> GraphM AlgNode
+cast n r t c = insertNode $ Cast (r, n, t) c
+
 eqJoin :: String -> String -> AlgNode -> AlgNode -> GraphM AlgNode
 eqJoin n1 n2 c1 c2 = insertNode $ EqJoin (n1, n2) c1 c2
 

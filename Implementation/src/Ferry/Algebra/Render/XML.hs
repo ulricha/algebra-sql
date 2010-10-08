@@ -256,7 +256,20 @@ alg2XML gId = do
                                 xId <- freshId
                                 tell [mkAggrs xId aggrs part cxId1]
                                 return xId
+    alg2XML' (Cast (r, o, t) cId1) = do
+                                        cxId1 <- alg2XML cId1
+                                        xId <- freshId
+                                        tell [mkCast xId o r t cxId1]
+                                        return xId
     alg2XML' _ = $impossible
+
+mkCast :: XMLNode -> AttrName -> AttrName -> ATy -> XMLNode -> Element ()
+mkCast xId o r t c = let contNodes = [flip CElem () $ Elem "column" [("name", AttValue [Left r]), ("new", AttValue [Left "true"])] []
+                                     ,flip CElem () $ Elem "column" [("name", AttValue [Left o]), ("new", AttValue [Left "false"])] []
+                                     ,flip CElem () $ Elem "type" [("name", AttValue [Left $ show t])] []]
+                         edge = mkEdge c
+                         contents = [flip CElem () $ Elem "content" [] contNodes, CElem edge ()]
+                      in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "cast"])] contents
 
 mkAggrs :: XMLNode -> [(AggrType, ResAttrName, Maybe AttrName)] -> Maybe PartAttrName -> XMLNode -> Element ()
 mkAggrs xId aggrs part cId = let partCol = case part of

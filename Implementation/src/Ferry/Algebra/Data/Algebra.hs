@@ -202,7 +202,7 @@ type SemInfTableRef = (TableName, TableAttrInf, KeyInfos)
 type SemInfAttach   = (ResAttrName, ATyVal)
 
 
--- type SemInfCast     = (ResAttrName, AttrName, ATy)
+type SemInfCast     = (ResAttrName, AttrName, ATy)
 -- type SemInfosUnOp   = (ResAttrName, AttrName)   
 -- type SemInfBinOp    = (ResAttrName, (LeftAttrName, RightAttrName))   
 
@@ -251,7 +251,7 @@ data Algebra where
     TableRef   :: SemInfTableRef -> Algebra
     Attach     :: SemInfAttach -> AlgNode -> Algebra     -- should have one child
     FunBinOp   :: SemBinOp -> AlgNode -> Algebra         -- should have one child
---    Cast       :: SemInfCast -> Algebra       -- should have one child
+    Cast       :: SemInfCast -> AlgNode -> Algebra       -- should have one child
 --    FunNumEq   :: SemInfBinOp -> Algebra      -- should have one child
 --    FunNumGt   :: SemInfBinOp -> Algebra      -- should have one child
 --    Fun1To1    :: SemInfFun1To1 -> Algebra    -- should have one child

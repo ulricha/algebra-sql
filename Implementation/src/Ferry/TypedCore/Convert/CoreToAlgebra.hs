@@ -304,7 +304,12 @@ compileAppE1 (Var _ "or") (q, cs, ts) =
                                         =<< union q
                                             =<< attach "pos" natT (nat 1) =<< attach "item1" boolT (bool False) =<< getLoop
                         return (q', cs, ts)
-compileAppE1 (Var _ "unBox") (q, [Col 1 ASur], ts) =
+compileAppE1 (Var _ "integerToDouble") (q, _cs, _ts) =
+                    do
+                        q' <- proj [("iter", "iter"), ("pos", "pos"), ("item1", resCol)]
+                                =<< cast "item1" resCol ADouble q
+                        return (q', [Col 1 ADouble], emptyPlan )
+compileAppE1 (Var _ "unBox") (q, [Col 1 ASur], ts) = 
                     do
                         let (q', cs', ts') = getPlan 1 ts
                         let csProj = zip (leafNames cs') (leafNames cs')
