@@ -39,6 +39,14 @@ data FType where
     FFn :: FType -> FType -> FType
     FTF :: FTFn -> FType -> FType
  deriving (Show, Eq, Ord)
+ 
+isPrim :: FType -> Bool
+isPrim FInt = True
+isPrim FFloat = True
+isPrim FString = True
+isPrim FBool = True
+isPrim (FRec ls) = and $ map (isPrim . snd) ls
+isPrim _ = False
 
 data RLabel where
     RLabel :: String -> RLabel

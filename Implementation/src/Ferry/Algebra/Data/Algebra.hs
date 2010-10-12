@@ -29,6 +29,7 @@ data AggrType = Avg
               | All 
               | Prod 
               | Dist
+              | The
     deriving (Eq, Ord)
 
 instance Show AggrType where
@@ -40,6 +41,7 @@ instance Show AggrType where
     show All      = "all"
     show Prod     = "prod"
     show Dist     = "distinct"
+    show The      = "the"
 
 -- | The show instance results in values that are accepted in the xml plan.
 instance Show SortDir where
@@ -244,7 +246,7 @@ data Algebra where
 --    SemiJoin   :: SemInfEqJoin -> Algebra     -- should have two children 
 --    ThetaJoin  :: SemInfThetaJoin -> Algebra  -- should have two children
     DisjUnion  :: AlgNode -> AlgNode -> Algebra                     -- should have two children
---    Diff       :: Algebra                     -- should have two children
+    Difference :: AlgNode -> AlgNode -> Algebra                     -- should have two children
     Distinct   :: AlgNode -> Algebra                     -- should have one child
     LitTable   :: SemInfLitTable -> SchemaInfos -> Algebra
     EmptyTable :: SchemaInfos -> Algebra

@@ -73,6 +73,9 @@ eqTJoin eqs projI q1 q2 = let (a, b) = head eqs
 rank :: ResAttrName -> SortInf -> AlgNode -> GraphM AlgNode
 rank res sort c1 = insertNode $ Rank (res, sort) c1
 
+difference :: AlgNode -> AlgNode -> GraphM AlgNode
+difference q1 q2 = insertNode $ Difference q1 q2
+
 rowrank :: ResAttrName -> SortInf -> AlgNode -> GraphM AlgNode
 rowrank res sort c1 = insertNode $ RowRank (res, sort) c1
 

@@ -261,7 +261,18 @@ alg2XML gId = do
                                         xId <- freshId
                                         tell [mkCast xId o r t cxId1]
                                         return xId
+    alg2XML' (Difference cId1 cId2) = do
+                                        cxId1 <- alg2XML cId1
+                                        cxId2 <- alg2XML cId2
+                                        xId <- freshId
+                                        tell [mkDifference xId cxId1 cxId2]
+                                        return xId
     alg2XML' _ = $impossible
+
+mkDifference :: XMLNode -> XMLNode -> XMLNode -> Element ()
+mkDifference xId cxId1 cxId2 = let edge1 = mkEdge cxId1
+                                   edge2 = mkEdge cxId2
+                                in Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "difference"])] [CElem edge1 (), CElem edge2 ()] 
 
 mkCast :: XMLNode -> AttrName -> AttrName -> ATy -> XMLNode -> Element ()
 mkCast xId o r t c = let contNodes = [flip CElem () $ Elem "column" [("name", AttValue [Left r]), ("new", AttValue [Left "true"])] []

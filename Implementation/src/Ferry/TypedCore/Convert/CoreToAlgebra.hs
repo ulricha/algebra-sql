@@ -12,7 +12,7 @@ import Ferry.Algebra.Data.Algebra
 import Ferry.Algebra.Data.Create
 import Ferry.Algebra.Data.GraphBuilder
 
-import Ferry.TypedCore.Data.Type (Qual (..), FType (..), RLabel (..))
+import Ferry.TypedCore.Data.Type (Qual (..), FType (..), RLabel (..), isPrim)
 import Ferry.TypedCore.Data.TypedCore as T
 
 import qualified Data.Map as M 
@@ -259,12 +259,13 @@ compileAppE1 (Var _ "nub") (q, cs, ts) =
 compileAppE1 (Var mt "count") (q, cs, ts) = compileAppE1 (Var mt "length") (q, cs, ts)
 compileAppE1 (Var _ "length") (q, _cs, _ts) = 
                     do
-                        emptyLists <- attach resCol intT (int 0) =<< getLoop
+                        loop <- getLoop
+                        q'' <- attach "item1" intT (int 0)
+                                =<< difference loop 
+                                    =<< proj [("iter", "iter")] q
                         q' <- attach "pos" natT (nat 1)
-                                =<< aggr [(Max, "item1", Just resCol)] (Just "iter")
-                                        =<< union emptyLists 
-                                            =<< aggr [(Count, resCol, Nothing)] (Just "iter") q
-                                    
+                                =<< union q'' 
+                                    =<< aggr [(Count, "item1", Nothing)] (Just "iter") q
                         return (q', [Col 1 AInt], emptyPlan)
                         
 compileAppE1 (Var _ "box") (q, cs, ts) =
@@ -273,7 +274,13 @@ compileAppE1 (Var _ "box") (q, cs, ts) =
                                 =<< proj [("iter", "iter"),("item1", "iter")] 
                                     =<< getLoop
                         return (q', [Col 1 surT], subPlan 1 (q, cs, ts))
-compileAppE1 (Var mt "the") (q, cs, ts) = compileAppE1 (Var mt "head") (q, cs, ts)
+compileAppE1 (Var mt@(_ :=> t) "the") (q, cs, ts) = if (isPrim t) 
+                                                    then
+                                                     do 
+                                                         q' <- aggr [(The, "item1", Just "item1")] (Just "iter") q
+                                                         return (q', cs, ts) 
+                                                    else 
+                                                        compileAppE1 (Var mt "head") (q, cs, ts)
 compileAppE1 (Var mt "all") (q, cs, ts) = compileAppE1 (Var mt "and") (q, cs, ts)
 compileAppE1 (Var _ "and") (q, cs, ts) =
                     do
