@@ -29,7 +29,6 @@ data AggrType = Avg
               | All 
               | Prod 
               | Dist
-              | The
     deriving (Eq, Ord)
 
 instance Show AggrType where
@@ -41,7 +40,6 @@ instance Show AggrType where
     show All      = "all"
     show Prod     = "prod"
     show Dist     = "distinct"
-    show The      = "the"
 
 -- | The show instance results in values that are accepted in the xml plan.
 instance Show SortDir where

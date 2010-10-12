@@ -19,6 +19,8 @@ import qualified Data.Map as M
 import qualified Data.List as L
 import Data.Maybe (fromJust, isJust)
 
+import System.IO.Unsafe
+
 -- | Section introducing aliases for commonly used columns
 
 -- | Results are stored in column:
@@ -274,12 +276,14 @@ compileAppE1 (Var _ "box") (q, cs, ts) =
                                 =<< proj [("iter", "iter"),("item1", "iter")] 
                                     =<< getLoop
                         return (q', [Col 1 surT], subPlan 1 (q, cs, ts))
-compileAppE1 (Var mt@(_ :=> t) "the") (q, cs, ts) = if (isPrim t) 
-                                                    then
-                                                     do 
-                                                         q' <- aggr [(The, "item1", Just "item1")] (Just "iter") q
+compileAppE1 (Var mt@(_ :=> FFn _ t) "the") (q, cs, ts) = 
+                                                     if (isPrim t) 
+                                                      then
+                                                       do 
+                                                         let projPairs = (:) ("iter", "iter") $ zip (leafNames cs) (leafNames cs)
+                                                         q' <- attach "pos" natT (nat 1) =<< distinct =<< proj projPairs q
                                                          return (q', cs, ts) 
-                                                    else 
+                                                      else 
                                                         compileAppE1 (Var mt "head") (q, cs, ts)
 compileAppE1 (Var mt "all") (q, cs, ts) = compileAppE1 (Var mt "and") (q, cs, ts)
 compileAppE1 (Var _ "and") (q, cs, ts) =
