@@ -19,8 +19,6 @@ import qualified Data.Map as M
 import qualified Data.List as L
 import Data.Maybe (fromJust, isJust)
 
-import System.IO.Unsafe
-
 -- | Section introducing aliases for commonly used columns
 
 -- | Results are stored in column:
@@ -262,12 +260,12 @@ compileAppE1 (Var mt "count") (q, cs, ts) = compileAppE1 (Var mt "length") (q, c
 compileAppE1 (Var _ "length") (q, _cs, _ts) = 
                     do
                         loop <- getLoop
+                        q''' <- aggr [(Count, "item1", Nothing)] (Just "iter") q
                         q'' <- attach "item1" intT (int 0)
                                 =<< difference loop 
-                                    =<< proj [("iter", "iter")] q
+                                    =<< proj [("iter", "iter")] q'''
                         q' <- attach "pos" natT (nat 1)
-                                =<< union q'' 
-                                    =<< aggr [(Count, "item1", Nothing)] (Just "iter") q
+                                =<< union q'' q''' 
                         return (q', [Col 1 AInt], emptyPlan)
                         
 compileAppE1 (Var _ "box") (q, cs, ts) =
@@ -299,14 +297,16 @@ compileAppE1 (Var (_ :=> FFn _ t) "sum") (q, cs, _) =
                         let ty = case t of
                                     FInt -> intT
                                     FFloat -> doubleT
+                                    (FVar _) -> intT
                                     _ -> $impossible
-                        q'' <- proj [("iter", "iter"), ("item1", "item1")] q
-                        q' <- attach "pos" natT (nat 1)
-                                =<< proj [("iter", "iter"), ("item1", resCol)]
-                                    =<< aggr [(Sum, resCol, Just "item1")] (Just "iter")
-                                        =<< union q''
-                                            =<< attach "item1" ty (int 0) =<< getLoop
-                        return (q', cs, emptyPlan)
+                        loop <- getLoop
+                        q' <- aggr [(Sum, "item1", Just "item1")] (Just "iter") q
+                        q'' <- attach "item1" ty (int 0)
+                                =<< difference loop 
+                                    =<< proj [("iter", "iter")] q'
+                        q''' <- attach "pos" natT (nat 1) 
+                                    =<< union q'' q'
+                        return (q''', cs, emptyPlan)
 compileAppE1 (Var _ "or") (q, cs, ts) =
                     do
                         q' <- attach "pos" natT (nat 1)
