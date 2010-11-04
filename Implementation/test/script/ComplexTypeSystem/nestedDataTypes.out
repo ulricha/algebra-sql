@@ -1,1 +1,0 @@
- => (Int, String, {bar :: String, deeper :: [{schnappie :: String}], foo :: String}, Bool)
