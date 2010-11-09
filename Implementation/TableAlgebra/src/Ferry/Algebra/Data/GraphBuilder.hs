@@ -2,7 +2,6 @@
 module Ferry.Algebra.Data.GraphBuilder where
     
 import Ferry.Algebra.Data.Algebra
---import Ferry.Algebra.Data.Create
 
 import qualified Data.Map as M
 import Control.Monad.State

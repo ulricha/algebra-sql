@@ -11,8 +11,6 @@ import Text.XML.HaXml.Types
 import Text.XML.HaXml.Pretty (document)
 import Text.XML.HaXml.Escape (xmlEscapeContent, mkXmlEscaper, XmlEscaper ())
 
-import Ferry.TypedCore.Data.Type (FType (..), Qual (..))
-
 import Data.Char (ord)
 
 import Control.Monad.State
@@ -79,10 +77,10 @@ runXML m = snd . fst . flip runState (0, M.empty) . flip runReaderT m . runWrite
 
 -- Transform a query plan with result type into a pretty doc.
 -- The type is used to add meta information to the XML that is used for pretty printing by ferryDB
-transform :: (Qual FType, AlgPlan) -> Doc
-transform (_ :=> t, p) = let plans = runXML M.empty $ planBuilder (mkProperty t) p
-                             planBundle = mkPlanBundle plans
-                          in (document $ mkXMLDocument planBundle)
+transform :: (Bool, AlgPlan) -> Doc
+transform (isList, p) = let plans = runXML M.empty $ planBuilder (mkProperty isList) p
+                            planBundle = mkPlanBundle plans
+                         in (document $ mkXMLDocument planBundle)
 
 -- Transform a potentially nested algebraic plan into xml.
 -- The first argument is the overall result type property of the query.
@@ -535,12 +533,12 @@ mkXMLDocument el = let xmlDecl = XMLDecl "1.0" (Just $ EncodingDecl "UTF-8") Not
                     in Document prol emptyST el []
 
 -- Create an xml property node so that ferryDB knows more or less how to print the result
-mkProperty :: FType -> Element ()
-mkProperty ty = Elem "property" [("name", AttValue [Left "overallResultType"]), ("value", AttValue[Left result])] []
+mkProperty :: Bool -> Element ()
+mkProperty isList = Elem "property" [("name", AttValue [Left "overallResultType"]), ("value", AttValue[Left result])] []
     where
-        result = case ty of
-                    FList _ -> "LIST"
-                    _       -> "TUPLE"
+        result = case isList of
+                    True  -> "LIST"
+                    False -> "TUPLE"
                     
 xmlEscaper :: XmlEscaper
 xmlEscaper = mkXmlEscaper

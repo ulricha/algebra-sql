@@ -5,8 +5,7 @@ module Ferry.Compiler.Stages.ToAlgebraStage (algebraPhase) where
 import Ferry.Compiler.Types
 import Ferry.Compiler.ExecuteStep
 
-import Ferry.Algebra.Data.GraphBuilder
-import Ferry.Algebra.Data.Create
+import Ferry.Algebra(runGraph, initLoop, AlgPlan)
 
 import Ferry.TypedCore.Data.Instances()
 import Ferry.TypedCore.Convert.CoreToAlgebra

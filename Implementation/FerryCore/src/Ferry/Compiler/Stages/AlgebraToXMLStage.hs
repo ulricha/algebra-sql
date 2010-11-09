@@ -6,16 +6,18 @@ module Ferry.Compiler.Stages.AlgebraToXMLStage (xmlPhase) where
 import Ferry.Compiler.Types
 import Ferry.Compiler.ExecuteStep
 
-import Ferry.Algebra.Data.GraphBuilder
-import Ferry.Algebra.Render.XML
+import Ferry.Algebra(AlgPlan, transform)
+
 import Ferry.TypedCore.Data.Type
 
 xmlPhase :: (Qual FType, AlgPlan) -> PhaseResult String
-xmlPhase e = executeStep xmlStage e
+xmlPhase (_ :=> t, p) = executeStep xmlStage $ case t of
+                                                FList _ -> (True, p)
+                                                _       -> (False, p)
 
-xmlStage :: CompilationStep (Qual FType, AlgPlan) String
+xmlStage :: CompilationStep (Bool, AlgPlan) String
 xmlStage = CompilationStep "ToXML" AlgebraXML step artefacts
     where
-        step :: (Qual FType, AlgPlan) -> PhaseResult String
+        step :: (Bool, AlgPlan) -> PhaseResult String
         step = return . show . transform 
         artefacts = [(XML, "xml", return)]

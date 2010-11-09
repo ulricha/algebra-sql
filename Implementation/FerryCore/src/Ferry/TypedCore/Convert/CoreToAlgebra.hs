@@ -8,9 +8,13 @@ functions on lists have been inlined (transformations performed by RewriteStage)
 -}
 import Ferry.Impossible
 import Ferry.Front.Data.Base
+
+import Ferry.Algebra
+{-
 import Ferry.Algebra.Data.Algebra
 import Ferry.Algebra.Data.Create
 import Ferry.Algebra.Data.GraphBuilder
+-}
 
 import Ferry.TypedCore.Data.Type (Qual (..), FType (..), RLabel (..), isPrim)
 import Ferry.TypedCore.Data.TypedCore as T
