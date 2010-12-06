@@ -1,4 +1,10 @@
 {-# LANGUAGE GADTs #-}
+{-| 
+The Algebra module provides the internal datatypes used for 
+constructing algebaric plans. It is not recommended to use these
+datatypes directly instead it is adviced the to use the functions
+provided by the module Ferry.Algebra.Data.Create
+-}
 module Ferry.Algebra.Data.Algebra where
 
 import Numeric (showFFloat)
@@ -46,14 +52,6 @@ instance Show SortDir where
     show Asc  = "ascending"
     show Desc = "descending"
     
---data JoinCompKind = TJ_EQ 
---                  | TJ_GT 
---                  | TJ_GE 
---                  | TJ_LT 
---                  | TJ_LE 
---                  | TJ_NE
---
-
 -- | Algebraic types
 --  At this level we do not have any structural types anymore
 --  those are represented by columns. ASur is used for surrogate
@@ -98,13 +96,6 @@ instance Show AVal where
   show (VDouble x)     =  show x
   show (VDec x)     = showFFloat (Just 2) x ""
   show (VNat x)     = show x
-
---
---data FunTyAggr = FTAggr_Avg
---               | FTAggr_Max
---               | FTAggr_Min
---               | FTAggr_Sum
---            deriving (Eq, Show)
 
 -- | Pair of a type and a value
 type ATyVal = (ATy, AVal)
@@ -154,9 +145,6 @@ type SortInf              = [(SortAttrName, SortDir)]
 -- | Projection information, a list of new attribute names, and their old names.
 type ProjInf              = [(NewAttrName, OldAttrName)]  
 
---type JoinPred = (JoinCompKind, (LeftAttrName,RightAttrName))
---type JoinPreds  = [JoinPred]
-
 -- | A tuple is a list of values
 type Tuple = [AVal]
 
@@ -164,7 +152,6 @@ type Tuple = [AVal]
 type SchemaInfos = [(AttrName, ATy)]    
 
 type SemInfRowNum  = (ResAttrName, SortInf, Maybe PartAttrName) 
--- type SemInfRowId   = ResAttrName
 
 -- | Information that specifies how to perform the rank operation.
 --  its first element is the column where the output of the operation is inserted
@@ -187,24 +174,16 @@ type SemInfPosSel  = (Int, SortInf, Maybe PartAttrName)
 -- element in the pair.
 type SemInfEqJoin  = (LeftAttrName,RightAttrName)
 
-
--- type SemInfThetaJoin = JoinPreds 
-
 -- | Information what to put in a literate table
 type SemInfLitTable = [Tuple]
-
 
 -- | Information for accessing a database table
 type SemInfTableRef = (TableName, TableAttrInf, KeyInfos)
 
-
 -- | Information what column, the first element, to attach to a table and what its content would be, the second element.
 type SemInfAttach   = (ResAttrName, ATyVal)
 
-
 type SemInfCast     = (ResAttrName, AttrName, ATy)
--- type SemInfosUnOp   = (ResAttrName, AttrName)   
--- type SemInfBinOp    = (ResAttrName, (LeftAttrName, RightAttrName))   
 
 -- | Information on how to perform a binary operation
 -- The first element is the function that is to be performed
@@ -215,19 +194,9 @@ type SemBinOp = (String, ResAttrName, LeftAttrName, RightAttrName)
 
 type SemUnOp = (ResAttrName, AttrName)
 
--- type SemInfFun1To1  = (FunTy1To1, ResAttrName, [AttrName])   
-
 type SemInfAggr  = ([(AggrType, ResAttrName, Maybe AttrName)], Maybe PartAttrName)
 
--- type SemInfFunAggrCnt = (ResAttrName, Maybe PartAttrName)
--- type SemInfSerRel   = (AttrName, AttrName, [AttrName])
-
-
 type AlgNode = Int
-
--- | An algebraic node is an algebraic element, and its children.
--- type AlgConstr = (Algebra, [AlgNode])
-
 
 -- | Algebraic operations. These operation do not reference their own children directly
 -- they only contain the information that is needed to perform the operation.

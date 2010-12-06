@@ -1,6 +1,6 @@
 cabal-version: >=1.8
 Name:           FerryTableAlgebra
-Version:        0.0.1
+Version:        0.0.2
 Description:    The Ferry 2.0 Table Algebra library
 License:             GPL
 License-file:   LICENSE
