@@ -1,6 +1,6 @@
 cabal-version: >=1.8
 Name:           Ferryc
-Version:        0.4.1
+Version:        0.4.5
 Description:    The Ferry 2.0 compiler
 License:        BSD3
 License-file:   LICENSE
@@ -8,7 +8,7 @@ Author:			Jeroen Weijers <jeroen.weijers@uni-tuebingen.de> Tom Schreiber <tom.sc
 Maintainer:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>
 Build-Type:     Simple
 executable ferryc
-    build-depends:  FerryCore >= 0.4.3, filepath >= 1.1.0.4, base >= 4.2, HaXml >= 1.20.2, pretty >= 1.0.1.1, parsec == 2.1.0.1, HUnit == 1.2.2.1, mtl >= 2.0.1.0, containers >= 0.3.0.0, haskell98 >= 1.0.1.1, template-haskell >= 2.4.0.0
+    build-depends:  FerryCore >= 0.4.5, filepath >= 1.1.0.4, base >= 4.2, HaXml >= 1.20.2, pretty >= 1.0.1.1, parsec >= 2.1.0.1, HUnit == 1.2.2.1, mtl >= 2.0.1.0, containers >= 0.3.0.0, haskell98 >= 1.0.1.1, template-haskell >= 2.4.0.0
     main-is:        FerryC.hs 
     hs-source-dirs: src
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-unused-do-bind -fno-warn-type-defaults
