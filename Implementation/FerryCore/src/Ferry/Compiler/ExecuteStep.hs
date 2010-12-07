@@ -1,4 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-| The compilation process is build out of small steps, this module provides the infrastructure
+that executes one such step. -}
 module Ferry.Compiler.ExecuteStep (executeStep) where
     
 import Ferry.Compiler.Types
@@ -8,7 +10,7 @@ executeStep :: CompilationStep a b -> a -> PhaseResult b
 executeStep step i = do
                             opts <- getConfig
                             phaseHeader (stageName step) (stageMode step)
-                            b <- stageStep step i
+                            b <- stageStep step i  -- stageStep step gets the function that is to be applied this phase
                             mapM_ (createArtefacts b) $ stageArtefacts step
                             if (mode opts == stageMode step)
                              then endProcess

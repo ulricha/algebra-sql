@@ -1,7 +1,7 @@
+{-# LANGUAGE TemplateHaskell #-}
 {- | This module wraps the boxing stage. Boxing is performed to ensure that nested lists are 
-   | handled in a separate table in the database. 
+   handled in a separate table in the database. 
 -}
-
 module Ferry.Compiler.Stages.BoxingStage (boxingPhase) where
     
 import Ferry.Compiler.Types
@@ -13,6 +13,8 @@ import Ferry.Common.Render.Dot
                                            
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Boxing.Boxing
+
+import Ferry.Impossible
 
 boxingPhase :: CoreExpr -> PhaseResult CoreExpr
 boxingPhase e = executeStep inferStage e
@@ -27,4 +29,4 @@ inferStage = CompilationStep "Boxing" Boxing step artefacts
 makeDot :: CoreExpr -> String
 makeDot c = case runDot $ toDot c of
             Right s -> s
-            Left _ -> error "Jikes"
+            Left _ -> $impossible

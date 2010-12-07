@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 -- | This module wraps the rewrite stage, performing some rewrites on the ferry core AST.
 module Ferry.Compiler.Stages.RewriteStage (rewritePhase) where
     
@@ -9,6 +10,8 @@ import Ferry.Common.Render.Dot
                                            
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Rewrite.OpRewrite
+
+import Ferry.Impossible
 
 rewritePhase :: CoreExpr -> PhaseResult CoreExpr
 rewritePhase e = executeStep inferStage e
@@ -23,4 +26,4 @@ inferStage = CompilationStep "Rewrite" OpRewrite step artefacts
 makeDot :: CoreExpr -> String
 makeDot c = case runDot $ toDot c of
             Right s -> s
-            Left _ -> error "Jikes"
+            Left _ -> $impossible

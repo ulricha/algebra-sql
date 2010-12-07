@@ -1,3 +1,6 @@
+{- | 
+This module contains some datatypes and functions that are used at various stages in the compiler.
+-}
 module Ferry.Common.Data.Base where
 
 -- | Identifiers are represented as strings    

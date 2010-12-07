@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 -- | This module wraps the transformation stage from ferry core, to typed ferry core.
 module Ferry.Compiler.Stages.TypeInferStage (typeInferPhase) where
     
@@ -14,6 +15,8 @@ import Ferry.TypedCore.Convert.Specialize
 import qualified Ferry.Core.Data.Core as C
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypeSystem.AlgorithmW
+
+import Ferry.Impossible
 
 typeInferPhase :: C.CoreExpr -> PhaseResult CoreExpr
 typeInferPhase e = executeStep inferStage e
@@ -32,4 +35,4 @@ inferStage = CompilationStep "TypeInfer" TypeInfer step artefacts
 makeDot :: CoreExpr -> String
 makeDot c = case runDot $ toDot c of
             Right s -> s
-            Left _ -> error "Jikes"
+            Left _ -> $impossible

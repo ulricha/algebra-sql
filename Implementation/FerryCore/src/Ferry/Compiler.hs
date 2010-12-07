@@ -1,3 +1,4 @@
+-- | The compiler interface
 module Ferry.Compiler
 ( module Ferry.Compiler.Stages,
   FerryError(..), handleError,

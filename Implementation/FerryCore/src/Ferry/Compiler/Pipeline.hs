@@ -1,3 +1,4 @@
+-- | Module describing the general core flow
 module Ferry.Compiler.Pipeline (backEndPipeline, backEndPipeline') where
 
 import Ferry.Compiler.Types
@@ -16,8 +17,8 @@ backEndPipeline c =  typeInferPhase c >>=
                      xmlPhase >>
                      return ()
                      
--- | The compiler pipeline. The given Core AST is transformed dependent on the configuration of the Phaseresult
---   monad.
+-- | The compiler pipeline. Some tools might already provide a typed AST, is the same as the normal backEndPipeline
+-- without type inferencing.
 backEndPipeline' :: T.CoreExpr -> PhaseResult ()
 backEndPipeline' c = rewritePhase c >>=
                      boxingPhase >>=

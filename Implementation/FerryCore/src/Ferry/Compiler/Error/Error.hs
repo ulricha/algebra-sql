@@ -1,3 +1,4 @@
+-- | Internal compiler errors
 module Ferry.Compiler.Error.Error where
 
 import Control.Monad.Error
@@ -8,11 +9,6 @@ import Text.ParserCombinators.Parsec (ParseError())
 -- | The FerryError datatype represents errors that occur during compilation
 data FerryError = NoSuchFile String
                 | ParserError ParseError
---                | IllegalRecSyntax RecElem
---                | IncompatableKeys Key Key
---                | FrontToCoreError String Expr
---                | FrontToCoreArgError String Arg 
---                | FrontToCoreRecError String RecElem
                 | UnificationError FType FType
                 | UnificationRecError [(RLabel, FType)] [(RLabel, FType)]
                 | ClassAlreadyDefinedError String
@@ -36,6 +32,4 @@ handleError :: FerryError -> IO ()
 handleError ProcessComplete = return () -- Process complete just means everything was fine but the pipeline was ordered to stop early
 handleError (ParserError e) = putStrLn $ show e
 handleError e               = putStrLn $ show e
-    
-
      
