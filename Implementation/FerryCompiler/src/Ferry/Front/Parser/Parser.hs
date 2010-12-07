@@ -131,7 +131,9 @@ haskellTZip = (\m b l -> HZip m l b) <$> pMeta <* symbol "|" <*> haskellSBody
 
 -- | Parser for Ferry list comprehensions.
 ferryCompr :: Parser QCompr
-ferryCompr = (\m (For _ ps) b r -> FerryCompr m ps b r) <$> pMeta <*> forClause <*> many bodyClause <*> returnClause
+ferryCompr = (\m f b r -> case f of
+                            (For _ ps) -> FerryCompr m ps b r
+                            _          -> error $ "Parser error") <$> pMeta <*> forClause <*> many bodyClause <*> returnClause
 
 forClause :: Parser BodyElem
 forClause = For <$> pMeta <* reserved "for" <*> commaSep1 ((,) <$> pattern <* reserved "in" <*> expr)

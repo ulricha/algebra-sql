@@ -251,7 +251,9 @@ normaliseGroup _ _ _ _ _ = $impossible
 
 
 normaliseOrder :: Meta -> (Pattern, Expr) -> [ExprOrder] -> [BodyElem] -> ReturnElem -> Normalisation Expr
-normaliseOrder m (p, e) ords bd r = (\(AExpr _ app) -> normaliseQCompr $ FerryCompr m [(p, app)] bd r) 
+normaliseOrder m (p, e) ords bd r = (\e' -> case e' of
+                                             (AExpr _ app) -> normaliseQCompr $ FerryCompr m [(p, app)] bd r
+                                             _             -> error "Cannot normalise order") 
                                      $ foldr f (AExpr emptyMeta e) $ (ordToFn1 $ head ords):(map ordToFn $ tail ords)
   where    
     f :: (Expr, Expr) -> Arg -> Arg
