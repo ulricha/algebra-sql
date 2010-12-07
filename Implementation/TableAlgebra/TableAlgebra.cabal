@@ -1,6 +1,6 @@
 cabal-version: >=1.8
 Name:           FerryTableAlgebra
-Version:        0.0.2
+Version:        0.1.0
 Description:    The Ferry 2.0 Table Algebra library
 License:        BSD3
 License-file:   LICENSE
@@ -12,7 +12,6 @@ library
     build-depends:    base >= 4.2, HaXml >= 1.20.2, mtl >= 1.1.0.2, containers >= 0.3.0.0, haskell98 >= 1.0.1.1, template-haskell >= 2.4.0.0, pretty >= 1.0.1
     exposed-modules:  Ferry.Algebra
     hs-source-dirs:   src
-    extensions:       MonoLocalBinds
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
     other-modules:
         Ferry.Algebra.Data.Algebra 

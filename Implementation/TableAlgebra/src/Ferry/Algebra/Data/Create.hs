@@ -56,7 +56,9 @@ emptyTable = insertNode . EmptyTable
 dbTable :: String -> Columns -> KeyInfos -> GraphM AlgNode
 dbTable n cs ks = insertNode $ TableRef (n, attr, ks) 
   where
-    attr = map (\(NCol n' [Col i t]) -> (n', "item" ++ show i, t)) cs
+    attr = map (\c -> case c of
+                        (NCol n' [Col i t]) -> (n', "item" ++ show i, t)
+                        _                   -> error "Not a named column") cs
 
 -- | Construct a table with one value
 litTable :: AVal -> String -> ATy -> GraphM AlgNode
