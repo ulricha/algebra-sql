@@ -24,10 +24,6 @@ type Substitution = M.Map Identifier Expr
 -- The state contains substitutions and a supply of fresh variables
 type Normalisation = ErrorT FerryError (State (Int, Substitution))
 
-instance Applicative Normalisation where
-    (<*>) = ap
-    pure = return
-    
 restoreState :: Normalisation a -> Normalisation a
 restoreState e = do
                     (_, s) <- get

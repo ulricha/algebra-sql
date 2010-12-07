@@ -10,10 +10,6 @@ import Control.Applicative (Applicative(..), (<$>), (<*>))
 
 type Transformation = ErrorT FerryError (State Int)
 
-instance Applicative Transformation where
-    (<*>) = ap
-    pure = return
-    
 getFreshIdentifier :: Transformation String
 getFreshIdentifier = do
                         n <- get
