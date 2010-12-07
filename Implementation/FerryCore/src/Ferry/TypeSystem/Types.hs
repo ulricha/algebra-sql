@@ -15,10 +15,6 @@ import qualified Data.Map as M
 
 type AlgW = ErrorT FerryError (ReaderT TyEnv (State (Int, Subst)))
 
-instance Applicative (AlgW) where
-  pure  = return
-  (<*>) = ap
-
 runAlgW :: Substitutable a => TyEnv -> AlgW a -> (Either FerryError a, Subst)
 runAlgW gam a = (x, s)
    where
