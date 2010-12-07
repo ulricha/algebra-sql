@@ -1,3 +1,4 @@
+-- | Pretty print instance for database types
 module Ferry.Core.Render.Pretty where
 
 import Ferry.Core.Data.Core

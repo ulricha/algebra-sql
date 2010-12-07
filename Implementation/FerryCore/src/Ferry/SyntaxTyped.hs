@@ -1,3 +1,4 @@
+{-| Everything related to typed core-}
 module Ferry.SyntaxTyped 
 (
 Ident,

@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports   #-}
+{-| Everything related to untyped core -}
 module Ferry.Syntax
 (
 Ident,

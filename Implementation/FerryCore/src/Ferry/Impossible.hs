@@ -1,3 +1,4 @@
+-- | Utility module for reporting impossible events
 module Ferry.Impossible (impossible) where
 
 import qualified Language.Haskell.TH as TH

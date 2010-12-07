@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-| Provides a function that can replace groupByN occurences by a more specific one-}
 module Ferry.TypedCore.Convert.Specialize where
 
 import Ferry.TypedCore.Convert.Traverse

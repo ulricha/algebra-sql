@@ -1,3 +1,4 @@
+{-| Compiler stages of the backend-}
 module Ferry.Compiler.Stages (xmlPhase, boxingPhase, rewritePhase, 
                               algebraPhase, typeInferPhase) where
     

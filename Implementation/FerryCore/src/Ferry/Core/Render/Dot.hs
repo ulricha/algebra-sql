@@ -1,3 +1,4 @@
+-- | Provides Dotify instance for untyped core 
 module Ferry.Core.Render.Dot() where
 
 import Ferry.Common.Render.Dot    
@@ -7,9 +8,11 @@ import Ferry.Core.Render.Pretty
 
 import qualified Data.List as L
 
+
 instance Dotify CoreExpr where
     dot e = runDot $ toDot e
 
+-- | Transform core expression to dot environment
 toDot :: CoreExpr -> Dot Id
 toDot (BinOp o e1 e2) = do
                           id1 <- toDot e1
@@ -64,7 +67,7 @@ toDot (If e1 e2 e3) = do
                         edge nId [eId1, eId2, eId3]
                         return nId
                         
-
+-- | Convert function parameters to dot representations
 paramToDot :: Param -> Dot Id
 paramToDot (ParExpr e) = toDot e
 paramToDot (ParAbstr p e) = do
@@ -73,11 +76,13 @@ paramToDot (ParAbstr p e) = do
                              eId <- toDot e
                              edge nId [pId, eId]
                              return nId
-                             
+
+-- | Convert a pattern to a dot node                             
 patToDot :: Pattern -> Dot Id
 patToDot (PVar s) = node [Label $ SLabel s, Color Red, Shape Triangle]
 patToDot (Pattern s) = node [Label $ SLabel $  "(" ++ (concat $ L.intersperse ", " s) ++ ")", Color Red, Shape Triangle]
 
+-- | Convert a record element to a dot node
 recToDot :: RecElem -> Dot Id
 recToDot (RecElem s e) = do
                           nId <- node [Label $ SLabel s, Color Red, Shape Oval]
@@ -85,5 +90,6 @@ recToDot (RecElem s e) = do
                           edge nId [eId]
                           return nId
 
+-- | Generate a string representation of a database key
 keyToString :: Key -> String
 keyToString (Key ks) = "(" ++ (concat $ L.intersperse ", " ks) ++ ")"

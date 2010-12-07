@@ -1,3 +1,4 @@
+{- | Provides a traverse method that given functions for parts of the AST traverses the AST and applies the function where appropriate -}
 module Ferry.TypedCore.Convert.Traverse where
     
 import Ferry.TypedCore.Data.TypedCore
@@ -5,9 +6,8 @@ import Ferry.TypedCore.Data.Type
 import Ferry.Common.Data.Base
 import Control.Monad
 
-
+-- | Datatype that contains the functions that are needed for a traversal
 data FoldCore b p r = FoldCore {binOpF :: Qual FType -> Op -> b -> b -> b
---                             ,unaOpF :: Qual FType -> Op -> b -> b
                              ,constantF :: Qual FType -> Const -> b
                              ,varF :: Qual FType -> String -> b
                              ,appF :: Qual FType -> b -> p -> b
@@ -22,12 +22,13 @@ data FoldCore b p r = FoldCore {binOpF :: Qual FType -> Op -> b -> b -> b
                              ,pAbstrF :: Qual FType -> Pattern -> b -> p
                              ,rRecEF :: Qual FType -> String -> b -> r}
 
+-- | Identity traversel
 idFoldCore :: FoldCore CoreExpr Param RecElem
-idFoldCore = FoldCore BinOp {- UnaOp -} Constant Var App Let Rec Cons Nil Elem Table If ParExpr ParAbstr RecElem  
+idFoldCore = FoldCore BinOp Constant Var App Let Rec Cons Nil Elem Table If ParExpr ParAbstr RecElem  
 
+-- | Monadic traversal
 mFoldCore :: Monad m => FoldCore (m CoreExpr) (m Param) (m RecElem)
 mFoldCore = FoldCore (\t o -> liftM2 (BinOp t o))
---                      (\t o -> liftM (UnaOp t o))
                       (\t c -> return $ Constant t c)
                       (\t s -> return $ Var t s)
                       (\t -> liftM2 $ App t)
@@ -51,7 +52,6 @@ mFoldCore = FoldCore (\t o -> liftM2 (BinOp t o))
 -- | that the function is applied to all its children.
 traverse :: (FoldCore b p r) -> CoreExpr -> b
 traverse f (BinOp t o e1 e2)              = (binOpF f) t o (traverse f e1) $ traverse f e2
--- traverse f (UnaOp t o e1)                 = (unaOpF f) t o $ traverse f e1
 traverse f (Constant t c)                 = (constantF f) t c
 traverse f (Var t s)                      = (varF f) t s
 traverse f (App t e1 (ParExpr t2 e2))     = (appF f) t (traverse f e1) $ (pExprF f) t2 $ traverse f e2

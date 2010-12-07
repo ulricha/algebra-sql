@@ -1,3 +1,4 @@
+-- | This module is exposed in the library allowing other applications to compile typedCore to relational algebra
 {-# LANGUAGE TemplateHaskell #-}
 module Ferry.Compiler.Transform (typedCoreToAlgebra) where
     

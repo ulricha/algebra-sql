@@ -1,11 +1,16 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Ferry.TypedCore.Convert.CoreToAlgebra where
-
-{-
+{- |
 This module transforms typed ferry core into a relational algebra DAG.
 The transformation assumes that given programs are type correct and some
 functions on lists have been inlined (transformations performed by RewriteStage).
+
+For a more complete overview see:
+
+http://www-db.informatik.uni-tuebingen.de/files/publications/avalanche-safe-linq.pdf
 -}
+module Ferry.TypedCore.Convert.CoreToAlgebra where
+
+
 import Ferry.Impossible
 import Ferry.Common.Data.Base
 
