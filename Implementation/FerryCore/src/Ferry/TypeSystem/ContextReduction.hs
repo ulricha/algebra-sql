@@ -15,23 +15,15 @@ reduce (preds :=> tau) _ = (gamPreds, tyPreds :=> tau)
                                                 Has _ _ _ -> True
                                                 _ -> False) preds
 
-{-
-classExists :: Pred -> ClassEnv -> Pred
-classExists p@(IsIn c t) env = if defined c env
-
-classPreds :: Pred -> ClassEnv -> Pred
-classPreds (IsIn c t) env = not isTrivial
-  where
-    isTrivial = L.member t $  map (\(_ :=> ty) -> ty) $ map snd $ M.lookup c env  
--}
-
 simplifyPreds :: [Pred] -> [Pred]
 simplifyPreds ps = foldr (\x l -> (flatten x) : l)  [] groups
    where
     flatten x = case x of
                  [x'] -> x'
                  _   -> error "Multiple types for one field"
-    groups = map L.nub $ L.groupBy (\(Has f1 r1 _) (Has f2 r2 _) -> f1 == f2 && r1 == r2) ps
+    groups = map L.nub $ L.groupBy (\c1 c2 -> case (c1, c2) of
+                                                ((Has f1 r1 _), (Has f2 r2 _)) -> f1 == f2 && r1 == r2
+                                                _                              -> error "Wrong type of predicate") ps
 
 
 filterImpossiblePreds :: Pred -> [Pred] -> [Pred]

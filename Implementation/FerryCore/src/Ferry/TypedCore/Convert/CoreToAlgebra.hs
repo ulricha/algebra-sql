@@ -632,10 +632,14 @@ key2Key cs ks = map (\(Key k) -> map (\ki -> case getCol ki cs of
 
 -- Get all the column names from the structure                                    
 leafNames :: Columns -> [String]
-leafNames cs = map (\(Col i _) -> "item" ++ show i) $ colLeafs cs
+leafNames cs = map (\c -> case c of
+                            (Col i _) -> "item" ++ show i
+                            _         -> error "Named column not allowed in leafNames") $ colLeafs cs
 
 leafNumbers :: Columns -> [Int]
-leafNumbers cs = map (\(Col i _) -> i) $ colLeafs cs
+leafNumbers cs = map (\c -> case c of
+                            (Col i _) -> i
+                            _         -> error "Named column not allowed in LeafNumbers") $ colLeafs cs
 
 -- Get all the leaf columns, that is the columns that are actually a column
 colLeafs :: Columns -> Columns
@@ -655,7 +659,9 @@ incrCols _   []              = []
 
 -- Find the lowest column number
 minCol :: Columns -> Int
-minCol c = minimum $ map (\(Col i _) -> i) $ colLeafs c
+minCol c = minimum $ map (\c' -> case c' of
+                                    (Col i _) -> i
+                                    _         -> error "Named column not expected in minCol") $ colLeafs c
 
 -- Decrement the column numbers so that the lowest column number is 1 after applying
 decrCols :: Columns -> (Columns, Int)
