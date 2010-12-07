@@ -2,7 +2,7 @@
 module Ferry.Front.Data.Language where
     
 import Ferry.Front.Data.Meta
-import Ferry.Front.Data.Base
+import Ferry.Syntax(Identifier, Const(..))
 
 -- Operator data type, containing meta information and operators string    
 data Op where

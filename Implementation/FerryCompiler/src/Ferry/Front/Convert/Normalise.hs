@@ -3,10 +3,10 @@ module Ferry.Front.Convert.Normalise (runNormalisation) where
 
 import Ferry.Impossible
 import Ferry.Front.Data.Language
-import Ferry.Front.Data.Base
+import Ferry.Syntax(Identifier, VarContainer(..))
+import Ferry.Compiler(FerryError (..))
 import Ferry.Front.Data.Meta
 import Ferry.Front.Data.Instances()
-import Ferry.Compiler.Error.Error
 
 import Control.Monad.State
 import Control.Monad.Error
@@ -110,8 +110,8 @@ normaliseRec r@(TrueRec m s e) =
                              (Right i, Nothing) -> pure $ TrueRec m s $ Just (Var m i)
                              (Left i, Nothing) -> case i of
                                                     (Elem m' _e (Left x)) -> (\i' -> TrueRec m' (Right x) $ Just i') <$> normalise i
-                                                    (_)                 ->  throwError $ IllegalRecSyntax r
-                             (_) -> throwError $ IllegalRecSyntax r
+                                                    (_)                 ->  error $ "Illegal record syntax: " ++ show r
+                             (_) -> error $ "Illegal record syntax: " ++ show r
 normaliseRec (TuplRec m i e) = TuplRec m i <$> normalise e
 
 normaliseBinding :: Binding -> Normalisation Binding
@@ -187,7 +187,7 @@ normalise (QComp _ q) = normaliseQCompr q
 compgen :: String -> String -> Key -> Key -> Normalisation Expr
 compgen v1 v2 k1@(Key m1 ks1) k2@(Key m2 ks2) = if (length ks1 == length ks2)
                                                  then pure $ foldl1 ands $ zipWith equal v1s v2s
-                                                 else throwError $ IncompatableKeys k1 k2
+                                                 else error $ "Incompatible keys: " ++ show k1 ++ " and: " ++ show k2
     where
         ands = (\e1 e2 -> BinOp m1 (Op m1 "and") e1 e2)
         equal = (\e1 e2 -> BinOp m1 (Op m1 "==") e1 e2)

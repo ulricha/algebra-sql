@@ -5,7 +5,7 @@ import Ferry.Common.Render.Dot
 import Ferry.Common.Render.Pretty    
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Data.Type
-import Ferry.Front.Data.Base
+import Ferry.Common.Data.Base
 import Ferry.TypedCore.Render.Pretty()
 
 import qualified Data.List as L

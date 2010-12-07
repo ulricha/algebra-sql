@@ -1,8 +1,7 @@
 module Ferry.Front.Render.Pretty where
     
-import Ferry.Front.Data.Base
 import Ferry.Front.Data.Language
-import Ferry.Common.Render.Pretty
+import Ferry.Syntax(Const (..), prettyPrint, Pretty(..), pretty, newLine, mapIntersperseConcat, intersperseComma)
 
 import qualified Data.List as L
 

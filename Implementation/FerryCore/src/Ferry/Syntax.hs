@@ -1,13 +1,15 @@
-module Ferry.Syntax 
+{-# OPTIONS_GHC -fno-warn-unused-imports   #-}
+module Ferry.Syntax
 (
 Ident,
-Identifier, Const (..),
-Op (..), CoreExpr (..), RecElem (..), Param (..), Pattern (..), Column (..), Key (..),
-int, float, string, bool, list, var, rec, fn, genT, (.->), TyScheme (..), Qual (..), Pred (..), FType (..), RLabel (..), FTFn (..), HasType, typeOf
+Identifier, Const (..), VarContainer(..),
+Op (..), CoreExpr (..), RecElem (..), Param (..), Pattern (..), Column (..), Key (..), Type(..),
+Dotify(..),
+module Ferry.Common.Render.Pretty
 )
 where
-    
-import Ferry.Front.Data.Base (Identifier, Const (..))
-import Ferry.TypedCore.Data.TypedCore (Op (..), CoreExpr (..), RecElem (..), Param (..), Pattern (..), Column (..), Key (..), Ident)
-import Ferry.TypedCore.Data.Type (int, float, string, bool, list, var, rec, fn, genT, (.->), TyScheme (..), Qual (..), Pred (..), FType (..), RLabel (..), FTFn (..), HasType, typeOf)
-import Ferry.TypedCore.Data.Instances() 
+import Ferry.Common.Data.Base    
+import Ferry.Core.Data.Core (Op (..), CoreExpr (..), RecElem (..), Param (..), Pattern (..), Column (..), Key (..), Ident, Type(..))
+import Ferry.Core.Render.Dot()
+import Ferry.Common.Render.Dot(Dotify(..))
+import Ferry.Common.Render.Pretty

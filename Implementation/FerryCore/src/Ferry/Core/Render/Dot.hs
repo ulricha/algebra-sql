@@ -1,16 +1,14 @@
-module Ferry.Core.Render.Dot where
-
+module Ferry.Core.Render.Dot() where
 
 import Ferry.Common.Render.Dot    
 import Ferry.Core.Data.Core
-import Ferry.Front.Data.Base
+import Ferry.Common.Data.Base
 import Ferry.Core.Render.Pretty
 
 import qualified Data.List as L
 
-
-
--- type Dot = ErrorT FerryError (WriterT [Node] (WriterT [Edge] (State Int)))
+instance Dotify CoreExpr where
+    dot e = runDot $ toDot e
 
 toDot :: CoreExpr -> Dot Id
 toDot (BinOp o e1 e2) = do
@@ -20,13 +18,6 @@ toDot (BinOp o e1 e2) = do
                           nId <- node [Label $ SLabel o', Color Green, Shape Circle]
                           edge nId [id1, id2]
                           return nId
-{- toDot (UnaOp o e) = do
-                      nId <- getFreshId
-                      eId <- toDot e
-                      let o' = (\(Op o) -> o) o
-                      node nId [Label $ SLabel o', Color Green, Shape Circle]
-                      edge nId [eId]
-                      return nId -}
 toDot (Constant c) = let s = toString c
                       in node [Label $ SLabel s, Color Yellow, Shape Triangle]
 toDot (Var i) = node [Label $ SLabel i, Color Red, Shape Triangle]

@@ -9,6 +9,9 @@ import Control.Monad.State
 
 import qualified Data.List as L
 
+class Dotify a where
+  dot :: a -> Either FerryError String
+
 data DotFile = DotFile [Node] [Edge]
 
 type Id = String

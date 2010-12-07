@@ -1,7 +1,6 @@
 module Ferry.Compiler.Error.Error where
 
 import Control.Monad.Error
-import Ferry.Front.Data.Language
 import Ferry.TypedCore.Data.Type
 
 import Text.ParserCombinators.Parsec (ParseError())
@@ -9,11 +8,11 @@ import Text.ParserCombinators.Parsec (ParseError())
 -- | The FerryError datatype represents errors that occur during compilation
 data FerryError = NoSuchFile String
                 | ParserError ParseError
-                | IllegalRecSyntax RecElem
-                | IncompatableKeys Key Key
-                | FrontToCoreError String Expr
-                | FrontToCoreArgError String Arg 
-                | FrontToCoreRecError String RecElem
+--                | IllegalRecSyntax RecElem
+--                | IncompatableKeys Key Key
+--                | FrontToCoreError String Expr
+--                | FrontToCoreArgError String Arg 
+--                | FrontToCoreRecError String RecElem
                 | UnificationError FType FType
                 | UnificationRecError [(RLabel, FType)] [(RLabel, FType)]
                 | ClassAlreadyDefinedError String

@@ -1,17 +1,18 @@
 cabal-version: >=1.8
 Name:           FerryCore
-Version:        0.4.1
+Version:        0.4.3
 Description:    The Ferry 2.0 Core
-License:             GPL
+License:        BSD3
 License-file:   LICENSE
 Author:			Jeroen Weijers <jeroen.weijers@uni-tuebingen.de> Tom Schreiber <tom.schreiber@uni-tuebingen.de>
 Maintainer:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>
 Build-Type:     Simple
 library
     buildable:        True
-    build-depends:    FerryTableAlgebra >= 0.0.1, base >= 4.2, HaXml >= 1.20.2, pretty >= 1.0.1.1, parsec == 2.1.0.1, HUnit == 1.2.2.1, mtl >= 1.1.0.2, containers >= 0.3.0.0, haskell98 >= 1.0.1.1, template-haskell >= 2.4.0.0
+    build-depends:    FerryTableAlgebra >= 0.0.2, base >= 4.2, HaXml >= 1.20.2, pretty >= 1.0.1.1, parsec == 2.1.0.1, HUnit == 1.2.2.1, mtl >= 1.1.0.2, containers >= 0.3.0.0, haskell98 >= 1.0.1.1, template-haskell >= 2.4.0.0
     exposed-modules:  Ferry.Syntax
                       Ferry.Compiler
+                      Ferry.SyntaxTyped
     hs-source-dirs:   src
     extensions:       MonoLocalBinds
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
@@ -25,27 +26,13 @@ library
         Ferry.Compiler.Pipeline
         Ferry.Compiler.Stages.AlgebraToXMLStage 
         Ferry.Compiler.Stages.BoxingStage 
-        Ferry.Compiler.Stages.NormaliseStage 
-        Ferry.Compiler.Stages.ParseStage 
-        Ferry.Compiler.Stages.ReadStage 
         Ferry.Compiler.Stages.RewriteStage 
         Ferry.Compiler.Stages.ToAlgebraStage 
-        Ferry.Compiler.Stages.ToCoreStage 
         Ferry.Compiler.Stages.TypeInferStage 
         Ferry.Compiler.Types 
         Ferry.Core.Data.Core 
         Ferry.Core.Render.Dot 
         Ferry.Core.Render.Pretty 
-        Ferry.Front.Convert.FrontToCore 
-        Ferry.Front.Convert.Normalise 
-        Ferry.Front.Data.Base 
-        Ferry.Front.Data.Instances 
-        Ferry.Front.Data.Language 
-        Ferry.Front.Data.Meta 
-        Ferry.Front.Parser.Applicative 
-        Ferry.Front.Parser.Parser 
-        Ferry.Front.Parser.Scanner 
-        Ferry.Front.Render.Pretty 
         Ferry.TypedCore.Boxing.Boxing 
         Ferry.TypedCore.Convert.CoreToAlgebra 
         Ferry.TypedCore.Convert.Specialize 
@@ -65,4 +52,5 @@ library
         Ferry.TypeSystem.Prelude 
         Ferry.TypeSystem.Types 
         Ferry.TypeSystem.Unification
+        Ferry.Common.Data.Base
         Ferry.Impossible 

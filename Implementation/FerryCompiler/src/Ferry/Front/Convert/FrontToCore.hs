@@ -2,10 +2,8 @@
 module Ferry.Front.Convert.FrontToCore where
     
 import Ferry.Front.Data.Language
-import qualified Ferry.Core.Data.Core as C
-
-import Ferry.Compiler.Error.Error
-
+import qualified Ferry.Syntax as C
+import Ferry.Compiler(FerryError(..))
 import Control.Monad.State
 import Control.Monad.Error
 import Control.Applicative (Applicative(..), (<$>), (<*>))
@@ -36,13 +34,13 @@ toCore (Record       _ rs)       = C.Rec <$> mapM recToCore rs
 toCore (Paren        _ e)        = toCore e
 toCore (List         _ es)       = foldr C.Cons C.Nil <$> mapM toCore es
 toCore (Elem         _ e esi)    = C.Elem <$> toCore e <*> varIntToCore esi
-toCore e@(Lookup       _ _ _)    = throwError $ FrontToCoreError "Lookup not supported by core" e
+toCore e@(Lookup       _ _ _)    = error $ "Lookup not supported by core: " ++ show e
 toCore er@(Let          _ bs e)  = case bs of
                                      [(Binding _ s eb)] -> C.Let <$> pure s <*> toCore eb <*> toCore e
-                                     _                  -> throwError $ FrontToCoreError "Let with multiple bindings" er
+                                     _                  -> error $ "Let with multiple bindings" ++ show er
 toCore (Table        _ s cs ks)  = C.Table <$> pure s <*> mapM colToCore cs <*> mapM keyToCore ks
-toCore e@(Relationship _ _ _ _ _ _ _) = throwError $ FrontToCoreError "Relationship not supported by core" e
-toCore e@(QComp        _ _)       = throwError $ FrontToCoreError "List comprehensions not supported by core" e
+toCore e@(Relationship _ _ _ _ _ _ _) = error $ "Relationship not supported by core" ++ show e
+toCore e@(QComp        _ _)       = error $ "List comprehensions not supported by core" ++ show e
  
 opToCore :: Op -> Transformation C.Op
 opToCore (Op _ s) = C.Op <$> pure s
@@ -51,12 +49,12 @@ argToCore :: Arg -> Transformation C.Param
 argToCore (AExpr _ e) = C.ParExpr <$> toCore e
 argToCore a@(AAbstr _ ps e) = case ps of 
                              [p] -> C.ParAbstr <$> patToCore p <*> toCore e
-                             _   -> throwError $ FrontToCoreArgError "Abstraction only accepts single patterns" a
+                             _   -> error $ "Abstraction only accepts single patterns: " ++ show  a
 
 recToCore :: RecElem -> Transformation C.RecElem
 recToCore r@(TrueRec _ i e) = case (i, e) of
                              (Right s, Just e') -> C.RecElem <$> pure s <*> toCore e'
-                             _                 -> throwError $ FrontToCoreRecError "Record element of wrong form" r
+                             _                 -> error $ "Record element of wrong form: " ++ show r
 recToCore (TuplRec _ i e)   = C.RecElem <$> (pure $ show i) <*> toCore e
 
 varIntToCore :: Either String Integer -> Transformation String

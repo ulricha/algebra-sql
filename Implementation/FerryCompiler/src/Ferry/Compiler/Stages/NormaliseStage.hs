@@ -1,14 +1,12 @@
 -- | Normalise the parsed result, removes all constructs that cannot be handled by ferry core
 module Ferry.Compiler.Stages.NormaliseStage (normalisePhase) where
     
-import Ferry.Compiler.Types
-import Ferry.Compiler.ExecuteStep
+import Ferry.Compiler
 
 import Ferry.Front.Convert.Normalise
 import Ferry.Front.Data.Language
 import Ferry.Front.Render.Pretty()
-import Ferry.Common.Render.Pretty
-
+import Ferry.Syntax(prettyPrint)
 
 normalisePhase :: Expr -> PhaseResult Expr
 normalisePhase e = executeStep normaliseStage e

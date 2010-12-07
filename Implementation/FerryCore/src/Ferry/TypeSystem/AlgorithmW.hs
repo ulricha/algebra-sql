@@ -5,10 +5,8 @@ import qualified Ferry.Core.Data.Core as C
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Data.Type
 import Ferry.TypedCore.Data.Substitution 
---import Ferry.TypedCore.Data.Base 
 import Ferry.Compiler.Error.Error
---import Ferry.TypedCore.Data.Instances
-import Ferry.Front.Data.Base (Const (..)) 
+import Ferry.Common.Data.Base (Const (..)) 
 import Ferry.TypeSystem.Unification
 import Ferry.TypeSystem.ContextReduction
 

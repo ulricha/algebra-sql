@@ -3,7 +3,8 @@ module Ferry.Compiler
   FerryError(..), handleError,
   typedCoreToAlgebra,
   module Ferry.Compiler.Types,
-  pipeline, backEndPipeline
+  backEndPipeline, backEndPipeline',
+  executeStep 
 ) where
     
 import Ferry.Compiler.Error.Error (FerryError (..), handleError)
@@ -11,3 +12,4 @@ import Ferry.Compiler.Stages
 import Ferry.Compiler.Transform
 import Ferry.Compiler.Types
 import Ferry.Compiler.Pipeline
+import Ferry.Compiler.ExecuteStep

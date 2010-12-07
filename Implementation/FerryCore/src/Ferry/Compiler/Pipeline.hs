@@ -1,23 +1,26 @@
-module Ferry.Compiler.Pipeline (pipeline, backEndPipeline) where
+module Ferry.Compiler.Pipeline (backEndPipeline, backEndPipeline') where
 
 import Ferry.Compiler.Types
-import Ferry.TypedCore.Data.TypedCore (CoreExpr)
+import Ferry.Core.Data.Core (CoreExpr)
+import qualified Ferry.TypedCore.Data.TypedCore as T (CoreExpr)
 
 import Ferry.Compiler.Stages
     
--- | The compiler pipeline. The given string is transformed dependent on the configuration of the Phaseresult
+-- | The compiler pipeline. The given Core AST is transformed dependent on the configuration of the Phaseresult
 --   monad.
-pipeline :: String -> PhaseResult ()
-pipeline src = readPhase src >>=
-                 parsePhase >>=
-                 normalisePhase >>=
-                 toCorePhase >>=
-                 typeInferPhase >>=
-                 backEndPipeline
-
 backEndPipeline :: CoreExpr -> PhaseResult ()
-backEndPipeline c = rewritePhase c >>=
+backEndPipeline c =  typeInferPhase c >>=
+                     rewritePhase >>=
                      boxingPhase >>=
                      algebraPhase >>=
                      xmlPhase >>
                      return ()
+                     
+-- | The compiler pipeline. The given Core AST is transformed dependent on the configuration of the Phaseresult
+--   monad.
+backEndPipeline' :: T.CoreExpr -> PhaseResult ()
+backEndPipeline' c = rewritePhase c >>=
+                     boxingPhase >>=
+                     algebraPhase >>=
+                     xmlPhase >>
+                     return ()                     

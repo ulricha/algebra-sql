@@ -3,7 +3,7 @@ module Ferry.TypedCore.Boxing.Boxing where
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Data.Instances()
 import Ferry.TypedCore.Data.Type
-import Ferry.Front.Data.Base
+import Ferry.Common.Data.Base
 
 import Control.Monad.Reader
                                

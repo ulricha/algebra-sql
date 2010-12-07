@@ -2,7 +2,7 @@ cabal-version: >=1.8
 Name:           FerryTableAlgebra
 Version:        0.0.2
 Description:    The Ferry 2.0 Table Algebra library
-License:             GPL
+License:        BSD3
 License-file:   LICENSE
 Author:			Jeroen Weijers <jeroen.weijers@uni-tuebingen.de> Tom Schreiber <tom.schreiber@uni-tuebingen.de>
 Maintainer:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>

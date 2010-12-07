@@ -2,7 +2,7 @@ module Ferry.Front.Data.Instances where
     
 import Ferry.Front.Data.Language
 import Ferry.Front.Data.Meta
-import Ferry.Front.Data.Base
+import Ferry.Syntax(VarContainer(..))
 
 instance HasMeta Expr where              
 --    getMeta (UnOp         m _ _)         = m

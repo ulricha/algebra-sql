@@ -2,7 +2,7 @@ module Ferry.TypedCore.Convert.Traverse where
     
 import Ferry.TypedCore.Data.TypedCore
 import Ferry.TypedCore.Data.Type
-import Ferry.Front.Data.Base
+import Ferry.Common.Data.Base
 import Control.Monad
 
 

@@ -9,7 +9,7 @@ import Ferry.Front.Parser.Scanner
 import Ferry.Front.Data.Language
 import Ferry.Front.Data.Meta
 import Ferry.Front.Data.Instances()
-import Ferry.Front.Data.Base
+import Ferry.Syntax(Const (..))
 import Ferry.Impossible
 
 parseFerry :: SourceName -> [Char] -> Either ParseError Expr

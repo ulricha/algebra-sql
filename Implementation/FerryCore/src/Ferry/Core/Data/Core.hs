@@ -1,7 +1,9 @@
 {-# LANGUAGE GADTs #-}
 module Ferry.Core.Data.Core where
 
-import Ferry.Front.Data.Base
+import Ferry.Common.Data.Base
+
+type Ident = String
 
 data Op where
     Op :: String -> Op

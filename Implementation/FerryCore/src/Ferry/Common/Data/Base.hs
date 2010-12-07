@@ -1,4 +1,4 @@
-module Ferry.Front.Data.Base where
+module Ferry.Common.Data.Base where
 
 -- | Identifiers are represented as strings    
 type Identifier = String

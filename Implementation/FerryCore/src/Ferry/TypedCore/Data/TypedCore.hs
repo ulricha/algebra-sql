@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs #-}
 module Ferry.TypedCore.Data.TypedCore where
     
-import Ferry.Front.Data.Base(Const)
+import Ferry.Common.Data.Base(Const)
 import Ferry.TypedCore.Data.Type
 
 type Ident = String
