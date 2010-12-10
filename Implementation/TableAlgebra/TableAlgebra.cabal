@@ -1,6 +1,6 @@
 cabal-version: >=1.8
 Name:           FerryTableAlgebra
-Version:        0.1.0
+Version:        0.1.5
 Description:    The Ferry 2.0 Table Algebra library
 License:        BSD3
 License-file:   LICENSE
@@ -18,4 +18,5 @@ library
         Ferry.Algebra.Data.Create 
         Ferry.Algebra.Data.GraphBuilder 
         Ferry.Algebra.Render.XML 
+        Ferry.Algebra.Render.XMLUtils
         Ferry.Impossible 
