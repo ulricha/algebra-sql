@@ -1,3 +1,5 @@
+{-| Rewrite operators. 
+This means that operators on structures are expanded and applied to their individual components. -}
 {-# LANGUAGE TemplateHaskell #-}
 module Ferry.TypedCore.Rewrite.OpRewrite where
     

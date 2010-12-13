@@ -1,7 +1,9 @@
+{-| Handle the type functions related to records-}
 module Ferry.TypedCore.Data.TypeFunction where
 
 import Ferry.TypedCore.Data.Type
-    
+
+-- | Evaluate the type function application to a type that doesn't contain a function    
 evalTy :: FType -> FType
 evalTy o@(FTF fn' t) = case applyTyFn fn' t of
                         Right t' -> evalTy t'
@@ -11,6 +13,7 @@ evalTy (FRec t) = FRec $ map (\(i,t') -> (i, evalTy t')) t
 evalTy (FFn t1 t2) = FFn (evalTy t1) $ evalTy t2
 evalTy t = t
 
+-- | Apply a type function to a type
 applyTyFn :: FTFn -> FType -> Either FType FType
 applyTyFn Tr (FList t) = Right $ FList $ FList t
 applyTyFn Tr (FRec ts) = Right $ FRec $ map (\(l, t) -> (l, FList t)) ts 

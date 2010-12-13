@@ -1,3 +1,4 @@
+{- | Helper functions to construct a typed AST -}
 {-# LANGUAGE TemplateHaskell #-}
 module Ferry.TypedCore.Rewrite.Combinators where
 
@@ -16,12 +17,15 @@ countF (q :=> t) = Var (q :=> t .-> int) "count"
 wrapArg :: CoreExpr -> Param
 wrapArg e = ParExpr (typeOf e) e
 
+-- | Apply equality operator to two expressions
 eq :: CoreExpr -> CoreExpr -> CoreExpr
 eq e1 e2 = BinOp ([] :=> FBool) (Op "==") e1 e2
 
+-- | Apply negation to expression
 notF :: CoreExpr -> CoreExpr
 notF e = App ([] :=> FBool) (Var ([] :=> FBool .-> FBool) "not") (ParExpr (typeOf e) e)    
 
+-- | Apply length function to expression
 lengthF :: CoreExpr -> CoreExpr
 lengthF e = let (q :=> t) = typeOf e
             in App ([] :=> FInt) (Var (q :=> t .-> FInt) "length") (ParExpr (typeOf e) e)

@@ -1,3 +1,5 @@
+{-| Infer types for a program, transform an untyped core AST into a typed core AST.
+Standard Algorithm W, with some modifications to deal with records.-}
 module Ferry.TypeSystem.AlgorithmW (typeInfer) where
 
 import Ferry.TypeSystem.Types    
@@ -16,9 +18,7 @@ import qualified Data.List as L
 import qualified Data.Map as M
 
 import Control.Applicative hiding (Const(..))
---import Control.Monad (MonadPlus(..), ap)
 import Control.Monad.Reader
---import Control.Monad.State
 import Control.Monad.Error
 
 typeInfer :: TyEnv -> C.CoreExpr -> (Either FerryError CoreExpr, Subst)

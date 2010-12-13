@@ -1,3 +1,4 @@
+{- | Pretty print a type -}
 {-# LANGUAGE FlexibleInstances #-}
 module Ferry.TypedCore.Render.Pretty where
 

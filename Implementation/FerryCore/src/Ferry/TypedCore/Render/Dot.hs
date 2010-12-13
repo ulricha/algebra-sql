@@ -1,5 +1,5 @@
+{- | Transform a typed core AST into a dot graph -}
 module Ferry.TypedCore.Render.Dot where
-
 
 import Ferry.Common.Render.Dot
 import Ferry.Common.Render.Pretty    
@@ -10,10 +10,6 @@ import Ferry.TypedCore.Render.Pretty()
 
 import qualified Data.List as L
 
-
-
--- type Dot = ErrorT FerryError (WriterT [Node] (WriterT [Edge] (State Int)))
-
 toDot :: CoreExpr -> Dot Id
 toDot (BinOp t o e1 e2) = do
                            let o' = (\(Op op) -> op) o  
@@ -23,14 +19,6 @@ toDot (BinOp t o e1 e2) = do
                            id2 <- toDot e2
                            edge nId [id1, id2, tId]
                            return nId
-{- toDot (UnaOp t o e) = do
-                      nId <- getFreshId
-                      tId <- typeToDot t
-                      eId <- toDot e
-                      let o' = (\(Op o) -> o) o
-                      node nId [Label $ SLabel o', Color Green, Shape Circle]
-                      edge nId [eId, tId]
-                      return nId -}
 toDot (Constant t c) = do
                       let s = toString c
                       nId <- node [Label $ SLabel s, Color Yellow, Shape Triangle]

@@ -1,3 +1,4 @@
+{- | Some typeclass instances belonging to the datatypes associated with typed core -}
 {-# LANGUAGE TypeSynonymInstances #-}
 module Ferry.TypedCore.Data.Instances where
     
@@ -9,6 +10,7 @@ import Ferry.TypedCore.Data.TypeFunction
 import qualified Data.Set as S
 import qualified Data.Map as M
 
+{- | Run a substitution over a simple type-}
 instance Substitutable FType where
   apply s (FList t)             = FList $ apply s t 
   apply s (FFn t1 t2)           = FFn (apply s t1) (apply s t2)
@@ -22,22 +24,29 @@ instance Substitutable FType where
                                 False -> t M.! v
   apply _    t                  = t -- If the substitution is not applied to a container type or variable just stop primitives cannot be substituted
 
+{- | Run a substitution over a qualified type -}
 instance Substitutable t => Substitutable (Qual t) where
   apply s (preds:=> t) = (map (apply s) preds) :=> apply s t
-  
+
+{- | Run a substitution over a predicate -}  
 instance Substitutable Pred where
   apply s (IsIn c t) = IsIn c $ apply s t
   apply s (Has r n t) = Has (apply s r) n (apply s t)  
-                          
+
+{- | Run a substitution over a typescheme, note that bound
+variables are *NOT* touched by a substitution -}                          
 instance Substitutable TyScheme where
   apply s (Forall i r t) = Forall i r $ apply s t
-    
+
+{- | Run a substitution over all types in the type environment -}    
 instance Substitutable TyEnv where
   apply s m = M.map (apply s) m
-  
+
+{- | Run a substitution over a list of substituable structures -}  
 instance Substitutable a => Substitutable [a] where
   apply s m = map (apply s) m
-  
+
+{- | Run a substitution over a typed AST -}  
 instance Substitutable CoreExpr where
   apply s (BinOp t o c1 c2) = BinOp (apply s t) o (apply s c1) (apply s c2)
 --  apply s (UnaOp t o c)      = UnaOp (apply s t) o (apply s c)
@@ -64,7 +73,7 @@ instance Substitutable RLabel where
                                       True -> v
                                       False -> r M.! v
     
-{- | Instances of VarContainer class-}
+{- * Instances of VarContainer class-}
   
 instance VarContainer FType where
   ftv (FVar a)    = S.singleton a

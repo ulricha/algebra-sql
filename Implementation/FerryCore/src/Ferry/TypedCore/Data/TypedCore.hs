@@ -1,3 +1,4 @@
+{- | Datatypes describing typed AST -}
 {-# LANGUAGE GADTs #-}
 module Ferry.TypedCore.Data.TypedCore where
     
