@@ -138,34 +138,34 @@
       ><node id="24" kind="rank"
         ><content
           ><column name="item99999601" new="true"
-          /><column name="item99999801" function="sort" position="1"
-                    direction="ascending" new="false"
-          /><column name="pos" function="sort" position="2"
-                    direction="ascending" new="false"/></content
+          /><column function="sort" position="1" direction="ascending"
+                    name="item99999801" new="false"
+          /><column function="sort" position="2" direction="ascending"
+                    name="pos" new="false"/></content
         ><edge to="23"/></node
       ><node id="25" kind="rownum"
         ><content
           ><column name="item99999701" new="true"
-          /><column name="iter" function="sort" position="1"
-                    direction="ascending" new="false"
-          /><column name="item99999801" function="sort" position="2"
-                    direction="ascending" new="false"
-          /><column name="pos" function="sort" position="3"
-                    direction="ascending" new="false"/></content
+          /><column function="sort" position="1" direction="ascending"
+                    name="iter" new="false"
+          /><column function="sort" position="2" direction="ascending"
+                    name="item99999801" new="false"
+          /><column function="sort" position="3" direction="ascending"
+                    name="pos" new="false"/></content
         ><edge to="24"/></node
       ><node id="26" kind="project"
         ><content
-          ><column name="iter" old_name="iter" new="true"
-          /><column name="pos" old_name="item99999601" new="true"
-          /><column name="item1" old_name="item1" new="true"/></content
+          ><column old_name="iter" name="iter" new="true"
+          /><column old_name="item99999601" name="pos" new="true"
+          /><column old_name="item1" name="item1" new="true"/></content
         ><edge to="25"/></node
       ><node id="27" kind="rownum"
         ><content
           ><column name="item99999401" new="true"
-          /><column name="iter" function="sort" position="1"
-                    direction="ascending" new="false"
-          /><column name="pos" function="sort" position="2"
-                    direction="ascending" new="false"/></content
+          /><column function="sort" position="1" direction="ascending"
+                    name="iter" new="false"
+          /><column function="sort" position="2" direction="ascending"
+                    name="pos" new="false"/></content
         ><edge to="26"/></node
       ><node id="28" kind="attach"
         ><content
@@ -175,13 +175,13 @@
         ><edge to="27"/></node
       ><node id="29" kind="project"
         ><content
-          ><column name="iter" old_name="item99999401" new="true"
-          /><column name="pos" old_name="item99999601" new="true"
-          /><column name="item1" old_name="item1" new="true"/></content
+          ><column old_name="item99999401" name="iter" new="true"
+          /><column old_name="item99999601" name="pos" new="true"
+          /><column old_name="item1" name="item1" new="true"/></content
         ><edge to="28"/></node
       ><node id="30" kind="project"
         ><content
-          ><column name="iter" old_name="item99999401" new="true"/></content
+          ><column old_name="item99999401" name="iter" new="true"/></content
         ><edge to="27"/></node
       ><node id="31" kind="attach"
         ><content
@@ -197,46 +197,46 @@
         ><edge to="31"/></node
       ><node id="33" kind="project"
         ><content
-          ><column name="iter99991" old_name="iter" new="true"
-          /><column name="item99991" old_name="item1" new="true"/></content
+          ><column old_name="iter" name="iter99991" new="true"
+          /><column old_name="item1" name="item99991" new="true"/></content
         ><edge to="32"/></node
       ><node id="34" kind="eqjoin"
         ><content
-          ><column name="iter" new="false" position="1"
-          /><column name="iter99991" new="false" position="2"/></content
+          ><column position="1" name="iter" new="false"
+          /><column position="2" name="iter99991" new="false"/></content
         ><edge to="29"
         /><edge to="33"/></node
       ><node id="35" kind="fun"
         ><content
           ><kind name="add"
           /><column name="item99999001" new="true"
-          /><column name="item1" new="false" position="1"
-          /><column name="item99991" new="false" position="2"/></content
+          /><column position="1" name="item1" new="false"
+          /><column position="2" name="item99991" new="false"/></content
         ><edge to="34"/></node
       ><node id="36" kind="project"
         ><content
-          ><column name="iter" old_name="iter" new="true"
-          /><column name="pos" old_name="pos" new="true"
-          /><column name="item1" old_name="item99999001"
+          ><column old_name="iter" name="iter" new="true"
+          /><column old_name="pos" name="pos" new="true"
+          /><column old_name="item99999001" name="item1"
                     new="true"/></content
         ><edge to="35"/></node
       ><node id="37" kind="project"
         ><content
-          ><column name="item99999501" old_name="iter" new="true"
-          /><column name="item99999401" old_name="item99999401" new="true"
-          /><column name="item99999601" old_name="pos" new="true"/></content
+          ><column old_name="iter" name="item99999501" new="true"
+          /><column old_name="item99999401" name="item99999401" new="true"
+          /><column old_name="pos" name="item99999601" new="true"/></content
         ><edge to="27"/></node
       ><node id="38" kind="eqjoin"
         ><content
-          ><column name="iter" new="false" position="1"
-          /><column name="item99999401" new="false" position="2"/></content
+          ><column position="1" name="iter" new="false"
+          /><column position="2" name="item99999401" new="false"/></content
         ><edge to="36"
         /><edge to="37"/></node
       ><node id="39" kind="project"
         ><content
-          ><column name="iter" old_name="item99999501" new="true"
-          /><column name="pos" old_name="item99999601" new="true"
-          /><column name="item1" old_name="item1" new="true"/></content
+          ><column old_name="item99999501" name="iter" new="true"
+          /><column old_name="item99999601" name="pos" new="true"
+          /><column old_name="item1" name="item1" new="true"/></content
         ><edge to="38"/></node
       ><node id="40" kind="nil"
       /><node id="41" kind="serialize relation"

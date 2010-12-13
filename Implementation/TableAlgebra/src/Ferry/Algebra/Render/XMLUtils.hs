@@ -83,36 +83,47 @@ xmlEscaper = mkXmlEscaper
                _ -> False
       )
 
+-- * Helper functions for constructing xml nodes
+
 infixr 0 `childsOf`
 infixr 0 `dataChildOf`
 infixr 0 `attrsOf`
 
+-- | Childs of takes a list of xml elements, and nests them in the xml element given as a second argument
 childsOf :: [Element ()] -> Element () -> Element () 
 childsOf cs (Elem n attrs cs') = Elem n attrs $ cs' ++ [CElem c () | c <- cs]
 
+-- | Data child of takes some data that can be printed and adds that as child to the xml element given as second argument
 dataChildOf :: Show a => a -> Element () -> Element ()
 dataChildOf v (Elem n attrs cs) = Elem n attrs $ (CString False (show v) ()) : cs
 
+-- | Construct a column with name n, and new status v
 column :: String -> Bool -> Element ()
 column n v = let new = case v of
                         True -> "true"
                         False -> "false"
               in [attr "name" n, attr "new" new] `attrsOf` xmlElem "column"
-              
+
+-- | XML element representing a type              
 typeN :: ATy -> Element ()
 typeN t = [attr "name" $ show t] `attrsOf` xmlElem "type"
 
+-- | Construct an xml tag with name n
 xmlElem :: String -> Element ()
 xmlElem n = Elem n [] []
 
+-- | Construct an algebraic node with id xId and of kind t
 node :: XMLNode -> String -> Element ()
 node xId t = [attr "id" $ show xId, attr "kind" t] `attrsOf` xmlElem "node"
 
+-- | Construct a content node
 contentNode :: Element ()
 contentNode = xmlElem "content"
 
+-- | Construct an attribute for an xml node, attrname = n and its value is v
 attr :: String -> String -> Attribute
 attr n v = (n, AttValue [Left v])
 
+-- | Attach list of attributes to an xml element
 attrsOf :: [Attribute] -> Element () -> Element ()
 attrsOf at (Elem n attrs cs) = Elem n (at ++ attrs) cs

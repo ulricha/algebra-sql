@@ -9,9 +9,9 @@
     ><logical_query_plan unique_names="true"
       ><node id="0" kind="empty_tbl"
         ><content
-          ><column name="iter" type="nat" new="true"
-          /><column name="pos" type="nat" new="true"
-          /><column name="item1" type="nat" new="true"/></content></node
+          ><column type="nat" name="iter" new="true"
+          /><column type="nat" name="pos" new="true"
+          /><column type="nat" name="item1" new="true"/></content></node
       ><node id="1" kind="nil"
       /><node id="2" kind="serialize relation"
         ><content

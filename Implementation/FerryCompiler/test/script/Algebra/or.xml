@@ -72,56 +72,56 @@
       ><node id="12" kind="rank"
         ><content
           ><column name="item99999601" new="true"
-          /><column name="item99999801" function="sort" position="1"
-                    direction="ascending" new="false"
-          /><column name="pos" function="sort" position="2"
-                    direction="ascending" new="false"/></content
+          /><column function="sort" position="1" direction="ascending"
+                    name="item99999801" new="false"
+          /><column function="sort" position="2" direction="ascending"
+                    name="pos" new="false"/></content
         ><edge to="11"/></node
       ><node id="13" kind="rownum"
         ><content
           ><column name="item99999701" new="true"
-          /><column name="iter" function="sort" position="1"
-                    direction="ascending" new="false"
-          /><column name="item99999801" function="sort" position="2"
-                    direction="ascending" new="false"
-          /><column name="pos" function="sort" position="3"
-                    direction="ascending" new="false"/></content
+          /><column function="sort" position="1" direction="ascending"
+                    name="iter" new="false"
+          /><column function="sort" position="2" direction="ascending"
+                    name="item99999801" new="false"
+          /><column function="sort" position="3" direction="ascending"
+                    name="pos" new="false"/></content
         ><edge to="12"/></node
       ><node id="14" kind="project"
         ><content
-          ><column name="iter" old_name="iter" new="true"
-          /><column name="pos" old_name="item99999601" new="true"
-          /><column name="item1" old_name="item1" new="true"/></content
+          ><column old_name="iter" name="iter" new="true"
+          /><column old_name="item99999601" name="pos" new="true"
+          /><column old_name="item1" name="item1" new="true"/></content
         ><edge to="13"/></node
-      ><node id="15" kind="aggr"
+      ><node id="15" kind="union"
+        ><edge to="14"
+        /><edge to="5"/></node
+      ><node id="16" kind="aggr"
         ><content
-          ><column name="iter" function="partition" new="false"
+          ><column function="partition" name="iter" new="false"
           /><aggregate kind="max"
             ><column name="item99999001" new="true"
-            /><column name="item1" new="false" function="item"/></aggregate
-          ><aggregate kind="min"
-            ><column name="item99999701" new="true"
-            /><column name="iter" new="false"
-                      function="item"/></aggregate></content
-        ><edge to="14"/></node
-      ><node id="16" kind="project"
-        ><content
-          ><column name="iter" old_name="item99999701" new="true"
-          /><column name="item1" old_name="item99999001"
-                    new="true"/></content
+            /><column function="item" name="item1"
+                      new="false"/></aggregate></content
         ><edge to="15"/></node
-      ><node id="17" kind="attach"
+      ><node id="17" kind="project"
+        ><content
+          ><column old_name="iter" name="iter" new="true"
+          /><column old_name="item99999001" name="item1"
+                    new="true"/></content
+        ><edge to="16"/></node
+      ><node id="18" kind="attach"
         ><content
           ><column name="pos" new="true"
             ><value type="nat"
             >1</value></column></content
-        ><edge to="16"/></node
-      ><node id="18" kind="nil"
-      /><node id="19" kind="serialize relation"
+        ><edge to="17"/></node
+      ><node id="19" kind="nil"
+      /><node id="20" kind="serialize relation"
         ><content
           ><column name="iter" new="false" function="iter"
           /><column name="pos" new="false" function="pos"
           /><column name="item1" new="false" function="item"
                     position="1"/></content
-        ><edge to="18"
-        /><edge to="17"/></node></logical_query_plan></query_plan></query_plan_bundle>
+        ><edge to="19"
+        /><edge to="18"/></node></logical_query_plan></query_plan></query_plan_bundle>
