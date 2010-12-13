@@ -34,8 +34,8 @@ planBuilder prop (nodes, (top, cols, subs)) = buildPlan Nothing (Just prop) (top
                                     do
                                         let colProp = cssToProp cols'
                                         let planProp = case props of
-                                                        Nothing -> Elem "properties" [] [CElem colProp ()]
-                                                        Just p  -> Elem "properties" [] [CElem colProp (), CElem p ()]
+                                                        Nothing -> [colProp] `childsOf` xmlElem "properties"
+                                                        Just p  -> [colProp, p] `childsOf` xmlElem "properties"
                                         let plan = runXML nodeTable $ serializeAlgebra top' cols'
                                         pId <- mkQueryPlan parent planProp plan
                                         buildSubPlans pId subs'
@@ -48,13 +48,11 @@ planBuilder prop (nodes, (top, cols, subs)) = buildPlan Nothing (Just prop) (top
 
 -- Convert columns structure to xml properties for rendering by ferry DB        
 cssToProp :: Columns -> Element ()
-cssToProp cols = Elem "property" [("name", AttValue [Left "cs"])] $ map (\x -> CElem (csToProp x) ()) cols
+cssToProp cols = map csToProp cols `childsOf` [attr "name" "cs"] `attrsOf` xmlElem "property"
 
 csToProp :: Column -> Element ()
-csToProp (Col i ty) = Elem "property" [("name", AttValue [Left "offset"]), ("value", AttValue [Left $ show i])] 
-                        [flip CElem () $ Elem "property" [("name", AttValue [Left "type"  ]), ("value", AttValue [Left $ show ty])] []]
-csToProp (NCol x css) = Elem "property" [("name", AttValue [Left "mapping"]), ("value", AttValue [Left x])]
-                            [CElem (cssToProp css) ()]
+csToProp (Col i ty) = [[attr "name" "type", attr "value" $ show ty] `attrsOf` xmlElem "property"] `childsOf` [attr "name" "offset", attr "value" $ show i] `attrsOf` xmlElem "property"  
+csToProp (NCol x css) = [cssToProp css] `childsOf` [attr "name" "mapping", attr "value" x] `attrsOf` xmlElem "property" 
 
 -- Serialize algebra
 serializeAlgebra :: GraphNode -> Columns -> XML XMLNode
@@ -62,23 +60,23 @@ serializeAlgebra qGId cols = do
                                     qId <- alg2XML qGId
                                     nilId <- nilNode
                                     xId <- freshId
-                                    let contentN = Elem "content" [] $ (:) (CElem iterCol ()) $ (:) (CElem posCol ()) $ map (\c -> CElem c ()) $ fst $ colsToNodes 1 cols 
+                                    let contentN = ((:) iterCol $ (:) posCol $ fst $ colsToNodes 1 cols) `childsOf` contentNode
                                     let edgeNil = mkEdge nilId
                                     let edgeQ = mkEdge qId
-                                    tell [Elem "node" [("id", AttValue [Left $ show xId]), ("kind", AttValue [Left "serialize relation"])] [CElem contentN (), CElem edgeNil (), CElem edgeQ ()]]
+                                    tell [[contentN, edgeNil, edgeQ] `childsOf` node xId "serialize relation"]
                                     return xId
 
 -- XML defintion of iter column
 iterCol :: Element ()
-iterCol = Elem "column" [("name", AttValue [Left "iter"]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "iter"])] []
+iterCol =  [attr "name" "iter", attr "new" "false", attr "function" "iter"] `attrsOf` xmlElem "column"
 
 -- XML defintion of position column
 posCol :: Element ()
-posCol = Elem "column" [("name", AttValue [Left "pos"]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "pos"])] []
+posCol = [attr "name" "pos", attr "new" "false", attr "function" "pos"] `attrsOf` xmlElem "column"
 
 -- Transform cs structure into xml columns
 colsToNodes :: Int -> Columns -> ([Element ()], Int)
-colsToNodes i ((Col n _):cs) = let col = Elem "column" [("name", AttValue [Left $ "item" ++ (show n)]), ("new", AttValue [Left "false"]), ("function", AttValue [Left "item"]), ("position", AttValue [Left $ show i])] []
+colsToNodes i ((Col n _):cs) = let col = [attr "name" $ "item" ++ (show n), attr "new" "false", attr "function" "item", attr "position" $ show i] `attrsOf` xmlElem "column"
                                    (els, i') = colsToNodes (i+1) cs
                                 in (col:els, i') 
 colsToNodes i ((NCol _ cs):cs') = let (els, i') = colsToNodes i cs 
@@ -90,7 +88,7 @@ colsToNodes i []                = ([], i)
 nilNode :: XML XMLNode
 nilNode = do
             xId <- freshId
-            tell [Elem "node" [("id", AttValue [Left $ show xId]),("kind", AttValue [Left "nil"])] []]
+            tell [node xId "nil"]
             return xId
             
 -- Transform algebra into XML

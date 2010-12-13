@@ -1,4 +1,4 @@
-{-| Untyped core data type}
+{-| Untyped core data type -}
 {-# LANGUAGE GADTs #-}
 module Ferry.Core.Data.Core where
 
