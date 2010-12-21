@@ -219,6 +219,20 @@ compileAppE1 (App _ (Var _ "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                     q <- proj (("iter",outer):("pos", posPrime):csProj2)
                             =<< eqJoin "iter" inner q2 mapv
                     return (q, cs2, ts2)
+compileAppE1 (App _ (Var _ "max") (ParExpr _ e1)) (q2, [Col 1 t], _ts2) = 
+                do
+                    (q1, [Col 1 _], _ts1) <- coreToAlgebra e1
+                    q <- proj [("iter", "iter"),("pos", "pos"),("item1", resCol)]    
+                        =<< aggr [(Max, resCol, Just "item1")] Nothing 
+                            =<< union q1 q2
+                    return (q, [Col 1 t], emptyPlan)
+compileAppE1 (App _ (Var _ "min") (ParExpr _ e1)) (q2, [Col 1 t], _ts2) =
+                do
+                    (q1, [Col 1 _], _ts1) <- coreToAlgebra e1
+                    q <- proj [("iter", "iter"),("pos", "pos"),("item1", resCol)]    
+                        =<< aggr [(Min, resCol, Just "item1")] Nothing 
+                            =<< union q1 q2
+                    return (q, [Col 1 t], emptyPlan)
 compileAppE1 (App _ (Var _ "filter") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                 do
                     gam <- getGamma
@@ -319,6 +333,11 @@ compileAppE1 (Var _ "or") (q, cs, ts) =
                                         =<< union q
                                             =<< attach "pos" natT (nat 1) =<< attach "item1" boolT (bool False) =<< getLoop
                         return (q', cs, ts)
+compileAppE1 (Var _ "not") (q, [Col 1 t], _ts) =
+                    do
+                        q' <- proj [("iter", "iter"), ("pos", "pos"), ("item1", resCol)]
+                                =<< notC resCol "item1" q
+                        return (q', [Col 1 t], emptyPlan)
 compileAppE1 (Var _ "integerToDouble") (q, _cs, _ts) =
                     do
                         q' <- proj [("iter", "iter"), ("pos", "pos"), ("item1", resCol)]
