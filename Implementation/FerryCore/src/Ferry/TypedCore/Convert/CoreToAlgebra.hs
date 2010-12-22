@@ -145,10 +145,10 @@ coreToAlgebra (If _ e1 e2 e3) = do
                                   let ks = keys ts2
                                   let cols = leafNames cs2
                                   let colsDiff = cols L.\\ ks
-                                  n1 <- attach ordCol intT (int 1) q2
+                                  n1 <- attach ordCol natT (nat 1) q2
                                   q' <- rownum iterPrime ["iter", ordCol, "pos"] Nothing
                                             =<< union n1 
-                                                =<< attach ordCol intT (int 2) q3
+                                                =<< attach ordCol natT (nat 2) q3
                                   let projPairs = zip colsDiff colsDiff ++ zip ks (repeat iterPrime)
                                   n2 <- proj (("iter","iter"):("pos","pos"):projPairs) q'
                                   ts <- mergeTableStructure q' ts2 ts3
@@ -460,8 +460,8 @@ mergeTableStructure qo (SubPlan ts1') (SubPlan ts2') | M.null ts1' = return $ Su
                                             let projPairs = zip cols cols
                                             let projPairsD = zip colsDiff colsDiff
                                             let projPairsKs = zip ks $ repeat iterPrime
-                                            n1 <- attach ordCol intT (int 1) q1
-                                            n2 <- attach ordCol intT (int 2) q2
+                                            n1 <- attach ordCol natT (nat 1) q1
+                                            n2 <- attach ordCol natT (nat 2) q2
                                             qo'' <- proj [(ordPrime, ordCol), (iterR, iterPrime), (oldCol, "item" ++ show i)] qo
                                             qo' <- eqTJoin [(ordPrime, ordCol), (oldCol, "iter")] 
                                                            (("iter", "iter"):(iterR, iterR):("pos", "pos"):(ordCol, ordCol):projPairs)
@@ -496,7 +496,7 @@ mergeTableStructureFirst qo (SubPlan ts1') (SubPlan ts2')
                                                            (("iter", "iter"):(iterR,iterR):("pos", "pos"):(ordCol, ordCol):(iterPrime, iterPrime) : projPairs) 
                                                            qo''
                                                            =<< rownum iterPrime ["iter", ordCol, "pos"] Nothing
-                                                            =<< flip union q2 =<< attach ordCol intT (int 1) q1
+                                                            =<< flip union q2 =<< attach ordCol natT (nat 1) q1
                                             qr <- proj ((iterPrime, iterPrime):(ordCol, ordCol):projPairs) qo'
                                             q' <- proj (("iter", iterR):("pos", "pos"):(projPairsD ++ projPairsKs)) qo'
                                             ts' <- mergeTableStructureFirst qr ts1 ts2
@@ -511,7 +511,7 @@ mergeTableStructureLast n (SubPlan ts1') = do
         items = M.toList ts1'
         updateBinds :: (Int, AlgRes) -> GraphM (Int, AlgRes)
         updateBinds (i, (q1, cs1, ts1)) = do
-                                            q <- attach ordCol intT (int $ toInteger n) q1
+                                            q <- attach ordCol natT (nat $ toInteger n) q1
                                             ts <- mergeTableStructureLast n ts1
                                             return (i, (q, cs1, ts))
                                             
@@ -528,7 +528,7 @@ mergeTableStructureSeq n (SubPlan ts1') (SubPlan ts2')
         mergeBinds (i, (q1, cs1, ts1)) = do
                                             let (q2, _cs2, ts2) = ts2' M.! i
                                             q <- flip union q2 
-                                                    =<< attach ordCol intT (int $ toInteger n) q1
+                                                    =<< attach ordCol natT (nat $ toInteger n) q1
                                             ts <- mergeTableStructureSeq n ts1 ts2
                                             return (i, (q, cs1, ts))
 
@@ -552,7 +552,7 @@ listFirst (Cons _ e1 e2@(Cons _ _ _)) = do
                                          let projPairs = (zip colsDiff colsDiff) ++ (zip ks $ repeat iterPrime) 
                                          q' <- rownum iterPrime ["iter", ordCol, "pos"] Nothing
                                                  =<< rank posPrime [(ordCol, Asc), ("pos", Asc)] 
-                                                     =<< flip union q2 =<< attach ordCol intT (int 1) q1
+                                                     =<< flip union q2 =<< attach ordCol natT (nat 1) q1
                                          q <- proj (("iter", "iter"):("pos", posPrime) : projPairs) q'
                                          ts <- mergeTableStructureFirst q' ts1 ts2
                                          return (q, cs1, ts) 
@@ -563,11 +563,11 @@ listFirst (Cons _ e1 e2) = do
                             let ks = keys ts1
                             let colsDiff = cols L.\\ ks
                             let projPairs = (zip colsDiff colsDiff) ++ (zip ks $ repeat iterPrime)
-                            n1 <- attach ordCol intT (int 1) q1
+                            n1 <- attach ordCol natT (nat 1) q1
                             q' <- rownum iterPrime ["iter", ordCol, "pos"] Nothing
                                     =<< rank posPrime [(ordCol, Asc), ("pos", Asc)]
                                         =<< union n1 
-                                            =<< attach ordCol intT (int 2) q2
+                                            =<< attach ordCol natT (nat 2) q2
                             qr <- proj ((iterPrime, iterPrime):(ordCol, ordCol):(zip cols cols)) q'
                             q <- proj (("iter", "iter"):("pos", posPrime):projPairs) q'
                             ts <- mergeTableStructure qr ts1 ts2
@@ -580,19 +580,19 @@ listFirst _ = $impossible
 listSequence :: CoreExpr -> Int -> GraphM AlgRes
 listSequence (Cons _ e1 (Nil _)) n = do
                                       (q1, cs1, ts1) <- coreToAlgebra e1
-                                      n1 <- attach ordCol intT (int $ toEnum n) q1
+                                      n1 <- attach ordCol natT (nat $ toEnum n) q1
                                       ts <- mergeTableStructureLast n ts1
                                       return (n1, cs1, ts)
 listSequence (Cons _ e1 e2@(Cons _ _ _)) n = do
                                                 (q1, cs1, ts1) <- coreToAlgebra e1
                                                 (q2, _cs2, ts2) <- listSequence e2 $ n + 1
-                                                n1 <- attach ordCol intT (int $ toEnum n) q1
+                                                n1 <- attach ordCol natT (nat $ toEnum n) q1
                                                 n2 <- union n1 q2
                                                 ts <- mergeTableStructureSeq n ts1 ts2
                                                 return (n2, cs1, ts)
 listSequence c@(Cons _ _ _) n = do
                                  (q, cs, ts) <- listFirst c
-                                 n1 <- attach ordCol intT (int $ toEnum n) q
+                                 n1 <- attach ordCol natT (nat $ toEnum n) q
                                  ts' <- mergeTableStructureLast n ts
                                  return (n1, cs, ts')
 listSequence _ _ = $impossible
