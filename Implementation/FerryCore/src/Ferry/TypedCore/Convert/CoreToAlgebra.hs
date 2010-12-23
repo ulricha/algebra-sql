@@ -26,7 +26,7 @@ import Data.Maybe (fromJust, isJust)
 -- | Section introducing aliases for commonly used columns
 
 -- | Results are stored in column:
-resCol, ordCol, ordPrime, iterPrime, iterR, posPrime, posPrimePrime, outer, inner, oldCol :: String
+resCol, resColPrime, resColPrimePrime, ordCol, ordPrime, iterPrime, iterR, posPrime, posPrimePrime, outer, inner, oldCol :: String
 resCol    = "item99999001"
 resColPrime = "item99999002"
 resColPrimePrime = "item99999003"
@@ -359,6 +359,45 @@ compileAppE1 (App _ (Var _ "take") (ParExpr _ e1)) (q2, cs2, ts2) =
                                     =<< eqJoin "iter" iterPrime q2' 
                                         =<< proj [(iterPrime, "iter"), (oldCol, "item1")] q1
                         return (q, cs2, ts2)
+compileAppE1 (App _ (Var _ "drop") (ParExpr _ e1)) (q2, cs2, ts2) =
+                    do
+                        (q1, [Col 1 AInt], _ts) <- coreToAlgebra e1
+                        q2' <- absPos q2 cs2
+                        let csProj = zip (leafNames cs2) (leafNames cs2)
+                        q <- proj (("iter", "iter"):("pos", "pos"):csProj)    
+                            =<< select resCol
+                                =<< oper ">" resCol posPrime oldCol 
+                                    =<< cast "pos" posPrime intT
+                                    =<< eqJoin "iter" iterPrime q2' 
+                                        =<< proj [(iterPrime, "iter"), (oldCol, "item1")] q1
+                        return (q, cs2, ts2)
+compileAppE1 (Var _ "last") (q1, cs1, ts1) =
+                    do
+                        let csProj = zip (leafNames cs1) (leafNames cs1)
+                        q' <- eqTJoin [("iter", iterPrime), ("pos", resCol)] (("iter", "iter"):("pos", "pos"):csProj) q1
+                                =<< proj [(resCol, resCol), (iterPrime, "iter")]
+                                    =<< aggr [(Max, resCol, Just "pos")] (Just "iter") q1
+                        return (q', cs1, ts1)
+compileAppE1 (Var _ "init") (q1, cs1, ts1) =
+                    do
+                        let csProj = zip (leafNames cs1) (leafNames cs1)
+                        q <- proj (("iter", "iter"):("pos","pos"):csProj)
+                            =<< select resColPrime
+                                =<< oper ">" resColPrime resCol "pos" 
+                                    =<< eqJoin "iter" iterPrime q1
+                                        =<< proj [(resCol, resCol), (iterPrime, "iter")] 
+                                            =<< aggr [(Max, resCol, Just "pos")] (Just "iter") q1
+                        return (q, cs1, ts1)
+compileAppE1 (Var _ "null") (q1, _cs1, _ts1) =
+                    do
+                        loop <- getLoop
+                        notEmpty <- distinct =<< proj [("iter", "iter")] q1
+                        empty <- difference loop notEmpty
+                        notEmpty' <- attach "item1" boolT (bool False) notEmpty
+                        q <- attach "pos" natT (nat 1) 
+                                =<< union notEmpty'
+                                    =<< attach "item1" boolT (bool True) empty
+                        return (q, [Col 1 ABool], emptyPlan)                        
 compileAppE1 (Var _ "unBox") (q, [Col 1 ASur], ts) = 
                     do
                         let (q', cs', ts') = getPlan 1 ts
@@ -646,6 +685,20 @@ mapForward gam q cs = do
                           loopv <- proj [("iter",inner)] qv'
                           gamV <- transformGam algResv mapv gam
                           return (qv', qv, mapv, loopv, gamV)
+
+-- clean innerPlans
+cleanInner :: AlgNode -> SubPlan -> GraphM SubPlan
+cleanInner q (SubPlan ps) = do 
+                             ps' <- sequence 
+                                [ do 
+                                    let item = "item" ++ show c
+                                    qo <- proj [(resCol, item)] q
+                                    let projPairs = zip (leafNames cs') (leafNames cs')
+                                    q'' <- proj (("iter", "iter"):("pos","pos"):projPairs)
+                                        =<< eqJoin resCol item qo q' 
+                                    ts'' <- cleanInner q'' ts'
+                                    return (c, (q'', cs', ts'')) | (c, (q', cs', ts')) <- M.toList ps]
+                             return (SubPlan $ M.fromList ps')
  
 -- Recalculate the position column, making it densely populated after this operation
 absPos :: AlgNode -> Columns -> GraphM AlgNode
