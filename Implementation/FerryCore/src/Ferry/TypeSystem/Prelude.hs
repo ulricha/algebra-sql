@@ -69,6 +69,7 @@ primitives = M.fromList $
              ,("snd", Forall 2 0 $ [] :=> rec [(RLabel "1", genT 1), (RLabel "2", genT 2)] .-> genT 2)
              ,("the", Forall 1 0 $ [] :=> (list $ genT 1) .-> genT 1)
              ,("head", Forall 1 0 $ [] :=> (list $ genT 1) .-> genT 1)
+             ,("take", Forall 1 0 $ [] :=> FInt .-> (list $ genT 1) .-> (list $ genT 1))
              ,("tail", Forall 1 0 $ [] :=> (list $ genT 1) .-> (list $ genT 1))
              ,("nub", Forall 1 0 $ [] :=> (list $ genT 1) .-> (list $ genT 1))
              ,("integerToDouble", Forall 0 0 $ [] :=> int .-> float)

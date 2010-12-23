@@ -28,6 +28,8 @@ import Data.Maybe (fromJust, isJust)
 -- | Results are stored in column:
 resCol, ordCol, ordPrime, iterPrime, iterR, posPrime, posPrimePrime, outer, inner, oldCol :: String
 resCol    = "item99999001"
+resColPrime = "item99999002"
+resColPrimePrime = "item99999003"
 ordCol    = "item99999801"
 ordPrime  = "item99999804"
 iterPrime = "item99999701"
@@ -343,6 +345,20 @@ compileAppE1 (Var _ "integerToDouble") (q, _cs, _ts) =
                         q' <- proj [("iter", "iter"), ("pos", "pos"), ("item1", resCol)]
                                 =<< cast "item1" resCol ADouble q
                         return (q', [Col 1 ADouble], emptyPlan )
+compileAppE1 (App _ (Var _ "take") (ParExpr _ e1)) (q2, cs2, ts2) =
+                    do
+                        (q1, [Col 1 AInt], _ts) <- coreToAlgebra e1
+                        q2' <- absPos q2 cs2
+                        let csProj = zip (leafNames cs2) (leafNames cs2)
+                        q <- proj (("iter", "iter"):("pos", "pos"):csProj)    
+                            =<< select resColPrimePrime
+                            =<< oper "||" resColPrimePrime resColPrime resCol 
+                            =<< oper "==" resColPrime oldCol posPrime 
+                                =<< oper ">" resCol oldCol posPrime 
+                                    =<< cast "pos" posPrime intT
+                                    =<< eqJoin "iter" iterPrime q2' 
+                                        =<< proj [(iterPrime, "iter"), (oldCol, "item1")] q1
+                        return (q, cs2, ts2)
 compileAppE1 (Var _ "unBox") (q, [Col 1 ASur], ts) = 
                     do
                         let (q', cs', ts') = getPlan 1 ts
