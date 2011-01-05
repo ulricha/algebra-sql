@@ -149,7 +149,17 @@
     \infrule[ac-sum]
         {| Gam, loop +- e1 => (q, {item1}, empty)|\\
          | q' = attach pos 1 (aggr (item1:max(item)/iter) (union (attach item1 0 loop) (proj (iter, item1) (aggr (item1:sum(item1)/iter) q))))|}
-        {| Gam, loop +- sum e1 => (q', {item1}, empty)|}
+        {| Gam, loop +- sum e1 => (q', {item1}, empty)|}\\
+    \infrule[ac-reverse]
+        {| Gam, loop +- e1 => (q1, cs1, ts1) |\\
+         | q = proj (iter, pos:pos', ln cs1) (rownum' pos' (pos desc) iter q1)|}
+        {| Gam, loop +- reverse e1 => (q, cs1, ts1) |}\\
+    \infrule[ac-sortWith]
+        {| Gam, loop +- e1 => (q1, cs1, ts1) |\quad
+         | (qv', qv, mapv, loopv, Gamv) = mapForward Gam q1 cs1 |\\
+         | Gamv[x +-> (qv, cs1, ts1)], loopv +- e2 => (q2, cs2, ts2)|\\
+         | q = proj (iter, pos:pos'', ln cs1) (join (iter:iter', pos:pos') q1 (proj (iter':iter, pos':pos, pos'') (rownum' pos'' (ln cs2) iter (join (iter:inner) q2 mapv)))) |}
+        {| Gam, loop +- sortWith (\x -> e2) e1 => (q, cs1, ts1)|}
     \end{infrules}
 \begin{code}
 tyToCol :: Type -> Int -> Columns

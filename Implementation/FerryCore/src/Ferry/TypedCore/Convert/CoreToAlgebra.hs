@@ -277,6 +277,25 @@ compileAppE1 (Var _ "nub") (q, cs, ts) =
                                     =<< rowrank resCol (map (\x -> (x, Asc)) ("iter":(leafNames cs))) q
                         return (q', cs, ts)
 compileAppE1 (Var mt "count") (q, cs, ts) = compileAppE1 (Var mt "length") (q, cs, ts)
+compileAppE1 (App _ (Var _ "index") (ParExpr _ e1)) (q2, _cs2, _ts2) =
+                    do
+                        (q1, cs1, ts1) <- coreToAlgebra e1
+                        is <- proj [(iterPrime, "iter"), (resCol, resColPrimePrime)] 
+                            =<< oper "+" resColPrimePrime resColPrime resCol
+                                =<< attach resColPrime natT (nat 1)
+                                    =<< cast "item1" resCol natT q2
+                        let projPairs = zip (leafNames cs1) (leafNames cs1) 
+                        q <- proj (("iter", "iter"):("pos", "pos"):projPairs)
+                            =<< select resColPrime    
+                                =<< oper "==" resColPrime resCol "pos"
+                                    =<< eqJoin iterPrime "iter" is q1
+                        return (q, cs1, ts1)
+compileAppE1 (Var _ "reverse") (q1, cs1, ts1) =
+                    do
+                        let projPairs = zip (leafNames cs1) (leafNames cs1)
+                        q <- proj (("iter", "iter"):("pos", posPrime):projPairs)
+                            =<< rownum' posPrime [("pos", Desc)] (Just "iter") q1
+                        return (q, cs1, ts1)
 compileAppE1 (Var _ "length") (q, _cs, _ts) = 
                     do
                         loop <- getLoop

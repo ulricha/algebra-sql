@@ -137,6 +137,10 @@ aggr aggrs part c1 = insertNode $ Aggr (aggrs, part) c1
 rownum :: AttrName -> [AttrName] -> Maybe AttrName -> AlgNode -> GraphM AlgNode
 rownum res sort part c1 = insertNode $ RowNum (res, zip sort $ repeat Asc, part) c1
 
+-- | Same as rownum but columns can be assigned an ordering direction
+rownum' :: AttrName -> [(AttrName, SortDir)] -> Maybe AttrName -> AlgNode -> GraphM AlgNode
+rownum' res sort part c1 = insertNode $ RowNum (res, sort, part) c1
+
 -- | Apply an operator to the element in `LeftAttrName' and `RightAttrName',
 -- store the result in `ResAttrName'
 oper :: String -> ResAttrName -> LeftAttrName -> RightAttrName -> AlgNode -> GraphM AlgNode
