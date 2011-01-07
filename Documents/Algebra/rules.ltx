@@ -158,7 +158,7 @@
         {| Gam, loop +- e1 => (q1, cs1, ts1) |\quad
          | (qv', qv, mapv, loopv, Gamv) = mapForward Gam q1 cs1 |\\
          | Gamv[x +-> (qv, cs1, ts1)], loopv +- e2 => (q2, cs2, ts2)|\\
-         | q = proj (iter, pos:pos'', ln cs1) (join (iter:iter', pos:pos') q1 (proj (iter':iter, pos':pos, pos'') (rownum' pos'' (ln cs2) iter (join (iter:inner) q2 mapv)))) |}
+         | q = proj (iter:outer, pos:resCol, ln cs1) (join (iter:outer, pos:pos') q1 (proj (inner, outer, pos', resCol) (rownum' resCol (ln cs2) iter (join (iter:inner) q2 mapv)))) |}
         {| Gam, loop +- sortWith (\x -> e2) e1 => (q, cs1, ts1)|}
     \end{infrules}
 \begin{code}
