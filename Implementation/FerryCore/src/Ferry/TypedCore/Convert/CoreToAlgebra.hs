@@ -221,6 +221,19 @@ compileAppE1 (App _ (Var _ "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                     q <- proj (("iter",outer):("pos", posPrime):csProj2)
                             =<< eqJoin "iter" inner q2 mapv
                     return (q, cs2, ts2)
+compileAppE1 (App _ (Var _ "sortWith") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
+                do
+                    gam <- getGamma
+                    (_qv', qv, mapv, loopv, gamV) <- mapForward gam q1 cs1
+                    (q2, cs2, _ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
+                    let projPairs = zip (leafNames cs1) (leafNames cs1)
+                    q <- proj (("iter", outer):("pos", resCol):projPairs) =<< select resColPrime
+                        =<< oper "==" resColPrime "pos" posPrime  
+                            =<< eqJoin "iter" outer q1 
+                                =<< proj [(inner, inner), (outer, outer), (posPrime, posPrime), (resCol, resCol)]    
+                                    =<< rownum resCol (leafNames cs2) (Just outer)  
+                                        =<< eqJoin "iter" inner q2 mapv
+                    return (q, cs1, ts1)
 compileAppE1 (App _ (Var _ "max") (ParExpr _ e1)) (q2, [Col 1 t], _ts2) = 
                 do
                     (q1, [Col 1 _], _ts1) <- coreToAlgebra e1

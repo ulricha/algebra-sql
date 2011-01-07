@@ -79,6 +79,7 @@ primitives = M.fromList $
              ,("null", Forall 1 0 $ [] :=> (list $ genT 1) .-> bool)
              ,("nub", Forall 1 0 $ [] :=> (list $ genT 1) .-> (list $ genT 1))
              ,("integerToDouble", Forall 0 0 $ [] :=> int .-> float)
+             ,("sortWith", Forall 2 0 $ [IsIn "Ord" (FGen 2)] :=> (genT 1 .-> genT 2) .-> (list $ genT 1) .-> (list $ genT 1))
              ,("groupByN", Forall 3 0 $ [] :=> (genT 1 .-> genT 2) .-> (genT 1 .-> genT 3) .-> list (genT 1) .-> (list $ FTF Tr (genT 2)))
              ,("groupBy'", Forall 3 1 $ [] :=> (genT 1 .-> genT 2) .-> (genT 1 .-> genT 3) .-> list (genT 1) .-> (list $ list $ genT 2))
              ,("groupBy1", Forall 3 1 $ [] :=> (genT 1 .-> rec [(RGen 1 ,genT 2)]) .-> (genT 1 .-> genT 3) .-> list (genT 1) .-> (list $ rec [(RGen 1 , list $ genT 2)]))
