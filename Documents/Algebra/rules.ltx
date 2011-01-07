@@ -159,7 +159,16 @@
          | (qv', qv, mapv, loopv, Gamv) = mapForward Gam q1 cs1 |\\
          | Gamv[x +-> (qv, cs1, ts1)], loopv +- e2 => (q2, cs2, ts2)|\\
          | q = proj (iter:outer, pos:resCol, ln cs1) (join (iter:outer, pos:pos') q1 (proj (inner, outer, pos', resCol) (rownum' resCol (ln cs2) iter (join (iter:inner) q2 mapv)))) |}
-        {| Gam, loop +- sortWith (\x -> e2) e1 => (q, cs1, ts1)|}
+        {| Gam, loop +- sortWith (\x -> e2) e1 => (q, cs1, ts1)|}\\
+    \infrule[ac-splitAt]
+        {| Gam, loop +- e1 => (q1, {item1}, empty) |\quad
+         | Gam, loop +- e2 => (q2, cs2, ts2) |\\
+         | q2' = abspos q2 |\quad
+         | q' = gt res pos ord (join (iter:iter') q2' (proj (ord:item1, iter':iter) q1))|\\
+         | qr = proj (iter, pos, cs2) (sel res q')|\\
+         | ql = proj (iter, pos, cs2) (sel res (not (res:res) q')) |\\
+         | q'' = attach pos 1 (proj (iter, item1:iter, item2:iter) loop) |}
+        {| Gam, loop +- splitAt e1 e2 => (q'', {item1, item2}, {1 +-> (ql, cs2, ts2), (2 +-> (q2, cs2, ts2))}) |}
     \end{infrules}
 \begin{code}
 tyToCol :: Type -> Int -> Columns

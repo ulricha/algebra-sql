@@ -113,7 +113,12 @@ coreToAlgebra (Nil (_ :=> (FList t))) = do
                                  let cs = fst $ typeToCols t 1
                                  let schema = ("iter", natT):("pos", natT):(colsToSchema cs)
                                  n1 <- emptyTable schema
-                                 return (n1, cs, emptyPlan)
+                                 sub <- case t of
+                                         (FList _) -> do
+                                                        s <- coreToAlgebra $ Nil $ [] :=> t
+                                                        return $ SubPlan $ M.singleton 1 s
+                                         _ -> return emptyPlan
+                                 return (n1, cs, sub)
 coreToAlgebra (Nil _) = $impossible -- After type checking the only thing that reaches this stage has a list type
 -- List constructor, because of optimisation chances contents has been directed to special functions
 coreToAlgebra (c@(Cons _ _ _)) = listFirst c
@@ -359,6 +364,33 @@ compileAppE1 (Var (_ :=> FFn _ t) "sum") (q, cs, _) =
                         q''' <- attach "pos" natT (nat 1) 
                                     =<< union q'' q'
                         return (q''', cs, emptyPlan)
+compileAppE1 (Var _ "maximum") (q, cs, _) =
+                    do
+                        q' <- attach "pos" natT (nat 1)
+                                =<< proj [("iter", "iter"), ("item1", resCol)]
+                                    =<< aggr [(Max, resCol, Just "item1")] (Just "iter") q
+                        return (q', cs, emptyPlan)
+compileAppE1 (Var _ "minimum") (q, cs, _) =
+                    do
+                        q' <- attach "pos" natT (nat 1)
+                                =<< proj [("iter", "iter"), ("item1", resCol)]
+                                    =<< aggr [(Min, resCol, Just "item1")] (Just "iter") q
+                        return (q', cs, emptyPlan)
+compileAppE1 (Var (_ :=> FFn _ t) "product") (q, cs, _) =
+                    do
+                        let ty = case t of
+                                    FInt -> intT
+                                    FFloat -> doubleT
+                                    (FVar _) -> intT
+                                    _ -> $impossible
+                        loop <- getLoop
+                        q' <- aggr [(Prod, "item1", Just "item1")] (Just "iter") q
+                        q'' <- attach "item1" ty (int 1)
+                                =<< difference loop 
+                                    =<< proj [("iter", "iter")] q'
+                        q''' <- attach "pos" natT (nat 1) 
+                                    =<< union q'' q'
+                        return (q''', cs, emptyPlan)
 compileAppE1 (Var _ "or") (q, cs, ts) =
                     do
                         q' <- attach "pos" natT (nat 1)
@@ -377,6 +409,24 @@ compileAppE1 (Var _ "integerToDouble") (q, _cs, _ts) =
                         q' <- proj [("iter", "iter"), ("pos", "pos"), ("item1", resCol)]
                                 =<< cast "item1" resCol ADouble q
                         return (q', [Col 1 ADouble], emptyPlan )
+compileAppE1 (App _ (Var _ "splitAt") (ParExpr _ e1)) (q2, cs2, ts2) =
+                    do
+                        (q1, [Col 1 AInt], _ts1) <- coreToAlgebra e1
+                        let projPairs = zip (leafNames cs2) (leafNames cs2) 
+                        q2' <- absPos q2 cs2
+                        q' <- oper ">" resCol posPrime ordCol
+                                =<< cast "pos" posPrime intT
+                                    =<< eqJoin "iter" iterPrime q2'
+                                        =<< proj [(ordCol, "item1"), (iterPrime, "iter")] q1
+                        ql <- proj (("iter", "iter"):("pos", "pos"):projPairs)
+                                =<< select resColPrime 
+                                    =<< notC resColPrime resCol q'
+                        qr <- proj (("iter", "iter"):("pos", "pos"):projPairs)
+                                =<< select resCol q'
+                        loop <- getLoop
+                        q'' <- attach "pos" natT (nat 1)
+                                =<< proj [("iter", "iter"), ("item1", "iter"), ("item2", "iter")] loop
+                        return (q'', [Col 1 ASur, Col 2 ASur], SubPlan $ M.fromList [(1, (ql, cs2, ts2)), (2, (qr, cs2, ts2))])
 compileAppE1 (App _ (Var _ "take") (ParExpr _ e1)) (q2, cs2, ts2) =
                     do
                         (q1, [Col 1 AInt], _ts) <- coreToAlgebra e1
