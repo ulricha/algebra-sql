@@ -226,6 +226,24 @@ compileAppE1 (App _ (Var _ "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                     q <- proj (("iter",outer):("pos", posPrime):csProj2)
                             =<< eqJoin "iter" inner q2 mapv
                     return (q, cs2, ts2)
+compileAppE1 (App _ (Var _ "takeWhile") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
+                do
+                    gam <- getGamma
+                    (qv', qv, mapv, loopv, gamV) <- mapForward gam q1 cs1
+                    (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
+                    let projPairs = zip (leafNames cs1) (leafNames cs1)
+                    q' <- proj (("iter","iter"):("pos", "pos"):(resCol, resCol):projPairs)
+                            =<< eqJoin inner iterPrime qv'
+                                =<< proj [(iterPrime, "iter"),(resCol, "item1")] q2
+                    q'' <- proj (("iter", "iter"):("pos", "pos"):projPairs)
+                            =<< select resColPrime
+                                =<< oper ">" resColPrime posPrime "pos"
+                                    =<< eqJoin "iter" iterPrime q'
+                                        =<< proj [(iterPrime, "iter"), (posPrime, posPrime)]
+                                            =<< aggr [(Min, posPrime, Just "pos")] (Just "iter")
+                                                =<< select posPrime 
+                                                    =<< notC posPrime resCol q'
+                    return (q'', cs1, ts1)
 compileAppE1 (App _ (Var _ "sortWith") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                 do
                     gam <- getGamma

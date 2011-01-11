@@ -168,7 +168,14 @@
          | qr = proj (iter, pos, cs2) (sel res q')|\\
          | ql = proj (iter, pos, cs2) (sel res (not (res:res) q')) |\\
          | q'' = attach pos 1 (proj (iter, item1:iter, item2:iter) loop) |}
-        {| Gam, loop +- splitAt e1 e2 => (q'', {item1, item2}, {1 +-> (ql, cs2, ts2), (2 +-> (q2, cs2, ts2))}) |}
+        {| Gam, loop +- splitAt e1 e2 => (q'', {item1, item2}, {1 +-> (ql, cs2, ts2), (2 +-> (q2, cs2, ts2))}) |}\\
+    \infrule[takeWhile]
+        {| Gam, loop +- e1 => (q1, cs1, ts1) |\quad
+         | (qv', qv, mapv, loopv, Gamv) = mapForward Gam q1 cs1 |\\
+         | Gamv[x +-> (qv, cs1, ts1)], loov +- e2 => (q2, cs2, ts2)|\\
+         | q' = proj (iter, pos, ln cs1, res) (join (inner:iter') qv' (proj (iter':iter, res:item1) q2))|\\
+         | q'' = proj (iter, pos, ln cs1) (select (pos < pos') (join (iter:iter') q' (proj (iter':iter, res) (aggr (res:min(res)/iter) (select res (not (res:res) q'))))))|}
+        {| Gam, loop +- takeWhile (\x -> e2) e1 => (q'', cs1, ts1)|}
     \end{infrules}
 \begin{code}
 tyToCol :: Type -> Int -> Columns
