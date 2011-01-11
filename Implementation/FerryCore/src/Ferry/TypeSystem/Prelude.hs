@@ -64,6 +64,7 @@ primitives = M.fromList $
              ,("map", Forall 2 0 $ [] :=> (genT 1 .-> genT 2) .-> list (genT 1) .-> list (genT 2))
              ,("concatMap", Forall 2 0 $ [] :=> (genT 1 .-> list (genT 2)) .-> list (genT 1) .-> list (genT 2))
              ,("takeWhile", Forall 1 0 $ [] :=> (genT 1 .-> bool) .-> (list $ genT 1) .-> (list $ genT 1))
+             ,("dropWhile", Forall 1 0 $ [] :=> (genT 1 .-> bool) .-> (list $ genT 1) .-> (list $ genT 1))
              ,("concat", Forall 1 0 $ [] :=> (list $ list $ genT 1) .-> (list $ genT 1))
              ,("single", Forall 1 0 $ [] :=> (list $ genT 1) .-> genT 1)
              ,("filter", Forall 1 0 $ [] :=> (genT 1 .-> bool) .-> (list $ genT 1) .-> (list $ genT 1))
