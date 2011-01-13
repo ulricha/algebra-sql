@@ -9,7 +9,7 @@ Maintainer:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>
 Build-Type:     Simple
 library
     buildable:        True
-    build-depends:    FerryTableAlgebra >= 0.1.0, base >= 4.2, HaXml >= 1.20.2, pretty >= 1.0.1.1, parsec >= 2.1.0.1, mtl >= 2.0.1.0, containers >= 0.3.0.0, haskell98 >= 1.0.1.1, template-haskell >= 2.4.0.0
+    build-depends:    FerryTableAlgebra >= 0.1.5, base >= 4.2, HaXml >= 1.20.2, pretty >= 1.0.1.1, parsec >= 2.1.0.1, mtl >= 2.0.1.0, containers >= 0.3.0.0, haskell98 >= 1.0.1.1, template-haskell >= 2.4.0.0
     exposed-modules:  Ferry.Syntax
                       Ferry.Compiler
                       Ferry.SyntaxTyped
