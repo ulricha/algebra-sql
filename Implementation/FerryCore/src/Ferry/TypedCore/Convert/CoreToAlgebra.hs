@@ -251,7 +251,6 @@ compileAppE1 (App _ (Var _ "takeWhile") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                                         =<< eqJoin "iter" iterPrime q'
                                             =<< proj [(iterPrime, "iter"), (posPrime, posPrime)] qM
                     return (q'', cs1, ts1)
-{-
 compileAppE1 (App _ (App _ (Var _ "zipWith") l@(ParAbstr _ _ _)) (ParExpr _ e1)) (q2, cs2, ts2) =
                 do
                     gam <- getGamma
@@ -260,7 +259,15 @@ compileAppE1 (App _ (App _ (Var _ "zipWith") l@(ParAbstr _ _ _)) (ParExpr _ e1))
                     q2' <- absPos q2 cs2
                     let offSet = colSize cs1
                     let cs2' = incrCols offSet cs2
-                    q = () -}
+                    q <- eqTJoin [("pos", posPrime), ("iter", iterPrime)] (("iter", "iter"):("pos", "pos"): ((zip (leafNames cs1) (leafNames cs1)) ++ (zip (leafNames cs2') (leafNames cs2')))) q1'
+                        =<< proj ((iterPrime, "iter"):(posPrime, "pos"):(zip (leafNames cs2') (leafNames cs2))) q2'
+                    (_qv', qv, mapv, loopv, gamV) <- mapForward gam q $ cs1 ++ cs2'
+                    qv1 <- proj (("iter", "iter"):("pos", "pos"):(zip (leafNames cs1) (leafNames cs1))) qv
+                    qv2 <- proj (("iter", "iter"):("pos", "pos"):(zip (leafNames cs2) (leafNames cs2'))) qv
+                    (q3, cs3, ts3) <- withContext gamV loopv $ compileLambda [(qv1, cs1, ts1), (qv2, cs2, ts2)] l
+                    qr <- proj (("iter", outer):("pos", posPrime):(zip (leafNames cs3) (leafNames cs3))) 
+                            =<< eqJoin "iter" inner q3 mapv
+                    return (qr, cs3, ts3)
 compileAppE1 (App _ (Var _ "dropWhile") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                 do
                     gam <- getGamma
