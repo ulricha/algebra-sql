@@ -32,13 +32,15 @@ data RecElem where
 
 data Param where
      ParExpr :: (Qual FType) -> CoreExpr -> Param
-     ParAbstr :: (Qual FType) -> Pattern -> CoreExpr -> Param
+     ParAbstr :: (Qual FType) -> [String] -> CoreExpr -> Param
          deriving (Show)
 
+{-
 data Pattern where
     PVar :: String -> Pattern
     Pattern :: [String] -> Pattern
         deriving (Show)
+-}
 
 data Column where
      Column :: String -> FType -> Column

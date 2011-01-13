@@ -223,16 +223,18 @@ boxParam (ParExpr t e) = do
                            psie <- getFromContext
                            return $ (ParExpr t $ boxOp psi (fromJust psie) e', fromJust psie)
 boxParam (ParAbstr t p e) = do
-                             let args = getVars p
+                             let args = p
                              psie <- getFromContext
                              let (asso, boxR) = varsWithBox args $ fromJust psie
                              (e', psi) <- foldr (\(v, t') r -> addToEnv v t' r) (noContext $ box e) asso
                              return (ParAbstr t p (boxOp psi boxR e'), boxR)
-                             
+ 
+{-
 -- | Retrieve the variables in a pattern    
 getVars :: Pattern -> [String]
 getVars (PVar v) = [v]
 getVars (Pattern p) = p  
+-}
 
 -- | Construct a list of all function arguments with their respective box value, and the result box value of the function.
 varsWithBox :: [String] -> Box -> ([(String, Box)], Box)

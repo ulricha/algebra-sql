@@ -221,7 +221,7 @@ compileAppE1 (App _ (Var _ "map") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                 do
                     gam <- getGamma
                     (_qv', qv, mapv, loopv, gamV) <- mapForward gam q1 cs1
-                    (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
+                    (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda [(qv, cs1, ts1)] l
                     let csProj2 = zip (leafNames cs2) (leafNames cs2)
                     q <- proj (("iter",outer):("pos", posPrime):csProj2)
                             =<< eqJoin "iter" inner q2 mapv
@@ -230,8 +230,8 @@ compileAppE1 (App _ (Var _ "takeWhile") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                 do
                     gam <- getGamma
                     loop <- getLoop
-                    (qv', qv, mapv, loopv, gamV) <- mapForward gam q1 cs1
-                    (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
+                    (qv', qv, _mapv, loopv, gamV) <- mapForward gam q1 cs1
+                    (q2, _cs2, _ts2) <- withContext gamV loopv $ compileLambda [(qv, cs1, ts1)] l
                     let projPairs = zip (leafNames cs1) (leafNames cs1)
                     q' <- proj (("iter","iter"):("pos", "pos"):(resCol, resCol):projPairs)
                             =<< eqJoin inner iterPrime qv'
@@ -251,12 +251,21 @@ compileAppE1 (App _ (Var _ "takeWhile") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                                         =<< eqJoin "iter" iterPrime q'
                                             =<< proj [(iterPrime, "iter"), (posPrime, posPrime)] qM
                     return (q'', cs1, ts1)
+{-
+compileAppE1 (App _ (App _ (Var _ "zipWith") l@(ParAbstr _ _ _)) (ParExpr _ e1)) (q2, cs2, ts2) =
+                do
+                    gam <- getGamma
+                    (q1, cs1, ts1) <- coreToAlgebra e1
+                    q1' <- absPos q1 cs1
+                    q2' <- absPos q2 cs2
+                    let offSet = colSize cs1
+                    let cs2' = incrCols offSet cs2
+                    q = () -}
 compileAppE1 (App _ (Var _ "dropWhile") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                 do
                     gam <- getGamma
-                    loop <- getLoop
-                    (qv', qv, mapv, loopv, gamV) <- mapForward gam q1 cs1
-                    (q2, cs2, ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
+                    (qv', qv, _mapv, loopv, gamV) <- mapForward gam q1 cs1
+                    (q2, _cs2, _ts2) <- withContext gamV loopv $ compileLambda [(qv, cs1, ts1)] l
                     let projPairs = zip (leafNames cs1) (leafNames cs1)
                     q' <- proj (("iter","iter"):("pos", "pos"):(resCol, resCol):projPairs)
                             =<< eqJoin inner iterPrime qv'
@@ -276,7 +285,7 @@ compileAppE1 (App _ (Var _ "sortWith") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                 do
                     gam <- getGamma
                     (_qv', qv, mapv, loopv, gamV) <- mapForward gam q1 cs1
-                    (q2, cs2, _ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
+                    (q2, cs2, _ts2) <- withContext gamV loopv $ compileLambda [(qv, cs1, ts1)] l
                     let projPairs = zip (leafNames cs1) (leafNames cs1)
                     q <- proj (("iter", outer):("pos", resCol):projPairs) =<< select resColPrime
                         =<< oper "==" resColPrime "pos" posPrime  
@@ -303,7 +312,7 @@ compileAppE1 (App _ (Var _ "filter") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                 do
                     gam <- getGamma
                     (qv', qv, _mapv, loopv, gamV) <- mapForward gam q1 cs1
-                    (q2, _cs2, _ts2) <- withContext gamV loopv $ compileLambda (qv, cs1, ts1) l
+                    (q2, _cs2, _ts2) <- withContext gamV loopv $ compileLambda [(qv, cs1, ts1)] l
                     let csProj = zip (leafNames cs1) (leafNames cs1)
                     q <- proj (("iter", "iter"):("pos", "pos"):csProj)
                             =<< select resCol  
@@ -538,8 +547,8 @@ compileAppE1 (App _ (App _ (Var _ "groupWith") e1@(ParAbstr _ _ _)) e2@(ParAbstr
             do
                 gam <- getGamma
                 (qv', qv, _map', loop', gam') <- mapForward gam q3 cs3
-                (q1, cs1, ts1) <- withContext gam' loop' $ compileLambda (qv, cs3, ts3) e1
-                (q2, cs2, _ts2) <- withContext gam' loop' $ compileLambda (qv, cs3, ts3) e2
+                (q1, cs1, ts1) <- withContext gam' loop' $ compileLambda [(qv, cs3, ts3)] e1
+                (q2, cs2, _ts2) <- withContext gam' loop' $ compileLambda [(qv, cs3, ts3)] e2
                 let offSet = colSize cs1
                 let cs2' = incrCols offSet cs2
                 let projPairs1 = zip (leafNames cs1) (leafNames cs1)
@@ -569,8 +578,8 @@ compileAppE1 (App _ (App _ (Var _ "groupBy") e1@(ParAbstr _ _ _)) e2@(ParAbstr _
             do
                 gam <- getGamma
                 (qv', qv, _map', loop', gam') <- mapForward gam q3 cs3
-                (q1, cs1, ts1) <- withContext gam' loop' $ compileLambda (qv, cs3, ts3) e1
-                (q2, cs2, _ts2) <- withContext gam' loop' $ compileLambda (qv, cs3, ts3) e2
+                (q1, cs1, ts1) <- withContext gam' loop' $ compileLambda [(qv, cs3, ts3)] e1
+                (q2, cs2, _ts2) <- withContext gam' loop' $ compileLambda [(qv, cs3, ts3)] e2
                 let offSet = colSize cs1
                 let cs2' = incrCols offSet cs2
                 let projPairs1 = zip (leafNames cs1) (leafNames cs1)
@@ -609,8 +618,9 @@ makeSubPlan _ [] _  _ = return (emptyPlan, [])
 makeSubPlan _ _ _ _ = $impossible
                     
 -- | Compile a lambda where the argument variable is bound to the given expression                    
-compileLambda :: AlgRes -> Param -> GraphM AlgRes
-compileLambda arg (ParAbstr _ (PVar x) e) = withBinding x arg $ coreToAlgebra e
+compileLambda :: [AlgRes] -> Param -> GraphM AlgRes
+compileLambda args (ParAbstr _ xs e) = let pairs = zip xs args
+                                        in foldr (\(v, a) -> withBinding v a) (coreToAlgebra e) pairs
 compileLambda _ p = $impossible
 
 -- | Transform gamma for map function                

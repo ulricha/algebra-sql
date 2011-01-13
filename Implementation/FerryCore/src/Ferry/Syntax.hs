@@ -4,13 +4,13 @@ module Ferry.Syntax
 (
 Ident,
 Identifier, Const (..), VarContainer(..),
-Op (..), CoreExpr (..), RecElem (..), Param (..), Pattern (..), Column (..), Key (..), Type(..),
+Op (..), CoreExpr (..), RecElem (..), Param (..), Column (..), Key (..), Type(..),
 Dotify(..),
 module Ferry.Common.Render.Pretty
 )
 where
 import Ferry.Common.Data.Base    
-import Ferry.Core.Data.Core (Op (..), CoreExpr (..), RecElem (..), Param (..), Pattern (..), Column (..), Key (..), Ident, Type(..))
+import Ferry.Core.Data.Core (Op (..), CoreExpr (..), RecElem (..), Param (..), Column (..), Key (..), Ident, Type(..))
 import Ferry.Core.Render.Dot()
 import Ferry.Common.Render.Dot(Dotify(..))
 import Ferry.Common.Render.Pretty

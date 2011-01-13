@@ -168,7 +168,7 @@ eqAbstr ty1@(q1 :=> FList t1) ty2@(q2 :=> FList t2) =
             let el1 = Elem (q1 :=> t1) fV "1"
             let el2 = Elem (q2 :=> t2) fV "2"
             eqE <- rewrite' $ BinOp ([] :=> FBool) (Op "==") el1 el2
-            return $ ParAbstr (q :=> t .-> FBool) (PVar f) eqE    
+            return $ ParAbstr (q :=> t .-> FBool) [f] eqE    
 eqAbstr _ _ = $impossible
 
 notEq :: CoreExpr -> CoreExpr -> Rewrite CoreExpr

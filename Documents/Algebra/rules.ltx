@@ -175,7 +175,17 @@
          | Gamv[x +-> (qv, cs1, ts1)], loov +- e2 => (q2, cs2, ts2)|\\
          | q' = proj (iter, pos, ln cs1, res) (join (inner:iter') qv' (proj (iter':iter, res:item1) q2))|\\
          | q'' = proj (iter, pos, ln cs1) (select (pos < pos') (join (iter:iter') q' (proj (iter':iter, res) (aggr (res:min(res)/iter) (select res (not (res:res) q'))))))|}
-        {| Gam, loop +- takeWhile (\x -> e2) e1 => (q'', cs1, ts1)|}
+        {| Gam, loop +- takeWhile (\x -> e2) e1 => (q'', cs1, ts1)|}\\
+    \infrule[zipWith]
+        {| Gam, loop +- e1 => (q1, cs1, ts1)|\quad |Gam, loop +- e2 => (q2, cs2, ts2)|\\
+         | q1' = abspos q1 cs1 |\quad | q2' = abspos q2 cs2 |\\
+         | cs2' = incr cs2 (card cs1) |\\
+         | q = proj (iter, pos, cs1, cs2') (join (iter:iter', pos:pos') q1 (proj (iter':iter, pos':pos, cs2':cs2) q2')) |\\
+         | (qv', qv, mapv, loopv, Gamv) = mapForward Gam q (cs1 ++ cs2')|\\
+         | qv1 = proj (iter,pos,cs1) qv|\quad | qv2 = proj (iter, pos, cs2:cs2')|\\
+         | Gamv[ x +-> (qv1, cs1, ts1), y +-> (qv2, cs2, ts2)], loopv +- e3 => (q3, cs3, ts3)|\\
+         | q' = proj (iter:outer, pos:pos', cs3) (join (iter:inner) q3 mapv) |}
+        {| Gam, loop +- zipWith (\x y -> e3) e1 e2 => (q', cs3, ts3) |}
     \end{infrules}
 \begin{code}
 tyToCol :: Type -> Int -> Columns

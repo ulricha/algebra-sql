@@ -19,7 +19,7 @@ data FoldCore b p r = FoldCore {binOpF :: Qual FType -> Op -> b -> b -> b
                              ,tableF :: Qual FType -> String -> [Column] -> [Key] -> b
                              ,ifF :: Qual FType -> b -> b -> b -> b
                              ,pExprF :: Qual FType -> b -> p
-                             ,pAbstrF :: Qual FType -> Pattern -> b -> p
+                             ,pAbstrF :: Qual FType -> [String] -> b -> p
                              ,rRecEF :: Qual FType -> String -> b -> r}
 
 -- | Identity traversel

@@ -129,7 +129,7 @@ algWArg (C.ParExpr e) = do
                          e' <- algW e
                          applySubst $ ParExpr (typeOf e') e'  
 algWArg (C.ParAbstr p e) = do
-                             let vars' = getVars p
+                             let vars' = p
                              bindings <- foldr (\v r -> do
                                                           t <- liftM (\var' -> [] :=> FVar var') freshTyVar
                                                           r' <- r
@@ -138,8 +138,9 @@ algWArg (C.ParAbstr p e) = do
                              e' <- foldr (\(v, t) r -> addToEnv v (Forall 0 0 t) r) (algW e) bindings
                              let (q :=> rt) = typeOf e'
                              let t = q :=> (foldr (\(_, _ :=> ty) r -> FFn ty r) rt bindings)  
-                             applySubst $ ParAbstr t (toPattern vars') e'
+                             applySubst $ ParAbstr t vars' e'
                              
+{-
 toPattern :: [String] -> Pattern
 toPattern [x]   = PVar x
 toPattern xs    = Pattern xs
@@ -147,7 +148,7 @@ toPattern xs    = Pattern xs
 getVars :: C.Pattern -> [String]
 getVars (C.PVar v) = [v]
 getVars (C.Pattern p) = p                     
-                           
+-}                           
 uniqueKeys :: Eq k => [(k, a)] -> [(k, a)]
 uniqueKeys l1 = L.nubBy (\(k1, _) (k2, _) -> k1 == k2) l1  
 

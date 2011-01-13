@@ -34,13 +34,14 @@ data RecElem where
 -- In future, that is when defunctionalisation is implemented function arguments should just be expressions.
 data Param where
      ParExpr :: CoreExpr -> Param
-     ParAbstr :: Pattern -> CoreExpr -> Param
- 
+     ParAbstr :: [String] -> CoreExpr -> Param
+{- 
 -- | Patterns   
 data Pattern where
     PVar :: String -> Pattern
     Pattern :: [String] -> Pattern
-    
+-}
+  
 -- | Database table column
 data Column where
      Column :: String -> Type -> Column

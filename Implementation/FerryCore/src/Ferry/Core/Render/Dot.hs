@@ -72,15 +72,17 @@ paramToDot :: Param -> Dot Id
 paramToDot (ParExpr e) = toDot e
 paramToDot (ParAbstr p e) = do
                              nId <- node [Label $ SLabel "\\   ->", Color Blue, Shape Circle]
-                             pId <- patToDot p
+                             pId <- node [Label $ SLabel (show p), Color Red, Shape Triangle]
                              eId <- toDot e
                              edge nId [pId, eId]
                              return nId
 
+{-
 -- | Convert a pattern to a dot node                             
 patToDot :: Pattern -> Dot Id
 patToDot (PVar s) = node [Label $ SLabel s, Color Red, Shape Triangle]
 patToDot (Pattern s) = node [Label $ SLabel $  "(" ++ (concat $ L.intersperse ", " s) ++ ")", Color Red, Shape Triangle]
+-}
 
 -- | Convert a record element to a dot node
 recToDot :: RecElem -> Dot Id

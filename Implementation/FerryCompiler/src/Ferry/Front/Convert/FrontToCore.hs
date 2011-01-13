@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances#-}
+{-# LANGUAGE TypeSynonymInstances, TemplateHaskell #-}
 module Ferry.Front.Convert.FrontToCore where
     
 import Ferry.Front.Data.Language
@@ -7,6 +7,7 @@ import Ferry.Compiler(FerryError(..))
 import Control.Monad.State
 import Control.Monad.Error
 import Control.Applicative (Applicative(..), (<$>), (<*>))
+import Ferry.Impossible
 
 type Transformation = ErrorT FerryError (State Int)
 
@@ -63,9 +64,11 @@ colToCore (Column _ s t) = C.Column <$> pure s <*> typeToCore t
 keyToCore :: Key -> Transformation C.Key
 keyToCore (Key _ ks) = C.Key <$> pure ks
 
-patToCore :: Pattern -> Transformation C.Pattern
-patToCore (PVar _ s) = C.PVar <$> pure s
-patToCore (PPat _ vs) = C.Pattern <$> pure vs
+
+patToCore :: Pattern -> Transformation [String]
+patToCore (PVar _ s) = return [s]
+patToCore (PPat _ vs) = $impossible 
+
 
 typeToCore :: Type -> Transformation C.Type
 typeToCore (TInt    _) = pure C.TInt
