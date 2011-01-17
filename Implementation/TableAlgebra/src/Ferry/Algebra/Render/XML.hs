@@ -265,10 +265,10 @@ mkTable xId n descr keys = [[mkKeys keys] `childsOf` xmlElem "properties", [mkTa
                                            
 -- | Create an xml table description node
 mkTableDescr :: String -> TableAttrInf -> Element ()
-mkTableDescr n descr = map (\d -> toTableCol d ) descr `childsOf` [attr "name" $ "&quot;" ++n ++ "&quot;"] `attrsOf` xmlElem "table"
+mkTableDescr n descr = map (\d -> toTableCol d ) descr `childsOf` [attr "name" n] `attrsOf` xmlElem "table"
     where
      toTableCol :: (AttrName, AttrName, ATy) -> Element ()
-     toTableCol (cn, xn, t) = [attr "name" xn, attr "tname" $ "&quot;" ++ cn ++ "&quot;", attr "type" $ show t] `attrsOf` xmlElem "column"
+     toTableCol (cn, xn, t) = [attr "name" xn, attr "tname" cn, attr "type" $ show t] `attrsOf` xmlElem "column"
 
 -- | Create an xml table key node
 mkKey :: KeyInfo -> Element ()
