@@ -352,9 +352,9 @@ compileAppE1 (Var _ "concat") (q, _cs, SubPlan ts) =
 compileAppE1 (Var _ "nub") (q, cs, ts) =
                     do
                         let projPairs = ("iter", "iter"):("pos", "pos"):(zip (leafNames cs) (leafNames cs))
-                        q' <- eqTJoin [("pos", posPrime), ("iter", iterPrime)]  projPairs q
-                                =<< aggr [(Min, posPrime, Just "pos"), (Min, iterPrime, Just "iter")] (Just resCol)
-                                    =<< rowrank resCol (map (\x -> (x, Asc)) ("iter":(leafNames cs))) q
+                        q' <- proj projPairs
+                            =<< aggr ((Min, "pos", Just "pos"):(Dist, "iter", Just "iter"):[(Dist, c, Just c) | c <- leafNames cs]) (Just resCol)
+                                =<< rowrank resCol (map (\x -> (x, Asc)) ("iter":(leafNames cs))) q
                         return (q', cs, ts)
 compileAppE1 (Var mt "count") (q, cs, ts) = compileAppE1 (Var mt "length") (q, cs, ts)
 compileAppE1 (App _ (Var _ "index") (ParExpr _ e1)) (q2, _cs2, _ts2) =

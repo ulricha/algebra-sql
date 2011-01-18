@@ -10,6 +10,9 @@ import Ferry.TypedCore.Render.Pretty()
 
 import qualified Data.List as L
 
+instance Dotify CoreExpr where
+    dot e = runDot $ toDot e
+
 toDot :: CoreExpr -> Dot Id
 toDot (BinOp t o e1 e2) = do
                            let o' = (\(Op op) -> op) o  
