@@ -1,4 +1,4 @@
--- | The missing instance for applicative for Parsec
+-- | The missing instance of applicative for Parsec
 module Ferry.Front.Parser.Applicative(
     module Control.Applicative
   , module Text.ParserCombinators.Parsec

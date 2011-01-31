@@ -29,3 +29,5 @@ executable ferryc
         Ferry.Front.Parser.Scanner 
         Ferry.Front.Render.Pretty
         Ferry.Impossible
+    extra-source-files:
+        documentation/SyntaxDoc.pdf

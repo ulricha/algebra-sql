@@ -169,7 +169,7 @@ returnClause = Return <$> pMeta <* reserved "return" <*> expr
                 <*> option Nothing ((\p bs r -> Just (p, bs, r)) <$ reserved "into" <*> pattern <*> many bodyClause <*> returnClause )
 -- | Parser for non negative atomic values
 atom' :: Parser Expr
-atom' = process <$> (try tuple <|> record <|> list <|> table <|> constParser' <|> parenExpr <|> variable) <*> many lookupListRec
+atom' = process <$> (tupleOrParen <|> record <|> list <|> table <|> constParser' <|> variable) <*> many lookupListRec
      where process e el = case el of
                            [] -> e
                            _  -> foldl (\l r -> case r of
@@ -178,7 +178,7 @@ atom' = process <$> (try tuple <|> record <|> list <|> table <|> constParser' <|
 
 -- | Parser atomic values.
 atom :: Parser Expr
-atom = process <$> (try tuple <|> record <|> list <|> table <|> constParser <|> parenExpr <|> variable) <*> many lookupListRec
+atom = process <$> (tupleOrParen <|> record <|> list <|> table <|> constParser <|> variable) <*> many lookupListRec
      where process e el = case el of
                            [] -> e
                            _  -> foldl (\l r -> case r of
@@ -188,15 +188,24 @@ atom = process <$> (try tuple <|> record <|> list <|> table <|> constParser <|> 
 lookupListRec :: Parser (Either (Either String Integer) Expr)
 lookupListRec = Left <$> element <|> Right <$> listLookup
 
--- | Parse a tuple. A tuple contains at least two elements.
-tuple :: Parser Expr
-tuple = do
+{-
+-- | Parse a parenthesised expression. This is just an expression 'expr' surrounded by "( ... )"
+parenExpr :: Parser Expr
+parenExpr = do
+              pos <- getPosition
+              e <- parens expr
+              return $ Paren (Meta pos) e
+-}
+
+-- | Parse a tuple or a parenthesised expression. A tuple contains at least two elements.
+tupleOrParen :: Parser Expr
+tupleOrParen = do
           pos <- getPosition
           t <- parens $ do
-                          e <- expr
-                          comma
                           es <- commaSep1 expr
-                          return (\p -> Record (Meta p) $ listToRecElem (e:es) [1..])
+                          case es of
+                            [e] -> return (\p -> Paren (Meta p) e)
+                            _   -> return (\p -> Record (Meta p) $ listToRecElem es [1..])
           return $ t pos
     where
         listToRecElem :: [Expr] -> [Int] -> [RecElem]
@@ -271,13 +280,6 @@ constParser' = do
                            try unitParser
                            ]
           return $ Const (Meta p) c
-
--- | Parse a parenthesised expression. This is just an expression 'expr' surrounded by "( ... )"
-parenExpr :: Parser Expr
-parenExpr = do
-              pos <- getPosition
-              e <- parens expr
-              return $ Paren (Meta pos) e
 
 -- | Parse a variable.
 variable :: Parser Expr
