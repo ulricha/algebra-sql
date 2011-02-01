@@ -44,9 +44,7 @@ opToCore (Op _ s) = C.Op <$> pure s
 
 argToCore :: Arg -> Transformation C.Param
 argToCore (AExpr _ e) = C.ParExpr <$> toCore e
-argToCore a@(AAbstr _ ps e) = case ps of 
-                             [p] -> C.ParAbstr <$> patToCore p <*> toCore e
-                             _   -> error $ "Abstraction only accepts single patterns: " ++ show  a
+argToCore a@(AAbstr _ ps e) = C.ParAbstr <$> mapM patToCore ps <*> toCore e
 
 recToCore :: RecElem -> Transformation C.RecElem
 recToCore r@(TrueRec _ i e) = case (i, e) of
@@ -65,9 +63,9 @@ keyToCore :: Key -> Transformation C.Key
 keyToCore (Key _ ks) = C.Key <$> pure ks
 
 
-patToCore :: Pattern -> Transformation [String]
-patToCore (PVar _ s) = return [s]
-patToCore (PPat _ vs) = $impossible 
+patToCore :: Pattern -> Transformation String
+patToCore (PVar _ s) = return s
+patToCore p@(PPat _ vs) = error $ show p -- $impossible 
 
 
 typeToCore :: Type -> Transformation C.Type

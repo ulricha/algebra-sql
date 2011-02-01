@@ -76,6 +76,7 @@ normaliseArg :: Arg -> Normalisation Arg
 normaliseArg (AExpr m e) = do
                          e' <- normalise e
                          return $ AExpr m e'
+-- Reconsider code below, it doesn't work for multiple argument functions, also check the pretty printer
 normaliseArg (AAbstr m p e) = restoreState $
                             do
                              let vss = concatMap vars p
@@ -84,16 +85,15 @@ normaliseArg (AAbstr m p e) = restoreState $
                              removeSubstitution vss
                              mapM (\(i, ex) -> addSubstitution i ex) newSubsts
                              e' <- normalise e
-                             let p' = replacePattern p $ map snd ns
-                             return $ AAbstr m [p'] e'
+                             let ps' = replacePattern $ map snd ns
+                             return $ AAbstr m ps' e'
 
 normIdent :: [Pattern] -> Normalisation [(Pattern, Identifier)]
 normIdent [] = return []
 normIdent (x:xs) = (\y ys -> (x, y):ys) <$> getFreshIdentifier <*> normIdent xs
 
-replacePattern :: [Pattern] -> [Identifier] -> Pattern
-replacePattern [_] [v] = PVar emptyMeta v
-replacePattern _ vs = PPat emptyMeta vs     
+replacePattern ::  [Identifier] -> [Pattern]
+replacePattern vs = [PVar emptyMeta v | v <- vs]   
                             
 makeSubstitution :: (Pattern, Identifier) -> [(Identifier, Expr)]
 makeSubstitution ((PVar m i), f) = [(i, Var m f)]
@@ -178,7 +178,9 @@ normalise (Relationship m c1 e1 c2 e2 k1 k2) = do
                                                                                               ])
                                                                          , AExpr m e1]
                     _ -> $impossible
-normalise (QComp _ q) = normaliseQCompr q
+normalise (QComp _ q) = do
+                            e <- normaliseQCompr q
+                            normalise e
     
 compgen :: String -> String -> Key -> Key -> Normalisation Expr
 compgen v1 v2 k1@(Key m1 ks1) k2@(Key m2 ks2) = if (length ks1 == length ks2)
