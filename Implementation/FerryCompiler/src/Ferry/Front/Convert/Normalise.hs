@@ -296,13 +296,18 @@ normaliseCompr (p1, e1) (p2, e2) = do
                                  mapM (\(i, ex) -> addSubstitution i ex) newSubst
                                  e1' <- normalise e1
                                  e2' <- normalise e2
-                                 pure $ (PVar m star, rExpr e1' e2')
-    where m = Meta emptyPos
-          rExpr e1' e2' = App m (Var m "concatMap'" ) [arg1 e2', arg2, arg3 e1']
-          arg1 e = AAbstr m [p1] e
+                                 pure $ (PVar m star, mapOut e1' e2')
+    where 
+          m = Meta emptyPos
           arg2 = AAbstr m [p1, p2] $ Record m $ [TrueRec m (Right n) (Just $ Var m n) | n <- vars p1] 
-                                               ++ [TrueRec m (Right n) (Just $ Var m n) | n <- vars p2]
-          arg3 e = AExpr (getMeta e) e
+                                         ++ [TrueRec m (Right n) (Just $ Var m n) | n <- vars p2]
+          constLam = AAbstr m [p2] (App m (Var m "const") [AExpr m $ Record m $ [TrueRec m (Right n) (Just $ Var m n) | n <- vars p1]
+                                                          ,AExpr m $ Record m $ [TrueRec m (Right n) (Just $ Var m n) | n <- vars p2]])
+          mapConst a2 = App m (Var m "map") [constLam, AExpr m a2]
+          zipM a2 = App m (Var m "zip") [AExpr m $ mapConst a2, AExpr m a2]
+          zipLam a2 = AAbstr m [p1] (zipM a2)
+          mapIn a1 a2 = App m (Var m "map") [zipLam a2, AExpr m a1]
+          mapOut a1 a2 = App m (Var m "map") [arg2, AExpr m $ mapIn a1 a2] 
                     
 
 

@@ -72,7 +72,7 @@ paramToDot :: Param -> Dot Id
 paramToDot (ParExpr e) = toDot e
 paramToDot (ParAbstr p e) = do
                              nId <- node [Label $ SLabel "\\   ->", Color Blue, Shape Circle]
-                             pId <- node [Label $ SLabel (show p), Color Red, Shape Triangle]
+                             pId <- node [Label $ SLabel (concat $ L.intersperse " " p), Color Red, Shape Triangle]
                              eId <- toDot e
                              edge nId [pId, eId]
                              return nId

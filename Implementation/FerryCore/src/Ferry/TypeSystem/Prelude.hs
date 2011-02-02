@@ -102,7 +102,8 @@ primitives = M.fromList $
              ,("thenBy", Forall 2 0 $ [] :=> (genT 1 .-> genT 2) .-> (list $ genT 1) .-> (list $ genT 2))
              ,("thenByDescending", Forall 2 0 $ [] :=> (genT 1 .-> genT 2) .-> (list $ genT 1) .-> (list $ genT 2))
              ,("concatMap", Forall 2 0 $ [] :=> (genT 1 .-> (list $ genT 2)) .-> (list $ genT 1) .-> (list $ genT 2))
-             ,("concatMap'", Forall 3 0 $ [] :=> (genT 1 .-> (list $ genT 2)) .-> (genT 1 .-> genT 2 .-> genT 3) .-> (list $ genT 1) .-> (list $ genT 3))
+             -- ,("mapConst", Forall 2 0 $ [] :=> genT 1 .-> (list $ genT 2) .-> (list $ genT 1))
              ,("groupWith", Forall 3 0 $ [] :=> (genT 1 .-> genT 2) .-> (genT 1 .-> genT 3) .-> (list $ genT 1) .-> (list $ rec [(RLabel "1", genT 3), (RLabel "2", list $ genT 2)]))
+             ,("const", Forall 2 0 $ [] :=> genT 1 .-> genT 2 .-> genT 1)
              -- ,("groupWithN", Forall 3 0 $ [] :=> (genT 1 .-> genT 2) .-> (genT 1 .-> genT 3) .-> (list $ genT 1) .-> (list $ rec [(RLabel "1", genT 3), (RLabel "2", list $ genT 2)]))
              ]

@@ -376,9 +376,10 @@ compileAppE1 (App _ (Var _ "mapConst") (ParExpr _ e1)) (q2, _cs2, _ts2) =
                     do
                         (q1, cs1, ts1) <- coreToAlgebra e1
                         let projPairs = zip (leafNames cs1) (leafNames cs1)
-                        q1' <- proj projPairs q1
-                        q <- cross q1' 
-                            =<< proj [("iter", "iter"),("pos", "pos")] q2
+                        q1' <- proj ((iterPrime, "iter") : projPairs) q1
+                        q <- proj (("iter", "iter"):("pos", "pos"):projPairs)
+                            =<< eqJoin iterPrime "iter"  q1' 
+                                =<< proj [("iter", "iter"),("pos", "pos")] q2
                         return (q, cs1, ts1)
 compileAppE1 (Var _ "reverse") (q1, cs1, ts1) =
                     do
