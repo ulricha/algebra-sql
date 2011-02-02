@@ -11,7 +11,7 @@ import Control.Monad.Writer
 
 import Text.XML.HaXml.Types
 import Text.XML.HaXml.Pretty (document)
-import Text.XML.HaXml.Escape (xmlEscape)
+import Text.XML.HaXml.Escape (xmlEscape, stdXmlEscaper)
 
 import Text.PrettyPrint.HughesPJ
 
@@ -365,13 +365,13 @@ mkProjNode xId mapping cxId = [map mkProjColumn mapping `childsOf` contentNode, 
 -- Create an xml attach column node 
 mkAttachNode :: XMLNode -> ColName -> AVal -> ATy -> XMLNode -> Element ()
 mkAttachNode xId n val ty cxId = let valNode = val `dataChildOf` [attr "type" $ show ty] `attrsOf` xmlElem "value"  
-                                     colNode = [xmlEscape xmlEscaper valNode] `childsOf` column n True
+                                     colNode = [xmlEscape stdXmlEscaper valNode] `childsOf` column n True
                                   in [[colNode] `childsOf` contentNode, mkEdge cxId]`childsOf` node xId "attach"
 
 -- Create an xml table node with one value in it
 mkTableNode :: XMLNode -> ColName -> AVal -> ATy -> Element ()
 mkTableNode xId n val ty = let valNode = val `dataChildOf` [attr "type" $ show ty] `attrsOf` xmlElem "value"
-                               colNode = [xmlEscape xmlEscaper valNode] `childsOf` column n True
+                               colNode = [xmlEscape stdXmlEscaper valNode] `childsOf` column n True
                                conNode =  [colNode] `childsOf` contentNode
                             in [conNode] `childsOf` node xId "table"
 

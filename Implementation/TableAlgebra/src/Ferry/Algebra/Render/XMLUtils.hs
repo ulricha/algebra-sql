@@ -1,12 +1,10 @@
 module Ferry.Algebra.Render.XMLUtils where
     
 import Text.XML.HaXml.Types
-import Text.XML.HaXml.Escape (mkXmlEscaper, XmlEscaper ())
 
 import Ferry.Algebra.Data.Algebra
 
 import qualified Data.Map as M
-import Data.Char (ord)
 
 import Control.Monad.State
 import Control.Monad.Writer
@@ -64,24 +62,6 @@ getNode i = do
 -- Run the monad and return a list of xml elements from the monad.
 runXML :: M.Map AlgNode Algebra -> XML a -> [Element ()]
 runXML m = snd . fst . flip runState (0, M.empty) . flip runReaderT m . runWriterT
-
-xmlEscaper :: XmlEscaper
-xmlEscaper = mkXmlEscaper
-   [('\60',"lt"),('\62',"gt"),('\38',"amp"),('\39',"apos"),('\34',"quot"), ('\92', "\\")]
-   (\ ch ->
-      let
-         i = ord ch
-      in
-         i < 10 || (10<i && i<32) || i >= 127 ||
-            case ch of
-               '\'' -> True
-               '\"' -> True
-               '&' -> True
-               '<' -> True
-               '>' -> True
-               '\\' -> True 
-               _ -> False
-      )
 
 -- * Helper functions for constructing xml nodes
 
