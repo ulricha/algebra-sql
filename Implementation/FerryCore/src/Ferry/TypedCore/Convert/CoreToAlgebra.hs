@@ -304,16 +304,18 @@ compileAppE1 (App _ (Var _ "sortWith") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
 compileAppE1 (App _ (Var _ "max") (ParExpr _ e1)) (q2, [Col 1 t], _ts2) = 
                 do
                     (q1, [Col 1 _], _ts1) <- coreToAlgebra e1
-                    q <- proj [("iter", "iter"),("pos", "pos"),("item1", resCol)]    
-                        =<< aggr [(Max, resCol, Just "item1")] Nothing 
-                            =<< union q1 q2
+                    q <- attach "pos" natT (nat 1)  
+                        =<< proj [("iter", "iter"),("item1", resCol)]    
+                            =<< aggr [(Max, resCol, Just "item1")] (Just "iter") 
+                                =<< union q1 q2
                     return (q, [Col 1 t], emptyPlan)
 compileAppE1 (App _ (Var _ "min") (ParExpr _ e1)) (q2, [Col 1 t], _ts2) =
                 do
                     (q1, [Col 1 _], _ts1) <- coreToAlgebra e1
-                    q <- proj [("iter", "iter"),("pos", "pos"),("item1", resCol)]    
-                        =<< aggr [(Min, resCol, Just "item1")] Nothing 
-                            =<< union q1 q2
+                    q <- attach "pos" natT (nat 1)  
+                        =<< proj [("iter", "iter"),("item1", resCol)]    
+                            =<< aggr [(Min, resCol, Just "item1")] (Just "iter") 
+                                =<< union q1 q2
                     return (q, [Col 1 t], emptyPlan)
 compileAppE1 (App _ (Var _ "filter") l@(ParAbstr _ _ _)) (q1, cs1, ts1) =
                 do
@@ -369,6 +371,14 @@ compileAppE1 (App _ (Var _ "index") (ParExpr _ e1)) (q2, _cs2, _ts2) =
                             =<< select resColPrime    
                                 =<< oper "==" resColPrime resCol "pos"
                                     =<< eqJoin iterPrime "iter" is q1
+                        return (q, cs1, ts1)
+compileAppE1 (App _ (Var _ "mapConst") (ParExpr _ e1)) (q2, _cs2, _ts2) =
+                    do
+                        (q1, cs1, ts1) <- coreToAlgebra e1
+                        let projPairs = zip (leafNames cs1) (leafNames cs1)
+                        q1' <- proj projPairs q1
+                        q <- cross q1' 
+                            =<< proj [("iter", "iter"),("pos", "pos")] q2
                         return (q, cs1, ts1)
 compileAppE1 (Var _ "reverse") (q1, cs1, ts1) =
                     do
@@ -919,7 +929,7 @@ getCol n cs = getCol' cs
      getCol' ((Col _ _):xs)              = getCol' xs
      getCol' ((NCol x i):xs) | x == n    = i
                              | otherwise = getCol' xs
-     getCol' []                          = $impossible -- error $ show n ++ " in " ++ show cs --[]
+     getCol' []                          = error $ show n ++ " in " ++ show cs --[]
 
 -- Transform Columns info into schema info for algebraic compilation
 colsToSchema :: Columns -> SchemaInfos
