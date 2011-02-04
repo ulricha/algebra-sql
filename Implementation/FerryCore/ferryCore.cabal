@@ -1,6 +1,6 @@
 cabal-version: >=1.8
 Name:           FerryCore
-Version:        0.4.5
+Version:        0.4.5.1
 category:       Database
 Synopsis:       Ferry Core Components
 Description:    The Ferry 2.0 Core

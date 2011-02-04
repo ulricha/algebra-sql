@@ -26,24 +26,26 @@ data Qual t where
    deriving Show
 
 -- | Predicates relating to records
-data Pred where
- IsIn :: String -> FType -> Pred -- | name `IsIn` t -> t is a record (or type variable) that contains at least a field name
- Has :: FType -> RLabel -> FType -> Pred -- | Similaar to IsIn but now with a type for the name
+data Pred
+   -- | name `IsIn` t -> t is a record (or type variable) that contains at least a field name
+   = IsIn String FType 
+   -- | Similaar to IsIn but now with a type for the name
+   | Has FType RLabel FType 
   deriving (Show, Eq)
 
 -- | Type language 
 data FType where
-    FGen :: Int -> FType -- | Generalised type variable
-    FUnit :: FType -- | ()
-    FInt :: FType -- | Int
-    FFloat :: FType -- | Float
-    FString :: FType -- | String
-    FBool :: FType -- | Bool
-    FList :: FType -> FType -- | [a]
-    FVar :: Ident -> FType -- | a
-    FRec :: [(RLabel, FType)] -> FType -- | {x1 :: t1, ..., xn :: tn} 
-    FFn :: FType -> FType -> FType -- | t1 -> t2
-    FTF :: FTFn -> FType -> FType -- | f t1
+    FGen :: Int -> FType --  Generalised type variable
+    FUnit :: FType --  ()
+    FInt :: FType --  Int
+    FFloat :: FType --  Float
+    FString :: FType --  String
+    FBool :: FType --  Bool
+    FList :: FType -> FType --  [a]
+    FVar :: Ident -> FType --  a
+    FRec :: [(RLabel, FType)] -> FType --  {x1 :: t1, ..., xn :: tn} 
+    FFn :: FType -> FType -> FType --  t1 -> t2
+    FTF :: FTFn -> FType -> FType -- f t1
  deriving (Show, Eq, Ord)
 
 -- | Is t a primitive type? 
@@ -58,7 +60,7 @@ isPrim _ = False
 -- | Language for record labels
 data RLabel where
     RLabel :: String -> RLabel
-    RGen :: Int -> RLabel -- | Generalised record label
+    RGen :: Int -> RLabel --  Generalised record label
     RVar :: String -> RLabel
  deriving (Show, Eq, Ord)
 
