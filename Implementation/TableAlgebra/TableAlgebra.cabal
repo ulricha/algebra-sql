@@ -2,7 +2,7 @@ cabal-version: >=1.8
 Name:           TableAlgebra
 synopsis:       Ferry Table Algebra
 Category:       Database
-Version:        0.1.5
+Version:        0.2.0
 Description:    The Ferry 2.0 Table Algebra library
                 .
                 The table algebra [2] is an intermediate language used by Ferry 2.0 [3] and DSH [4].
@@ -38,4 +38,5 @@ library
         Database.Ferry.Algebra.Data.GraphBuilder 
         Database.Ferry.Algebra.Render.XML 
         Database.Ferry.Algebra.Render.XMLUtils
+        Database.Ferry.Algebra.Monadic.Create
         Database.Ferry.Impossible 

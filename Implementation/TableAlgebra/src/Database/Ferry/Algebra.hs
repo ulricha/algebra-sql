@@ -20,9 +20,11 @@ module Database.Ferry.Algebra (
     Column(..), Columns, 
     ATy(..),
     SchemaInfos, KeyInfos, AlgNode, GraphM, Gam,
-    initLoop, runGraph)where
+    initLoop, runGraph,
+    module Database.Ferry.Algebra.Monadic.Create)where
 
 import Database.Ferry.Algebra.Data.Algebra
 import Database.Ferry.Algebra.Data.Create
 import Database.Ferry.Algebra.Data.GraphBuilder
 import Database.Ferry.Algebra.Render.XML
+import Database.Ferry.Algebra.Monadic.Create
