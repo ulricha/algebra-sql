@@ -31,7 +31,18 @@ type Dictionary = M.Map GraphNode XMLNode
 -- are the node ids from the graph. The state monad keeps track of the supply of fresh ids
 -- for xml nodes and the dictionary for looking up whether a certain graphnode already has
 -- an xml representation.
-type XML = WriterT [Element ()] (ReaderT (M.Map AlgNode Algebra) (State (Int, Dictionary)))
+type XML = WriterT [Element ()] (ReaderT (M.Map AlgNode Algebra, M.Map AlgNode [String], Bool) (State (Int, Dictionary)))
+
+getTags :: GraphNode -> XML (Maybe [String])
+getTags i = do
+             (_, ts, _) <- ask
+             return $ M.lookup i ts
+
+-- Debug enabled?
+debugEnabled :: XML Bool
+debugEnabled = do
+                (_,_,d) <- ask
+                return d
 
 -- Has a graphnode already been translated into an xml node. If yes which node?
 isDefined :: GraphNode -> XML (Maybe XMLNode)
@@ -55,13 +66,13 @@ addNodeTrans gId xId = do
 -- Get a node from the algebraic plan with a certain graphNode id number
 getNode :: Int -> XML Algebra
 getNode i = do
-             nodes <- ask
+             (nodes, _, _) <- ask
              return $ nodes M.! i
 
 
 -- Run the monad and return a list of xml elements from the monad.
-runXML :: M.Map AlgNode Algebra -> XML a -> [Element ()]
-runXML m = snd . fst . flip runState (0, M.empty) . flip runReaderT m . runWriterT
+runXML :: Bool -> M.Map AlgNode Algebra -> M.Map AlgNode [String] -> XML a -> [Element ()]
+runXML debug m t = snd . fst . flip runState (0, M.empty) . flip runReaderT (m, t, debug) . runWriterT
 
 -- * Helper functions for constructing xml nodes
 

@@ -146,6 +146,10 @@ rownum' res sort part c1 = insertNode $ RowNum (res, sort, part) c1
 oper :: String -> ResAttrName -> LeftAttrName -> RightAttrName -> AlgNode -> GraphM AlgNode
 oper o r la ra c = insertNode $ FunBinOp (o, r, la, ra) c
 
+-- | Tag a subtree with a comment
+tag :: String -> AlgNode -> GraphM AlgNode
+tag s c = insertNode $ Dummy s c
+
 -- | Shorthand for the initial loop condition used by Ferry.
 initLoop :: Algebra
 initLoop =  LitTable [[(nat 1)]] [("iter", natT)]   

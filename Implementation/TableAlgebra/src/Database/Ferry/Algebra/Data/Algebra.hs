@@ -230,4 +230,5 @@ data Algebra where
     Aggr       :: SemInfAggr -> AlgNode -> Algebra    -- should have one child
 --    FunAggrCnt :: SemInfFunAggrCnt -> Algebra -- should have one child
 --    SerializeRel :: SemInfSerRel -> Algebra   -- should have two children
+    Dummy :: String -> AlgNode -> Algebra -- Should have one child
   deriving (Show, Eq, Ord)

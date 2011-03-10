@@ -19,15 +19,15 @@ import qualified Data.Map as M
 
 -- Transform a query plan with result type into a pretty doc.
 -- The type is used to add meta information to the XML that is used for pretty printing by ferryDB
-transform :: (Bool, AlgPlan) -> Doc
-transform (isList, p) = let plans = runXML M.empty $ planBuilder (mkProperty isList) p
-                            planBundle = mkPlanBundle plans
-                         in (document $ mkXMLDocument planBundle)
+transform :: (Bool, Bool, AlgPlan) -> Doc
+transform (isList, debug, p) = let plans = runXML False M.empty M.empty $ planBuilder debug (mkProperty isList) p
+                                   planBundle = mkPlanBundle plans
+                                in (document $ mkXMLDocument planBundle)
 
 -- Transform a potentially nested algebraic plan into xml.
 -- The first argument is the overall result type property of the query.
-planBuilder :: Element () -> AlgPlan -> XML ()
-planBuilder prop (nodes, (top, cols, subs)) = buildPlan Nothing (Just prop) (top, cols, subs)
+planBuilder :: Bool -> Element () -> AlgPlan -> XML ()
+planBuilder debug prop (nodes, (top, cols, subs), tags) = buildPlan Nothing (Just prop) (top, cols, subs)
     where
         buildPlan :: Maybe (Int, Int) -> Maybe (Element ()) -> AlgRes -> XML ()
         buildPlan parent props (top', cols', subs') = 
@@ -36,7 +36,7 @@ planBuilder prop (nodes, (top, cols, subs)) = buildPlan Nothing (Just prop) (top
                                         let planProp = case props of
                                                         Nothing -> [colProp] `childsOf` xmlElem "properties"
                                                         Just p  -> [colProp, p] `childsOf` xmlElem "properties"
-                                        let plan = runXML nodeTable $ serializeAlgebra top' cols'
+                                        let plan = runXML debug nodeTable tags $ serializeAlgebra top' cols'
                                         pId <- mkQueryPlan parent planProp plan
                                         buildSubPlans pId subs'
         buildSubPlans :: Int -> SubPlan -> XML ()
@@ -100,12 +100,22 @@ alg2XML gId = do
                 case def of
                     Just x -> return x
                     Nothing -> do
+                                debug <- debugEnabled
                                 nd <- getNode gId
                                 xId <- alg2XML' nd
                                 addNodeTrans gId xId
-                                return xId
-                
-                
+                                if debug 
+                                    then
+                                      do
+                                        ts <- getTags gId
+                                        case ts of
+                                            Nothing -> return xId
+                                            Just x -> do
+                                                        xId' <- alg2XML' (Dummy (unlines x) gId)
+                                                        addNodeTrans gId xId'
+                                                        return xId'
+                                            else
+                                                return xId      
  where
     alg2XML' :: Algebra -> XML XMLNode 
     alg2XML' (LitTable [[v]] [(n, ty)]) = do
@@ -205,10 +215,18 @@ alg2XML gId = do
                                         xId <- freshId
                                         tell [mkDifference xId cxId1 cxId2]
                                         return xId
+    alg2XML' (Dummy t cId1) = do
+                                cxId1 <- alg2XML cId1
+                                xId <- freshId
+                                tell [mkDummy xId t cxId1]
+                                return xId
     alg2XML' _ = $impossible
 
+mkDummy :: XMLNode -> String -> XMLNode -> Element ()
+mkDummy xId comment cxId1 = [[comment `dataChildOf` xmlElem "comment"] `childsOf` contentNode ,mkEdge cxId1]`childsOf` node xId "dummy"
+
 mkDifference :: XMLNode -> XMLNode -> XMLNode -> Element ()
-mkDifference xId cxId1 cxId2 = [mkEdge cxId1, mkEdge cxId2]`childsOf` node xId "difference" 
+mkDifference xId cxId1 cxId2 = [mkEdge cxId1, mkEdge cxId2] `childsOf` node xId "difference" 
 
 mkCast :: XMLNode -> AttrName -> AttrName -> ATy -> XMLNode -> Element ()
 mkCast xId o r t c = [[column r True, column o False, typeN t] `childsOf` contentNode, mkEdge c] `childsOf` node xId "cast"
