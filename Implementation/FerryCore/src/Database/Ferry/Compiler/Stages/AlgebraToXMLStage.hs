@@ -11,12 +11,12 @@ import Database.Ferry.TypedCore.Data.Type
 
 xmlPhase :: (Qual FType, AlgPlan) -> PhaseResult String
 xmlPhase (_ :=> t, p) = executeStep xmlStage $ case t of
-                                                FList _ -> (True, p)
-                                                _       -> (False, p)
+                                                FList _ -> (True, False, p)
+                                                _       -> (False, False, p)
 
-xmlStage :: CompilationStep (Bool, AlgPlan) String
+xmlStage :: CompilationStep (Bool, Bool, AlgPlan) String
 xmlStage = CompilationStep "ToXML" AlgebraXML step artefacts
     where
-        step :: (Bool, AlgPlan) -> PhaseResult String
+        step :: (Bool, Bool, AlgPlan) -> PhaseResult String
         step = return . show . transform 
         artefacts = [(XML, "xml", return)]
