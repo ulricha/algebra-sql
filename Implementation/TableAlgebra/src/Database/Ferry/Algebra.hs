@@ -11,7 +11,7 @@ module Database.Ferry.Algebra (
     AlgPlan,
     transform,
     union, emptyPlan, attach, proj, getLoop, subPlan, rownum, rownum', eqJoin, rank, eqTJoin, distinct, rowrank, cast, difference, aggr,
-    select, posSelect, dbTable, notC, cross, oper, emptyTable, tag,
+    select, posSelect, dbTable, notC, cross, oper, emptyTable, tag, litTable,
     withBinding, withContext, getGamma, getPlan, fromGam, 
     nat, int, bool, double, string,
     natT, intT, surT, boolT, doubleT, stringT,
