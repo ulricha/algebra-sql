@@ -14,7 +14,8 @@ module Database.Ferry.TypedCore.Convert.CoreToAlgebra where
 import Database.Ferry.Impossible
 import Database.Ferry.Common.Data.Base
 
-import Database.Ferry.Algebra
+import Database.Ferry.Algebra hiding (GraphM)
+import qualified Database.Ferry.Algebra as A
 
 import Database.Ferry.TypedCore.Data.Type (Qual (..), FType (..), RLabel (..), isPrim)
 import Database.Ferry.TypedCore.Data.TypedCore as T
@@ -51,6 +52,8 @@ mkPrefixIter i = "iter" ++ prefixCol ++ (show i)
 -- | Prefix for intermediate column numbers
 prefixCol :: String
 prefixCol = "9999"
+
+type GraphM = A.GraphM AlgRes
 
 -- | Transform Ferry core into a relation algebra modelled as a DAG
 coreToAlgebra :: CoreExpr -> GraphM AlgRes
@@ -167,7 +170,7 @@ coreToAlgebra (App _ e1 e2) = compileAppE1 e1 =<< compileParam e2
 
 -- | Transform the variable environment                                  
 transformGam :: (AlgNode -> (String, AlgRes) -> GraphM (String, AlgRes)) 
-                -> AlgNode -> Gam -> GraphM Gam
+                -> AlgNode -> Gam AlgRes -> GraphM (Gam AlgRes)
 transformGam f loop gamma  = mapM (f loop) gamma
 
 -- | Transformation of gamma for if then else    
@@ -831,7 +834,7 @@ recElemsToAlgebra alg2 el = do
 
 -- map forward transforms the environment etc into the versions needed to compute in
 -- a loop context. The result is (qv', qv, mapv, loopv, Gamv)
-mapForward :: Gam -> AlgNode -> Columns -> GraphM (AlgNode, AlgNode, AlgNode, AlgNode, Gam)
+mapForward :: Gam AlgRes -> AlgNode -> Columns -> GraphM (AlgNode, AlgNode, AlgNode, AlgNode, Gam AlgRes)
 mapForward gam q cs = do
                           let csProj = zip (leafNames cs) (leafNames cs)
                           qv' <- rownum inner ["iter", "pos"] Nothing q
