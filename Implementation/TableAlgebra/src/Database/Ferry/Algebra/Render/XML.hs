@@ -17,16 +17,18 @@ import Text.PrettyPrint.HughesPJ
 
 import qualified Data.Map as M
 
+-- * Ferry specific 
+
 -- Transform a query plan with result type into a pretty doc.
 -- The type is used to add meta information to the XML that is used for pretty printing by ferryDB
-transform :: (Bool, Bool, AlgPlan) -> Doc
+transform :: (Bool, Bool, AlgPlan AlgRes) -> Doc
 transform (isList, debug, p) = let plans = runXML False M.empty M.empty $ planBuilder debug (mkProperty isList) p
                                    planBundle = mkPlanBundle plans
                                 in (document $ mkXMLDocument planBundle)
 
 -- Transform a potentially nested algebraic plan into xml.
 -- The first argument is the overall result type property of the query.
-planBuilder :: Bool -> Element () -> AlgPlan -> XML ()
+planBuilder :: Bool -> Element () -> AlgPlan AlgRes -> XML ()
 planBuilder debug prop (nodes, (top, cols, subs), tags) = buildPlan Nothing (Just prop) (top, cols, subs)
     where
         buildPlan :: Maybe (Int, Int) -> Maybe (Element ()) -> AlgRes -> XML ()
@@ -53,6 +55,8 @@ cssToProp cols = map csToProp cols `childsOf` [attr "name" "cs"] `attrsOf` xmlEl
 csToProp :: Column -> Element ()
 csToProp (Col i ty) = [[attr "name" "type", attr "value" $ show ty] `attrsOf` xmlElem "property"] `childsOf` [attr "name" "offset", attr "value" $ show i] `attrsOf` xmlElem "property"  
 csToProp (NCol x css) = [cssToProp css] `childsOf` [attr "name" "mapping", attr "value" x] `attrsOf` xmlElem "property" 
+
+
 
 -- Serialize algebra
 serializeAlgebra :: GraphNode -> Columns -> XML XMLNode
