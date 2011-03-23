@@ -142,8 +142,9 @@ type KeyInfos            = [KeyInfo]
 -- | Sort information, a list (ordered in sorting priority), of pair of columns and their sort direction--
 type SortInf              = [(SortAttrName, SortDir)]
 
+type ProjPair             = (NewAttrName, OldAttrName)
 -- | Projection information, a list of new attribute names, and their old names.
-type ProjInf              = [(NewAttrName, OldAttrName)]  
+type ProjInf              = [ProjPair]  
 
 -- | A tuple is a list of values
 type Tuple = [AVal]

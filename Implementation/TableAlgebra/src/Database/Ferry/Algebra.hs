@@ -20,7 +20,7 @@ module Database.Ferry.Algebra (
     Column(..), Columns, 
     ATy(..),
     SchemaInfos, KeyInfos, AlgNode, GraphM, Gam,
-    initLoop, runGraph,
+    initLoop, runGraph, ProjPair, ProjInf,
     module Database.Ferry.Algebra.Monadic.Create)where
 
 import Database.Ferry.Algebra.Data.Algebra
