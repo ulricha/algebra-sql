@@ -55,6 +55,19 @@ prefixCol = "9999"
 
 type GraphM = A.GraphM AlgRes
 
+recInNil2Alg :: Int -> [(RLabel, FType)] -> GraphM (Int, [(Int, AlgRes)])
+recInNil2Alg i [] = return (i, [])
+recInNil2Alg i ((_, t):ts) = case t of
+                                (FList _) -> do
+                                              r <- coreToAlgebra (Nil ([] :=> t))
+                                              (i', p) <- recInNil2Alg (i + 1) ts
+                                              return (i', (i, r):p)
+                                (FRec ts') -> do
+                                                 (i', p) <- recInNil2Alg i ts'
+                                                 (i'', p') <- recInNil2Alg i' ts
+                                                 return (i'', p ++ p')
+                                _           -> recInNil2Alg (i + 1) ts
+
 -- | Transform Ferry core into a relation algebra modelled as a DAG
 coreToAlgebra :: CoreExpr -> GraphM AlgRes
 -- | Primitive values
@@ -115,11 +128,14 @@ coreToAlgebra (Elem _ e n) = do
 coreToAlgebra (Nil (_ :=> (FList t))) = do
                                  let cs = fst $ typeToCols t 1
                                  let schema = ("iter", natT):("pos", natT):(colsToSchema cs)
-                                 n1 <- emptyTable schema
+                                 n1 <- tagM "Nil" $ emptyTable schema
                                  sub <- case t of
                                          (FList _) -> do
                                                         s <- coreToAlgebra $ Nil $ [] :=> t
                                                         return $ SubPlan $ M.singleton 1 s
+                                         (FRec ts) -> do 
+                                                        (_, p) <- recInNil2Alg 1 ts
+                                                        return $ SubPlan $ M.fromList p
                                          _ -> return emptyPlan
                                  return (n1, cs, sub)
 coreToAlgebra (Nil _) = $impossible -- After type checking the only thing that reaches this stage has a list type
