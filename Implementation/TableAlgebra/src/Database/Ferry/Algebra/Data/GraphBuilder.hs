@@ -21,27 +21,6 @@ type GraphM a = ReaderT (Gam a, AlgNode) (State (Int, M.Map Algebra AlgNode, Tag
 -- | Variable environemtn mapping from variables to compiled nodes.
 type Gam a = [(String, a)]
 
-
--- * Ferry specific 
-
-newtype SubPlan = SubPlan (M.Map Int AlgRes)
-
-instance Show SubPlan where
-    show (SubPlan p) = "SubPlans " ++ (show $ map (\(_,y,z) -> show (y, z)) $ M.elems p)
-    
-emptyPlan :: SubPlan
-emptyPlan = SubPlan M.empty
-
-subPlan :: Int -> AlgRes -> SubPlan
-subPlan i p = SubPlan $ M.singleton i p
-
-getPlan :: Int -> SubPlan -> AlgRes
-getPlan i (SubPlan p) = p M.! i
--- | An algebraic solution is a triple consisting of the node id, a description of the database columns and all subplans
-type AlgRes = (AlgNode, Columns, SubPlan)
-
--- End of ferry specific section
-
 -- | An algebraic plan is the result of constructing a graph.
 -- | The pair consists of the mapping from nodes to their respective ids
 -- | and the algres from the top node.

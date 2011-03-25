@@ -19,6 +19,7 @@ import qualified Database.Ferry.Algebra as A
 
 import Database.Ferry.TypedCore.Data.Type (Qual (..), FType (..), RLabel (..), isPrim)
 import Database.Ferry.TypedCore.Data.TypedCore as T
+import Database.Ferry.Common.Data.Plans
 
 import qualified Data.Map as M 
 import qualified Data.List as L

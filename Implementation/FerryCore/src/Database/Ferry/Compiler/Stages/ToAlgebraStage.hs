@@ -4,7 +4,8 @@ module Database.Ferry.Compiler.Stages.ToAlgebraStage (algebraPhase) where
 import Database.Ferry.Compiler.Types
 import Database.Ferry.Compiler.ExecuteStep
 
-import Database.Ferry.Algebra(runGraph, initLoop, AlgPlan, AlgRes)
+import Database.Ferry.Algebra(runGraph, initLoop, AlgPlan)
+import Database.Ferry.Common.Data.Plans
 
 import Database.Ferry.TypedCore.Data.Instances()
 import Database.Ferry.TypedCore.Convert.CoreToAlgebra

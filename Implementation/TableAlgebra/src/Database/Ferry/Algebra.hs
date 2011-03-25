@@ -9,14 +9,12 @@ This module only provides a subset of the complete algebra.
 
 module Database.Ferry.Algebra (
     AlgPlan,
-    transform,
-    union, emptyPlan, attach, proj, getLoop, subPlan, rownum, rownum', eqJoin, rank, eqTJoin, distinct, rowrank, cast, difference, aggr,
+    union, attach, proj, getLoop, rownum, rownum', eqJoin, rank, eqTJoin, distinct, rowrank, cast, difference, aggr,
     select, posSelect, dbTable, notC, cross, oper, emptyTable, tag, litTable,
-    withBinding, withContext, getGamma, getPlan, fromGam, 
+    withBinding, withContext, getGamma, fromGam, 
     nat, int, bool, double, string,
     natT, intT, surT, boolT, doubleT, stringT,
     SortDir(..), AggrType(..),
-    SubPlan(..), AlgRes,
     Column(..), Columns, 
     ATy(..),
     SchemaInfos, KeyInfos, AlgNode, GraphM, Gam,
@@ -26,5 +24,4 @@ module Database.Ferry.Algebra (
 import Database.Ferry.Algebra.Data.Algebra
 import Database.Ferry.Algebra.Data.Create
 import Database.Ferry.Algebra.Data.GraphBuilder
-import Database.Ferry.Algebra.Render.XML
 import Database.Ferry.Algebra.Monadic.Create

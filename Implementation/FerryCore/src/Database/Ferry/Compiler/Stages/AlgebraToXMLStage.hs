@@ -5,9 +5,11 @@ module Database.Ferry.Compiler.Stages.AlgebraToXMLStage (xmlPhase) where
 import Database.Ferry.Compiler.Types
 import Database.Ferry.Compiler.ExecuteStep
 
-import Database.Ferry.Algebra(AlgPlan, AlgRes, transform)
+import Database.Ferry.Common.Data.Plans
+import Database.Ferry.Algebra(AlgPlan)
 
 import Database.Ferry.TypedCore.Data.Type
+
 
 xmlPhase :: (Qual FType, AlgPlan AlgRes) -> PhaseResult String
 xmlPhase (_ :=> t, p) = executeStep xmlStage $ case t of
