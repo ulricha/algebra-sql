@@ -88,6 +88,9 @@ childsOf cs (Elem n attrs cs') = Elem n attrs $ cs' ++ [CElem c () | c <- cs]
 dataChildOf :: Show a => a -> Element () -> Element ()
 dataChildOf v (Elem n attrs cs) = Elem n attrs $ (CString False (show v) ()) : cs
 
+stringChildOf :: String -> Element () -> Element ()
+stringChildOf v (Elem n attrs cs) = Elem n attrs $ (CString False v ()) : cs
+
 -- | Construct a column with name n, and new status v
 column :: String -> Bool -> Element ()
 column n v = let new = case v of

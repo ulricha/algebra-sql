@@ -16,6 +16,8 @@ import qualified Text.XML.HaXml.Pretty as P (document)
 import Text.XML.HaXml.Escape (xmlEscape, stdXmlEscaper)
 import Text.PrettyPrint.HughesPJ
 
+import Data.List (intersperse)
+
 document ::  Document i -> Doc
 document = P.document
 
@@ -66,7 +68,7 @@ alg2XML gId = do
                                         case ts of
                                             Nothing -> return xId
                                             Just x -> do
-                                                        xId' <- alg2XML' (Dummy (unlines x) gId)
+                                                        xId' <- alg2XML' (Dummy (concat $ intersperse " " x) gId)
                                                         addNodeTrans gId xId'
                                                         return xId'
                                             else
@@ -178,7 +180,7 @@ alg2XML gId = do
     alg2XML' _ = $impossible
 
 mkDummy :: XMLNode -> String -> XMLNode -> Element ()
-mkDummy xId comment cxId1 = [[comment `dataChildOf` xmlElem "comment"] `childsOf` contentNode ,mkEdge cxId1]`childsOf` node xId "dummy"
+mkDummy xId comment cxId1 = [[comment `stringChildOf` xmlElem "comment"] `childsOf` contentNode ,mkEdge cxId1]`childsOf` node xId "dummy"
 
 mkDifference :: XMLNode -> XMLNode -> XMLNode -> Element ()
 mkDifference xId cxId1 cxId2 = [mkEdge cxId1, mkEdge cxId2] `childsOf` node xId "difference" 
