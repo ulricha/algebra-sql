@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Database.Ferry.TypedCore.Render.Pretty where
 
-import Char    
+import Data.Char
 import Database.Ferry.Common.Render.Pretty
 import Database.Ferry.TypedCore.Data.Type
 

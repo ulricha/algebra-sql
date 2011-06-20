@@ -2,7 +2,7 @@ cabal-version: >=1.8
 Name:           TableAlgebra
 synopsis:       Ferry Table Algebra
 Category:       Database
-Version:        0.6.1
+Version:        0.6.1.1
 Description:    The Ferry 2.0 Table Algebra library
                 .
                 The table algebra [2] is an intermediate language used by Ferry 2.0 [3] and DSH [4].
@@ -28,7 +28,7 @@ Maintainer:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>
 Build-Type:     Simple
 library
     buildable:        True
-    build-depends:    base >= 4.2 && < 5,  HaXml >= 1.20.2, mtl >= 2.0.1.0, containers >= 0.3.0.0, haskell98 >= 1.0.1.1, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1
+    build-depends:    base >= 4.2 && < 5,  HaXml >= 1.20.2, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1
     exposed-modules:  Database.Ferry.Algebra
                       Database.Ferry.Algebra.Render.XML
     hs-source-dirs:   src
