@@ -64,6 +64,9 @@ dbTable n cs ks = insertNode $ TableRef (n, attr, ks)
 litTable :: AVal -> String -> ATy -> GraphM a AlgNode
 litTable v s t = insertNode $ LitTable [[v]] [(s, t)]
 
+litTable' :: [[AVal]] -> [(String, ATy)] -> GraphM a AlgNode
+litTable' v s = insertNode $ LitTable v s
+
 -- | Attach a column 'ResAttrName' of type `ATy' with value
 -- `AVal' in all rows to table `AlgNode'
 attach :: ResAttrName -> ATy -> AVal -> AlgNode -> GraphM a AlgNode
