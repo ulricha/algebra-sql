@@ -16,7 +16,7 @@ module Database.Ferry.Algebra (
     natT, intT, surT, boolT, doubleT, stringT,
     SortDir(..), AggrType(..),
     Column(..), Columns, 
-    ATy(..),
+    ATy(..), AVal(),
     SchemaInfos, KeyInfos, AlgNode, GraphM, Gam,
     initLoop, runGraph, ProjPair, ProjInf,
     module Database.Ferry.Algebra.Monadic.Create)where
