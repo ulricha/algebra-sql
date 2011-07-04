@@ -1,5 +1,5 @@
 {- | Some typeclass instances belonging to the datatypes associated with typed core -}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 module Database.Ferry.TypedCore.Data.Instances where
     
 import Database.Ferry.TypedCore.Data.Type
