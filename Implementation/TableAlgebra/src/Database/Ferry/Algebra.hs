@@ -10,7 +10,7 @@ This module only provides a subset of the complete algebra.
 module Database.Ferry.Algebra (
     AlgPlan,
     union, attach, proj, getLoop, rownum, rownum', eqJoin, rank, eqTJoin, distinct, rowrank, cast, difference, aggr,
-    select, posSelect, dbTable, notC, cross, oper, emptyTable, tag, litTable,
+    select, posSelect, dbTable, notC, cross, oper, emptyTable, tag, litTable, litTable',
     withBinding, withContext, getGamma, fromGam, 
     nat, int, bool, double, string,
     natT, intT, surT, boolT, doubleT, stringT,
