@@ -3,11 +3,13 @@
 The Algebra module provides the internal datatypes used for 
 constructing algebaric plans. It is not recommended to use these
 datatypes directly instead it is adviced the to use the functions
-provided by the module Ferry.Algebra.Data.Create
+provided by the module Database.Algebra.Logical.Algebra.Create
 -}
-module Database.Ferry.Algebra.Data.Algebra where
+module Database.Algebra.Logical.Data.Algebra where
 
 import Numeric (showFFloat)
+
+import Database.Algebra.Graph.GraphBuilder(AlgNode)
 
 -- | The column data type is used to represent the table structure while
 --  compiling ferry core into an algebraic plan
@@ -197,7 +199,6 @@ type SemUnOp = (ResAttrName, AttrName)
 
 type SemInfAggr  = ([(AggrType, ResAttrName, Maybe AttrName)], Maybe PartAttrName)
 
-type AlgNode = Int
 
 -- | Algebraic operations. These operation do not reference their own children directly
 -- they only contain the information that is needed to perform the operation.

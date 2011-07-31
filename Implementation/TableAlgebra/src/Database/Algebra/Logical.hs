@@ -7,7 +7,7 @@ http://dbworld.informatik.uni-tuebingen.de/projects/pathfinder/wiki/Logical_Alge
 This module only provides a subset of the complete algebra.
 -}
 
-module Database.Ferry.Algebra (
+module Database.Algebra.Logical (
     AlgPlan,
     union, attach, proj, getLoop, rownum, rownum', eqJoin, rank, eqTJoin, distinct, rowrank, cast, difference, aggr,
     select, posSelect, dbTable, notC, cross, oper, emptyTable, tag, litTable,
@@ -19,9 +19,9 @@ module Database.Ferry.Algebra (
     ATy(..),
     SchemaInfos, KeyInfos, AlgNode, GraphM, Gam,
     initLoop, runGraph, ProjPair, ProjInf,
-    module Database.Ferry.Algebra.Monadic.Create)where
+    module Database.Algebra.Logical.Monadic.Create)where
 
-import Database.Ferry.Algebra.Data.Algebra
-import Database.Ferry.Algebra.Data.Create
-import Database.Ferry.Algebra.Data.GraphBuilder
-import Database.Ferry.Algebra.Monadic.Create
+import Database.Algebra.Logical.Data.Algebra
+import Database.Algebra.Logical.Data.Create
+import Database.Algebra.Logical.Data.GraphBuilder
+import Database.Algebra.Logical.Monadic.Create

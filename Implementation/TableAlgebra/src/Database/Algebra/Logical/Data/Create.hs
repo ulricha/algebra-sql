@@ -1,10 +1,10 @@
 {-|
 This module contains helper functions for constructing algebraic plans.
 -}
-module Database.Ferry.Algebra.Data.Create where
+module Database.Algebra.Logical.Data.Create where
     
-import Database.Ferry.Algebra.Data.Algebra
-import Database.Ferry.Algebra.Data.GraphBuilder
+import Database.Algebra.Logical.Data.Algebra
+import Database.Algebra.Graph.GraphBuilder
 
 -- * Value constructors
 

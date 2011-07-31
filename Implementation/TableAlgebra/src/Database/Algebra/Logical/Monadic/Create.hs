@@ -1,10 +1,10 @@
 -- | This module exports monadic combinators for creating graphs
-module Database.Ferry.Algebra.Monadic.Create (attachM, castM, eqJoinM, eqTJoinM, rankM, differenceM, rowrankM, posSelectM, selectM,
+module Database.Algebra.Logical.Monadic.Create (attachM, castM, eqJoinM, eqTJoinM, rankM, differenceM, rowrankM, posSelectM, selectM,
                                               distinctM, crossM, notM, unionM, projM, aggrM, rownumM, rownum'M, operM, tagM) where
 
-import qualified Database.Ferry.Algebra.Data.Create as C    
-import Database.Ferry.Algebra.Data.Algebra
-import Database.Ferry.Algebra.Data.GraphBuilder
+import qualified Database.Algebra.Logical.Data.Create as C    
+import Database.Algebra.Logical.Data.Algebra
+import Database.Algebra.Logical.Data.GraphBuilder
 
 bind1 :: Monad m => (a -> m b) -> m a -> m b
 bind1 = (=<<)
