@@ -29,8 +29,8 @@ Build-Type:     Simple
 library
     buildable:        True
     build-depends:    base >= 4.2 && < 5,  HaXml >= 1.20.2, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1
-    exposed-modules:  Database.Algebra.Pathfinder
-                      Database.Algebra.Pathfinder.Render.XML
+    exposed-modules:  Database.Algebra.Logical
+                      Database.Algebra.Logical.Render.XML
                       Database.Algebra.Graph.GraphBuilder
     hs-source-dirs:   src
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
