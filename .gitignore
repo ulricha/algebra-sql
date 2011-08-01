@@ -13,3 +13,6 @@
 
 # ignore mac specific files
 .DS_Store
+
+*~
+\#*\#
