@@ -1,9 +1,9 @@
 {-|
 This module contains helper functions for constructing algebraic plans.
 -}
-module Database.Algebra.Logical.Data.Create where
+module Database.Algebra.Pathfinder.Data.Create where
     
-import Database.Algebra.Logical.Data.Algebra
+import Database.Algebra.Pathfinder.Data.Algebra
 import Database.Algebra.Graph.GraphBuilder
 
 -- * Value constructors

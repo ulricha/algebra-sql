@@ -1,9 +1,9 @@
 -- | This module exports monadic combinators for creating graphs
-module Database.Algebra.Logical.Monadic.Create (attachM, castM, eqJoinM, eqTJoinM, rankM, differenceM, rowrankM, posSelectM, selectM,
+module Database.Algebra.Pathfinder.Monadic.Create (attachM, castM, eqJoinM, eqTJoinM, rankM, differenceM, rowrankM, posSelectM, selectM,
                                               distinctM, crossM, notM, unionM, projM, aggrM, rownumM, rownum'M, operM, tagM) where
 
-import qualified Database.Algebra.Logical.Data.Create as C    
-import Database.Algebra.Logical.Data.Algebra
+import qualified Database.Algebra.Pathfinder.Data.Create as C    
+import Database.Algebra.Pathfinder.Data.Algebra
 import Database.Algebra.Graph.GraphBuilder
 
 bind1 :: Monad m => (a -> m b) -> m a -> m b

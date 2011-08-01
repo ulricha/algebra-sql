@@ -3,9 +3,9 @@
 The Algebra module provides the internal datatypes used for 
 constructing algebaric plans. It is not recommended to use these
 datatypes directly instead it is adviced the to use the functions
-provided by the module Database.Algebra.Logical.Algebra.Create
+provided by the module Database.Algebra.Pathfinder.Algebra.Create
 -}
-module Database.Algebra.Logical.Data.Algebra where
+module Database.Algebra.Pathfinder.Data.Algebra where
 
 import Numeric (showFFloat)
 

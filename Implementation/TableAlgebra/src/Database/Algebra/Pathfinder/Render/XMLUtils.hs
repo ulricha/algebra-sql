@@ -1,8 +1,8 @@
-module Database.Algebra.Logical.Render.XMLUtils where
+module Database.Algebra.Pathfinder.Render.XMLUtils where
     
 import Text.XML.HaXml.Types
 
-import Database.Algebra.Logical.Data.Algebra
+import Database.Algebra.Pathfinder.Data.Algebra
 import Database.Algebra.Graph.GraphBuilder
 
 import qualified Data.Map as M

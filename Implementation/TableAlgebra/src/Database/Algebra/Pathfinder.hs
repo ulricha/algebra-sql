@@ -3,11 +3,11 @@ This package provides a convenient interface to construct Table Algebra
 plans that can be dealt with by Pathfinder
 (http://www-db.informatik.uni-tuebingen.de/research/pathfinder). 
 A describtion of the algebra can be found at: 
-http://dbworld.informatik.uni-tuebingen.de/projects/pathfinder/wiki/Logical_Algebra
+http://dbworld.informatik.uni-tuebingen.de/projects/pathfinder/wiki/Pathfinder_Algebra
 This module only provides a subset of the complete algebra.
 -}
 
-module Database.Algebra.Logical (
+module Database.Algebra.Pathfinder (
     AlgPlan,
     union, attach, proj, getLoop, rownum, rownum', eqJoin, rank, eqTJoin, distinct, rowrank, cast, difference, aggr,
     select, posSelect, dbTable, notC, cross, oper, emptyTable, tag, litTable,
@@ -19,9 +19,9 @@ module Database.Algebra.Logical (
     ATy(..),
     SchemaInfos, KeyInfos, AlgNode, GraphM, Gam,
     initLoop, runGraph, ProjPair, ProjInf,
-    module Database.Algebra.Logical.Monadic.Create)where
+    module Database.Algebra.Pathfinder.Monadic.Create)where
 
-import Database.Algebra.Logical.Data.Algebra
-import Database.Algebra.Logical.Data.Create
+import Database.Algebra.Pathfinder.Data.Algebra
+import Database.Algebra.Pathfinder.Data.Create
 import Database.Algebra.Graph.GraphBuilder
-import Database.Algebra.Logical.Monadic.Create
+import Database.Algebra.Pathfinder.Monadic.Create

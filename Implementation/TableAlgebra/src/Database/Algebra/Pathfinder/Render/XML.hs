@@ -1,14 +1,14 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Database.Algebra.Logical.Render.XML (document, mkXMLDocument, mkPlanBundle, serializeAlgebra,
-                                          module Database.Algebra.Logical.Render.XMLUtils,
+module Database.Algebra.Pathfinder.Render.XML (document, mkXMLDocument, mkPlanBundle, serializeAlgebra,
+                                          module Database.Algebra.Pathfinder.Render.XMLUtils,
                                           module Text.XML.HaXml.Types,
                                           iterCol, posCol, mkQueryPlan) where
 {-
 Transform a query plan DAG into an XML representation.
 -}    
 import Database.Algebra.Impossible
-import Database.Algebra.Logical.Data.Algebra
-import Database.Algebra.Logical.Render.XMLUtils
+import Database.Algebra.Pathfinder.Data.Algebra
+import Database.Algebra.Pathfinder.Render.XMLUtils
 import Control.Monad.Writer
 
 import Text.XML.HaXml.Types
