@@ -1,8 +1,9 @@
-module Database.Ferry.Algebra.Render.XMLUtils where
+module Database.Algebra.Logical.Render.XMLUtils where
     
 import Text.XML.HaXml.Types
 
-import Database.Ferry.Algebra.Data.Algebra
+import Database.Algebra.Logical.Data.Algebra
+import Database.Algebra.Graph.GraphBuilder
 
 import qualified Data.Map as M
 

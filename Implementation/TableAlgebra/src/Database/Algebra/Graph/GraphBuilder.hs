@@ -1,11 +1,18 @@
 {-# LANGUAGE GADTs #-}
-module Database.Ferry.Algebra.Data.GraphBuilder where
+module Database.Algebra.Graph.GraphBuilder where
     
-import Database.Ferry.Algebra.Data.Algebra
-
 import qualified Data.Map as M
 import Control.Monad.State
 import Control.Monad.Reader
+
+type AlgNode = Int
+
+type NodeMap alg = M.Map alg AlgNode
+
+data GraphState alg = GraphState {
+  supply :: Int,
+  nodeMap :: NodeMap alg,
+  tags :: Tags }
 
 -- | Graphs are constructed in a monadic environment.
 -- | The graph constructed has to be a DAG.
@@ -16,7 +23,9 @@ import Control.Monad.Reader
 -- | nodes to node ids. When a node is inserted and an equal node (equal means, equal node 
 -- | and equal child nodes) already exists in the map the node id for that already existing
 -- | node is returned. This allows maximal sharing.
-type GraphM a = ReaderT (Gam a, AlgNode) (State (Int, M.Map Algebra AlgNode, Tags))
+--type GraphM a alg = ReaderT (Gam a, AlgNode) (State (Int, M.Map alg AlgNode, Tags))
+
+type GraphM plan alg = ReaderT (Gam plan, AlgNode) (State (GraphState alg))
 
 -- | Variable environemtn mapping from variables to compiled nodes.
 type Gam a = [(String, a)]
@@ -24,52 +33,56 @@ type Gam a = [(String, a)]
 -- | An algebraic plan is the result of constructing a graph.
 -- | The pair consists of the mapping from nodes to their respective ids
 -- | and the algres from the top node.
-type AlgPlan res = (M.Map Algebra AlgNode, res, Tags)
+type AlgPlan alg res = (NodeMap alg, res, Tags)
 
 type Tags = M.Map AlgNode [String]
 
 -- | Evaluate the monadic graph into an algebraic plan, given a loop relation.
-runGraph :: Algebra -> GraphM res res -> AlgPlan res
-runGraph l = (\(r, (_,m, c)) -> (m, r, c) ) . flip runState (2, M.singleton l 1, M.empty) . flip runReaderT ([], 1)
+
+runGraph :: alg -> GraphM res alg res -> AlgPlan alg res
+--runGraph :: Algebra -> GraphM res res -> AlgPlan res
+runGraph l =  constructAlgPlan . flip runState initialGraphState . flip runReaderT ([], 1)
+  where initialGraphState = GraphState { supply = 2, nodeMap = M.singleton l 1, tags = M.empty }
+        constructAlgPlan (r, s) = (nodeMap s, r, tags s)
+
 
 -- Add tag 
-addTag :: AlgNode -> String -> GraphM a ()
+addTag :: AlgNode -> String -> GraphM res alg ()
 addTag i c = modify insertTag 
   where
-    insertTag :: (Int, M.Map Algebra AlgNode, Tags) -> (Int, M.Map Algebra AlgNode, Tags)
-    insertTag (s, g, v) = (s, g, M.insertWith (++) i [c] v)
+    -- insertTag :: (Int, M.Map Algebra AlgNode, Tags) -> (Int, M.Map Algebra AlgNode, Tags)
+    insertTag :: GraphState a -> GraphState a
+    insertTag s = s { tags = M.insertWith (++) i [c] $ tags s }
 
 -- | Get the current loop table
-getLoop :: GraphM a AlgNode
+getLoop :: GraphM res alg AlgNode
 getLoop = do 
             (_, l) <- ask
             return l
 
 -- | Get the current variable environment            
-getGamma :: GraphM a (Gam a)
+getGamma :: GraphM res alg (Gam res)
 getGamma = do
             (g, _) <- ask
             return g
 
 -- | Get a fresh node id
-getFreshId :: GraphM a Int
+getFreshId :: GraphM a res Int
 getFreshId = do
-                (n, t, c) <- get
-                put $ (n + 1, t, c)
+                s <- get
+                let n = supply s
+                put $ s { supply = n + 1 }
                 return n
 
 -- | Check if a node already exists in the graph construction environment, if so return its id.
-findNode :: Algebra -> GraphM a (Maybe AlgNode)
+findNode :: Ord alg => alg -> GraphM res alg (Maybe AlgNode)
 findNode n = do
-              (_, t, _) <- get
-              return $ M.lookup n t
+              m <- gets nodeMap
+              return $ M.lookup n m
 
 -- | Insert a node into the graph construction environment, first check if the node already exists
 -- | if so return its id, otherwise insert it and return its id.              
-insertNode :: Algebra -> GraphM a AlgNode
-insertNode (Dummy s c) = do
-                            addTag c s
-                            return c
+insertNode :: Ord alg => alg -> GraphM res alg AlgNode
 insertNode n = do
                             v <- findNode n             
                             case v of
@@ -77,26 +90,26 @@ insertNode n = do
                                 Nothing -> insertNode' n
 
 -- | Blindly insert a node, get a fresh id and return that                                 
-insertNode' :: Algebra  -> GraphM a AlgNode
+insertNode' :: Ord alg => alg  -> GraphM res alg AlgNode
 insertNode' n = do 
                               i <- getFreshId 
-                              (sup, t, c) <- get
-                              let t' = M.insert n i t
-                              put $ (sup, t', c)
+                              s <- get
+                              let m' = M.insert n i (nodeMap s)
+                              put $ s { nodeMap = m' }
                               return i
 
 -- | Evaluate the graph construction computation with the current environment extended with a binding n to v.
-withBinding :: String -> a -> GraphM a r -> GraphM a r
+withBinding :: String -> a -> GraphM a alg r -> GraphM a alg r
 withBinding n v a = do
                      local (\(g, alg) -> ((n, v):g, alg)) a
 
 -- | Evaluate the graph construction computation with a differnt gamma, 
 -- | and loop table. Return within he current computational context.                     
-withContext :: Gam a -> AlgNode -> GraphM a r -> GraphM a r
+withContext :: Gam a -> AlgNode -> GraphM a alg r -> GraphM a alg r
 withContext gam loop = local (\_ -> (gam, loop))
 
 -- | Lookup a variable in the environment                     
-fromGam :: String -> GraphM a a
+fromGam :: String -> GraphM a alg a
 fromGam n = do
              (m, _) <- ask
              case lookup n m of

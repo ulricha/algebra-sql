@@ -23,5 +23,5 @@ module Database.Algebra.Logical (
 
 import Database.Algebra.Logical.Data.Algebra
 import Database.Algebra.Logical.Data.Create
-import Database.Algebra.Logical.Data.GraphBuilder
+import Database.Algebra.Graph.GraphBuilder
 import Database.Algebra.Logical.Monadic.Create

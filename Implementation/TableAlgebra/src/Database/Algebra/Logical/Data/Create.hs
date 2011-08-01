@@ -45,7 +45,7 @@ surT = ASur
 -- * Graph construction combinators for table algebra
 
 -- | Construct an empty table node with 
-emptyTable :: SchemaInfos -> GraphM a AlgNode
+emptyTable :: SchemaInfos -> GraphM a Algebra AlgNode
 emptyTable = insertNode . EmptyTable
 
 -- | Construct a database table node
@@ -53,7 +53,7 @@ emptyTable = insertNode . EmptyTable
 -- table. The second describes the columns in alphabetical order.
 -- The third argument describes the database keys (one table key can
 -- span over multiple columns).
-dbTable :: String -> Columns -> KeyInfos -> GraphM a AlgNode
+dbTable :: String -> Columns -> KeyInfos -> GraphM a Algebra AlgNode
 dbTable n cs ks = insertNode $ TableRef (n, attr, ks) 
   where
     attr = map (\c -> case c of
@@ -61,93 +61,93 @@ dbTable n cs ks = insertNode $ TableRef (n, attr, ks)
                         _                   -> error "Not a named column") cs
 
 -- | Construct a table with one value
-litTable :: AVal -> String -> ATy -> GraphM a AlgNode
+litTable :: AVal -> String -> ATy -> GraphM a Algebra AlgNode
 litTable v s t = insertNode $ LitTable [[v]] [(s, t)]
 
 -- | Attach a column 'ResAttrName' of type `ATy' with value
 -- `AVal' in all rows to table `AlgNode'
-attach :: ResAttrName -> ATy -> AVal -> AlgNode -> GraphM a AlgNode
+attach :: ResAttrName -> ATy -> AVal -> AlgNode -> GraphM a Algebra AlgNode
 attach n t v c = insertNode $ Attach (n, (t, v)) c
 
 -- | Cast column `AttrName' to type `ATy' and give it the name 
 --  `ResAttrName' afterwards.
-cast :: AttrName -> ResAttrName -> ATy -> AlgNode -> GraphM a AlgNode
+cast :: AttrName -> ResAttrName -> ATy -> AlgNode -> GraphM a Algebra AlgNode
 cast n r t c = insertNode $ Cast (r, n, t) c
 
 -- | Join two plans where the columns n1 of table 1 and columns n2 of table
 --  2 are equal.
-eqJoin :: String -> String -> AlgNode -> AlgNode -> GraphM a AlgNode
+eqJoin :: String -> String -> AlgNode -> AlgNode -> GraphM a Algebra AlgNode
 eqJoin n1 n2 c1 c2 = insertNode $ EqJoin (n1, n2) c1 c2
 
 -- | The same as eqJoin but with multiple columns.
-eqTJoin :: [(String, String)] -> ProjInf -> AlgNode -> AlgNode -> GraphM a AlgNode
+eqTJoin :: [(String, String)] -> ProjInf -> AlgNode -> AlgNode -> GraphM a Algebra AlgNode
 eqTJoin eqs projI q1 q2 = let (a, b) = head eqs
                           in foldr filterEqs (eqJoin a b q1 q2) $ tail eqs
         where resCol = "item99999002"
-              filterEqs :: (String, String) -> GraphM a AlgNode -> GraphM a AlgNode
+              filterEqs :: (String, String) -> GraphM a Algebra AlgNode -> GraphM a Algebra AlgNode
               filterEqs (l, r) res = proj projI =<< select resCol =<< oper "==" resCol l r =<< res
 
 -- | Assign a number to each row in column 'ResAttrName' incrementing
 -- sorted by `SortInf'. The numbering is not dense!
-rank :: ResAttrName -> SortInf -> AlgNode -> GraphM a AlgNode
+rank :: ResAttrName -> SortInf -> AlgNode -> GraphM a Algebra AlgNode
 rank res sort c1 = insertNode $ Rank (res, sort) c1
 
 -- | Compute the difference between two plans.
-difference :: AlgNode -> AlgNode -> GraphM a AlgNode
+difference :: AlgNode -> AlgNode -> GraphM a Algebra AlgNode
 difference q1 q2 = insertNode $ Difference q1 q2
 
 -- | Same as rank but provides a dense numbering.
-rowrank :: ResAttrName -> SortInf -> AlgNode -> GraphM a AlgNode
+rowrank :: ResAttrName -> SortInf -> AlgNode -> GraphM a Algebra AlgNode
 rowrank res sort c1 = insertNode $ RowRank (res, sort) c1
 
 -- | Get's the nth element(s) of a (partitioned) table.
-posSelect :: Int -> SortInf -> Maybe AttrName -> AlgNode -> GraphM a AlgNode
+posSelect :: Int -> SortInf -> Maybe AttrName -> AlgNode -> GraphM a Algebra AlgNode
 posSelect n sort part c1 = insertNode $ PosSel (n, sort, part) c1
 
 -- | Select rows where the column `SelAttrName' contains True.
-select :: SelAttrName -> AlgNode -> GraphM a AlgNode
+select :: SelAttrName -> AlgNode -> GraphM a Algebra AlgNode
 select sel c1 = insertNode $ Sel sel c1
 
 -- | Remove duplicate rows
-distinct :: AlgNode -> GraphM a AlgNode
+distinct :: AlgNode -> GraphM a Algebra AlgNode
 distinct c1 = insertNode $ Distinct c1
 
 -- | Make cross product from two plans
-cross :: AlgNode -> AlgNode -> GraphM a AlgNode
+cross :: AlgNode -> AlgNode -> GraphM a Algebra AlgNode
 cross c1 c2 = insertNode $ Cross c1 c2
 
 -- | Negate the boolen value in column n and store it in column r
-notC :: AttrName -> AttrName -> AlgNode -> GraphM a AlgNode
+notC :: AttrName -> AttrName -> AlgNode -> GraphM a Algebra AlgNode
 notC r n c1 = insertNode $ FunBoolNot (r, n) c1
 
 -- | Union between two plans
-union :: AlgNode -> AlgNode -> GraphM a AlgNode
+union :: AlgNode -> AlgNode -> GraphM a Algebra AlgNode
 union c1 c2 = insertNode $ DisjUnion c1 c2
 
 -- | Project/rename certain column out of a plan
-proj :: ProjInf -> AlgNode -> GraphM a AlgNode
+proj :: ProjInf -> AlgNode -> GraphM a Algebra AlgNode
 proj cols c = insertNode $ Proj cols c
 
 -- | Apply aggregate functions to a plan
-aggr :: [(AggrType, ResAttrName, Maybe AttrName)] -> Maybe PartAttrName -> AlgNode -> GraphM a AlgNode
+aggr :: [(AggrType, ResAttrName, Maybe AttrName)] -> Maybe PartAttrName -> AlgNode -> GraphM a Algebra AlgNode
 aggr aggrs part c1 = insertNode $ Aggr (aggrs, part) c1
 
 -- | Similar to rowrank but this will assign a \emph{unique} number to every row
 -- (even if two rows are equal)
-rownum :: AttrName -> [AttrName] -> Maybe AttrName -> AlgNode -> GraphM a AlgNode
+rownum :: AttrName -> [AttrName] -> Maybe AttrName -> AlgNode -> GraphM a Algebra AlgNode
 rownum res sort part c1 = insertNode $ RowNum (res, zip sort $ repeat Asc, part) c1
 
 -- | Same as rownum but columns can be assigned an ordering direction
-rownum' :: AttrName -> [(AttrName, SortDir)] -> Maybe AttrName -> AlgNode -> GraphM a AlgNode
+rownum' :: AttrName -> [(AttrName, SortDir)] -> Maybe AttrName -> AlgNode -> GraphM a Algebra AlgNode
 rownum' res sort part c1 = insertNode $ RowNum (res, sort, part) c1
 
 -- | Apply an operator to the element in `LeftAttrName' and `RightAttrName',
 -- store the result in `ResAttrName'
-oper :: String -> ResAttrName -> LeftAttrName -> RightAttrName -> AlgNode -> GraphM a AlgNode
+oper :: String -> ResAttrName -> LeftAttrName -> RightAttrName -> AlgNode -> GraphM a Algebra AlgNode
 oper o r la ra c = insertNode $ FunBinOp (o, r, la, ra) c
 
 -- | Tag a subtree with a comment
-tag :: String -> AlgNode -> GraphM a AlgNode
+tag :: String -> AlgNode -> GraphM a Algebra AlgNode
 tag s c = insertNode $ Dummy s c
 
 -- | Shorthand for the initial loop condition used by Ferry.
