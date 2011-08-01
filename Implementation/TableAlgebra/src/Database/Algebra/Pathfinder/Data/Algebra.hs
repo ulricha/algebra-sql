@@ -12,7 +12,7 @@ import Numeric (showFFloat)
 import Database.Algebra.Graph.GraphBuilder(AlgNode)
 
 -- | The column data type is used to represent the table structure while
---  compiling ferry core into an algebraic plan
+--  compiling ferry core into an PFAlgebraic plan
 --  The col column contains the column number and the type of its contents
 --  The NCol column is used to group columns that together form an element of a record
 -- , its string argument is used to represent the field name.
@@ -54,7 +54,7 @@ instance Show SortDir where
     show Asc  = "ascending"
     show Desc = "descending"
     
--- | Algebraic types
+-- | PFAlgebraic types
 --  At this level we do not have any structural types anymore
 --  those are represented by columns. ASur is used for surrogate
 --  values that occur for nested lists.
@@ -68,7 +68,7 @@ data ATy where
     ASur :: ATy
       deriving (Eq, Ord)
       
--- | Show the algebraic types in a way that is compatible with 
+-- | Show the PFAlgebraic types in a way that is compatible with 
 --  the xml plan.
 instance Show ATy where
   show AInt     = "int"
@@ -79,7 +79,7 @@ instance Show ATy where
   show ANat     = "nat"
   show ASur     = "nat"
 
--- | Wrapper around values that can occur in an algebraic plan                  
+-- | Wrapper around values that can occur in an PFAlgebraic plan                  
 data AVal where
   VInt :: Integer -> AVal
   VStr :: String -> AVal
@@ -200,37 +200,37 @@ type SemUnOp = (ResAttrName, AttrName)
 type SemInfAggr  = ([(AggrType, ResAttrName, Maybe AttrName)], Maybe PartAttrName)
 
 
--- | Algebraic operations. These operation do not reference their own children directly
+-- | PFAlgebraic operations. These operation do not reference their own children directly
 -- they only contain the information that is needed to perform the operation.
-data Algebra where
-    RowNum     :: SemInfRowNum -> AlgNode -> Algebra     -- Should have one child
---    RowId      :: SemInfRowId -> Algebra      -- should have one child
-    RowRank    :: SemInfRank -> AlgNode -> Algebra       -- should have one child
-    Rank       :: SemInfRank -> AlgNode -> Algebra       -- should have one child
-    Proj       :: SemInfProj -> AlgNode -> Algebra       -- should have one child   
-    Sel        :: SemInfSel  -> AlgNode -> Algebra       -- should have one child  
-    PosSel     :: SemInfPosSel -> AlgNode -> Algebra     -- should have one child
-    Cross      :: AlgNode -> AlgNode -> Algebra                     -- should have two children
-    EqJoin     :: SemInfEqJoin -> AlgNode -> AlgNode -> Algebra     -- should have two children 
---    SemiJoin   :: SemInfEqJoin -> Algebra     -- should have two children 
---    ThetaJoin  :: SemInfThetaJoin -> Algebra  -- should have two children
-    DisjUnion  :: AlgNode -> AlgNode -> Algebra                     -- should have two children
-    Difference :: AlgNode -> AlgNode -> Algebra                     -- should have two children
-    Distinct   :: AlgNode -> Algebra                     -- should have one child
-    LitTable   :: SemInfLitTable -> SchemaInfos -> Algebra
-    EmptyTable :: SchemaInfos -> Algebra
-    TableRef   :: SemInfTableRef -> Algebra
-    Attach     :: SemInfAttach -> AlgNode -> Algebra     -- should have one child
-    FunBinOp   :: SemBinOp -> AlgNode -> Algebra         -- should have one child
-    Cast       :: SemInfCast -> AlgNode -> Algebra       -- should have one child
---    FunNumEq   :: SemInfBinOp -> Algebra      -- should have one child
---    FunNumGt   :: SemInfBinOp -> Algebra      -- should have one child
---    Fun1To1    :: SemInfFun1To1 -> Algebra    -- should have one child
---    FunBoolAnd :: SemInfBinOp -> Algebra      -- should have one child      
---    FunBoolOr  :: SemInfBinOp -> Algebra      -- should have one child
-    FunBoolNot :: SemUnOp -> AlgNode -> Algebra       -- should have one child
-    Aggr       :: SemInfAggr -> AlgNode -> Algebra    -- should have one child
---    FunAggrCnt :: SemInfFunAggrCnt -> Algebra -- should have one child
---    SerializeRel :: SemInfSerRel -> Algebra   -- should have two children
-    Dummy :: String -> AlgNode -> Algebra -- Should have one child
+data PFAlgebra where
+    RowNum     :: SemInfRowNum -> AlgNode -> PFAlgebra     -- Should have one child
+--    RowId      :: SemInfRowId -> PFAlgebra      -- should have one child
+    RowRank    :: SemInfRank -> AlgNode -> PFAlgebra       -- should have one child
+    Rank       :: SemInfRank -> AlgNode -> PFAlgebra       -- should have one child
+    Proj       :: SemInfProj -> AlgNode -> PFAlgebra       -- should have one child   
+    Sel        :: SemInfSel  -> AlgNode -> PFAlgebra       -- should have one child  
+    PosSel     :: SemInfPosSel -> AlgNode -> PFAlgebra     -- should have one child
+    Cross      :: AlgNode -> AlgNode -> PFAlgebra                     -- should have two children
+    EqJoin     :: SemInfEqJoin -> AlgNode -> AlgNode -> PFAlgebra     -- should have two children 
+--    SemiJoin   :: SemInfEqJoin -> PFAlgebra     -- should have two children 
+--    ThetaJoin  :: SemInfThetaJoin -> PFAlgebra  -- should have two children
+    DisjUnion  :: AlgNode -> AlgNode -> PFAlgebra                     -- should have two children
+    Difference :: AlgNode -> AlgNode -> PFAlgebra                     -- should have two children
+    Distinct   :: AlgNode -> PFAlgebra                     -- should have one child
+    LitTable   :: SemInfLitTable -> SchemaInfos -> PFAlgebra
+    EmptyTable :: SchemaInfos -> PFAlgebra
+    TableRef   :: SemInfTableRef -> PFAlgebra
+    Attach     :: SemInfAttach -> AlgNode -> PFAlgebra     -- should have one child
+    FunBinOp   :: SemBinOp -> AlgNode -> PFAlgebra         -- should have one child
+    Cast       :: SemInfCast -> AlgNode -> PFAlgebra       -- should have one child
+--    FunNumEq   :: SemInfBinOp -> PFAlgebra      -- should have one child
+--    FunNumGt   :: SemInfBinOp -> PFAlgebra      -- should have one child
+--    Fun1To1    :: SemInfFun1To1 -> PFAlgebra    -- should have one child
+--    FunBoolAnd :: SemInfBinOp -> PFAlgebra      -- should have one child      
+--    FunBoolOr  :: SemInfBinOp -> PFAlgebra      -- should have one child
+    FunBoolNot :: SemUnOp -> AlgNode -> PFAlgebra       -- should have one child
+    Aggr       :: SemInfAggr -> AlgNode -> PFAlgebra    -- should have one child
+--    FunAggrCnt :: SemInfFunAggrCnt -> PFAlgebra -- should have one child
+--    SerializeRel :: SemInfSerRel -> PFAlgebra   -- should have two children
+    Dummy :: String -> AlgNode -> PFAlgebra -- Should have one child
   deriving (Show, Eq, Ord)

@@ -74,7 +74,7 @@ alg2XML gId = do
                                             else
                                                 return xId      
  where
-    alg2XML' :: Algebra -> XML XMLNode 
+    alg2XML' :: PFAlgebra -> XML XMLNode 
     alg2XML' (LitTable [[v]] [(n, ty)]) = do
                                             xId <- freshId
                                             tell [mkTableNode xId n v ty]
