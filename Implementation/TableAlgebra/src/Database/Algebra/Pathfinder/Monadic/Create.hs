@@ -14,7 +14,7 @@ bind2 f a b = do
                 a' <- a
                 b' <- b
                 f a' b'
-                
+
 -- | Attach a column 'ResAttrName' of type `ATy' with value
 -- `AVal' in all rows to table `AlgNode'
 attachM :: ResAttrName -> ATy -> AVal -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
