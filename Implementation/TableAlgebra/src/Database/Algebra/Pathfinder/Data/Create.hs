@@ -61,8 +61,12 @@ dbTable n cs ks = insertNode $ TableRef (n, attr, ks)
                         _                   -> error "Not a named column") cs
 
 -- | Construct a table with one value
-litTable :: AVal -> String -> ATy -> GraphM a PFAlgebra AlgNode
-litTable v s t = insertNode $ LitTable [[v]] [(s, t)]
+litTableSingle :: AVal -> String -> ATy -> GraphM a PFAlgebra AlgNode
+litTableSingle v s t = insertNode $ LitTable [[v]] [(s, t)]
+
+-- | Construct a literal table with multiple columns and rows
+litTable :: [Tuple] -> SchemaInfos -> GraphM a PFAlgebra AlgNode
+litTable vals info = insertNode $ LitTable vals info
 
 -- | Attach a column 'ResAttrName' of type `ATy' with value
 -- `AVal' in all rows to table `AlgNode'
@@ -150,6 +154,5 @@ oper o r la ra c = insertNode $ FunBinOp (o, r, la, ra) c
 tag :: String -> AlgNode -> GraphM a PFAlgebra AlgNode
 tag s c = insertNode $ Dummy s c
 
--- | Shorthand for the initial loop condition used by Ferry.
 initLoop :: PFAlgebra
-initLoop =  LitTable [[(nat 1)]] [("iter", natT)]   
+initLoop = LitTable [[nat 1]] [("iter", natT)]

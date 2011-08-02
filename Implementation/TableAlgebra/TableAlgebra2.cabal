@@ -1,8 +1,8 @@
 cabal-version: >=1.8
-Name:           TableAlgebra
+Name:           TableAlgebra2
 synopsis:       Ferry Table Algebra
 Category:       Database
-Version:        0.6.1.1
+Version:        0.0.0.1
 Description:    The Ferry 2.0 Table Algebra library
                 .
                 The table algebra [2] is an intermediate language used by Ferry 2.0 [3] and DSH [4].
@@ -33,6 +33,13 @@ library
                       Database.Algebra.Pathfinder.Render.XML
                       Database.Algebra.X100
                       Database.Algebra.Graph.GraphBuilder
+                      Database.Algebra.Impossible
     hs-source-dirs:   src
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
-    other-modules:
+    other-modules:    Database.Algebra.Pathfinder.Monadic.Create
+                      Database.Algebra.Pathfinder.Data.Algebra
+                      Database.Algebra.Pathfinder.Data.Create
+                      Database.Algebra.Pathfinder.Render.XMLUtils
+                      Database.Algebra.X100.Data.Algebra
+                      Database.Algebra.X100.Data.Create
+                      Database.Algebra.X100.Monadic.Create

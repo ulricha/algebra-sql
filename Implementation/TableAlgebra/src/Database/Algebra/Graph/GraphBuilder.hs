@@ -25,7 +25,7 @@ data GraphState alg = GraphState {
 -- | node is returned. This allows maximal sharing.
 --type GraphM a alg = ReaderT (Gam a, AlgNode) (State (Int, M.Map alg AlgNode, Tags))
 
-type GraphM plan alg = ReaderT (Gam plan, AlgNode) (State (GraphState alg))
+type GraphM res alg = ReaderT (Gam res, AlgNode) (State (GraphState alg))
 
 -- | Variable environemtn mapping from variables to compiled nodes.
 type Gam a = [(String, a)]
@@ -40,7 +40,6 @@ type Tags = M.Map AlgNode [String]
 -- | Evaluate the monadic graph into an algebraic plan, given a loop relation.
 
 runGraph :: alg -> GraphM res alg res -> AlgPlan alg res
---runGraph :: Algebra -> GraphM res res -> AlgPlan res
 runGraph l =  constructAlgPlan . flip runState initialGraphState . flip runReaderT ([], 1)
   where initialGraphState = GraphState { supply = 2, nodeMap = M.singleton l 1, tags = M.empty }
         constructAlgPlan (r, s) = (nodeMap s, r, tags s)

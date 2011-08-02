@@ -8,20 +8,18 @@ This module only provides a subset of the complete algebra.
 -}
 
 module Database.Algebra.Pathfinder (
-    AlgPlan,
-    union, attach, proj, getLoop, rownum, rownum', eqJoin, rank, eqTJoin, distinct, rowrank, cast, difference, aggr,
-    select, posSelect, dbTable, notC, cross, oper, emptyTable, tag, litTable,
-    withBinding, withContext, getGamma, fromGam, 
+    union, attach, proj, rownum, rownum', eqJoin, rank, eqTJoin, distinct, rowrank, cast, difference, aggr,
+    select, posSelect, dbTable, notC, cross, oper, emptyTable, tag, litTable, litTableSingle,
     nat, int, bool, double, string,
     natT, intT, surT, boolT, doubleT, stringT,
     SortDir(..), AggrType(..),
     Column(..), Columns, 
-    ATy(..),
-    SchemaInfos, KeyInfos, AlgNode, GraphM, Gam,
-    initLoop, runGraph, ProjPair, ProjInf,
+    ATy(..), AVal(..),
+    SchemaInfos, KeyInfos, ProjInf,
+    PFAlgebra,
+    initLoop,
     module Database.Algebra.Pathfinder.Monadic.Create)where
 
 import Database.Algebra.Pathfinder.Data.Algebra
 import Database.Algebra.Pathfinder.Data.Create
-import Database.Algebra.Graph.GraphBuilder
 import Database.Algebra.Pathfinder.Monadic.Create
