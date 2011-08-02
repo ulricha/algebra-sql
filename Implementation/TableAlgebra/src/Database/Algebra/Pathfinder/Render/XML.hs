@@ -16,7 +16,7 @@ import qualified Text.XML.HaXml.Pretty as P (document)
 import Text.XML.HaXml.Escape (xmlEscape, stdXmlEscaper)
 import Text.PrettyPrint.HughesPJ
 
-import Data.List (intersperse)
+import Data.List (intersperse, transpose)
 
 document ::  Document i -> Doc
 document = P.document
@@ -75,9 +75,9 @@ alg2XML gId = do
                                                 return xId      
  where
     alg2XML' :: PFAlgebra -> XML XMLNode 
-    alg2XML' (LitTable [[v]] [(n, ty)]) = do
+    alg2XML' (LitTable vs s) = do
                                             xId <- freshId
-                                            tell [mkTableNode xId n v ty]
+                                            tell [mkTableNode xId s vs]
                                             return xId 
     alg2XML' (Attach (n, (ty, val)) cId1) = do
                                                 cxId1 <- alg2XML cId1
@@ -177,10 +177,9 @@ alg2XML gId = do
                                 xId <- freshId
                                 tell [mkDummy xId t cxId1]
                                 return xId
-    alg2XML' _ = $impossible
 
 mkDummy :: XMLNode -> String -> XMLNode -> Element ()
-mkDummy xId comment cxId1 = [[comment `stringChildOf` xmlElem "comment"] `childsOf` contentNode ,mkEdge cxId1]`childsOf` node xId "dummy"
+mkDummy xId comment cxId1 =  ([[comment `stringChildOf` xmlElem "comment"] `childsOf` contentNode ,mkEdge cxId1]`childsOf` node xId "dummy")
 
 mkDifference :: XMLNode -> XMLNode -> XMLNode -> Element ()
 mkDifference xId cxId1 cxId2 = [mkEdge cxId1, mkEdge cxId2] `childsOf` node xId "difference" 
@@ -343,12 +342,14 @@ mkAttachNode xId n val ty cxId = let valNode = val `dataChildOf` [attr "type" $ 
                                      colNode = [xmlEscape stdXmlEscaper valNode] `childsOf` column n True
                                   in [[colNode] `childsOf` contentNode, mkEdge cxId]`childsOf` node xId "attach"
 
--- Create an xml table node with one value in it
-mkTableNode :: XMLNode -> ColName -> AVal -> ATy -> Element ()
-mkTableNode xId n val ty = let valNode = val `dataChildOf` [attr "type" $ show ty] `attrsOf` xmlElem "value"
-                               colNode = [xmlEscape stdXmlEscaper valNode] `childsOf` column n True
-                               conNode =  [colNode] `childsOf` contentNode
-                            in [conNode] `childsOf` node xId "table"
+-- Create an xml table node
+mkTableNode :: XMLNode -> [(ColName, ATy)] -> [[AVal]] -> Element ()
+mkTableNode xId s vals = let colNodes = [ valNodes t vs `childsOf` column n True 
+                                         | ((n, t), vs) <- zip s (transpose vals)]
+                             conNode  = colNodes `childsOf` contentNode
+                          in [conNode] `childsOf` node xId "table"
+  where
+      valNodes ty vs = [xmlEscape stdXmlEscaper $ v `dataChildOf` [attr "type" $ show ty] `attrsOf` xmlElem "value" | v <- vs]
 
 -- Create an xml edge to point to the given xml node id.
 mkEdge :: XMLNode -> Element ()

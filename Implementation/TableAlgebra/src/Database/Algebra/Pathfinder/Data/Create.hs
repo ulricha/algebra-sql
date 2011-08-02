@@ -61,12 +61,12 @@ dbTable n cs ks = insertNode $ TableRef (n, attr, ks)
                         _                   -> error "Not a named column") cs
 
 -- | Construct a table with one value
-litTableSingle :: AVal -> String -> ATy -> GraphM a PFAlgebra AlgNode
-litTableSingle v s t = insertNode $ LitTable [[v]] [(s, t)]
+litTable :: AVal -> String -> ATy -> GraphM a PFAlgebra AlgNode
+litTable v s t = insertNode $ LitTable [[v]] [(s, t)]
 
 -- | Construct a literal table with multiple columns and rows
-litTable :: [Tuple] -> SchemaInfos -> GraphM a PFAlgebra AlgNode
-litTable vals info = insertNode $ LitTable vals info
+litTable' :: [[AVal]] -> [(String, ATy)] -> GraphM a PFAlgebra AlgNode
+litTable' v s = insertNode $ LitTable v s
 
 -- | Attach a column 'ResAttrName' of type `ATy' with value
 -- `AVal' in all rows to table `AlgNode'
