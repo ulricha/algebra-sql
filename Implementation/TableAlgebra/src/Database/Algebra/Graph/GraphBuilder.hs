@@ -44,6 +44,15 @@ runGraph l =  constructAlgPlan . flip runState initialGraphState . flip runReade
   where initialGraphState = GraphState { supply = 2, nodeMap = M.singleton l 1, tags = M.empty }
         constructAlgPlan (r, s) = (nodeMap s, r, tags s)
 
+-- | Tag a subtree with a comment
+tag :: String -> AlgNode -> GraphM res alg AlgNode
+tag s c = do
+  addTag c s
+  return c
+
+-- | Tag a subtree with a comment (monadic version)
+tagM :: String -> GraphM res alg AlgNode -> GraphM res alg AlgNode
+tagM s = (=<<) (tag s)
 
 -- Add tag 
 addTag :: AlgNode -> String -> GraphM res alg ()

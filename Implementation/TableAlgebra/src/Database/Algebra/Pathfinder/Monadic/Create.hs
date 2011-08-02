@@ -1,6 +1,6 @@
 -- | This module exports monadic combinators for creating graphs
 module Database.Algebra.Pathfinder.Monadic.Create (attachM, castM, eqJoinM, eqTJoinM, rankM, differenceM, rowrankM, posSelectM, selectM,
-                                              distinctM, crossM, notM, unionM, projM, aggrM, rownumM, rownum'M, operM, tagM) where
+                                              distinctM, crossM, notM, unionM, projM, aggrM, rownumM, rownum'M, operM) where
 
 import qualified Database.Algebra.Pathfinder.Data.Create as C    
 import Database.Algebra.Pathfinder.Data.Algebra
@@ -92,7 +92,3 @@ rownum'M res sort part = bind1 (C.rownum' res sort part)
 -- store the result in `ResAttrName'
 operM :: String -> ResAttrName -> LeftAttrName -> RightAttrName -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 operM o r la ra = bind1 (C.oper o r la ra) 
-
--- | Tag a subtree with a comment
-tagM :: String -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
-tagM s = bind1 (C.tag s)

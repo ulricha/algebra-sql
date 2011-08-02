@@ -150,9 +150,6 @@ rownum' res sort part c1 = insertNode $ RowNum (res, sort, part) c1
 oper :: String -> ResAttrName -> LeftAttrName -> RightAttrName -> AlgNode -> GraphM a PFAlgebra AlgNode
 oper o r la ra c = insertNode $ FunBinOp (o, r, la, ra) c
 
--- | Tag a subtree with a comment
-tag :: String -> AlgNode -> GraphM a PFAlgebra AlgNode
-tag s c = insertNode $ Dummy s c
 
 initLoop :: PFAlgebra
 initLoop = LitTable [[nat 1]] [("iter", natT)]

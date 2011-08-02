@@ -9,7 +9,7 @@ This module only provides a subset of the complete algebra.
 
 module Database.Algebra.Pathfinder (
     union, attach, proj, rownum, rownum', eqJoin, rank, eqTJoin, distinct, rowrank, cast, difference, aggr,
-    select, posSelect, dbTable, notC, cross, oper, emptyTable, tag, litTable, litTable',
+    select, posSelect, dbTable, notC, cross, oper, emptyTable, litTable, litTable',
     nat, int, bool, double, string,
     natT, intT, surT, boolT, doubleT, stringT,
     SortDir(..), AggrType(..),
