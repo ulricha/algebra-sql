@@ -32,6 +32,7 @@ library
     exposed-modules:  Database.Algebra.Pathfinder
                       Database.Algebra.Pathfinder.Render.XML
                       Database.Algebra.X100
+                      Database.Algebra.X100.Render.X100Code
                       Database.Algebra.Graph.GraphBuilder
                       Database.Algebra.Impossible
     hs-source-dirs:   src
