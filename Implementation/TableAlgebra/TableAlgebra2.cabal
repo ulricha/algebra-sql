@@ -28,11 +28,10 @@ Maintainer:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>
 Build-Type:     Simple
 library
     buildable:        True
-    build-depends:    base >= 4.2 && < 5,  HaXml >= 1.20.2, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1
+    build-depends:    base >= 4.2 && < 5,  HaXml >= 1.20.2, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl
     exposed-modules:  Database.Algebra.Pathfinder
                       Database.Algebra.Pathfinder.Render.XML
                       Database.Algebra.X100
-                      Database.Algebra.X100.Render.X100Code
                       Database.Algebra.Graph.GraphBuilder
                       Database.Algebra.Impossible
     hs-source-dirs:   src
@@ -44,3 +43,5 @@ library
                       Database.Algebra.X100.Data.Algebra
                       Database.Algebra.X100.Data.Create
                       Database.Algebra.X100.Monadic.Create
+                      Database.Algebra.X100.Render.Dot
+                      Database.Algebra.X100.Render.X100Code
