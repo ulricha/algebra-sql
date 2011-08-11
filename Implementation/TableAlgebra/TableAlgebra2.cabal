@@ -33,6 +33,7 @@ library
                       Database.Algebra.Pathfinder.Render.XML
                       Database.Algebra.X100
                       Database.Algebra.Graph.GraphBuilder
+                      Database.Algebra.Graph.Serialize
                       Database.Algebra.Impossible
     hs-source-dirs:   src
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
@@ -45,3 +46,15 @@ library
                       Database.Algebra.X100.Monadic.Create
                       Database.Algebra.X100.Render.Dot
                       Database.Algebra.X100.Render.X100Code
+                      Database.Algebra.X100.Render.Serialize
+executable dotgen
+    Main-is: Database/Algebra/X100/Tools/DotGen.hs
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
+    hs-source-dirs:   src
+    build-depends:    base >= 4.2 && < 5, haskell98, HaXml >= 1.20.2, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl
+
+executable codegen
+    Main-is: Database/Algebra/X100/Tools/CodeGen.hs
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
+    hs-source-dirs:   src
+    build-depends:    base >= 4.2 && < 5, haskell98, HaXml >= 1.20.2, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl
