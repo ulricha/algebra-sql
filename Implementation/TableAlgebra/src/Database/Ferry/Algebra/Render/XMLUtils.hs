@@ -104,7 +104,7 @@ typeN t = [attr "name" $ show t] `attrsOf` xmlElem "type"
 
 -- | Construct an xml tag with name n
 xmlElem :: String -> Element ()
-xmlElem n = Elem n [] []
+xmlElem n = Elem (N n) [] []
 
 -- | Construct an algebraic node with id xId and of kind t
 node :: XMLNode -> String -> Element ()
@@ -116,7 +116,7 @@ contentNode = xmlElem "content"
 
 -- | Construct an attribute for an xml node, attrname = n and its value is v
 attr :: String -> String -> Attribute
-attr n v = (n, AttValue [Left v])
+attr n v = (N n, AttValue [Left v])
 
 -- | Attach list of attributes to an xml element
 attrsOf :: [Attribute] -> Element () -> Element ()
