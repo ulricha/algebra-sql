@@ -7,11 +7,13 @@ import Control.Monad.Reader
 
 type AlgNode = Int
 
-type NodeMap alg = M.Map alg AlgNode
+type AlgMap alg = M.Map alg AlgNode
+
+type NodeMap a = M.Map AlgNode a
 
 data GraphState alg = GraphState {
   supply :: Int,
-  nodeMap :: NodeMap alg,
+  algMap :: AlgMap alg,
   tags :: Tags }
 
 -- | Graphs are constructed in a monadic environment.
@@ -33,7 +35,7 @@ type Gam a = [(String, a)]
 -- | An algebraic plan is the result of constructing a graph.
 -- | The pair consists of the mapping from nodes to their respective ids
 -- | and the algres from the top node.
-type AlgPlan alg res = (NodeMap alg, res, Tags)
+type AlgPlan alg res = (AlgMap alg, res, Tags)
 
 type Tags = M.Map AlgNode [String]
 
@@ -41,11 +43,11 @@ type Tags = M.Map AlgNode [String]
 
 runGraph :: alg -> GraphM res alg res -> AlgPlan alg res
 runGraph l =  constructAlgPlan . flip runState initialGraphState . flip runReaderT ([], 1)
-  where initialGraphState = GraphState { supply = 2, nodeMap = M.singleton l 1, tags = M.empty }
-        constructAlgPlan (r, s) = (nodeMap s, r, tags s)
+  where initialGraphState = GraphState { supply = 2, algMap = M.singleton l 1, tags = M.empty }
+        constructAlgPlan (r, s) = (algMap s, r, tags s)
 
-reverseNodeMap :: NodeMap alg -> M.Map AlgNode alg
-reverseNodeMap m = M.fromList $ map (\(a, b) -> (b, a)) $ M.toList m
+reverseAlgMap :: AlgMap alg -> M.Map AlgNode alg
+reverseAlgMap m = M.fromList $ map (\(a, b) -> (b, a)) $ M.toList m
 
 -- | Tag a subtree with a comment
 tag :: String -> AlgNode -> GraphM res alg AlgNode
@@ -88,7 +90,7 @@ getFreshId = do
 -- | Check if a node already exists in the graph construction environment, if so return its id.
 findNode :: Ord alg => alg -> GraphM res alg (Maybe AlgNode)
 findNode n = do
-              m <- gets nodeMap
+              m <- gets algMap
               return $ M.lookup n m
 
 -- | Insert a node into the graph construction environment, first check if the node already exists
@@ -105,8 +107,8 @@ insertNode' :: Ord alg => alg  -> GraphM res alg AlgNode
 insertNode' n = do 
                               i <- getFreshId 
                               s <- get
-                              let m' = M.insert n i (nodeMap s)
-                              put $ s { nodeMap = m' }
+                              let m' = M.insert n i (algMap s)
+                              put $ s { algMap = m' }
                               return i
 
 -- | Evaluate the graph construction computation with the current environment extended with a binding n to v.
