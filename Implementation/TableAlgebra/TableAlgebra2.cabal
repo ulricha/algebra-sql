@@ -26,6 +26,7 @@ License-file:   LICENSE
 Author:			Jeroen Weijers <jeroen.weijers@uni-tuebingen.de> Tom Schreiber <tom.schreiber@uni-tuebingen.de>
 Maintainer:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>
 Build-Type:     Simple
+
 library
     buildable:        True
     build-depends:    base >= 4.2 && < 5,  HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl, text
@@ -59,6 +60,12 @@ executable dotgen
 
 executable codegen
     Main-is: Database/Algebra/X100/Tools/CodeGen.hs
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
+    hs-source-dirs:   src
+    build-depends:    base >= 4.2 && < 5, haskell98, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl, text
+
+executable sharingcodegen
+    Main-is: Database/Algebra/X100/Tools/SharingCodeGen.hs
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
     hs-source-dirs:   src
     build-depends:    base >= 4.2 && < 5, haskell98, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl, text
