@@ -49,6 +49,8 @@ library
                       Database.Algebra.X100.Render.Serialize
                       Database.Algebra.X100.Render.Common
                       Database.Algebra.X100.Render.Sharing
+                      Database.Algebra.X100.Properties.Schema
+                      Database.Algebra.X100.Properties.BottomUp
 executable dotgen
     Main-is: Database/Algebra/X100/Tools/DotGen.hs
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
