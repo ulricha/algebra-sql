@@ -33,6 +33,7 @@ library
     exposed-modules:  Database.Algebra.Pathfinder
                       Database.Algebra.Pathfinder.Render.XML
                       Database.Algebra.Graph.GraphBuilder
+                      Database.Algebra.Graph.Common 
                       Database.Algebra.Graph.Serialize
                       Database.Algebra.Impossible
                       Database.Algebra.X100.Aux

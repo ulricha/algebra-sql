@@ -3,7 +3,7 @@ module Database.Algebra.Pathfinder.Render.XMLUtils where
 import Text.XML.HaXml.Types
 
 import Database.Algebra.Pathfinder.Data.Algebra
-import Database.Algebra.Graph.GraphBuilder
+import Database.Algebra.Graph.Common
 
 import qualified Data.Map as M
 

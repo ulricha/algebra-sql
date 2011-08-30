@@ -4,7 +4,7 @@ import Control.Monad
 
 import Data.Map as Map
 
-import Database.Algebra.Graph.GraphBuilder
+import Database.Algebra.Graph.Common
 
 tagsFromFile :: FilePath -> IO Tags
 tagsFromFile = liftM deserializeTags . readFile

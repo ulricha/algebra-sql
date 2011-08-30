@@ -5,13 +5,10 @@ import qualified Data.Map as M
 import Control.Monad.State
 import Control.Monad.Reader
 
-type AlgNode = Int
+import Database.Algebra.Graph.Common
 
-type AlgMap alg = M.Map alg AlgNode
 
-type NodeMap a = M.Map AlgNode a
-
-data GraphState alg = GraphState {
+data BuildState alg = BuildState {
   supply :: Int,
   algMap :: AlgMap alg,
   tags :: Tags }
@@ -25,9 +22,7 @@ data GraphState alg = GraphState {
 -- | nodes to node ids. When a node is inserted and an equal node (equal means, equal node 
 -- | and equal child nodes) already exists in the map the node id for that already existing
 -- | node is returned. This allows maximal sharing.
---type GraphM a alg = ReaderT (Gam a, AlgNode) (State (Int, M.Map alg AlgNode, Tags))
-
-type GraphM res alg = ReaderT (Gam res, AlgNode) (State (GraphState alg))
+type GraphM res alg = ReaderT (Gam res, AlgNode) (State (BuildState alg))
 
 -- | Variable environemtn mapping from variables to compiled nodes.
 type Gam a = [(String, a)]
@@ -37,13 +32,11 @@ type Gam a = [(String, a)]
 -- | and the algres from the top node.
 type AlgPlan alg res = (AlgMap alg, res, Tags)
 
-type Tags = M.Map AlgNode [String]
-
 -- | Evaluate the monadic graph into an algebraic plan, given a loop relation.
 
 runGraph :: alg -> GraphM res alg res -> AlgPlan alg res
-runGraph l =  constructAlgPlan . flip runState initialGraphState . flip runReaderT ([], 1)
-  where initialGraphState = GraphState { supply = 2, algMap = M.singleton l 1, tags = M.empty }
+runGraph l =  constructAlgPlan . flip runState initialBuildState . flip runReaderT ([], 1)
+  where initialBuildState = BuildState { supply = 2, algMap = M.singleton l 1, tags = M.empty }
         constructAlgPlan (r, s) = (algMap s, r, tags s)
 
 reverseAlgMap :: AlgMap alg -> M.Map AlgNode alg
@@ -64,7 +57,7 @@ addTag :: AlgNode -> String -> GraphM res alg ()
 addTag i c = modify insertTag 
   where
     -- insertTag :: (Int, M.Map Algebra AlgNode, Tags) -> (Int, M.Map Algebra AlgNode, Tags)
-    insertTag :: GraphState a -> GraphState a
+    insertTag :: BuildState a -> BuildState a
     insertTag s = s { tags = M.insertWith (++) i [c] $ tags s }
 
 -- | Get the current loop table
