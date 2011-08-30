@@ -19,7 +19,13 @@ deserializeTags :: String -> Tags
 deserializeTags s = Map.fromList (read s :: [(AlgNode, [String])])
 
 rootsFromFile :: FilePath -> IO [AlgNode]
-rootsFromFile = liftM (\s -> read s :: [AlgNode]) . readFile
+rootsFromFile f = liftM deserializeRoots $ readFile f
+
+deserializeRoots :: String -> [AlgNode]
+deserializeRoots s = read s :: [AlgNode]
 
 rootsToFile :: FilePath -> [AlgNode] -> IO ()
-rootsToFile f ns = writeFile (f ++ ".roots") $ show ns
+rootsToFile f rs = writeFile f $ serializeRoots rs
+
+serializeRoots :: [AlgNode] -> String
+serializeRoots ns = show ns
