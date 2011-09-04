@@ -22,6 +22,7 @@ module Database.Algebra.Graph.AlgebraDag(AlgebraDag,
                                          replaceChildM,
                                          topsortM,
                                          operatorM,
+                                         inferM,
                                          pruneUnusedM)
        where
 
@@ -86,15 +87,26 @@ operator n d =
         Just op -> op
         Nothing -> error $ "AlgebraDag.operator: lookup failed for " ++ (show n)
 
+data Cache = Cache {
+    topOrdering :: [AlgNode]
+    }
+
 data RewriteState a = RewriteState {
     supply :: AlgNode,
-    dag :: AlgebraDag a
+    dag :: AlgebraDag a,
+    cache :: Maybe Cache
     }
+
+inferM :: (AlgebraDag a -> b) -> State (RewriteState a) b
+inferM f =
+    do
+        d <- gets dag
+        return $ f d
 
 rewriteState :: AlgebraDag a -> RewriteState a
 rewriteState d =
     let maxID = fst $ M.findMax $ nodeMap d
-    in RewriteState { supply = maxID + 1, dag = d }
+    in RewriteState { supply = maxID + 1, dag = d, cache = Nothing }
 
 freshNodeID :: DagRewrite a AlgNode
 freshNodeID =
@@ -111,19 +123,19 @@ insertM op =
     do
         n <- freshNodeID
         s <- get
-        put $ s { dag = insert n op $ dag s }
+        put $ s { dag = insert n op $ dag s, cache = Nothing }
 
 replaceM :: Operator a => AlgNode -> a -> DagRewrite a ()
 replaceM n op = 
     do
         s <- get
-        put $ s { dag = replace n op $ dag s }
+        put $ s { dag = replace n op $ dag s, cache = Nothing }
 
 deleteM :: Operator a => AlgNode -> DagRewrite a ()
 deleteM n = 
     do
         s <- get
-        put $ s { dag = delete n $ dag s }
+        put $ s { dag = delete n $ dag s, cache = Nothing }
 
 parentsM :: AlgNode -> DagRewrite a [AlgNode]
 parentsM n = 
@@ -135,20 +147,26 @@ replaceChildM :: Operator a => AlgNode -> AlgNode -> AlgNode -> DagRewrite a ()
 replaceChildM n old new = 
     do
         s <- get
-        put $ s { dag = replaceChild n old new $ dag s }
-
+        put $ s { dag = replaceChild n old new $ dag s, cache = Nothing }
 
 topsortM :: Operator a => DagRewrite a [AlgNode]
 topsortM = 
     do
-        d <- gets dag
-        return $ topsort d
+        s <- get
+        case cache s of
+            Just c -> return $ topOrdering c
+            Nothing -> do
+                let d = dag s
+                    ordering = topsort d
+                put $ s { cache = Just $ Cache { topOrdering = ordering } }
+                return ordering
 
 operatorM :: AlgNode -> DagRewrite a a
 operatorM n = 
     do
         d <- gets dag
         return $ operator n d
+
 
 {-
 map :: (a -> b) -> AlgebraDag a -> AlgebraDag b
@@ -166,5 +184,5 @@ pruneUnusedM roots =
             unreachableNodes = S.difference allNodes reachableNodes
             g' = G.delNodes (S.toList $ unreachableNodes) g
             m' = foldr M.delete m $ S.toList unreachableNodes
-        put $ s { dag = AlgebraDag { nodeMap = m', graph = g' } }
+        put $ s { dag = AlgebraDag { nodeMap = m', graph = g' }, cache = Nothing }
          
