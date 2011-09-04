@@ -39,9 +39,12 @@ library
                       Database.Algebra.X100.Aux
                       Database.Algebra.X100.Render.Dot
                       Database.Algebra.X100.Render.X100Code
-                      Database.Algebra.X100.Properties.BottomUp
                       Database.Algebra.X100.Data.Create
                       Database.Algebra.X100.Data.Algebra
+                      Database.Algebra.X100.Properties.BottomUp
+                      Database.Algebra.X100.Properties.Schema
+                      Database.Algebra.X100.Properties.Card1
+                      Database.Algebra.X100.Properties.Const
     hs-source-dirs:   src
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
     other-modules:    Database.Algebra.Pathfinder.Monadic.Create
@@ -52,7 +55,6 @@ library
                       Database.Algebra.X100.Data.Internal.Operators
                       Database.Algebra.X100.Render.Common
                       Database.Algebra.X100.Render.Sharing
-                      Database.Algebra.X100.Properties.Schema
 executable x100dot
     Main-is: Database/Algebra/X100/Tools/DotGen.hs
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
