@@ -116,7 +116,7 @@ freshNodeID =
         put $ s { supply = n + 1 }
         return n
 
-type DagRewrite a b = State (RewriteState a) b
+type DagRewrite a = State (RewriteState a)
 
 insertM :: Operator a => a -> DagRewrite a ()
 insertM op = 
