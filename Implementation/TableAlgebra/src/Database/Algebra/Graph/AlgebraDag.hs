@@ -12,8 +12,10 @@ module Database.Algebra.Graph.AlgebraDag(AlgebraDag,
                                          topsort,
                                          operator,
                                          RewriteState,
+                                         initState,
                                          dag,
                                          DagRewrite,
+                                         runDagRewrite,
                                          rewriteState,
                                          insertM,
                                          replaceM,
@@ -97,6 +99,10 @@ data RewriteState a = RewriteState {
     cache :: Maybe Cache
     }
 
+initState :: AlgebraDag a -> RewriteState a
+initState d = RewriteState { supply = maxNodeID + 1, dag = d, cache = Nothing }
+    where maxNodeID = fst $ M.findMax (nodeMap d) 
+
 inferM :: (AlgebraDag a -> b) -> State (RewriteState a) b
 inferM f =
     do
@@ -117,6 +123,9 @@ freshNodeID =
         return n
 
 type DagRewrite a = State (RewriteState a)
+
+runDagRewrite :: DagRewrite a b -> RewriteState a -> (b, RewriteState a)
+runDagRewrite = runState
 
 insertM :: Operator a => a -> DagRewrite a ()
 insertM op = 
