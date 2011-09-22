@@ -46,6 +46,7 @@ library
                       Database.Algebra.X100.Properties.Card1
                       Database.Algebra.X100.Properties.Const
                       Database.Algebra.X100.Properties.Empty
+                      Database.Algebra.X100.Properties.SideEffect
     hs-source-dirs:   src
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
     other-modules:    Database.Algebra.Pathfinder.Monadic.Create

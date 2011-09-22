@@ -14,6 +14,8 @@ module Database.Algebra.Graph.AlgebraDag(AlgebraDag,
                                          RewriteState,
                                          initState,
                                          dag,
+                                         -- FIXME remove export after debugging
+                                         graph,
                                          DagRewrite,
                                          runDagRewrite,
                                          rewriteState,
@@ -61,12 +63,16 @@ insert n op d =
         m' = M.insert n op $ nodeMap d
     in AlgebraDag { nodeMap = m', graph = g' }
 
+-- | Replace the operator at a node with a new operator and keep the child edges intact.
 replace :: Operator a => AlgNode -> a -> AlgebraDag a -> AlgebraDag a
 replace n op d = 
-    let cs = opChildren op
-        g' = G.insEdges (map (\c -> (n, c, ())) cs) $ G.insNode (n, ()) $ G.delNode n $ graph d
+    let newChildren = opChildren op
+        oldChildren = opChildren $ operator n d
+        g = graph d
+        g' = G.delEdges (map (\c -> (n, c)) oldChildren) g
+        g'' = G.insEdges (map (\c -> (n, c, ())) newChildren) g'
         m' = M.insert n op $ nodeMap d
-    in AlgebraDag { nodeMap = m', graph = g' }
+    in AlgebraDag { nodeMap = m', graph = g'' }
 
 delete :: Operator a => AlgNode -> AlgebraDag a -> AlgebraDag a
 delete n d =
@@ -78,7 +84,13 @@ parents :: AlgNode -> AlgebraDag a -> [AlgNode]
 parents n d = G.pre (graph d) n
 
 replaceChild :: Operator a => AlgNode -> AlgNode -> AlgNode -> AlgebraDag a -> AlgebraDag a
+replaceChild n old new d = 
+    let m' = M.insert n (replaceOpChild (operator n d) old new) $ nodeMap d
+        g' = G.insEdge (n, new, ()) $ G.delEdge (n, old) $ graph d
+    in AlgebraDag { nodeMap = m', graph = g' }
+{-
 replaceChild n old new d = replace n (replaceOpChild (operator n d) old new) d
+-}
 
 topsort :: Operator a => AlgebraDag a -> [AlgNode]
 topsort d = DFS.topsort $ graph d
@@ -127,13 +139,15 @@ type DagRewrite a = State (RewriteState a)
 runDagRewrite :: DagRewrite a b -> RewriteState a -> (b, RewriteState a)
 runDagRewrite = runState
 
-insertM :: Operator a => a -> DagRewrite a ()
+insertM :: Operator a => a -> DagRewrite a AlgNode
 insertM op = 
     do
         n <- freshNodeID
         s <- get
         put $ s { dag = insert n op $ dag s, cache = Nothing }
+        return n
 
+-- | Replace the operator at a node with a new operator and keep the child edges intact.
 replaceM :: Operator a => AlgNode -> a -> DagRewrite a ()
 replaceM n op = 
     do
