@@ -41,6 +41,7 @@ library
                       Database.Algebra.X100.Render.X100Code
                       Database.Algebra.X100.Data.Create
                       Database.Algebra.X100.Data.Algebra
+                      Database.Algebra.X100.Data.Utility
                       Database.Algebra.X100.Properties.Types
                       Database.Algebra.X100.Properties.BottomUp
                       Database.Algebra.X100.Properties.TopDown
