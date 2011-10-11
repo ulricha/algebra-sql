@@ -62,28 +62,29 @@ library
                       Database.Algebra.X100.Properties.Empty
                       Database.Algebra.X100.Properties.SideEffect
                       Database.Algebra.X100.Properties.ICols
+                      Database.Algebra.X100.Properties.Key
                       Database.Algebra.Aux
 
 executable x100dot
     Main-is: Database/Algebra/X100/Tools/DotGen.hs
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
     hs-source-dirs:   src
-    build-depends:    base >= 4.2 && < 5, haskell98, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl, text
+    build-depends:    base >= 4.2 && < 5, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl, text
 
 executable x100propdot
     Main-is: Database/Algebra/X100/Tools/PropDotGen.hs
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
     hs-source-dirs:   src
-    build-depends:    base >= 4.2 && < 5, haskell98, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl, text
+    build-depends:    base >= 4.2 && < 5, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl, text
 
 executable x100gen
     Main-is: Database/Algebra/X100/Tools/CodeGen.hs
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
     hs-source-dirs:   src
-    build-depends:    base >= 4.2 && < 5, haskell98, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl, text
+    build-depends:    base >= 4.2 && < 5, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl, text
 
 executable x100shgen
     Main-is: Database/Algebra/X100/Tools/SharingCodeGen.hs
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -auto-all -O3
     hs-source-dirs:   src
-    build-depends:    base >= 4.2 && < 5, haskell98, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl, text
+    build-depends:    base >= 4.2 && < 5, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, graphviz, fgl, text
