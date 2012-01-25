@@ -78,7 +78,7 @@ mutual
     capp   : {n : ℕ} {τ₁ τ₂ : Type} {Γ : Sig n} → FExpr Γ (fun τ₁ τ₂) → FExpr Γ τ₁ → FExpr Γ τ₂
     lapp   : {n : ℕ} {τ₁ τ₂ : Type} {Γ : Sig n} → FExpr Γ (↑ (fun τ₁ τ₂)) → FExpr Γ (↑ τ₁) → FExpr Γ (↑ τ₂)
     clos   : {n : ℕ} {τ₁ τ₂ : Type} {Γ : Sig n} → FExpr (τ₁ ∷ Γ) τ₂ → ({τ : Type} → FExpr (list τ ∷ ↑Sig (τ₁ ∷ Γ)) (↑ τ₂)) → FExpr Γ (fun τ₁ τ₂)
-    lclos  : {n : ℕ} {τ₁ τ₂ τ : Type} {Γ : Sig n} → FExpr (τ₁ ∷ Γ) τ₂ → FExpr (list τ ∷ ↑Sig (τ₁ ∷ Γ)) (↑ τ₂) → FExpr (list τ ∷ ↑Sig Γ) (↑ (fun τ₁ τ₂))
+    lclos  : {n : ℕ} {τ₁ τ₂ τ : Type} {Γ : Sig n} → FExpr Γ (list τ) → FExpr (τ₁ ∷ Γ) τ₂ → FExpr (list τ ∷ ↑Sig (τ₁ ∷ Γ)) (↑ τ₂) → FExpr (↑Sig Γ) (↑ (fun τ₁ τ₂))
     add    : {n : ℕ} {Γ : Sig n} → FExpr Γ int → FExpr Γ int → FExpr Γ int
     ladd   : {n : ℕ} {Γ : Sig n} → FExpr Γ (↑ int) → FExpr Γ (↑ int) → FExpr Γ (↑ int)
     con    : {n : ℕ} {τ : Type} {Γ : Sig n} → Const τ → FExpr Γ τ
@@ -99,29 +99,31 @@ teleLookup : {n : ℕ} {Γ : Sig n } → (i : Fin n) → Tele Γ → FExpr {!!} 
 teleLookup = {!!} 
 -}
 
-interpretConst : {τ : Type} → Const τ → ⟦ τ ⟧
+interpretConst : {τ : Type} → Const τ → F⟦ τ ⟧
 interpretConst (num n) = n
 interpretConst (list cs) = L.map interpretConst cs
 
 
 interpret : {n : ℕ} {Γ : Sig n} {τ : Type} → Env Γ → FExpr Γ τ → F⟦ τ ⟧
-interpret env (clos {n} {τ₁} {τ₂} {Γ} e₁ e₂)  = ( (λ x → interpret (x ∷ env) e₁) , (λ {τ} x ys → 
-                  interpret {suc (suc n)} {list τ ∷ list τ₁ ∷ map list Γ}
-                            (ys ∷ (x ∷ envMap list (λ {σ} z → interpret {suc (suc zero)} {σ ∷ list τ ∷ []} {list σ} (z ∷ ys ∷ []) (dist (var zero) (var (suc zero)))) env)) e₂) )
-  -- (λ x → λ ys → interpret (ys ∷ (x ∷ envMap list (λ z → interpret (z ∷ ys ∷ []) (dist (var zero) (var (suc zero)))) env)) e₂) )
-interpret env e = {!!}
-{-
-interpret env (capp e₁ e₂)  = interpret env e₁ (interpret env e₂)
-interpret env (lapp e₁ e₂)  = L.zipWith id (interpret env e₁) (interpret env e₂)
-interpret env (clos e₁ e₂)  = λ x → interpret (x ∷ env) e₁
-interpret env (lclos e₁ e₂) = {!!}
+interpret env (capp e₁ e₂)  = proj₁ (interpret env e₁) (interpret env e₂)
+interpret env (lapp e₁ e₂)  = {!!} -- proj₂ (interpret env e₁) (interpret env e₂)
+interpret env (clos {n} {τ₁} {τ₂} {Γ} e₁ e₂)  =
+  ( (λ x        → interpret (x ∷ env) e₁)
+  , (λ {τ} x ys → interpret {Γ = list τ ∷ _}
+                    (ys ∷ (x ∷ envMap list (λ {σ} z → interpret {Γ = σ ∷ list τ ∷ _} (z ∷ ys ∷ []) (dist (var zero) (var (suc zero)))) env)) e₂) )
 interpret env (add e₁ e₂)   = interpret env e₁ + interpret env e₂
 interpret env (ladd e₁ e₂)  = L.zipWith _+_ (interpret env e₁) (interpret env e₂)
 interpret env (con c)       = interpretConst c
 interpret env (var i)       = envLookup i env
+interpret env (dist (lclos n e₁ e₂) e₃) = {!!} -- should produce an llclos, which we yet have to define
+interpret env (dist (clos e₁ e₂) e₃) = interpret (envMap list {!!} env) (lclos e₃ e₁ e₂)
 interpret env (dist e₁ e₂)  = L.replicate (length (interpret env e₂)) (interpret env e₁) -- !!!
+interpret env e = {!!}
+{-
+interpret env (clos e₁ e₂)  = λ x → interpret (x ∷ env) e₁
+interpret env (lclos e₁ e₂) = {!!}
 interpret env (ldist y y')  = {!!}
-interpret env (conc e)      = L.concat (interpret env e)
+interpret env (conc e)      = L.concat (interpret env e) -- !!!
 interpret env (unconc y y') = {!!}
 -}
 
@@ -134,9 +136,9 @@ mutual
   ↑Expr : {n : ℕ} {Γ : Sig n} {σ τ : Type} → Expr Γ τ → FExpr (list σ ∷ ↑Sig Γ) (↑ τ)
   ↑Expr (con c)         = dist (con c) (var zero)
   ↑Expr (app e₁ e₂)     = lapp (↑Expr e₁) (↑Expr e₂)
-  ↑Expr (lam e)         = lclos (flat e) (↑Expr e)
+  ↑Expr (lam e)         = {!!} -- lclos {!!} (flat e) (↑Expr e)
   ↑Expr (add e₁ e₂)     = ladd (↑Expr e₁) (↑Expr e₂)
-  ↑Expr (cmap e₁ e₂)    = unconc (↑Expr e₂) (lapp (conc (ldist (dist {!flat e₁!} {!!}) (↑Expr e₂))) (conc (↑Expr e₂)))
+  ↑Expr (cmap e₁ e₂)    = unconc (↑Expr e₂) (lapp (conc (ldist (dist {!flat e₁!} {!(λ {σ} z → interpret {Γ = σ ∷ list τ ∷ _} (z ∷ ys ∷ []) (dist (var zero) (var (suc zero))))!}) (↑Expr e₂))) (conc (↑Expr e₂)))
                        -- unconc (↑Expr e₂) (lapp (conc (ldist (↑Expr e₁) (↑Expr e₂))) (conc (↑Expr e₂))) -- !!!
   ↑Expr {n} {Γ} (var i) = subst (FExpr _) (lemma {n} {i} {Γ}) (var (suc i))
 
