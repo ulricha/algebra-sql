@@ -24,12 +24,23 @@ data Type : Set where
 ⟦ pair τ₁ τ₂ ⟧ = ⟦ τ₁ ⟧ × ⟦ τ₂ ⟧
 ⟦ fun τ₁ τ₂ ⟧  = ⟦ τ₁ ⟧ → ⟦ τ₂ ⟧
 
-F⟦_⟧ : Type → Set
-F⟦ int ⟧        = ℕ
-F⟦ bool ⟧       = Bool
-F⟦ list τ ⟧     = List F⟦ τ ⟧
-F⟦ pair τ₁ τ₂ ⟧ = F⟦ τ₁ ⟧ × F⟦ τ₂ ⟧
-F⟦ fun τ₁ τ₂ ⟧  = (F⟦ τ₁ ⟧ → F⟦ τ₂ ⟧) × ({τ : Type} → F⟦ list τ₁ ⟧ → F⟦ list τ ⟧ → F⟦ list τ₂ ⟧)
+mutual
+  PA : Type → Set
+  PA int = List ℕ
+  PA bool = List Bool
+  PA (pair τ₁ τ₂) = PA τ₁ × PA τ₂
+  PA (fun τ₁ τ₂) = PA τ₁ → PA τ₂ -- (F⟦ τ₁ ⟧ → F⟦ τ₂ ⟧) × ({τ : Type} → PA τ₁ → PA τ → PA τ₂)
+  PA (list τ) = List (PA τ) -- ?
+
+  F⟦_⟧ : Type → Set
+  F⟦ int ⟧        = ℕ
+  F⟦ bool ⟧       = Bool
+  F⟦ list τ ⟧     = PA τ
+  F⟦ pair τ₁ τ₂ ⟧ = F⟦ τ₁ ⟧ × F⟦ τ₂ ⟧
+  F⟦ fun τ₁ τ₂ ⟧  = F⟦ τ₁ ⟧ → F⟦ τ₂ ⟧ -- (F⟦ τ₁ ⟧ → F⟦ τ₂ ⟧) × ({τ : Type} → PA τ₁ → PA τ → PA τ₂)
+
+↑ : Type → Type
+↑ = list
 
 Sig : ℕ → Set
 Sig = Vec Type
@@ -46,9 +57,13 @@ envMap : {n : ℕ} {Γ : Sig n} (f : Type → Type) (intf : {τ : Type} → F⟦
 envMap f intf []        = []
 envMap f intf (x ∷ env) = intf x ∷ envMap f intf env
 
+data CT : Type → Set where
+  int  : CT int
+  list : {τ : Type} → CT τ → CT (list τ)
+
 data Const : Type → Set where
   num  : ℕ → Const int
-  list : {τ : Type} → List (Const τ) → Const (list τ)
+  list : {τ : Type} → CT τ → List (Const τ) → Const (list τ)
 
 data Expr {n : ℕ} (Γ : Sig n) : Type → Set where
   app  : {τ₁ τ₂ : Type} → Expr Γ (fun τ₁ τ₂) → Expr Γ τ₁ → Expr Γ τ₂
@@ -59,16 +74,6 @@ data Expr {n : ℕ} (Γ : Sig n) : Type → Set where
   -- more base types
   cmap : {τ₁ τ₂ : Type} → Expr Γ (fun τ₁ τ₂) → Expr Γ (list τ₁) → Expr Γ (list τ₂)
   var  : (i : Fin n) → Expr Γ (lookup i Γ)
-
-↑ : Type → Type
-↑ = list
-{-
-↑ int          = list int
-↑ bool         = list bool
-↑ (list τ)     = list (list τ)
-↑ (pair τ₁ τ₂) = pair (↑ τ₁) (↑ τ₂)
-↑ (fun τ₁ τ₂)  = list (fun τ₁ τ₂)
--}
 
 ↑Sig : {n : ℕ} → Sig n → Sig n
 ↑Sig = map ↑
@@ -100,24 +105,38 @@ teleLookup = {!!}
 -}
 
 interpretConst : {τ : Type} → Const τ → F⟦ τ ⟧
-interpretConst (num n) = n
-interpretConst (list cs) = L.map interpretConst cs
+interpretConst (num n)            = n
+interpretConst (list int      cs) = L.map interpretConst cs
+interpretConst (list (list _) cs) = L.map interpretConst cs
 
+intlength : {τ : Type} → PA τ → ℕ
+intlength {τ} a = {!!}
+
+intdist : {τ₁ τ₂ : Type} → F⟦ τ₁ ⟧ → PA τ₂ → PA τ₁
+intdist {int} {τ₂} e s = L.replicate (intlength {τ₂} s) e
+intdist {bool} {τ₂} e s = L.replicate (intlength {τ₂} s) e
+intdist {list τ₁} {τ₂} e s = {!!}
+intdist {pair τ₁ τ₂} {τ₃} (e₁ , e₂) s = intdist {τ₁} {τ₃} e₁ s , intdist {τ₂} {τ₃} e₂ s
+intdist {fun τ₁ τ₂} {τ₃} e s = {!!}
 
 interpret : {n : ℕ} {Γ : Sig n} {τ : Type} → Env Γ → FExpr Γ τ → F⟦ τ ⟧
-interpret env (capp e₁ e₂)  = proj₁ (interpret env e₁) (interpret env e₂)
-interpret env (lapp e₁ e₂)  = {!!} -- proj₂ (interpret env e₁) (interpret env e₂)
-interpret env (clos {n} {τ₁} {τ₂} {Γ} e₁ e₂)  =
-  ( (λ x        → interpret (x ∷ env) e₁)
-  , (λ {τ} x ys → interpret {Γ = list τ ∷ _}
-                    (ys ∷ (x ∷ envMap list (λ {σ} z → interpret {Γ = σ ∷ list τ ∷ _} (z ∷ ys ∷ []) (dist (var zero) (var (suc zero)))) env)) e₂) )
+interpret env (capp e₁ e₂)  = interpret env e₁ (interpret env e₂)
+interpret env (lapp e₁ e₂)  = interpret env e₁ (interpret env e₂) -- proj₂ (interpret env e₁) (interpret env e₂)
+interpret env (clos e₁ e₂)  = λ x → interpret (x ∷ env) e₁
 interpret env (add e₁ e₂)   = interpret env e₁ + interpret env e₂
 interpret env (ladd e₁ e₂)  = L.zipWith _+_ (interpret env e₁) (interpret env e₂)
 interpret env (con c)       = interpretConst c
 interpret env (var i)       = envLookup i env
+interpret env (dist {_} {τ₁} {τ₂} e₁ e₂)   = intdist {τ₁} {τ₂} (interpret env e₁) (interpret env e₂)
+{-
+interpret env (clos {n} {τ₁} {τ₂} {Γ} e₁ e₂)  =
+  ( (λ x        → interpret (x ∷ env) e₁)
+  , (λ {τ} x ys → interpret {Γ = list τ ∷ _}
+                    (ys ∷ (x ∷ envMap list (λ {σ} z → interpret {Γ = σ ∷ list τ ∷ _} (z ∷ ys ∷ []) (dist (var zero) (var (suc zero)))) env)) e₂) )
 interpret env (dist (lclos n e₁ e₂) e₃) = {!!} -- should produce an llclos, which we yet have to define
 interpret env (dist (clos e₁ e₂) e₃) = interpret (envMap list {!!} env) (lclos e₃ e₁ e₂)
 interpret env (dist e₁ e₂)  = L.replicate (length (interpret env e₂)) (interpret env e₁) -- !!!
+-}
 interpret env e = {!!}
 {-
 interpret env (clos e₁ e₂)  = λ x → interpret (x ∷ env) e₁
@@ -127,6 +146,7 @@ interpret env (conc e)      = L.concat (interpret env e) -- !!!
 interpret env (unconc y y') = {!!}
 -}
 
+{-
 lemma : {n : ℕ} {i : Fin n} {Γ : Sig n} → lookup i (↑Sig Γ) ≡ ↑ (lookup i Γ)
 lemma {zero} {()} {[]}
 lemma {suc n} {zero}  {x ∷ xs} = refl
@@ -149,3 +169,4 @@ mutual
   flat (con c)      = con c
   flat (cmap e₁ e₂) = lapp (dist (flat e₁) (flat e₂)) (flat e₂)
   flat (var i)      = var i
+-}
