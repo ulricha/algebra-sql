@@ -41,6 +41,9 @@ Segments : Set
 Segments = List ℕ  -- only lengths
 
 mutual
+  -- PA is for "parallel array", inspired by the HtM paper. Perhaps
+  -- FList (flattened list) would be a slightly more application-neutral
+  -- term.
   PA : Type → Set
   PA int          = List ℕ
   PA bool         = List Bool
@@ -329,6 +332,15 @@ example₄ = lam (pair (app (var zero) (con (num 2))) (cmap (var zero) (con (lis
 -- My example:
 
 -- map (λ x → x 1) (map (λ x y → x + y) [1,2,3])
+--
+-- map ⟨ λ ⟨ x , xl ⟩ → x 1 , λ ⟨ x , xl ⟩ → xl (dist 1 ?) ⟩ ...
+--
+-- (λ ⟨ x , xl ⟩ → xl (dist 1 ?)) (λ xs ys → xs +L ys) [1,2,3]
+--
+--
+-- An even more direct example (however, we cannot currently represent constant lists of functions):
+--
+-- map (λ x → x 1) [λ x → x + 1, λ x → x + 2]
 
 example₅ : Expr [] (list (fun int int))
 example₅ = cmap (lam (lam (add (var (suc zero)) (var zero)))) (con (list int (num 1 ∷ (num 2 ∷ (num 3 ∷ [])))))
