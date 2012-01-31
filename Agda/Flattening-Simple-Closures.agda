@@ -88,7 +88,7 @@ mutual
   PA bool         = List Bool
   PA (list τ)     = Segments × PA τ
   PA (pair τ₁ τ₂) = PA τ₁ × PA τ₂
-  PA (fun τ₁ τ₂)  = Length × (PA τ₁ → PA τ₂)
+  PA (fun τ₁ τ₂)  = Σ ℕ (λ n → Σ (Sig n) (λ Γ → Env F⟦_⟧ (↑Sig Γ) × Length × (Env F⟦_⟧ (↑Sig Γ) → PA τ₁ → PA τ₂)))
 
   F⟦_⟧ : Type → Set
   F⟦ int ⟧        = ℕ
@@ -106,14 +106,14 @@ lengthPA int          xs        = L.length xs
 lengthPA bool         xs        = L.length xs
 lengthPA (list τ)     (d  , xs) = L.length d
 lengthPA (pair τ₁ τ₂) (xs , _ ) = lengthPA τ₁ xs
-lengthPA (fun τ₁ τ₂)  (s  , _ ) = s
+lengthPA (fun τ₁ τ₂)  (_ , _ , env , f , fl) = {!!} -- unclear, really -- length of first environment entry?
 
 replicatePA : (τ : Type) → Length → F⟦ τ ⟧ → PA τ
 replicatePA int          n x       = L.replicate n x
 replicatePA bool         n x       = L.replicate n x
 replicatePA (list τ)     n x       = L.replicate n (lengthPA τ x) , {!L.replicate n x!}
 replicatePA (pair τ₁ τ₂) n (x , y) = replicatePA τ₁ n x , replicatePA τ₂ n y
-replicatePA (fun τ₁ τ₂)  n (_ , _ , env , f , fl) = n , fl (envMap ↑ (λ {τ} → replicatePA τ n) env)
+replicatePA (fun τ₁ τ₂)  n (_ , _ , env , f , fl) = _ , _ , envMap ↑ (λ {τ} → replicatePA τ n) env , n , fl
 
 -- NOTES: The runtime representation of functions has to contain both
 -- versions, because we can, in general, not decide statically which
@@ -191,16 +191,18 @@ unconc (d , _) e = (d , e)
 
 mutual
   lift : {n : ℕ} {Γ : Sig n} {τ : Type} → FEnv (↑Sig Γ) → Length → Expr Γ τ → F⟦ ↑ τ ⟧
-  lift env s (app e₁ e₂)   = (proj₂ (lift env s e₁)) (lift env s e₂)
-  lift env s (lam {τ} e)   = s , λ ys → lift (ys ∷ env) (lengthPA τ ys) e
+  lift env s (app e₁ e₂) with lift env s e₁
+  ... | n , Γ , env′ , s′ , fl = fl env′ (lift env s′ e₂) -- s or s′ here?
+  lift env s (lam {τ} e)   = _ , _ , env , s , λ env′ ys → lift (ys ∷ env′) (lengthPA τ ys) e
   lift env s (add e₁ e₂)   = L.zipWith _+_ (lift env s e₁) (lift env s e₂)
   lift env s (pair e₁ e₂)  = lift env s e₁ , lift env s e₂
   lift env s (con int x)   = L.replicate s x
   lift env s (con (list int) xs) = L.replicate s (length xs) , L.concat (L.replicate s xs)
   lift env s (con _ xs)    = {!!} -- this one is probably unproblematic
   lift env s (var i)       = subst id (lemma i _) (envLookup i env)
-  lift env s (cmap {τ₁} {τ₂} e₁ e₂) with lift env s e₁ | lift env s e₂
-  ... | f , fl | xss       = unconc {τ₂} {τ₁} xss (fl (conc {τ₁} xss))
+  lift env s (cmap {τ₁} {τ₂} e₁ e₂) with lift env s e₁
+  ... | _ , _ , env′ , s′ , fl with lift env s′ e₂ -- s or s′ here?
+  ... | xss = unconc {τ₂} {τ₁} xss (fl {!!} (conc {τ₁} xss))
 
   -- Flattening is an alternative interpretation.
   flat : {n : ℕ} {Γ : Sig n} {τ : Type} → FEnv Γ → Expr Γ τ → F⟦ τ ⟧
@@ -210,8 +212,8 @@ mutual
   flat env (add e₁ e₂)  = flat env e₁ + flat env e₂
   flat env (pair e₁ e₂) = flat env e₁ , flat env e₂
   flat env (con c x)    = flatConst c x
-  flat env (cmap e₁ e₂) with flat env e₁
-  ... | n , Γ , env′ , f , fl = fl (envMap ↑ (λ {τ} → replicatePA τ n) env′) (flat env e₂)
+  flat env (cmap {τ} e₁ e₂) with flat env e₁ | flat env e₂
+  ... | n , Γ , env′ , f , fl | xss = fl (envMap ↑ (λ {τ′} → replicatePA τ′ (lengthPA τ xss)) env′) xss
   flat env (var i)      = envLookup i env
 
 -- Flatten, then interpret.
@@ -310,7 +312,10 @@ prop₁₁ : run [] example₈ ≡ 2 ∷ (3 ∷ (4 ∷ []))
 prop₁₁ = refl
 
 prop₁₂ : frun [] example₈ ≡ 2 ∷ (3 ∷ (4 ∷ []))
-prop₁₂ = {!!}
+prop₁₂ = refl
   -- This needs to access the environment of the lifted function, thus requiring a lifted x.
 
+-- map (λ x → x (x 1)) (map (λ x y → x + y) [1,2,3])
+example₉ : Expr [] (list int)
+example₉ = cmap (lam (app (var zero) (app (var zero) (con int 1)))) example₆
 
