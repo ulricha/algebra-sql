@@ -4,21 +4,23 @@ module Database.Algebra.Graph.AlgebraDag(AlgebraDag,
                                          Operator,
                                          opChildren,
                                          replaceOpChild,
+                                         nodes,
                                          insert,
                                          replace,
                                          delete,
                                          parents,
                                          replaceChild,
                                          topsort,
+                                         reachable,
+                                         mapd,
                                          operator,
                                          RewriteState,
-                                         initState,
                                          dag,
                                          -- FIXME remove export after debugging
                                          graph,
                                          DagRewrite,
                                          runDagRewrite,
-                                         rewriteState,
+                                         initRewriteState,
                                          insertM,
                                          replaceM,
                                          deleteM,
@@ -27,7 +29,9 @@ module Database.Algebra.Graph.AlgebraDag(AlgebraDag,
                                          topsortM,
                                          operatorM,
                                          inferM,
-                                         pruneUnusedM)
+                                         pruneUnusedM,
+                                         freshIDM,
+                                         dagM)
        where
 
 import Database.Algebra.Graph.Common 
@@ -55,6 +59,9 @@ mkDag m = AlgebraDag { nodeMap = m, graph = g }
     where g = uncurry G.mkUGraph $ M.foldrWithKey aux ([], []) m
           aux n op (allNodes, allEdges) = (n : allNodes, es ++ allEdges)
               where es = map (\v -> (n, v)) $ opChildren op
+          
+nodes :: AlgebraDag a -> [AlgNode]
+nodes = M.keys . nodeMap
 
 insert :: Operator a => AlgNode -> a -> AlgebraDag a -> AlgebraDag a
 insert n op d = 
@@ -100,20 +107,25 @@ operator n d =
     case M.lookup n $ nodeMap d of
         Just op -> op
         Nothing -> error $ "AlgebraDag.operator: lookup failed for " ++ (show n)
+    
+reachable :: AlgNode -> AlgebraDag a -> [AlgNode]
+reachable n d = DFS.reachable n $ graph d
+                
+mapd :: (a -> b) -> AlgebraDag a -> AlgebraDag b
+mapd f d = AlgebraDag { nodeMap = M.map f $ nodeMap d, graph = graph d }
 
 data Cache = Cache {
     topOrdering :: [AlgNode]
     }
 
 data RewriteState a = RewriteState {
-    supply :: AlgNode,
+    nodeIDSupply :: AlgNode,
+    -- FIXME hack to supply fresh ids to X100.Render.Sharing
+    -- they should implement their own supply
+    supply :: Int,
     dag :: AlgebraDag a,
     cache :: Maybe Cache
     }
-
-initState :: AlgebraDag a -> RewriteState a
-initState d = RewriteState { supply = maxNodeID + 1, dag = d, cache = Nothing }
-    where maxNodeID = fst $ M.findMax (nodeMap d) 
 
 inferM :: (AlgebraDag a -> b) -> State (RewriteState a) b
 inferM f =
@@ -121,13 +133,22 @@ inferM f =
         d <- gets dag
         return $ f d
 
-rewriteState :: AlgebraDag a -> RewriteState a
-rewriteState d =
+-- FIXME Map.findMax might call error
+initRewriteState :: AlgebraDag a -> RewriteState a
+initRewriteState d =
     let maxID = fst $ M.findMax $ nodeMap d
-    in RewriteState { supply = maxID + 1, dag = d, cache = Nothing }
+    in RewriteState { nodeIDSupply = maxID + 1, dag = d, cache = Nothing, supply = 0 }
 
 freshNodeID :: DagRewrite a AlgNode
 freshNodeID =
+    do
+        s <- get
+        let n = nodeIDSupply s
+        put $ s { nodeIDSupply = n + 1 }
+        return n
+    
+freshIDM :: DagRewrite a Int
+freshIDM =
     do
         s <- get
         let n = supply s
@@ -189,8 +210,7 @@ operatorM n =
     do
         d <- gets dag
         return $ operator n d
-
-
+    
 {-
 map :: (a -> b) -> AlgebraDag a -> AlgebraDag b
 map = undefined
@@ -208,4 +228,9 @@ pruneUnusedM roots =
             g' = G.delNodes (S.toList $ unreachableNodes) g
             m' = foldr M.delete m $ S.toList unreachableNodes
         put $ s { dag = AlgebraDag { nodeMap = m', graph = g' }, cache = Nothing }
-         
+    
+dagM :: DagRewrite a (AlgebraDag a)
+dagM = 
+    do
+        s <- get
+        return $ dag s

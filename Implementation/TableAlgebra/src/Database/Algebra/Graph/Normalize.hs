@@ -46,4 +46,4 @@ normalizePlanM rootNodes = do
 
 normalizePlan :: [AlgNode] -> AlgebraDag X100Algebra -> AlgebraDag X100Algebra
 normalizePlan rootNodes d =
-    dag $ execState (normalizePlanM rootNodes) (rewriteState d)
+    dag $ execState (normalizePlanM rootNodes) (initRewriteState d)
