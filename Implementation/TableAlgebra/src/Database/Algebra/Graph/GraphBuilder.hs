@@ -11,7 +11,7 @@ import Database.Algebra.Graph.Common
 data BuildState alg = BuildState {
   supply :: Int,
   algMap :: AlgMap alg,
-  tags :: Tags }
+  tags :: NodeMap [Tag] }
 
 -- | Graphs are constructed in a monadic environment.
 -- | The graph constructed has to be a DAG.
@@ -30,7 +30,7 @@ type Gam a = [(String, a)]
 -- | An algebraic plan is the result of constructing a graph.
 -- | The pair consists of the mapping from nodes to their respective ids
 -- | and the algres from the top node.
-type AlgPlan alg res = (AlgMap alg, res, Tags)
+type AlgPlan alg res = (AlgMap alg, res, NodeMap [Tag])
 
 -- | Evaluate the monadic graph into an algebraic plan, given a loop relation.
 
@@ -56,7 +56,7 @@ tagM s = (=<<) (tag s)
 addTag :: AlgNode -> String -> GraphM res alg ()
 addTag i c = modify insertTag 
   where
-    -- insertTag :: (Int, M.Map Algebra AlgNode, Tags) -> (Int, M.Map Algebra AlgNode, Tags)
+    -- insertTag :: (Int, M.Map Algebra AlgNode, NodeMap [Tag]) -> (Int, M.Map Algebra AlgNode, NodeMap [Tag])
     insertTag :: BuildState a -> BuildState a
     insertTag s = s { tags = M.insertWith (++) i [c] $ tags s }
 

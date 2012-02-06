@@ -12,6 +12,7 @@ module Database.Algebra.Graph.AlgebraDag(AlgebraDag,
                                          replaceChild,
                                          topsort,
                                          reachable,
+                                         pruneUnused,
                                          mapd,
                                          operator,
                                          RewriteState,
@@ -215,19 +216,23 @@ operatorM n =
 map :: (a -> b) -> AlgebraDag a -> AlgebraDag b
 map = undefined
 -}
+    
+pruneUnused :: [AlgNode] -> AlgebraDag a -> AlgebraDag a
+pruneUnused roots d =
+    let g = graph d
+        m = nodeMap d 
+        allNodes = S.fromList $ G.nodes g
+        reachableNodes = S.fromList $ concat $ map (flip DFS.reachable g) roots
+        unreachableNodes = S.difference allNodes reachableNodes
+        g' = G.delNodes (S.toList $ unreachableNodes) g
+        m' = foldr M.delete m $ S.toList unreachableNodes
+    in AlgebraDag { nodeMap = m', graph = g' }
 
 pruneUnusedM :: [AlgNode] -> DagRewrite a ()
 pruneUnusedM roots =
     do
         s <- get
-        let g = graph $ dag s
-            m = nodeMap $ dag s
-            allNodes = S.fromList $ G.nodes g
-            reachableNodes = S.fromList $ concat $ map (flip DFS.reachable g) roots
-            unreachableNodes = S.difference allNodes reachableNodes
-            g' = G.delNodes (S.toList $ unreachableNodes) g
-            m' = foldr M.delete m $ S.toList unreachableNodes
-        put $ s { dag = AlgebraDag { nodeMap = m', graph = g' }, cache = Nothing }
+        put $ s { dag = pruneUnused roots $ dag s , cache = Nothing }
     
 dagM :: DagRewrite a (AlgebraDag a)
 dagM = 
