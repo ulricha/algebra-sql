@@ -1,5 +1,6 @@
 module Database.Algebra.Graph.AlgebraDag(AlgebraDag,
                                          mkDag,
+                                         replaceRoot,
                                          nodeMap,
                                          Operator,
                                          opChildren,
@@ -19,6 +20,7 @@ module Database.Algebra.Graph.AlgebraDag(AlgebraDag,
                                          dag,
                                          -- FIXME remove export after debugging
                                          graph,
+                                         rootNodes,
                                          DagRewrite,
                                          runDagRewrite,
                                          initRewriteState,
@@ -32,7 +34,8 @@ module Database.Algebra.Graph.AlgebraDag(AlgebraDag,
                                          inferM,
                                          pruneUnusedM,
                                          freshIDM,
-                                         dagM)
+                                         dagM,
+                                         replaceRootM)
        where
 
 import Database.Algebra.Graph.Common 
@@ -48,18 +51,25 @@ import Control.Monad.State
 
 data AlgebraDag a = AlgebraDag {
     nodeMap :: NodeMap a,
-    graph :: UGr
+    graph :: UGr,
+    rootNodes :: [AlgNode]
 }
 
 class Operator a where
     opChildren :: a -> [AlgNode]
     replaceOpChild :: a -> AlgNode -> AlgNode -> a
 
-mkDag :: Operator a => NodeMap a -> AlgebraDag a
-mkDag m = AlgebraDag { nodeMap = m, graph = g }
+mkDag :: Operator a => NodeMap a -> [AlgNode] -> AlgebraDag a
+mkDag m rs = AlgebraDag { nodeMap = m, graph = g, rootNodes = rs }
     where g = uncurry G.mkUGraph $ M.foldrWithKey aux ([], []) m
           aux n op (allNodes, allEdges) = (n : allNodes, es ++ allEdges)
               where es = map (\v -> (n, v)) $ opChildren op
+          
+-- FIXME: assert that the new rootNode is known
+replaceRoot :: AlgebraDag a -> AlgNode -> AlgNode -> AlgebraDag a
+replaceRoot d old new = d { rootNodes = rs' }
+  where rs' = map doReplace $ rootNodes d
+        doReplace r = if r == old then new else old
           
 nodes :: AlgebraDag a -> [AlgNode]
 nodes = M.keys . nodeMap
@@ -69,7 +79,7 @@ insert n op d =
     let cs = opChildren op
         g' = G.insEdges (map (\c -> (n, c, ())) cs) $ G.insNode (n, ()) $ graph d
         m' = M.insert n op $ nodeMap d
-    in AlgebraDag { nodeMap = m', graph = g' }
+    in d { nodeMap = m', graph = g' }
 
 -- | Replace the operator at a node with a new operator and keep the child edges intact.
 replace :: Operator a => AlgNode -> a -> AlgebraDag a -> AlgebraDag a
@@ -80,13 +90,13 @@ replace n op d =
         g' = G.delEdges (map (\c -> (n, c)) oldChildren) g
         g'' = G.insEdges (map (\c -> (n, c, ())) newChildren) g'
         m' = M.insert n op $ nodeMap d
-    in AlgebraDag { nodeMap = m', graph = g'' }
+    in d { nodeMap = m', graph = g'' }
 
 delete :: Operator a => AlgNode -> AlgebraDag a -> AlgebraDag a
 delete n d =
     let g' = G.delNode n $ graph d
         m' = M.delete n $ nodeMap d
-    in AlgebraDag { nodeMap = m', graph = g' }
+    in d { nodeMap = m', graph = g' }
 
 parents :: AlgNode -> AlgebraDag a -> [AlgNode]
 parents n d = G.pre (graph d) n
@@ -95,7 +105,7 @@ replaceChild :: Operator a => AlgNode -> AlgNode -> AlgNode -> AlgebraDag a -> A
 replaceChild n old new d = 
     let m' = M.insert n (replaceOpChild (operator n d) old new) $ nodeMap d
         g' = G.insEdge (n, new, ()) $ G.delEdge (n, old) $ graph d
-    in AlgebraDag { nodeMap = m', graph = g' }
+    in d { nodeMap = m', graph = g' }
 {-
 replaceChild n old new d = replace n (replaceOpChild (operator n d) old new) d
 -}
@@ -113,7 +123,7 @@ reachable :: AlgNode -> AlgebraDag a -> [AlgNode]
 reachable n d = DFS.reachable n $ graph d
                 
 mapd :: (a -> b) -> AlgebraDag a -> AlgebraDag b
-mapd f d = AlgebraDag { nodeMap = M.map f $ nodeMap d, graph = graph d }
+mapd f d = d { nodeMap = M.map f $ nodeMap d, graph = graph d }
 
 data Cache = Cache {
     topOrdering :: [AlgNode]
@@ -188,6 +198,8 @@ parentsM n =
         d <- gets dag
         return $ parents n d
 
+-- | replaceChildM n old new replaces all links from node n to node old with links
+--   to node new.
 replaceChildM :: Operator a => AlgNode -> AlgNode -> AlgNode -> DagRewrite a ()
 replaceChildM n old new = 
     do
@@ -212,30 +224,33 @@ operatorM n =
         d <- gets dag
         return $ operator n d
     
-{-
-map :: (a -> b) -> AlgebraDag a -> AlgebraDag b
-map = undefined
--}
-    
-pruneUnused :: [AlgNode] -> AlgebraDag a -> AlgebraDag a
-pruneUnused roots d =
+pruneUnused :: AlgebraDag a -> AlgebraDag a
+pruneUnused d =
     let g = graph d
         m = nodeMap d 
+        roots = rootNodes d
         allNodes = S.fromList $ G.nodes g
         reachableNodes = S.fromList $ concat $ map (flip DFS.reachable g) roots
         unreachableNodes = S.difference allNodes reachableNodes
         g' = G.delNodes (S.toList $ unreachableNodes) g
         m' = foldr M.delete m $ S.toList unreachableNodes
-    in AlgebraDag { nodeMap = m', graph = g' }
+    in d { nodeMap = m', graph = g' }
 
-pruneUnusedM :: [AlgNode] -> DagRewrite a ()
-pruneUnusedM roots =
+pruneUnusedM :: DagRewrite a ()
+pruneUnusedM =
     do
         s <- get
-        put $ s { dag = pruneUnused roots $ dag s , cache = Nothing }
+        put $ s { dag = pruneUnused $ dag s , cache = Nothing }
     
 dagM :: DagRewrite a (AlgebraDag a)
 dagM = 
     do
         s <- get
         return $ dag s
+    
+replaceRootM :: AlgNode -> AlgNode -> DagRewrite a ()
+replaceRootM old new = do
+  s <- get
+  let d' = replaceRoot (dag s) old new
+  put $ s { dag = d' }
+  

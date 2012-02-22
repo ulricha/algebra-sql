@@ -21,8 +21,11 @@ At the moment:
 
 -}
 
-orphanizeRootNodes :: NodeMap BottomUpProps -> [AlgNode] -> DagRewrite X100Algebra ()
-orphanizeRootNodes props rootNodes = mapM_ orphanize rootNodes
+orphanizeRootNodes :: NodeMap BottomUpProps -> DagRewrite X100Algebra ()
+orphanizeRootNodes props = do
+                           d <- dagM
+                           let rs = rootNodes d
+                           mapM_ orphanize rs
     where orphanize root = do
               parentNodes <- parentsM root
               op <- operatorM root
@@ -37,13 +40,13 @@ orphanizeRootNodes props rootNodes = mapM_ orphanize rootNodes
                   [] -> return ()
 
 
-normalizePlanM :: [AlgNode] -> DagRewrite X100Algebra ()
-normalizePlanM rootNodes = do
+normalizePlanM :: DagRewrite X100Algebra ()
+normalizePlanM = do
     topOrdering <- topsortM
     propMap <- inferM (inferBottomUpProperties topOrdering)
-    orphanizeRootNodes propMap rootNodes
-    pruneUnusedM rootNodes
+    orphanizeRootNodes propMap
+    pruneUnusedM
 
-normalizePlan :: [AlgNode] -> AlgebraDag X100Algebra -> AlgebraDag X100Algebra
-normalizePlan rootNodes d =
-    dag $ execState (normalizePlanM rootNodes) (initRewriteState d)
+normalizePlan :: AlgebraDag X100Algebra -> AlgebraDag X100Algebra
+normalizePlan d =
+    dag $ execState normalizePlanM (initRewriteState d)
