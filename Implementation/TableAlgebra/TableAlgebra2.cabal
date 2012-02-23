@@ -47,6 +47,7 @@ library
                       Database.Algebra.X100.Properties.Types
                       Database.Algebra.X100.Properties.BottomUp
                       Database.Algebra.X100.Properties.TopDown
+                      Database.Algebra.X100.Expr
     hs-source-dirs:   src
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
     other-modules:    Database.Algebra.Pathfinder.Monadic.Create
