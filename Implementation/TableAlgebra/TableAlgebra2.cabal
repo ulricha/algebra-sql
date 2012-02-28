@@ -44,9 +44,7 @@ library
                       Database.Algebra.X100.Data.Create
                       Database.Algebra.X100.Data.Algebra
                       Database.Algebra.X100.Data.Utility
-                      Database.Algebra.X100.Properties.Types
-                      Database.Algebra.X100.Properties.BottomUp
-                      Database.Algebra.X100.Properties.TopDown
+                      Database.Algebra.X100.Properties
                       Database.Algebra.X100.Expr
     hs-source-dirs:   src
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
@@ -64,6 +62,10 @@ library
                       Database.Algebra.X100.Properties.SideEffect
                       Database.Algebra.X100.Properties.ICols
                       Database.Algebra.X100.Properties.Key
+                      Database.Algebra.X100.Properties.Domain
+                      Database.Algebra.X100.Properties.Types
+                      Database.Algebra.X100.Properties.BottomUp
+                      Database.Algebra.X100.Properties.TopDown
                       Database.Algebra.Aux
 
 executable x100dot
