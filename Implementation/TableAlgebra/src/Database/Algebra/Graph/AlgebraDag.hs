@@ -13,6 +13,7 @@ module Database.Algebra.Graph.AlgebraDag(AlgebraDag,
                                          replaceChild,
                                          topsort,
                                          reachable,
+                                         hasPath,
                                          pruneUnused,
                                          mapd,
                                          operator,
@@ -32,11 +33,11 @@ module Database.Algebra.Graph.AlgebraDag(AlgebraDag,
                                          topsortM,
                                          operatorM,
                                          inferM,
+                                         hasPathM,
                                          pruneUnusedM,
                                          freshIDM,
                                          dagM,
-                                         replaceRootM)
-       where
+                                         replaceRootM) where
 
 import Database.Algebra.Graph.Common 
 
@@ -137,6 +138,14 @@ data RewriteState a = RewriteState {
     dag :: AlgebraDag a,
     cache :: Maybe Cache
     }
+                      
+hasPath :: AlgNode -> AlgNode -> AlgebraDag a -> Bool
+hasPath a b d = b `elem` (reachable a d)
+                
+hasPathM :: AlgNode -> AlgNode -> DagRewrite a Bool
+hasPathM a b = do
+  d <- gets dag
+  return $ hasPath a b d
 
 inferM :: (AlgebraDag a -> b) -> State (RewriteState a) b
 inferM f =
