@@ -34,7 +34,7 @@ library
                       Database.Algebra.Pathfinder.Render.XML
                       Database.Algebra.Graph.GraphBuilder
                       Database.Algebra.Graph.Common 
-                      Database.Algebra.Graph.AlgebraDag 
+                      Database.Algebra.Dag.Rewrite
                       Database.Algebra.Graph.Normalize 
                       Database.Algebra.Impossible
                       Database.Algebra.X100.Serialize
