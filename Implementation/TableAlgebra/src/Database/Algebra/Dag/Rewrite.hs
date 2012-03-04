@@ -33,7 +33,6 @@ import qualified Data.Set as S
   
 import Database.Algebra.Graph.Common
 import Database.Algebra.Dag
-import Database.Algebra.Dag.Operations
   
 -- | Cache some topological information about the DAG.
 data Cache = Cache { cachedTopOrdering      :: Maybe [AlgNode]
