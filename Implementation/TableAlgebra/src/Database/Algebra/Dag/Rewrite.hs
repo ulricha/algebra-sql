@@ -6,6 +6,7 @@ module Database.Algebra.Dag.Rewrite
          -- * The Rewrite monad
          DagRewrite
        , runRewrite
+       , initRewriteState
          -- * Rewrite logging
        , Log
        , logGeneralM
@@ -14,6 +15,8 @@ module Database.Algebra.Dag.Rewrite
        , hasPathM
        , parentsM
        , topsortM
+       , reachableNodesFromM
+       , inferM
          -- * Query for operator information
        , operatorM
          -- * DAG modification
@@ -21,6 +24,7 @@ module Database.Algebra.Dag.Rewrite
        , replaceChildM
        , relinkParentsM
        , replaceM
+       , replaceRootM
          -- * House cleaning
        , pruneUnusedM
        ) where
@@ -60,11 +64,9 @@ initRewriteState d =
                                                                
 -- | Run a rewrite action on the supplied graph. Returns the rewritten node map, the potentially
 -- modified list of root nodes, the result of the rewrite and the rewrite log.
-runRewrite :: Operator a => DagRewrite a r -> NodeMap a -> [AlgNode] -> (NodeMap a, [AlgNode], r, Log)
-runRewrite (D m) nm rs = (nodeMap d, rootNodes d, res, rewriteLog) 
-  where ((res, rewriteLog), s) = runState (runWriterT m) (initRewriteState (mkDag nm rs))  
-        d = dag s
-        
+runRewrite :: Operator a => DagRewrite a r -> AlgebraDag a -> (AlgebraDag a, r, Log)
+runRewrite (D m) d = (dag s, res, rewriteLog) 
+  where ((res, rewriteLog), s) = runState (runWriterT m) (initRewriteState d)  
         
 -- | The log from a sequence of rewrite actions.
 type Log = Seq.Seq String
@@ -85,6 +87,13 @@ hasPathM a b =
   D $ do
     d <- gets dag
     return $ hasPath a b d
+  
+-- | Return the set of nodes that are reachable from the specified node.
+reachableNodesFromM :: AlgNode -> DagRewrite a (S.Set AlgNode)
+reachableNodesFromM n =
+  D $ do
+    d <- gets dag
+    return $ reachableNodesFrom n d
   
 -- | Return the parents of a node
 parentsM :: AlgNode -> DagRewrite a [AlgNode]
@@ -183,3 +192,15 @@ pruneUnusedM =
         unwrapD $ putDag dag'
       Nothing -> return ()
     
+-- | Replaces an entry in the list of root nodes.
+replaceRootM :: AlgNode -> AlgNode -> DagRewrite a ()
+replaceRootM oldRoot newRoot = do
+  D $ do 
+    s <- get
+    if M.member newRoot $ nodeMap $ dag s
+      then error "replaceRootM: new root node is not present in the DAG"
+      else unwrapD $ putDag $ replaceRoot (dag s) oldRoot newRoot
+  
+-- | Apply a pure function to the DAG.
+inferM :: (AlgebraDag a -> b) -> DagRewrite a b
+inferM f = D $ liftM f $ liftM dag $ get

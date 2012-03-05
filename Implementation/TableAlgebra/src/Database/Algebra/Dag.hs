@@ -2,7 +2,7 @@ module Database.Algebra.Dag
        (
          -- * The DAG data structure
          AlgebraDag
-       , Operator
+       , Operator(..)
        , nodeMap
        , rootNodes
        , mkDag
@@ -10,12 +10,14 @@ module Database.Algebra.Dag
        , parents
        , topsort
        , hasPath
+       , reachableNodes
        , reachableNodesFrom
        , operator
          -- * DAG modification functions
        , insert
        , delete
        , replaceChild 
+       , replaceRoot
          -- * House cleaning
        , pruneUnused
        ) where
@@ -109,7 +111,6 @@ pruneUnused :: AlgebraDag a -> Maybe (AlgebraDag a)
 pruneUnused d =
     let g = graph d
         m = nodeMap d 
-        roots = rootNodes d
         allNodes = S.fromList $ G.nodes g
         reachable = reachableNodes d
         unreachable = S.difference allNodes reachable
@@ -126,3 +127,4 @@ reachableNodesFrom n d = S.fromList $ DFS.reachable n $ graph d
 -- | Tests wether there is a path from the first to the second node.
 hasPath :: AlgNode -> AlgNode -> AlgebraDag a -> Bool
 hasPath a b d = b `S.member` (reachableNodesFrom a d)
+                
