@@ -19,6 +19,7 @@ module Database.Algebra.Dag.Rewrite
        , inferM
          -- * Query for operator information
        , operatorM
+       , rootNodesM
          -- * DAG modification
        , insertM
        , replaceChildM
@@ -122,6 +123,10 @@ operatorM n =
   D $ do
     d <- gets dag
     return $ operator n d
+  
+-- | Returns the root nodes of the DAG.
+rootNodesM :: DagRewrite a [AlgNode]
+rootNodesM = D $ liftM rootNodes $ liftM dag $ get
   
 -- | Return a fresh node id (only used internally).
 freshNodeID :: DagRewrite a AlgNode
