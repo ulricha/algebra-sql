@@ -27,3 +27,14 @@ pushMergeRule q = do
     joinNode' <- insertM $ BinOp (MergeJoin1 sem) q3 q2
     projectNode' <- insertM $ UnOp (Project ps) joinNode'
     relinkParentsM q projectNode'
+
+pushMergeRule :: AlgNode -> Rule X100Algebra
+pushMergeRule q = do
+  ((q1, q2), sem) <- match q [|p| MergeJoin1 sem q1 q2 -> return ((q1, q2), sem) |]
+  (c, ps) <- match q1 [|p| Project ps c -> return (c, q3) |]
+  predicate $ b == joinCol
+  return $ do
+    logRewrite "Pushdown.MergeJoin1"
+    joinNode' <- insertM $ BinOp (MergeJoin1 sem) q3 q2
+    projectNode' <- insertM $ UnOp (Project ps) joinNode'
+    relinkParentsM q projectNode'
