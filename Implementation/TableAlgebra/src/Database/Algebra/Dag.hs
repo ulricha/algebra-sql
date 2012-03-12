@@ -16,6 +16,7 @@ module Database.Algebra.Dag
          -- * DAG modification functions
        , insert
        , delete
+       , replace
        , replaceChild 
        , replaceRoot
          -- * House cleaning
@@ -78,6 +79,15 @@ delete n d =
     let g' = G.delNode n $ graph d
         m' = M.delete n $ nodeMap d
     in d { nodeMap = m', graph = g' }
+       
+replace :: Operator a => AlgNode -> a -> AlgebraDag a -> AlgebraDag a
+replace node newOp d =
+  let oldChildren = opChildren $ operator node d
+      newChildren = opChildren newOp
+      nm'         = M.insert node newOp $ nodeMap d
+      g'          = G.delEdges [ (node, c) | c <- oldChildren ] $ graph d
+      g''         = G.insEdges [ (node, c, ()) | c <- newChildren ] g'
+  in d { nodeMap = nm', graph = g'' }
        
 -- | Return the list of parents of a node.
 parents :: AlgNode -> AlgebraDag a -> [AlgNode]
