@@ -24,6 +24,7 @@ module Database.Algebra.Dag.Rewrite
        , insertM
        , replaceChildM
        , relinkParentsM
+       , relinkToNewM
        , replaceM
        , replaceRootM
          -- * House cleaning
@@ -180,10 +181,18 @@ relinkParentsM old new = do
   
 -- | Creates a new node from the operator and replaces the old node with it
 -- by rewireing all links to the old node.
-replaceM :: Operator a => AlgNode -> a -> DagRewrite a ()
-replaceM oldNode newOp = do
+relinkToNewM :: Operator a => AlgNode -> a -> DagRewrite a ()
+relinkToNewM oldNode newOp = do
   newNode <- insertM newOp
   relinkParentsM oldNode newNode
+  
+-- | Replaces the operator at the specified node id with a new operator.
+replaceM :: Operator a => AlgNode -> a -> DagRewrite a ()
+replaceM node newOp =
+  D $ do
+    d <- gets dag
+    unwrapD invalidateCacheM
+    unwrapD $ putDag $ replace node newOp d
   
 -- | Remove all unreferenced nodes from the DAG: all nodes are unreferenced which
 -- are not reachable from one of the root nodes.
