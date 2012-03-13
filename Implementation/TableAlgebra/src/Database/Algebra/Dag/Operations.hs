@@ -6,8 +6,9 @@ module Database.Algebra.Dag
        , nodeMap
        , rootNodes
        , mkDag
-         -- * Query functions for topological information
+         -- * Query functions for topological and operator information
        , parents
+         -- FIXME is topological sorting still necessary?
        , topsort
        , hasPath
        , reachableNodes
@@ -29,7 +30,7 @@ import qualified Data.Graph.Inductive.Graph as G
 import qualified Data.Graph.Inductive.Query.DFS as DFS
 import Data.Graph.Inductive.PatriciaTree
   
-import Database.Algebra.Graph.Common
+import Database.Algebra.Dag.Common
 {-
 
 general:

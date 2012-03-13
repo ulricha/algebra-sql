@@ -1,11 +1,11 @@
 {-# LANGUAGE GADTs #-}
-module Database.Algebra.Graph.GraphBuilder where
+module Database.Algebra.Dag.Builder where
     
 import qualified Data.Map as M
 import Control.Monad.State
 import Control.Monad.Reader
 
-import Database.Algebra.Graph.Common
+import Database.Algebra.Dag.Common
 
 
 data BuildState alg = BuildState {

@@ -4,8 +4,8 @@ module Database.Algebra.Pathfinder.Monadic.Create (attachM, castM, eqJoinM, eqTJ
 
 import qualified Database.Algebra.Pathfinder.Data.Create as C    
 import Database.Algebra.Pathfinder.Data.Algebra
-import Database.Algebra.Graph.Common
-import Database.Algebra.Graph.GraphBuilder
+import Database.Algebra.Dag.Common
+import Database.Algebra.Dag.Builder
 
 bind1 :: Monad m => (a -> m b) -> m a -> m b
 bind1 = (=<<)

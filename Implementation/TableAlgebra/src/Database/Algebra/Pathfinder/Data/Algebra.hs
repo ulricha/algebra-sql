@@ -9,7 +9,7 @@ module Database.Algebra.Pathfinder.Data.Algebra where
 
 import Numeric (showFFloat)
 
-import Database.Algebra.Graph.Common
+import Database.Algebra.Dag.Common
 
 -- | The column data type is used to represent the table structure while
 --  compiling ferry core into an PFAlgebraic plan

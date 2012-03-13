@@ -1,4 +1,4 @@
-module Database.Algebra.Graph.Common where
+module Database.Algebra.Dag.Common where
 
 import qualified Data.Map as M
 

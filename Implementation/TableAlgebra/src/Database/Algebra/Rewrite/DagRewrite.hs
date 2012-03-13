@@ -1,12 +1,13 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | This module provides a monadic interface to rewrites on algebra DAGs.
-module Database.Algebra.Dag.Rewrite 
+module Database.Algebra.Rewrite.DagRewrite 
        (
          -- * The Rewrite monad
          DagRewrite
        , runRewrite
        , initRewriteState
+       , dagM
          -- * Rewrite logging
        , Log
        , logGeneralM
@@ -37,7 +38,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Map as M
 import qualified Data.Set as S
   
-import Database.Algebra.Graph.Common
+import Database.Algebra.Dag.Common
 import Database.Algebra.Dag
   
 -- | Cache some topological information about the DAG.
@@ -153,6 +154,16 @@ putDag d =
   D $ do
     s <- get
     put $ s { dag = d }
+  
+putCache :: Cache -> DagRewrite a ()
+putCache c =
+  D $ do
+    s <- get
+    put $ s { cache = c }
+  
+-- | Exposes the current state of the DAG
+dagM :: DagRewrite a (AlgebraDag a)
+dagM = D $ gets dag
   
 -- | Insert an operator into the DAG and return its node id.
 insertM :: Operator a => a -> DagRewrite a AlgNode

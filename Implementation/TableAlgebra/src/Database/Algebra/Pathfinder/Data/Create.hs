@@ -4,8 +4,8 @@ This module contains helper functions for constructing algebraic plans.
 module Database.Algebra.Pathfinder.Data.Create where
     
 import Database.Algebra.Pathfinder.Data.Algebra
-import Database.Algebra.Graph.Common
-import Database.Algebra.Graph.GraphBuilder
+import Database.Algebra.Dag.Common
+import Database.Algebra.Dag.Builder
 
 -- * Value constructors
 
