@@ -4,36 +4,44 @@ module Database.Algebra.Rewrite.Traversal
        , iteratively ) where
 
 import Database.Algebra.Dag
+import Database.Algebra.Dag.Common
 import Database.Algebra.Rewrite.DagRewrite
 import Database.Algebra.Rewrite.Rule
 
-preOrder :: Operator o => RuleSet o -> DagRewrite o Bool
-preOrder rules = 
-  let traverse q = do
-        changedSelf <- applyRuleSet q rules
+-- | Infer properties, then traverse the DAG in preorder fashion and apply the rule set 
+-- at every node.
+preOrder :: Operator o => DagRewrite o (NodeMap p) -> RuleSet o p -> DagRewrite o Bool
+preOrder infer rules = 
+  let traverse props q = do
+        changedSelf <- applyRuleSet q props rules
         op <- operatorM q
         let cs = opChildren op
-        changedChild <- mapM (\c -> applyRuleSet c rules) cs
+        changedChild <- mapM (\c -> traverse props c) cs
         return $ changedSelf || (or changedChild)
   in do
+    pm <- infer
     rs <- rootNodesM
-    changed <- mapM (\r -> traverse r) rs
+    changed <- mapM (\r -> traverse pm r) rs
     return $ or changed
            
-postOrder :: Operator o => RuleSet o -> DagRewrite o Bool
-postOrder rules = 
-  let traverse q = do
+-- | Infer properties, then traverse the DAG in a postorder fashion and apply the rule set at
+-- every node.
+postOrder :: Operator o => DagRewrite o (NodeMap p) -> RuleSet o p -> DagRewrite o Bool
+postOrder infer rules = 
+  let traverse props q = do
         op <- operatorM q
         let cs = opChildren op
-        changedChild <- mapM (\c -> applyRuleSet c rules) cs
-        changedSelf <- applyRuleSet q rules
+        changedChild <- mapM (\c -> traverse props c) cs
+        changedSelf <- applyRuleSet q props rules
         return $ changedSelf || (or changedChild)
   in do
+    pm <- infer
     rs <- rootNodesM
-    changed <- mapM (\r -> traverse r) rs
+    changed <- mapM (\r -> traverse pm r) rs
     return $ or changed
   
-iteratively :: DagRewrite a Bool -> DagRewrite a ()
+-- | Iteratively apply a rewrite, until no further changes occur.
+iteratively :: DagRewrite o Bool -> DagRewrite o ()
 iteratively rewrite = do
   changed <- rewrite
   if changed
