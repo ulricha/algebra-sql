@@ -39,6 +39,7 @@ library
                       Database.Algebra.Rewrite.DagRewrite
                       Database.Algebra.Rewrite.Match
                       Database.Algebra.Rewrite.Rule
+                      Database.Algebra.Rewrite.Traversal
                       Database.Algebra.X100.Normalize 
                       Database.Algebra.X100.Serialize
                       Database.Algebra.X100.Render.Dot
