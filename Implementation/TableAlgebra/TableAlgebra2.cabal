@@ -29,7 +29,7 @@ Build-Type:     Simple
 
 library
     buildable:        True
-    build-depends:    base >= 4.2 && < 5,  HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, fgl, transformers
+    build-depends:    base >= 4.2 && < 5,  HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, fgl, transformers, parsec
     exposed-modules:  Database.Algebra.Impossible
                       Database.Algebra.Pathfinder
                       Database.Algebra.Pathfinder.Render.XML
@@ -37,6 +37,8 @@ library
                       Database.Algebra.Dag.Builder
                       Database.Algebra.Dag.Common
                       Database.Algebra.Rewrite.DagRewrite
+                      Database.Algebra.Rewrite.PatternSyntax
+                      Database.Algebra.Rewrite.PatternConstruction
                       Database.Algebra.Rewrite.Match
                       Database.Algebra.Rewrite.Rule
                       Database.Algebra.Rewrite.Traversal
