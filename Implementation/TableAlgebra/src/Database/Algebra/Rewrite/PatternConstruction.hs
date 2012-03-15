@@ -1,17 +1,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Database.Algebra.Rewrite.PatternConstruction where
+module Database.Algebra.Rewrite.PatternConstruction( m, v ) where
 
 import Language.Haskell.TH
 import Control.Monad.Writer
   
 import Database.Algebra.Rewrite.PatternSyntax
 
--- Take a string description of the pattern and the body of the match
--- and return the complete match statement.
-m :: String -> Q Exp -> Q Exp
-m = undefined
-    
 type Code a = WriterT [Q Stmt] Q a
 
 emit :: Q Stmt -> Code ()
@@ -153,3 +148,29 @@ maybeDescend c ns =
 bindingTuple :: [String] -> Q Pat
 bindingTuple ss = tupP $ map (varP . mkName) ss
   
+assembleStatements :: Q [Stmt] -> Q Exp -> Q Exp
+assembleStatements patternStatements userExpr = do
+  ps <- patternStatements
+  e <- userExpr
+  
+  let us = 
+        case e of
+          DoE userStatements -> userStatements
+          _ -> error "PatternConstruction.assembleStatements: no do-block supplied"
+          
+  return $ DoE $ ps ++ us
+  
+-- | Take a string description of the pattern and the body of the match
+-- and return the complete match statement.
+m :: String -> Q Exp -> Q Exp
+m patternString userExpr = do
+  rootName <- newName "q"
+  
+  let pattern = parsePattern patternString
+  
+  patternStatements <- execWriterT $ gen rootName pattern
+  
+  assembleStatements (mapM id patternStatements) userExpr
+                          
+v :: String -> Q Exp 
+v = dyn
