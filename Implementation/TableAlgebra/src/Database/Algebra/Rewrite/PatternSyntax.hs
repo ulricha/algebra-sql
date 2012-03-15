@@ -1,4 +1,11 @@
-module Database.Algebra.Rewrite.PatternSyntax where
+module Database.Algebra.Rewrite.PatternSyntax 
+       ( Pattern
+       , Op(..)
+       , Child(..)
+       , Sem(..)
+       , Ident
+       , UIdent
+       , parsePattern) where
 
 import Text.ParserCombinators.Parsec
 
