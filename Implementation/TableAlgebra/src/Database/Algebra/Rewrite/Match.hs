@@ -1,10 +1,12 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Database.Algebra.Rewrite.Match 
        ( Match
        , runMatch
        , parents
        , predicate
        , properties
-       , match) where
+       , matchOp ) where
 
 import qualified Data.Map as M
 import Control.Monad.Reader
@@ -18,7 +20,7 @@ data Env o p = Env { dag :: Dag.AlgebraDag o
 
 -- | The Match monad models the failing of a match and provides limited read-only access
 -- to the DAG.
-newtype Match o p a = M (MaybeT (Reader (Env o p)) a)
+newtype Match o p a = M (MaybeT (Reader (Env o p)) a) deriving Monad
      
 -- | Runs a match on the supplied DAG. If the Match fails, 'Nothing' is returned.
 -- If the Match succeeds, it returns just the result.
@@ -36,8 +38,8 @@ predicate True    = M $ return ()
 predicate False   = M $ fail ""
                     
 -- | Runs the supplied Match action on the operator that belongs to the given node.
-match :: Dag.Operator o => AlgNode -> (o -> Match o p a) -> Match o p a
-match q m = M $ asks ((Dag.operator q) . dag) >>= (\o -> unwrap $ m o)
+matchOp :: Dag.Operator o => AlgNode -> (o -> Match o p a) -> Match o p a
+matchOp q m = M $ asks ((Dag.operator q) . dag) >>= (\o -> unwrap $ m o)
   where unwrap (M r) = r
 
 -- | Look up the properties for a given node.
