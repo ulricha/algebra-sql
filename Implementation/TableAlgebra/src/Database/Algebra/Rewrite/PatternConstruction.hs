@@ -88,8 +88,8 @@ instStmtWrapper :: Name              -- ^ The name of the node on which to match
                    -> [Q Pat]        -- ^ The list of patterns binding the node children
                    -> [Name]         -- ^ The list of variables for the children (may be empty)
                    -> Q Stmt         -- ^ Returns the case expression
-instStmtWrapper nodeName nodeKind opName semantics childPats childNames =
-  let matchCase   = instMatchCase nodeKind opName semantics childPats childNames
+instStmtWrapper nodeName nodeKind operName semantics childPats childNames =
+  let matchCase   = instMatchCase nodeKind operName semantics childPats childNames
       matchLambda = instMatchLambda matchCase
       matchExp    = instMatchExp nodeName matchLambda
   in instStatement (fmap fst semantics) childPats matchExp
@@ -101,30 +101,53 @@ gen nodeName (NullP opString semBinding) =
       statement = instStmtWrapper nodeName nullOpName (mkName opString) semantics [] []
   in emit statement
      
-gen nodeName (UnP opString semBinding child) = 
+gen nodeName (UnP opString semBinding child) = do
   let semantics = semPatternName semBinding 
-      instStmt  = instStmtWrapper nodeName unOpName (mkName opString) semantics
-  in
-  case child of
-    WildC                        -> 
-      emit $ instStmt [wildP] []
-  
-    NameC childString            -> 
-      let childName = mkName childString
-          statement = instStmt [varP childName] [childName]
-      in emit statement
-  
-    OpC childOp                  -> do
-      childName <- lift $ newName "child"
-      emit $ instStmt [varP childName] [childName]
-      gen childName childOp
       
-    NamedOpC childString childOp -> do
-      let childName = mkName childString
-      emit $ instStmt [varP childName] [childName]
-      gen childName childOp
+  name <- lift (childName child)
   
-gen nodeName (BinP opString semBinding child1 child2) = undefined
+  let childPattern = map varP name
+      statement = instStmtWrapper nodeName unOpName (mkName opString) semantics childPattern name
+  
+  emit statement
+  
+  maybeDescend child name
+                  
+gen nodeName (BinP opString semBinding child1 child2) = do
+  let semantics = semPatternName semBinding
+  
+  nameLeft   <- lift (childName child1)
+  nameRight  <- lift (childName child2)
+  
+  let childNames = nameLeft ++ nameRight
+      childPatterns = map varP childNames
+      statement = instStmtWrapper nodeName binOpName (mkName opString) semantics childPatterns childNames
+      
+  emit statement
+  
+  maybeDescend child1 nameLeft
+  maybeDescend child2 nameRight
+  
+childName :: Child -> Q [Name]
+childName WildC          = return []
+childName (NameC s)      = return [mkName s]
+childName (OpC _)        = newName "child" >>= (\n -> return [n])
+childName (NamedOpC s _) = return [mkName s]
+                             
+recurse :: Child -> Maybe Op
+recurse WildC           = Nothing
+recurse (NameC _)       = Nothing
+recurse (OpC o)         = Just o
+recurse (NamedOpC _ o ) = Just o
+                         
+maybeDescend :: Child -> [Name] -> Code ()                         
+maybeDescend c ns =
+  case recurse c of
+    Just o   ->  
+      case ns of
+        [n] -> gen n o
+        _   -> error "PatternConstruction.gen: no name for child pattern"
+    Nothing  -> return ()
                                                         
 
 bindingTuple :: [String] -> Q Pat
