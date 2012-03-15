@@ -145,9 +145,6 @@ maybeDescend c ns =
     Nothing  -> return ()
                                                         
 
-bindingTuple :: [String] -> Q Pat
-bindingTuple ss = tupP $ map (varP . mkName) ss
-  
 assembleStatements :: Q [Stmt] -> Q Exp -> Q Exp
 assembleStatements patternStatements userExpr = do
   ps <- patternStatements
@@ -160,11 +157,18 @@ assembleStatements patternStatements userExpr = do
           
   return $ DoE $ ps ++ us
   
--- | Take a string description of the pattern and the body of the match
--- and return the complete match statement.
-m :: String -> Q Exp -> Q Exp
-m patternString userExpr = do
-  rootName <- newName "q"
+-- | Take q quoted variable with the root node on which to apply the pattern, 
+-- a string description of the pattern and the body of the match
+-- and return the complete match statement. The body has to be a quoted ([| ...|])
+-- do-block.
+m :: Q Exp -> String -> Q Exp -> Q Exp
+m rootExp patternString userExpr = do
+  
+  re <- rootExp
+  
+  let rootName = case re of 
+        VarE n -> n
+        _      -> error "supplied root node is not a quoted variable"
   
   let pattern = parsePattern patternString
   
@@ -172,5 +176,6 @@ m patternString userExpr = do
   
   assembleStatements (mapM id patternStatements) userExpr
                           
+-- | Reference a variable that is bound by a pattern in a quoted match body.
 v :: String -> Q Exp 
 v = dyn
