@@ -41,19 +41,18 @@ catchAllCase = match wildP (normalB (appE (varE failName) (litE (stringL "")))) 
 -- case op of ... -> return _ -> fail ""
 instMatchCase :: Name           -- ^ The name of the node constructor (BinOp, UnOp, NullOp)
                  -> Name        -- ^ The name of the operator constructor
-                 -> Q Pat       -- ^ Pattern binding the semantical information (or wildcard)
-                 -> Maybe Name  -- ^ If the semantical pattern is not a wildcard: the name of the binding variable
+                 -> Maybe (Q Pat, Name) -- ^ If the semantical pattern is not a wildcard: the name of the binding variable
                  -> [Q Pat]     -- ^ The list of patterns binding the node children
                  -> [Name]      -- ^ The list of variables for the children (may be empty)
                  -> Q Exp       -- ^ Returns the case expression
-instMatchCase nodeConstructor opConstructor semPattern mSemName childPatterns childNames = 
+instMatchCase nodeConstructor opConstructor semantics childPatterns childNames = 
   caseE (varE opName) [opCase, catchAllCase]
   where opCase = match opPattern opBody []
-        opPattern = conP nodeConstructor ((conP opConstructor [semPattern]) : childPatterns)
-        bodyNames = case mSemName of
-                     Just n  -> n : childNames
-                     Nothing -> childNames
-        opBody = normalB $ appE (varE (mkName "return")) (tupE $ map varE bodyNames)
+        (semPat, semName) = case semantics of
+                              Just (p, n) -> (p, [n])
+                              Nothing     -> (wildP, [])
+        opPattern = conP nodeConstructor ((conP opConstructor [semPat]) : childPatterns)
+        opBody = normalB $ appE (varE (mkName "return")) (tupE $ map varE (semName ++ childNames))
         
 -- \op -> case op of...
 instMatchLambda :: Q Exp -> Q Exp
@@ -78,32 +77,56 @@ instStatement mSemPat childPats matchExp =
     (Nothing, []) -> noBindS matchExp
     (_, _)        -> bindS (instBindingPattern mSemPat childPats) matchExp
   
-semPatternName :: Sem -> (Q Pat, Maybe Name)
-semPatternName WildS      = (wildP, Nothing)
-semPatternName (NamedS s) = let name = mkName s in (varP name, Just name)
+semPatternName :: Sem -> Maybe (Q Pat, Name)
+semPatternName WildS      = Nothing
+semPatternName (NamedS s) = let name = mkName s in Just (varP name, name)
+                                                   
+instStmtWrapper :: Name              -- ^ The name of the node on which to match
+                   -> Name           -- ^ The name of the node constructor (BinOp, UnOp, NullOp)
+                   -> Name           -- ^ The name of the operator constructor
+                   -> Maybe (Q Pat, Name)  -- ^ Pattern binding the semantical information (or wildcard)
+                   -> [Q Pat]        -- ^ The list of patterns binding the node children
+                   -> [Name]         -- ^ The list of variables for the children (may be empty)
+                   -> Q Stmt         -- ^ Returns the case expression
+instStmtWrapper nodeName nodeKind opName semantics childPats childNames =
+  let matchCase   = instMatchCase nodeKind opName semantics childPats childNames
+      matchLambda = instMatchLambda matchCase
+      matchExp    = instMatchExp nodeName matchLambda
+  in instStatement (fmap fst semantics) childPats matchExp
        
 -- generate a list of statements from an operator (tree)
 gen :: Name -> Op -> Code ()
-gen nodeName (NullP opName semBinding) = 
-  let (semPat, mSemName) = semPatternName semBinding
-      matchCase     = instMatchCase nullOpName (mkName opName) semPat mSemName [] []
-      matchLambda   = instMatchLambda matchCase
-      matchExp      = instMatchExp nodeName matchLambda
-      statement     = if semBinding == WildS 
-                      then instStatement Nothing [] matchExp 
-                      else instStatement (Just semPat) [] matchExp
+gen nodeName (NullP opString semBinding) = 
+  let semantics = semPatternName semBinding
+      statement = instStmtWrapper nodeName nullOpName (mkName opString) semantics [] []
   in emit statement
-gen nodeName (UnP opName semBinding child) = 
-  let (semPat, mSemName) = semPatternName semBinding
-      matchCase     = instMatchCase nullOpName (mkName opName) semPat mSemName [] []
-      matchLambda   = instMatchLambda matchCase
-      matchExp      = instMatchExp nodeName matchLambda
-      statement     = if semBinding == WildS 
-                      then instStatement Nothing [] matchExp 
-                      else instStatement (Just semPat) [] matchExp
-  in do 
-    emit statement
-                              
+     
+gen nodeName (UnP opString semBinding child) = 
+  let semantics = semPatternName semBinding 
+      instStmt  = instStmtWrapper nodeName unOpName (mkName opString) semantics
+  in
+  case child of
+    WildC                        -> 
+      emit $ instStmt [wildP] []
+  
+    NameC childString            -> 
+      let childName = mkName childString
+          statement = instStmt [varP childName] [childName]
+      in emit statement
+  
+    OpC childOp                  -> do
+      childName <- lift $ newName "child"
+      emit $ instStmt [varP childName] [childName]
+      gen childName childOp
+      
+    NamedOpC childString childOp -> do
+      let childName = mkName childString
+      emit $ instStmt [varP childName] [childName]
+      gen childName childOp
+  
+gen nodeName (BinP opString semBinding child1 child2) = undefined
+                                                        
+
 bindingTuple :: [String] -> Q Pat
 bindingTuple ss = tupP $ map (varP . mkName) ss
   
