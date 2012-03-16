@@ -85,10 +85,3 @@ executable x100gen
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
     hs-source-dirs:   src
     build-depends:    base >= 4.2 && < 5, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, fgl
-
-executable x100shgen
-    Main-is: Database/Algebra/X100/Tools/SharingCodeGen.hs
-    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -auto-all -O3
-    hs-source-dirs:   src
-    build-depends:    base >= 4.2 && < 5, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, fgl
-
