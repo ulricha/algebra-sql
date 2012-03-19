@@ -1,14 +1,14 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Database.Ferry.Algebra.Render.XML (document, mkXMLDocument, mkPlanBundle, serializeAlgebra,
-                                          module Database.Ferry.Algebra.Render.XMLUtils,
+module Database.Algebra.Pathfinder.Render.XML (document, mkXMLDocument, mkPlanBundle, serializeAlgebra,
+                                          module Database.Algebra.Pathfinder.Render.XMLUtils,
                                           module Text.XML.HaXml.Types,
                                           iterCol, posCol, mkQueryPlan) where
 {-
 Transform a query plan DAG into an XML representation.
 -}    
-import Database.Ferry.Impossible
-import Database.Ferry.Algebra.Data.Algebra
-import Database.Ferry.Algebra.Render.XMLUtils
+import Database.Algebra.Impossible
+import Database.Algebra.Pathfinder.Data.Algebra
+import Database.Algebra.Pathfinder.Render.XMLUtils
 import Control.Monad.Writer
 
 import Text.XML.HaXml.Types
@@ -74,7 +74,7 @@ alg2XML gId = do
                                             else
                                                 return xId      
  where
-    alg2XML' :: Algebra -> XML XMLNode 
+    alg2XML' :: PFAlgebra -> XML XMLNode 
     alg2XML' (LitTable vs s) = do
                                             xId <- freshId
                                             tell [mkTableNode xId s vs]

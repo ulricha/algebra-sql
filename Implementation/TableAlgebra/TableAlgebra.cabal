@@ -2,7 +2,7 @@ cabal-version: >=1.8
 Name:           TableAlgebra
 synopsis:       Ferry Table Algebra
 Category:       Database
-Version:        0.7.1
+Version:        0.8
 Description:    The Ferry 2.0 Table Algebra library
                 .
                 The table algebra [2] is an intermediate language used by Ferry 2.0 [3] and DSH [4].
@@ -23,20 +23,67 @@ Description:    The Ferry 2.0 Table Algebra library
                  4. <http://www-db.informatik.uni-tuebingen.de/files/publications/ferryhaskell.pdf>
 License:        BSD3
 License-file:   LICENSE
-Author:			Jeroen Weijers <jeroen.weijers@uni-tuebingen.de> Tom Schreiber <tom.schreiber@uni-tuebingen.de>
-Maintainer:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>
+Author:			Jeroen Weijers <jeroen.weijers@uni-tuebingen.de> Tom Schreiber <tom.schreiber@uni-tuebingen.de>, Alexander Ulrich <alexander.ulrich@uni-tuebingen.de>
+Maintainer:		Alexander Ulrich <alexander.ulrich@uni-tuebingen.de>
 Build-Type:     Simple
+
 library
     buildable:        True
-    build-depends:    base >= 4.2 && < 5,  HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1
-    exposed-modules:  Database.Ferry.Algebra
-                      Database.Ferry.Algebra.Render.XML
+    build-depends:    base >= 4.2 && < 5,  HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, fgl, transformers, parsec
+    exposed-modules:  Database.Algebra.Dag
+                      Database.Algebra.Dag.Builder
+                      Database.Algebra.Dag.Common
+
+                      Database.Algebra.Pathfinder
+                      Database.Algebra.Pathfinder.Render.XML
+
+                      Database.Algebra.Rewrite.DagRewrite
+                      Database.Algebra.Rewrite.PatternSyntax
+                      Database.Algebra.Rewrite.PatternConstruction
+                      Database.Algebra.Rewrite.Match
+                      Database.Algebra.Rewrite.Rule
+                      Database.Algebra.Rewrite.Traversal
+
+                      Database.Algebra.X100.Normalize 
+                      Database.Algebra.X100.Serialize
+                      Database.Algebra.X100.Render
+                      Database.Algebra.X100.Render.Common
+                      Database.Algebra.X100.Data
+                      Database.Algebra.X100.Data.Create
+                      Database.Algebra.X100.Properties
+                      Database.Algebra.X100.ExprUtils
+                      Database.Algebra.X100.ProjectUtils
     hs-source-dirs:   src
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
-    other-modules:
-        Database.Ferry.Algebra.Data.Algebra 
-        Database.Ferry.Algebra.Data.Create 
-        Database.Ferry.Algebra.Data.GraphBuilder 
-        Database.Ferry.Algebra.Render.XMLUtils
-        Database.Ferry.Algebra.Monadic.Create
-        Database.Ferry.Impossible 
+    other-modules:    Database.Algebra.Pathfinder.Monadic.Create
+                      Database.Algebra.Pathfinder.Data.Algebra
+                      Database.Algebra.Pathfinder.Data.Create
+                      Database.Algebra.Pathfinder.Render.XMLUtils
+                      Database.Algebra.X100.Render.Sharing
+                      Database.Algebra.X100.Properties.Schema
+                      Database.Algebra.X100.Properties.Card1
+                      Database.Algebra.X100.Properties.Const
+                      Database.Algebra.X100.Properties.Empty
+                      Database.Algebra.X100.Properties.SideEffect
+                      Database.Algebra.X100.Properties.ICols
+                      Database.Algebra.X100.Properties.Key
+                      Database.Algebra.X100.Properties.Domain
+                      Database.Algebra.X100.Properties.Types
+                      Database.Algebra.X100.Properties.BottomUp
+                      Database.Algebra.X100.Properties.TopDown
+                      Database.Algebra.X100.Render.Dot
+                      Database.Algebra.X100.Render.X100Code
+                      Database.Algebra.Aux
+                      Database.Algebra.Impossible
+
+executable x100dot
+    Main-is: Database/Algebra/X100/Tools/DotGen.hs
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
+    hs-source-dirs:   src
+    build-depends:    base >= 4.2 && < 5, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, fgl
+
+executable x100gen
+    Main-is: Database/Algebra/X100/Tools/CodeGen.hs
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
+    hs-source-dirs:   src
+    build-depends:    base >= 4.2 && < 5, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, fgl

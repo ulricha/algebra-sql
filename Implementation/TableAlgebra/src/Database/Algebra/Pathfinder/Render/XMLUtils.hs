@@ -1,8 +1,9 @@
-module Database.Ferry.Algebra.Render.XMLUtils where
+module Database.Algebra.Pathfinder.Render.XMLUtils where
     
 import Text.XML.HaXml.Types
 
-import Database.Ferry.Algebra.Data.Algebra
+import Database.Algebra.Pathfinder.Data.Algebra
+import Database.Algebra.Dag.Common
 
 import qualified Data.Map as M
 
@@ -15,7 +16,7 @@ type ColName = String
 
 -- The Graph is represented as a tuple of an int, that represents the first node, and
 -- a list of algebraic nodes with their node numbers.
-type Graph = (AlgNode, [(Algebra, AlgNode)])
+type Graph = (AlgNode, [(PFAlgebra, AlgNode)])
 
 -- Alias for GraphNode ids
 type GraphNode = Int
@@ -31,7 +32,7 @@ type Dictionary = M.Map GraphNode XMLNode
 -- are the node ids from the graph. The state monad keeps track of the supply of fresh ids
 -- for xml nodes and the dictionary for looking up whether a certain graphnode already has
 -- an xml representation.
-type XML = WriterT [Element ()] (ReaderT (M.Map AlgNode Algebra, M.Map AlgNode [String], Bool) (State (Int, Dictionary)))
+type XML = WriterT [Element ()] (ReaderT (M.Map AlgNode PFAlgebra, M.Map AlgNode [String], Bool) (State (Int, Dictionary)))
 
 getTags :: GraphNode -> XML (Maybe [String])
 getTags i = do
@@ -64,14 +65,14 @@ addNodeTrans gId xId = do
                         put (n, M.insert gId xId d)
 
 -- Get a node from the algebraic plan with a certain graphNode id number
-getNode :: Int -> XML Algebra
+getNode :: Int -> XML PFAlgebra
 getNode i = do
              (nodes, _, _) <- ask
              return $ nodes M.! i
 
 
 -- Run the monad and return a list of xml elements from the monad.
-runXML :: Bool -> M.Map AlgNode Algebra -> M.Map AlgNode [String] -> XML a -> [Element ()]
+runXML :: Bool -> M.Map AlgNode PFAlgebra -> M.Map AlgNode [String] -> XML a -> [Element ()]
 runXML debug m t = snd . fst . flip runState (0, M.empty) . flip runReaderT (m, t, debug) . runWriterT
 
 -- * Helper functions for constructing xml nodes
