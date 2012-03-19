@@ -1,1 +1,0 @@
-for x in [1,2,3,4] for y in [True, False] let z = 3 return if y then x + z else x

@@ -1,6 +1,0 @@
-let people = [{nationality = "DE", name = "Tom"}
-             ,{nationality = "FR", name = "Melanie"}
-             ,{nationality = "DE", name = "Torsten"}
-             ,{nationality = "IT", name = "Manuel"}
-             ,{nationality = "NL", name = "Jeroen"}]
- in groupBy2 (\p -> (p.name, p.nationality)) (\p -> p.nationality) people

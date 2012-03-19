@@ -1,5 +1,0 @@
-digraph g {
-ordering=out;n0[label="hello world!",fillcolor=yellow,style=filled,shape=triangle];
-n1[label=" =\> String",fillcolor=gray,style=filled,shape=record];
-n0 -> n1;
-}

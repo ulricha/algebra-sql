@@ -1,5 +1,0 @@
-for p in table Player (name String, team String) with keys ((name))
-for t in table Team (name String, fans Int) with keys ((name))
- where p.team == t.name
- group (t, p.name) by p.team into z
-return z

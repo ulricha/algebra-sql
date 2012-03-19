@@ -1,1 +1,0 @@
-for x in table Player (name String, team String) with keys ((name)) group by x.team return x

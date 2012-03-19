@@ -1,2 +1,0 @@
-#!/bin/sh
-./FerryCompiler/dist/build/ferryc/ferryc $*

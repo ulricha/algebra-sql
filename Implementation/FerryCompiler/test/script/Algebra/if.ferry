@@ -1,2 +1,0 @@
-let x = 5
- in if (x == 10) then 1 else 2

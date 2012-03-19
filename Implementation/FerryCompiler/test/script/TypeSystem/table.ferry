@@ -1,1 +1,0 @@
-table Player (name String, team String, injured Bool, eff Float, number Int) with keys ((name, team))

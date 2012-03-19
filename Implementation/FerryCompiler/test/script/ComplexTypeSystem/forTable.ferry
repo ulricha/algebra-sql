@@ -1,2 +1,0 @@
-for x in table Players (name String, id Int, base Bool) with keys ((id))
- return x.name

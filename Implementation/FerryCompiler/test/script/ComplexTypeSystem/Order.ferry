@@ -1,1 +1,0 @@
-for x in [4,3,2,1] where x%2 == 0 order by x ascending return x
