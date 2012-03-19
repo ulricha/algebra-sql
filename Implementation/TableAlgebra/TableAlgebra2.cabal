@@ -49,17 +49,15 @@ library
                       Database.Algebra.X100.Render.Common
                       Database.Algebra.X100.Data.Create
                       Database.Algebra.X100.Data.Algebra
-                      Database.Algebra.X100.Data.Utility
                       Database.Algebra.X100.Properties
-                      Database.Algebra.X100.Expr
+                      Database.Algebra.X100.ExprUtils
+                      Database.Algebra.X100.ProjectUtils
     hs-source-dirs:   src
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind 
     other-modules:    Database.Algebra.Pathfinder.Monadic.Create
                       Database.Algebra.Pathfinder.Data.Algebra
                       Database.Algebra.Pathfinder.Data.Create
                       Database.Algebra.Pathfinder.Render.XMLUtils
-                      Database.Algebra.X100.Data.Internal.OperatorArgs
-                      Database.Algebra.X100.Data.Internal.Operators
                       Database.Algebra.X100.Render.Sharing
                       Database.Algebra.X100.Properties.Schema
                       Database.Algebra.X100.Properties.Card1
