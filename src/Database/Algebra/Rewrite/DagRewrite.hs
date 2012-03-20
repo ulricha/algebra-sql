@@ -43,11 +43,10 @@ import Database.Algebra.Dag
   
 -- | Cache some topological information about the DAG.
 data Cache = Cache { cachedTopOrdering      :: Maybe [AlgNode]
-                   , cachedReachableNodes   :: Maybe (S.Set AlgNode)
                    } 
              
 emptyCache :: Cache
-emptyCache = Cache Nothing Nothing
+emptyCache = Cache Nothing 
                 
 
 data RewriteState a = RewriteState { nodeIDSupply   :: AlgNode       -- ^ Supply of fresh node ids
@@ -63,7 +62,7 @@ newtype DagRewrite a r = D (WriterT Log (State (RewriteState a)) r) deriving (Mo
 initRewriteState :: AlgebraDag a -> RewriteState a
 initRewriteState d =
     let maxID = fst $ M.findMax $ nodeMap d
-    in RewriteState { nodeIDSupply = maxID + 1, dag = d, cache = Cache Nothing Nothing }
+    in RewriteState { nodeIDSupply = maxID + 1, dag = d, cache = emptyCache }
                                                                
 -- | Run a rewrite action on the supplied graph. Returns the rewritten node map, the potentially
 -- modified list of root nodes, the result of the rewrite and the rewrite log.
@@ -116,7 +115,7 @@ topsortM =
       Nothing -> do
         let d = dag s
             ordering = topsort d
-        put $ s { cache = c { cachedTopOrdering = Just ordering } }
+        unwrapD $ putCache $ c { cachedTopOrdering = Just ordering }
         return ordering
  
 -- | Return the operator for a node id.
