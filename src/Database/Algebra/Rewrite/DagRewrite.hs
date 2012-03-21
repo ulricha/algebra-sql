@@ -3,32 +3,32 @@
 -- | This module provides a monadic interface to rewrites on algebra DAGs.
 module Database.Algebra.Rewrite.DagRewrite 
        (
-         -- * The Rewrite monad
+         -- ** The Rewrite monad
          DagRewrite
        , runRewrite
        , initRewriteState
        , dagM
-         -- * Rewrite logging
+         -- ** Rewrite logging
        , Log
        , logGeneralM
        , logRewriteM
-         -- * Query for topological information
+         -- ** Query for topological information
        , hasPathM
        , parentsM
        , topsortM
        , reachableNodesFromM
        , inferM
-         -- * Query for operator information
+         -- ** Query for operator information
        , operatorM
        , rootNodesM
-         -- * DAG modification
+         -- ** DAG modification
        , insertM
        , replaceChildM
        , relinkParentsM
        , relinkToNewM
        , replaceM
        , replaceRootM
-         -- * House cleaning
+         -- ** House cleaning
        , pruneUnusedM
        ) where
 
@@ -78,9 +78,9 @@ logGeneralM :: String -> DagRewrite a ()
 logGeneralM s = D $ tell $ Seq.singleton s
 
 -- | Log a rewrite
-logRewriteM :: Show s => String -> AlgNode -> s -> DagRewrite a ()
-logRewriteM rewrite node op = 
-  logGeneralM $ "Triggering rewrite " ++ rewrite ++ " at node " ++ (show node) ++ " with operator " ++ (show op)
+logRewriteM :: String -> AlgNode -> DagRewrite a ()
+logRewriteM rewrite node = 
+  logGeneralM $ "Triggering rewrite " ++ rewrite ++ " at node " ++ (show node)
            
   
 -- | hasPath a b returns 'True' iff there is a path from a to b in the DAG.

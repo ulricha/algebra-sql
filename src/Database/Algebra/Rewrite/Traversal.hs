@@ -13,7 +13,7 @@ import Database.Algebra.Rewrite.Rule
 preOrder :: Operator o => DagRewrite o (NodeMap p) -> RuleSet o p -> DagRewrite o Bool
 preOrder infer rules = 
   let traverse props q = do
-        changedSelf <- applyRuleSet q props rules
+        changedSelf <- applyRuleSet props rules q
         op <- operatorM q
         let cs = opChildren op
         changedChild <- mapM (\c -> traverse props c) cs
@@ -32,7 +32,7 @@ postOrder infer rules =
         op <- operatorM q
         let cs = opChildren op
         changedChild <- mapM (\c -> traverse props c) cs
-        changedSelf <- applyRuleSet q props rules
+        changedSelf <- applyRuleSet props rules q
         return $ changedSelf || (or changedChild)
   in do
     pm <- infer

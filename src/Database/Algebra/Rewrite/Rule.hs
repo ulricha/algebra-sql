@@ -13,8 +13,8 @@ type RuleSet o p = [Rule o p]
 
 -- | Try a set of rules on a node and apply the rewrite of the first
 -- rule that matches.
-applyRuleSet :: AlgNode -> NodeMap p -> RuleSet o p -> DagRewrite o Bool
-applyRuleSet q pm rules = do
+applyRuleSet :: NodeMap p -> RuleSet o p -> AlgNode -> DagRewrite o Bool
+applyRuleSet pm rules q = do
   d <- dagM
   
   let aux []     = return False

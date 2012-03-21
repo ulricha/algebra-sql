@@ -34,15 +34,10 @@ library
                       Database.Algebra.Dag.Builder
                       Database.Algebra.Dag.Common
 
+                      Database.Algebra.Rewrite
+
                       Database.Algebra.Pathfinder
                       Database.Algebra.Pathfinder.Render.XML
-
-                      Database.Algebra.Rewrite.DagRewrite
-                      Database.Algebra.Rewrite.PatternSyntax
-                      Database.Algebra.Rewrite.PatternConstruction
-                      Database.Algebra.Rewrite.Match
-                      Database.Algebra.Rewrite.Rule
-                      Database.Algebra.Rewrite.Traversal
 
                       Database.Algebra.X100.Normalize 
                       Database.Algebra.X100.Serialize
@@ -75,6 +70,14 @@ library
                       Database.Algebra.X100.Render.X100Code
                       Database.Algebra.Aux
                       Database.Algebra.Impossible
+
+                      Database.Algebra.Rewrite.DagRewrite
+                      Database.Algebra.Rewrite.PatternSyntax
+                      Database.Algebra.Rewrite.PatternConstruction
+                      Database.Algebra.Rewrite.Match
+                      Database.Algebra.Rewrite.Rule
+                      Database.Algebra.Rewrite.Traversal
+
 
 executable x100dot
     Main-is: Database/Algebra/X100/Tools/DotGen.hs
