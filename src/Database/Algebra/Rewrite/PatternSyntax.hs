@@ -1,6 +1,7 @@
 module Database.Algebra.Rewrite.PatternSyntax 
        ( Pattern
        , Op(..)
+       , Node(..)
        , Child(..)
        , Sem(..)
        , Ident
@@ -13,13 +14,17 @@ import Text.ParserCombinators.Parsec
 
 S -> Op
 
-Op    -> (Child) Uid Sem (Child)
-      |  Uid Sem (Child)
-      |  Uid Sem
+Node    -> (Child) Op Sem (Child)
+        |  Op Sem (Child)
+        |  Op Sem
+
+Op      -> Alternative
+        | Id @ Alternative
+        | Uid
 
 Child -> _
       |  Op
-      |  Ident = Op 
+      |  Id = Op 
 
 Sem   -> _
       |  Id
@@ -43,7 +48,7 @@ data Sem = NamedS Ident
          | WildS
          deriving (Show, Eq)
                   
-data Op = NamedOp [UIdent]
+data Op = NamedOp Ident [UIdent]
         | UnnamedOp [UIdent]
           deriving Show
              
@@ -56,44 +61,42 @@ pattern = node
           
 node :: Parser Node
 node = do { c1 <- enclosed child
-              ; space
-              ; ops <- operator
+          ; space
+          ; ops <- operator
+          ; space
+          ; info <- sem
+          ; space
+          ; c2 <- enclosed child 
+          ; return $ BinP ops info c1 c2 }
+       <|> try  (do { ops <- operator
+                    ; space
+                    ; info <- sem
+                    ; space
+                    ; c <- enclosed child
+                    ; return $ UnP ops info c })
+       <|> do { ops <- operator
               ; space
               ; info <- sem
-              ; space
-              ; c2 <- enclosed child 
-              ; return $ BinP ops info c1 c2 }
-           <|> try  (do { ops <- operator
-                        ; space
-                        ; info <- sem
-                        ; space
-                        ; c <- enclosed child
-                        ; return $ UnP ops info c })
-           <|> do { ops <- operator
-                  ; space
-                  ; info <- sem
-                  ; return $ NullP ops info }
+              ; return $ NullP ops info }
        
 altSep :: Parser ()
 altSep = space >> char '|' >> space >> return ()
          
 altOps :: Parser [UIdent]
-altOps = do { char '('
-           ; space
+altOps = do { char '['
            ; ops <- sepBy1 uident altSep
-           ; space
-           ; char ')'
+           ; char ']'
            ; return ops }
        
 operator :: Parser Op
-operator = do { name <- ident 
-              ; char '='
-              ; ops <- altOps
-              ; return $ NamedOp name ops }
+operator = try (do { ops <- altOps
+                   ; char '@'
+                   ; name <- ident
+                   ; return $ NamedOp name ops })
            <|> do { ops <- altOps
                   ; return $ UnnamedOp ops }
            <|> do { op <- uident
-                  ; return $ Single op }
+                  ; return $ UnnamedOp [op] }
   
 enclosed :: Parser a -> Parser a
 enclosed p = do
