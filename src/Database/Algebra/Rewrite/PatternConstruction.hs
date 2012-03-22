@@ -4,6 +4,7 @@ module Database.Algebra.Rewrite.PatternConstruction( pattern, v ) where
 
 import Language.Haskell.TH
 import Control.Monad.Writer
+import Data.Maybe
   
 import Database.Algebra.Rewrite.PatternSyntax
 
@@ -35,19 +36,21 @@ catchAllCase = match wildP (normalB (appE (varE failName) (litE (stringL "")))) 
          
 -- case op of ... -> return _ -> fail ""
 instMatchCase :: Name           -- ^ The name of the node constructor (BinOp, UnOp, NullOp)
-                 -> Name        -- ^ The name of the operator constructor
+                 -> [Name]      -- ^ The name of the operator constructors
                  -> Maybe (Q Pat, Name) -- ^ If the semantical pattern is not a wildcard: the name of the binding variable
                  -> [Q Pat]     -- ^ The list of patterns binding the node children
                  -> [Name]      -- ^ The list of variables for the children (may be empty)
+                 -> Bool        -- ^ Bind the operator name
                  -> Q Exp       -- ^ Returns the case expression
-instMatchCase nodeConstructor opConstructor semantics childPatterns childNames = 
-  caseE (varE opName) [opCase, catchAllCase]
-  where opCase = match opPattern opBody []
-        (semPat, semName) = case semantics of
-                              Just (p, n) -> (p, [n])
-                              Nothing     -> (wildP, [])
-        opPattern = conP nodeConstructor ((conP opConstructor [semPat]) : childPatterns)
-        opBody = normalB $ appE (varE (mkName "return")) (tupE $ map varE (semName ++ childNames))
+instMatchCase nodeConstructor opConstructors semantics childPatterns childNames bindOp = 
+  caseE (varE opName) ((map opAlternative opConstructors) ++ [catchAllCase])
+  where opAlternative opConstructor = match opPattern opBody []
+          where (semPat, semName) = case semantics of
+                  Just (p, n) -> (p, [n])
+                  Nothing     -> (wildP, [])
+                opPattern = conP nodeConstructor ((conP opConstructor [semPat]) : childPatterns)
+                opConstExp = if bindOp then [conE opConstructor] else []
+                opBody = normalB $ appE (varE (mkName "return")) (tupE $ opConstExp ++ (map varE (semName ++ childNames)))
         
 -- \op -> case op of...
 instMatchLambda :: Q Exp -> Q Exp
@@ -59,18 +62,18 @@ instMatchExp nodeName matchLambda =
   
                        
 -- (a, b, c) <- ...
-instBindingPattern :: Maybe (Q Pat) -> [Q Pat] -> Q Pat
-instBindingPattern mSemPat childPats =
-  case mSemPat of
-    Just semPat -> tupP $ semPat : childPats
-    Nothing     -> tupP childPats
+instBindingPattern :: Maybe (Q Pat) -> Maybe (Q Pat) -> [Q Pat] -> Q Pat
+instBindingPattern mOpConstPat mSemPat childPats = tupP patterns
+  where patterns = (maybeList mOpConstPat) ++ (maybeList mSemPat) ++ childPats
+        maybeList (Just x) = [x]
+        maybeList Nothing  = []
   
 -- (a, b, c) <- matchOp q (\op -> case op of ...)
-instStatement :: Maybe (Q Pat) -> [Q Pat] -> Q Exp -> Q Stmt
-instStatement mSemPat childPats matchExp =
+instStatement :: Maybe (Q Pat) -> Maybe (Q Pat) -> [Q Pat] -> Q Exp -> Q Stmt
+instStatement mOpConstPat mSemPat childPats matchExp =
   case (mSemPat, childPats) of
     (Nothing, []) -> noBindS matchExp
-    (_, _)        -> bindS (instBindingPattern mSemPat childPats) matchExp
+    (_, _)        -> bindS (instBindingPattern mOpConstPat mSemPat childPats) matchExp
   
 semPatternName :: Sem -> Maybe (Q Pat, Name)
 semPatternName WildS      = Nothing
@@ -78,45 +81,53 @@ semPatternName (NamedS s) = let name = mkName s in Just (varP name, name)
                                                    
 instStmtWrapper :: Name              -- ^ The name of the node on which to match
                    -> Name           -- ^ The name of the node constructor (BinOp, UnOp, NullOp)
-                   -> Name           -- ^ The name of the operator constructor
+                   -> [Name]         -- ^ The name of the operator constructors
+                   -> Maybe (Q Pat)  -- ^ The binding name for the operator constructor
                    -> Maybe (Q Pat, Name)  -- ^ Pattern binding the semantical information (or wildcard)
                    -> [Q Pat]        -- ^ The list of patterns binding the node children
                    -> [Name]         -- ^ The list of variables for the children (may be empty)
                    -> Q Stmt         -- ^ Returns the case expression
-instStmtWrapper nodeName nodeKind operName semantics childPats childNames =
-  let matchCase   = instMatchCase nodeKind operName semantics childPats childNames
+instStmtWrapper nodeName nodeKind operNames mOpConstPat semantics childPats childNames =
+  let matchCase   = instMatchCase nodeKind operNames semantics childPats childNames (isJust mOpConstPat)
       matchLambda = instMatchLambda matchCase
       matchExp    = instMatchExp nodeName matchLambda
-  in instStatement (fmap fst semantics) childPats matchExp
+  in instStatement mOpConstPat (fmap fst semantics) childPats matchExp
+     
+opInfo :: Op -> (Maybe (Q Pat), [Name])
+opInfo (NamedOp bindingName opNames) = (Just $ varP $ mkName bindingName, map mkName opNames)
+opInfo (UnnamedOp opNames) = (Nothing, map mkName opNames)
        
 -- generate a list of statements from an operator (tree)
-gen :: Name -> Op -> Code ()
-gen nodeName (NullP opString semBinding) = 
+gen :: Name -> Node -> Code ()
+gen nodeName (NullP op semBinding) = 
   let semantics = semPatternName semBinding
-      statement = instStmtWrapper nodeName nullOpName (mkName opString) semantics [] []
+      (mOpConstPat, opNames) = opInfo op
+      statement = instStmtWrapper nodeName nullOpName opNames mOpConstPat semantics [] []
   in emit statement
      
-gen nodeName (UnP opString semBinding child) = do
+gen nodeName (UnP op semBinding child) = do
   let semantics = semPatternName semBinding 
+      (mOpConstPat, opNames) = opInfo op
       
   name <- lift (childName child)
   
   let childPattern = map varP name
-      statement = instStmtWrapper nodeName unOpName (mkName opString) semantics childPattern name
+      statement = instStmtWrapper nodeName unOpName opNames mOpConstPat semantics childPattern name
   
   emit statement
   
   maybeDescend child name
                   
-gen nodeName (BinP opString semBinding child1 child2) = do
+gen nodeName (BinP op semBinding child1 child2) = do
   let semantics = semPatternName semBinding
+      (mOpConstPat, opNames) = opInfo op
   
   nameLeft   <- lift (childName child1)
   nameRight  <- lift (childName child2)
   
   let childNames = nameLeft ++ nameRight
       childPatterns = map varP childNames
-      statement = instStmtWrapper nodeName binOpName (mkName opString) semantics childPatterns childNames
+      statement = instStmtWrapper nodeName binOpName opNames mOpConstPat semantics childPatterns childNames
       
   emit statement
   
@@ -126,14 +137,14 @@ gen nodeName (BinP opString semBinding child1 child2) = do
 childName :: Child -> Q [Name]
 childName WildC          = return []
 childName (NameC s)      = return [mkName s]
-childName (OpC _)        = newName "child" >>= (\n -> return [n])
-childName (NamedOpC s _) = return [mkName s]
+childName (NodeC _)        = newName "child" >>= (\n -> return [n])
+childName (NamedNodeC s _) = return [mkName s]
                              
-recurse :: Child -> Maybe Op
+recurse :: Child -> Maybe Node
 recurse WildC           = Nothing
 recurse (NameC _)       = Nothing
-recurse (OpC o)         = Just o
-recurse (NamedOpC _ o ) = Just o
+recurse (NodeC o)         = Just o
+recurse (NamedNodeC _ o ) = Just o
                          
 maybeDescend :: Child -> [Name] -> Code ()                         
 maybeDescend c ns =
