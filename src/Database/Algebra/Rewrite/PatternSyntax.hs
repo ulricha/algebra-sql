@@ -26,49 +26,66 @@ Sem   -> _
 
 -}
 
-type Pattern = Op
+type Pattern = Node
 
-data Op = BinP UIdent Sem Child Child
-        | UnP UIdent Sem Child
-        | NullP UIdent Sem
+data Node = BinP Op Sem Child Child
+          | UnP Op Sem Child
+          | NullP Op Sem
           deriving Show
            
-data Child = OpC Op
+data Child = NodeC Node
            | WildC
            | NameC Ident
-           | NamedOpC Ident Op
+           | NamedNodeC Ident Node
            deriving Show
              
 data Sem = NamedS Ident
          | WildS
          deriving (Show, Eq)
+                  
+data Op = Single UIdent
+        | Alt [UIdent]
+          deriving Show
              
 type Ident = String
-
+             
 type UIdent = String
               
 pattern :: Parser Pattern
-pattern = operator
+pattern = node
           
-operator :: Parser Op
-operator = do { c1 <- enclosed child
+node :: Parser Node
+node = do { c1 <- enclosed child
               ; space
-              ; name <- uident
+              ; ops <- operator
               ; space
               ; info <- sem
               ; space
               ; c2 <- enclosed child 
-              ; return $ BinP name info c1 c2 }
-           <|> try  (do { name <- uident
+              ; return $ BinP ops info c1 c2 }
+           <|> try  (do { ops <- operator
                         ; space
                         ; info <- sem
                         ; space
                         ; c <- enclosed child
-                        ; return $ UnP name info c })
-           <|> do { name <- uident
+                        ; return $ UnP ops info c })
+           <|> do { ops <- operator
                   ; space
                   ; info <- sem
-                  ; return $ NullP name info }
+                  ; return $ NullP ops info }
+       
+altSep :: Parser ()
+altSep = space >> char '|' >> space >> return ()
+       
+operator :: Parser Op
+operator = do { char '(' 
+              ; space 
+              ; ops <- sepBy1 uident altSep 
+              ; space
+              ; char ')' 
+              ; return $ Alt ops } 
+           <|> do { op <- uident
+                  ; return $ Single op }
   
 enclosed :: Parser a -> Parser a
 enclosed p = do
@@ -90,12 +107,12 @@ ident = do
   return $ first : rest
 
 child :: Parser Child
-child = do { op <- operator; return $ OpC op }
+child = do { n <- node; return $ NodeC n }
         <|> do { wildcard; return WildC }
         <|> (try (do { name <- ident
                      ; char '='
-                     ; op <- operator 
-                     ; return $ NamedOpC name op }))
+                     ; n <- node 
+                     ; return $ NamedNodeC name n }))
         <|> do { name <- ident; return $ NameC name }
         
 wildcard :: Parser ()
@@ -112,5 +129,3 @@ parsePattern s =
   case parse pattern "" s of
     Left e -> error $ "Parsing failed: " ++ (show e)
     Right p -> p
-  
-    
