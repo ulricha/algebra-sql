@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Database.Algebra.Rewrite.PatternConstruction( m, v ) where
+module Database.Algebra.Rewrite.PatternConstruction( pattern, v ) where
 
 import Language.Haskell.TH
 import Control.Monad.Writer
@@ -161,8 +161,8 @@ assembleStatements patternStatements userExpr = do
 -- a string description of the pattern and the body of the match
 -- and return the complete match statement. The body has to be a quoted ([| ...|])
 -- do-block.
-m :: Q Exp -> String -> Q Exp -> Q Exp
-m rootExp patternString userExpr = do
+pattern :: Q Exp -> String -> Q Exp -> Q Exp
+pattern rootExp patternString userExpr = do
   
   re <- rootExp
   
@@ -170,9 +170,9 @@ m rootExp patternString userExpr = do
         VarE n -> n
         _      -> error "supplied root node is not a quoted variable"
   
-  let pattern = parsePattern patternString
+  let pat = parsePattern patternString
   
-  patternStatements <- execWriterT $ gen rootName pattern
+  patternStatements <- execWriterT $ gen rootName pat
   
   assembleStatements (mapM id patternStatements) userExpr
                           

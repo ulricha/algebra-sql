@@ -6,12 +6,13 @@ module Database.Algebra.Rewrite.Match
        , parents
        , predicate
        , predicateM
+       , try
        , notM
        , (<&&>)
        , (<||>)
        , properties
        , matchOp
-       , m
+       , pattern
        , v ) where
 
 import qualified Data.Map as M
@@ -20,7 +21,7 @@ import Control.Monad.Trans.Maybe
   
 import Database.Algebra.Dag.Common
 import qualified Database.Algebra.Dag as Dag
-import Database.Algebra.Rewrite.PatternConstruction(m, v)
+import Database.Algebra.Rewrite.PatternConstruction(pattern, v)
   
 data Env o p = Env { dag :: Dag.AlgebraDag o
                    , propMap :: NodeMap p }
@@ -50,6 +51,11 @@ predicateM match = do
   if b
     then return ()
     else fail ""
+  
+-- | Fails the complete match if the value is Nothing
+try :: Maybe a -> Match o p a
+try (Just x) = return x
+try Nothing  = fail ""
                     
 -- | Runs the supplied Match action on the operator that belongs to the given node.
 matchOp :: Dag.Operator o => AlgNode -> (o -> Match o p a) -> Match o p a
