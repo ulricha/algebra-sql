@@ -64,7 +64,7 @@ mkDag m rs = AlgebraDag { nodeMap = m, graph = g, rootNodes = rs }
 replaceRoot :: AlgebraDag a -> AlgNode -> AlgNode -> AlgebraDag a
 replaceRoot d old new = d { rootNodes = rs' }
   where rs' = map doReplace $ rootNodes d
-        doReplace r = if r == old then new else old
+        doReplace r = if r == old then new else r
         
 -- | Insert a new node into the DAG.
 insert :: Operator a => AlgNode -> a -> AlgebraDag a -> AlgebraDag a

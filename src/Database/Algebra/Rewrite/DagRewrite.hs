@@ -194,7 +194,11 @@ relinkParentsM old new = do
 relinkToNewM :: Operator a => AlgNode -> a -> DagRewrite a ()
 relinkToNewM oldNode newOp = do
   newNode <- insertM newOp
+  rs <- rootNodesM
   relinkParentsM oldNode newNode
+  if oldNode `elem` rs
+    then replaceRootM oldNode newNode
+    else return ()
   
 -- | Replaces the operator at the specified node id with a new operator.
 replaceM :: Operator a => AlgNode -> a -> DagRewrite a ()
@@ -221,7 +225,7 @@ replaceRootM :: AlgNode -> AlgNode -> DagRewrite a ()
 replaceRootM oldRoot newRoot = do
   D $ do 
     s <- get
-    if M.member newRoot $ nodeMap $ dag s
+    if not $ M.member newRoot $ nodeMap $ dag s
       then error "replaceRootM: new root node is not present in the DAG"
       else unwrapD $ putDag $ replaceRoot (dag s) oldRoot newRoot
   
