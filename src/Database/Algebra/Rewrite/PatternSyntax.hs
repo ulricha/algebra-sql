@@ -43,8 +43,8 @@ data Sem = NamedS Ident
          | WildS
          deriving (Show, Eq)
                   
-data Op = Single UIdent
-        | Alt [UIdent]
+data Op = NamedOp [UIdent]
+        | UnnamedOp [UIdent]
           deriving Show
              
 type Ident = String
@@ -76,14 +76,22 @@ node = do { c1 <- enclosed child
        
 altSep :: Parser ()
 altSep = space >> char '|' >> space >> return ()
+         
+altOps :: Parser [UIdent]
+altOps = do { char '('
+           ; space
+           ; ops <- sepBy1 uident altSep
+           ; space
+           ; char ')'
+           ; return ops }
        
 operator :: Parser Op
-operator = do { char '(' 
-              ; space 
-              ; ops <- sepBy1 uident altSep 
-              ; space
-              ; char ')' 
-              ; return $ Alt ops } 
+operator = do { name <- ident 
+              ; char '='
+              ; ops <- altOps
+              ; return $ NamedOp name ops }
+           <|> do { ops <- altOps
+                  ; return $ UnnamedOp ops }
            <|> do { op <- uident
                   ; return $ Single op }
   
