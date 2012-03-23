@@ -17,7 +17,7 @@ matchOp :: Name
 matchOp = mkName "matchOp"
           
 opName :: Name
-opName = mkName "op"
+opName = mkName "op__internal"
 
 binOpName :: Name
 binOpName = mkName "BinOp"
