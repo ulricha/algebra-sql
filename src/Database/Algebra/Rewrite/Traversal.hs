@@ -41,11 +41,12 @@ postOrder infer rules =
     return $ or changed
   
 -- | Iteratively apply a rewrite, until no further changes occur.
-iteratively :: DagRewrite o Bool -> DagRewrite o ()
-iteratively rewrite = do
-  changed <- rewrite
-  if changed
-    then iteratively rewrite
-    else return ()
+iteratively :: DagRewrite o Bool -> DagRewrite o Bool
+iteratively rewrite = aux False
+  where aux b = do
+          changed <- rewrite
+          if changed
+            then logGeneralM ">>> Iterate" >> aux True
+            else return b
   
   
