@@ -29,7 +29,17 @@ Build-Type:     Simple
 
 library
     buildable:        True
-    build-depends:    base >= 4.2 && < 5,  HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, fgl, transformers, parsec
+    build-depends:    base >= 4.2 && < 5,  
+                      HaXml >= 1.22, 
+                      mtl >= 2.0.1.0, 
+                      containers >= 0.3.0.0, 
+                      template-haskell >= 2.4.0.0, 
+                      pretty >= 1.0.1.1, 
+                      fgl >= 5.4, 
+                      transformers >= 0.2, 
+                      parsec >= 3.1,
+                      aeson >= 0.6,
+                      ghc-prim >= 0.2
     exposed-modules:  Database.Algebra.Dag
                       Database.Algebra.Dag.Builder
                       Database.Algebra.Dag.Common
@@ -41,6 +51,7 @@ library
 
                       Database.Algebra.X100.Normalize 
                       Database.Algebra.X100.Serialize
+                      Database.Algebra.X100.JSON
                       Database.Algebra.X100.Render
                       Database.Algebra.X100.Render.Common
                       Database.Algebra.X100.Data
