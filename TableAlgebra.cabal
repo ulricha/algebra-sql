@@ -39,7 +39,8 @@ library
                       transformers >= 0.2, 
                       parsec >= 3.1,
                       aeson >= 0.6,
-                      ghc-prim >= 0.2
+                      ghc-prim >= 0.2,
+                      bytestring >= 0.9
     exposed-modules:  Database.Algebra.Dag
                       Database.Algebra.Dag.Builder
                       Database.Algebra.Dag.Common
@@ -94,10 +95,28 @@ executable x100dot
     Main-is: Database/Algebra/X100/Tools/DotGen.hs
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -Werror
     hs-source-dirs:   src
-    build-depends:    base >= 4.2 && < 5, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, fgl
+    build-depends:    base >= 4.2 && < 5, 
+                      aeson >= 0.6, 
+                      HaXml >= 1.22, 
+                      mtl >= 2.0.1.0, 
+                      containers >= 0.3.0.0, 
+                      template-haskell >= 2.4.0.0, 
+                      pretty >= 1.0.1.1, 
+                      fgl, 
+                      ghc-prim >= 0.2,
+                      bytestring >= 0.9
 
 executable x100gen
     Main-is: Database/Algebra/X100/Tools/CodeGen.hs
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -Werror
     hs-source-dirs:   src
-    build-depends:    base >= 4.2 && < 5, HaXml >= 1.22, mtl >= 2.0.1.0, containers >= 0.3.0.0, template-haskell >= 2.4.0.0, pretty >= 1.0.1.1, fgl
+    build-depends:    base >= 4.2 && < 5, 
+                      aeson >= 0.6, 
+                      HaXml >= 1.22, 
+                      mtl >= 2.0.1.0, 
+                      containers >= 0.3.0.0, 
+                      template-haskell >= 2.4.0.0, 
+                      pretty >= 1.0.1.1, 
+                      fgl, 
+                      ghc-prim >= 0.2,
+                      bytestring >= 0.9

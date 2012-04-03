@@ -1,6 +1,8 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Database.Algebra.Dag.Common where
 
 import qualified Data.Map as M
+import GHC.Generics (Generic)
 
 -- | Identifiers for DAG nodes.
 type AlgNode = Int 
@@ -14,5 +16,5 @@ type Tag = String
 data Algebra b u n c = BinOp b c c
                      | UnOp u c
                      | NullaryOp n
-                       deriving (Ord, Eq, Show, Read)
+                       deriving (Ord, Eq, Show, Read, Generic)
 
