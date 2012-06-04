@@ -1,6 +1,7 @@
 module Database.Algebra.Rewrite.Traversal
        ( preOrder
        , postOrder
+       , topologically
        , iteratively ) where
 
 import Control.Monad
@@ -11,7 +12,7 @@ import Database.Algebra.Rewrite.DagRewrite
 import Database.Algebra.Rewrite.Rule
 
 -- | Infer properties, then traverse the DAG in preorder fashion and apply the rule set 
--- at every node.
+-- at every node. Properties are re-inferred after every change.
 preOrder :: Operator o => DagRewrite o (NodeMap p) -> RuleSet o p -> DagRewrite o Bool
 preOrder infer rules = 
   let traverse (changedPrev, mProps) q = do
@@ -40,9 +41,22 @@ preOrder infer rules =
     rs <- rootNodesM
     (changed, _) <- foldM traverse (False, Just pm) rs
     return changed
-           
+
+{- | Map a ruleset over the nodes of a DAG in topological order. This function assumes that
+     the structur of the DAG is not changed during the rewrites. Properties are only inferred
+     once.
+-}
+topologically :: Operator o => DagRewrite o (NodeMap p) -> RuleSet o p -> DagRewrite o Bool
+topologically infer rules = do
+  topoOrdering <- topsortM
+  props <- infer
+  let rewriteNode changedPrev q = do
+        changed <- applyRuleSet props rules q
+        return $ changed || changedPrev
+  foldM rewriteNode False topoOrdering where
+
 -- | Infer properties, then traverse the DAG in a postorder fashion and apply the rule set at
--- every node.
+-- every node. Properties are re-inferred after every change.
 postOrder :: Operator o => DagRewrite o (NodeMap p) -> RuleSet o p -> DagRewrite o Bool
 postOrder infer rules = 
   let traverse (changedPrev, props) q = do
