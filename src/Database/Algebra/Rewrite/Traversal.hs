@@ -2,7 +2,8 @@ module Database.Algebra.Rewrite.Traversal
        ( preOrder
        , postOrder
        , topologically
-       , iteratively ) where
+       , iteratively
+       , sequenceRewrites ) where
 
 import Control.Monad
 
@@ -93,4 +94,10 @@ iteratively rewrite = aux False
             then logGeneralM ">>> Iterate" >> aux True
             else return b
   
+-- | Sequence a list of rewrites and propagate information about
+-- wether one of them applied.
+sequenceRewrites :: [DagRewrite o Bool] -> DagRewrite o Bool
+sequenceRewrites rewrites = do
+  changed <- sequence rewrites
+  return $ or changed
   
