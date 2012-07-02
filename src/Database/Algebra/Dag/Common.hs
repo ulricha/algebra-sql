@@ -12,9 +12,10 @@ type NodeMap a = M.Map AlgNode a
 
 type Tag = String
 
--- | Binary, unary and leaf nodes of a relational algebra DAG.
-data Algebra b u n c = BinOp b c c
-                     | UnOp u c
-                     | NullaryOp n
-                       deriving (Ord, Eq, Show, Read, Generic)
+-- | Tertiary, Binary, unary and leaf nodes of a relational algebra DAG.
+data Algebra t b u n c = TerOp t c c c
+                       | BinOp b c c
+                       | UnOp u c
+                       | NullaryOp n
+                         deriving (Ord, Eq, Show, Read, Generic)
 
