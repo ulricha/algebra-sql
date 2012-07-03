@@ -44,6 +44,7 @@ library
     exposed-modules:  Database.Algebra.Dag
                       Database.Algebra.Dag.Builder
                       Database.Algebra.Dag.Common
+                      Database.Algebra.Aux
 
                       Database.Algebra.Rewrite
 
@@ -80,7 +81,6 @@ library
                       Database.Algebra.X100.Properties.TopDown
                       Database.Algebra.X100.Render.Dot
                       Database.Algebra.X100.Render.X100Code
-                      Database.Algebra.Aux
                       Database.Algebra.Impossible
 
                       Database.Algebra.Rewrite.DagRewrite
