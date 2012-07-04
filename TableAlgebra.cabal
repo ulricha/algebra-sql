@@ -108,6 +108,7 @@ executable x100dot
 
 executable x100gen
     Main-is: Database/Algebra/X100/Tools/CodeGen.hs
+--    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -Werror -prof -fprof-auto -fprof-auto-calls
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -Werror
     hs-source-dirs:   src
     build-depends:    base >= 4.2 && < 5, 
