@@ -13,13 +13,13 @@ instance ToJSON TerOp where
 instance ToJSON BinOp where
 instance ToJSON UnOp where
 instance ToJSON NullOp where
-instance ToJSON PVal where
+instance ToJSON VLVal where
 instance ToJSON VLType where
 instance ToJSON VecOp where
 instance (ToJSON t, ToJSON b, ToJSON u, ToJSON n, ToJSON c) => ToJSON (Algebra t b u n c) where
     
-serialiseDag :: [AlgNode] -> NodeMap VL -> String
-serialiseDag rootNodes nodeMap = BL.unpack $ encode (rootNodes, M.toList nodeMap)
+renderVLJSON :: NodeMap [Tag] -> [AlgNode] -> NodeMap VL -> String
+renderVLJSON ts rootNodes nodeMap = BL.unpack $ encode (M.toList ts, rootNodes, M.toList nodeMap)
 
 
 

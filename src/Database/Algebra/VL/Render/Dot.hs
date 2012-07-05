@@ -24,20 +24,20 @@ lookupTags n m = Map.findWithDefault [] n m
 renderColumnType :: VLType -> Doc
 renderColumnType = text . show
 
-renderData :: [[PVal]] -> Doc
+renderData :: [[VLVal]] -> Doc
 renderData [] = empty
 renderData xs = (flip (<>) semi . sep . punctuate semi . map renderRow) xs 
 
-renderRow :: [PVal] -> Doc
+renderRow :: [VLVal] -> Doc
 renderRow = hcat . punctuate comma . map renderTblVal
 
-renderTblVal :: PVal -> Doc
-renderTblVal (PInt i) = integer $ fromIntegral i
-renderTblVal (PNat i) = integer $ fromIntegral i
-renderTblVal (PBool b) = text $ show b
-renderTblVal (PString s) = doubleQuotes $ text $ escape s
-renderTblVal (PDouble d) = double d
-renderTblVal PUnit = text "()"
+renderTblVal :: VLVal -> Doc
+renderTblVal (VLInt i) = integer $ fromIntegral i
+renderTblVal (VLNat i) = integer $ fromIntegral i
+renderTblVal (VLBool b) = text $ show b
+renderTblVal (VLString s) = doubleQuotes $ text $ escape s
+renderTblVal (VLDouble d) = double d
+renderTblVal VLUnit = text "()"
 
 escape :: String -> String
 escape (x@'\\':xs) = '\\':'\\':'\\':x:escape xs

@@ -49,17 +49,17 @@ instance Show VecOp where
     show Conj = "&&"
     show Disj = "||"
 
-data PVal = PInt Int
-          | PNat Int
-          | PBool Bool
-          | PString String
-          | PDouble Double
-          | PUnit
-          deriving (Eq, Ord, Generic)
+data VLVal = VLInt Int
+           | VLNat Int
+           | VLBool Bool
+           | VLString String
+           | VLDouble Double
+           | VLUnit
+           deriving (Eq, Ord, Generic)
 
 data NullOp = SingletonDescr
-            | ConstructLiteralValue [VLType] [PVal]
-            | ConstructLiteralTable [VLType] [[PVal]]
+            | ConstructLiteralValue [VLType] [VLVal]
+            | ConstructLiteralTable [VLType] [[VLVal]]
             | TableRef String [TypedColumn] [Key]
             deriving (Eq, Ord, Generic)
 
