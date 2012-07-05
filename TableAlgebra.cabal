@@ -51,6 +51,10 @@ library
                       Database.Algebra.Pathfinder
                       Database.Algebra.Pathfinder.Render.XML
 
+                      Database.Algebra.VL.Data
+                      Database.Algebra.VL.Render.Dot
+                      Database.Algebra.VL.Render.JSON
+
                       Database.Algebra.X100.Normalize 
                       Database.Algebra.X100.Serialize
                       Database.Algebra.X100.JSON

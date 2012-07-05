@@ -12,7 +12,7 @@ type VL = Algebra TerOp BinOp UnOp NullOp AlgNode
 data VLType = Nat | Int | Bool |  Double
             | String | Unit
             | Pair VLType VLType | VLList VLType
-            deriving (Eq, Ord)
+            deriving (Eq, Ord, Generic, Show)
 
 type DataColumn = String 
 type TypedColumn = (DataColumn, VLType)
@@ -49,20 +49,19 @@ instance Show VecOp where
     show Conj = "&&"
     show Disj = "||"
 
-
 data PVal = PInt Int
           | PNat Int
           | PBool Bool
           | PString String
           | PDouble Double
           | PUnit
-          deriving (Eq, Ord)
+          deriving (Eq, Ord, Generic)
 
 data NullOp = SingletonDescr
             | ConstructLiteralValue [VLType] [PVal]
             | ConstructLiteralTable [VLType] [[PVal]]
             | TableRef String [TypedColumn] [Key]
-            deriving (Eq, Ord)
+            deriving (Eq, Ord, Generic)
 
 data UnOp = Unique
           | UniqueL
@@ -87,7 +86,7 @@ data UnOp = Unique
           | R1 
           | R2
           | R3
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Generic)
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | SortWith   -- (DBV, PropVector)
@@ -108,10 +107,10 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | PairA
            | PairL
            | ZipL       -- (DBV, RenameVector, RenameVector)
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Generic)
     
 data TerOp = CombineVec  -- (DBV, RenameVector, RenameVector)
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Generic)
 
 instance Operator VL where
     opChildren (TerOp _ c1 c2 c3) = [c1, c2, c3]
