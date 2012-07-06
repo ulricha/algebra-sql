@@ -33,9 +33,10 @@ Sem   -> _
 
 type Pattern = Node
 
-data Node = BinP Op Sem Child Child
-          | UnP Op Sem Child
-          | NullP Op Sem
+data Node = TerP Op (Maybe Sem) Child Child Child
+          | BinP Op (Maybe Sem) Child Child
+          | UnP Op (Maybe Sem) Child
+          | NullP Op (Maybe Sem)
           deriving Show
            
 data Child = NodeC Node
@@ -64,19 +65,26 @@ node = do { c1 <- enclosed child
           ; space
           ; ops <- operator
           ; space
-          ; info <- sem
-          ; space
+          ; info <- optionMaybe sem
           ; c2 <- enclosed child 
           ; return $ BinP ops info c1 c2 }
+       <|> try ( do { ops <- operator
+                    ; space
+                    ; info <- optionMaybe sem
+                    ; c1 <- enclosed child
+                    ; space
+                    ; c2 <- enclosed child
+                    ; space
+                    ; c3 <- enclosed child
+                    ; return $ TerP ops info c1 c2 c3 })
        <|> try  (do { ops <- operator
                     ; space
-                    ; info <- sem
-                    ; space
+                    ; info <- optionMaybe sem
                     ; c <- enclosed child
                     ; return $ UnP ops info c })
        <|> do { ops <- operator
               ; space
-              ; info <- sem
+              ; info <- optionMaybe sem
               ; return $ NullP ops info }
        
 altSep :: Parser ()
@@ -132,8 +140,8 @@ wildcard = do
   return ()
            
 sem :: Parser Sem
-sem = (ident >>= (return . NamedS))
-      <|> (wildcard >> (return WildS))
+sem = do { s <- ident; space; return $ NamedS s }
+      <|> do { wildcard; space; return $ WildS }
       
 parsePattern :: String -> Pattern
 parsePattern s = 
