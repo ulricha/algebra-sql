@@ -55,13 +55,13 @@ data VLVal = VLInt Int
            | VLString String
            | VLDouble Double
            | VLUnit
-           deriving (Eq, Ord, Generic)
+           deriving (Eq, Ord, Generic, Show)
 
 data NullOp = SingletonDescr
             | ConstructLiteralValue [VLType] [VLVal]
             | ConstructLiteralTable [VLType] [[VLVal]]
             | TableRef String [TypedColumn] [Key]
-            deriving (Eq, Ord, Generic)
+            deriving (Eq, Ord, Generic, Show)
 
 data UnOp = Unique
           | UniqueL
@@ -86,7 +86,7 @@ data UnOp = Unique
           | R1 
           | R2
           | R3
-    deriving (Eq, Ord, Generic)
+    deriving (Eq, Ord, Generic, Show)
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | SortWith   -- (DBV, PropVector)
@@ -107,10 +107,10 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | PairA
            | PairL
            | ZipL       -- (DBV, RenameVector, RenameVector)
-    deriving (Eq, Ord, Generic)
+    deriving (Eq, Ord, Generic, Show)
     
 data TerOp = CombineVec  -- (DBV, RenameVector, RenameVector)
-    deriving (Eq, Ord, Generic)
+    deriving (Eq, Ord, Generic, Show)
 
 instance Operator VL where
     opChildren (TerOp _ c1 c2 c3) = [c1, c2, c3]
