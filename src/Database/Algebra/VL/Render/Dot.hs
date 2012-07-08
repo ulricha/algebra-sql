@@ -67,13 +67,13 @@ renderTableKey [] = text "NOKEY"
 opDotLabel :: NodeMap [Tag] -> AlgNode -> VL -> Doc
 opDotLabel tm i (NullaryOp (SingletonDescr)) = labelToDoc i "SingletonDescr" empty (lookupTags i tm)
 opDotLabel tm i (NullaryOp (ConstructLiteralValue tys vals)) = labelToDoc i "ConstructLiteralValue" 
-    (bracketList renderColumnType tys <> comma
+    (bracketList (\t -> renderColumnType t <> text "\n") tys <> comma
     $$ renderData [vals]) (lookupTags i tm)
 opDotLabel tm i (NullaryOp (ConstructLiteralTable tys vals)) = labelToDoc i "ConstructLiteralValue" 
         (bracketList renderColumnType tys <> comma
         $$ renderData vals) (lookupTags i tm)
 opDotLabel tm i (NullaryOp (TableRef n tys ks)) = labelToDoc i "TableRef"
-        (quotes (text n) <> comma <+> bracketList renderTableType tys <> comma $$ renderTableKeys ks)
+        (quotes (text n) <> comma <+> bracketList (\t -> renderTableType t <> text "\n") tys <> comma $$ renderTableKeys ks)
         (lookupTags i tm)
 opDotLabel tm i (UnOp Unique _) = labelToDoc i "Unique" empty (lookupTags i tm)        
 opDotLabel tm i (UnOp UniqueL _) = labelToDoc i "UniqueL" empty (lookupTags i tm)
