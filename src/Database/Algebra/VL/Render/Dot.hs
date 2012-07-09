@@ -61,7 +61,10 @@ renderTableKey :: Key -> Doc
 renderTableKey [x] = text x
 renderTableKey (x:xs) = text x <> comma <+> renderTableKey xs
 renderTableKey [] = text "NOKEY"
-
+                    
+renderProjection :: (Int, Projection) -> Doc
+renderProjection (i, Map j) = int i <> colon <> int j
+renderProjection (i, Number) = int i <> colon <> text "#"
 
 -- create the node label from an operator description
 opDotLabel :: NodeMap [Tag] -> AlgNode -> VL -> Doc
@@ -98,6 +101,7 @@ opDotLabel tm i (UnOp FalsePositions _) = labelToDoc i "FalsePositions" empty (l
 opDotLabel tm i (UnOp R1 _) = labelToDoc i "R1" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R2 _) = labelToDoc i "R2" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R3 _) = labelToDoc i "R3" empty (lookupTags i tm)
+opDotLabel tm i (UnOp (ProjectGen ps) _) = labelToDoc i "ProjectGen" (bracketList renderProjection $ zip [1..] ps) (lookupTags i tm)
 opDotLabel tm i (BinOp GroupBy _ _) = labelToDoc i "GroupBy" empty (lookupTags i tm)
 opDotLabel tm i (BinOp SortWith _ _) = labelToDoc i "SortWith" empty (lookupTags i tm)
 opDotLabel tm i (BinOp LengthSeg _ _) = labelToDoc i "LengthSeg" empty (lookupTags i tm)

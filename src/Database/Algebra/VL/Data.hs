@@ -90,6 +90,7 @@ data UnOp = Unique
           | R1 
           | R2
           | R3
+          | ProjectGen [Projection]
     deriving (Eq, Ord, Generic, Show)
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)

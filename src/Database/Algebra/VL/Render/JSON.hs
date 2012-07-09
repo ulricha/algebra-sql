@@ -19,6 +19,7 @@ instance ToJSON NullOp where
 instance ToJSON VLVal where
 instance ToJSON VLType where
 instance ToJSON VecOp where
+instance ToJSON Projection where
 instance (ToJSON t, ToJSON b, ToJSON u, ToJSON n, ToJSON c) => ToJSON (Algebra t b u n c) where
     
 instance FromJSON TerOp where
@@ -28,6 +29,7 @@ instance FromJSON NullOp where
 instance FromJSON VLVal where
 instance FromJSON VLType where
 instance FromJSON VecOp where
+instance FromJSON Projection where
 instance (FromJSON t, FromJSON b, FromJSON u, FromJSON n, FromJSON c) => FromJSON (Algebra t b u n c) where
 
 instance ToJSON Plan where
