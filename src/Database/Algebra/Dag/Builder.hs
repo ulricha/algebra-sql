@@ -34,7 +34,7 @@ type AlgPlan alg res = (AlgMap alg, res, NodeMap [Tag])
 
 -- | Evaluate the monadic graph into an algebraic plan, given a loop relation.
 
-runGraph :: alg -> GraphM res alg res -> AlgPlan alg res
+runGraph :: alg -> GraphM r alg res -> AlgPlan alg res
 runGraph l =  constructAlgPlan . flip runState initialBuildState . flip runReaderT ([], 1)
   where initialBuildState = BuildState { supply = 2, algMap = M.singleton l 1, tags = M.empty }
         constructAlgPlan (r, s) = (algMap s, r, tags s)
