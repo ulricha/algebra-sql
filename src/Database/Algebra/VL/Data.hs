@@ -48,6 +48,10 @@ instance Show VecOp where
     show Cons = ":"
     show Conj = "&&"
     show Disj = "||"
+    
+data Projection = Number
+                | Map Int
+                deriving (Eq, Ord, Generic, Show)
 
 data VLVal = VLInt Int
            | VLNat Int
@@ -107,6 +111,7 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | PairA
            | PairL
            | ZipL       -- (DBV, RenameVector, RenameVector)
+           | CartProduct -- DBV
     deriving (Eq, Ord, Generic, Show)
     
 data TerOp = CombineVec  -- (DBV, RenameVector, RenameVector)
