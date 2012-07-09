@@ -19,6 +19,9 @@ matchOp = mkName "matchOp"
 opName :: Name
 opName = mkName "op__internal"
 
+terOpName :: Name
+terOpName = mkName "TerOp"
+         
 binOpName :: Name
 binOpName = mkName "BinOp"
 
@@ -33,11 +36,15 @@ failName = mkName "fail"
          
 catchAllCase :: Q Match
 catchAllCase = match wildP (normalB (appE (varE failName) (litE (stringL "")))) []
+               
+data SemPattern = Bind (Q Pat, Name)
+                | NoBind
+                | NoSemantics
          
 -- case op of ... -> return _ -> fail ""
 instMatchCase :: Name           -- ^ The name of the node constructor (BinOp, UnOp, NullOp)
                  -> [Name]      -- ^ The name of the operator constructors
-                 -> Maybe (Q Pat, Name) -- ^ If the semantical pattern is not a wildcard: the name of the binding variable
+                 -> SemPattern -- ^ If the semantical pattern is not a wildcard: the name of the binding variable
                  -> [Q Pat]     -- ^ The list of patterns binding the node children
                  -> [Name]      -- ^ The list of variables for the children (may be empty)
                  -> Bool        -- ^ Bind the operator name
@@ -46,9 +53,10 @@ instMatchCase nodeConstructor opConstructors semantics childPatterns childNames 
   caseE (varE opName) ((map opAlternative opConstructors) ++ [catchAllCase])
   where opAlternative opConstructor = match opPattern opBody []
           where (semPat, semName) = case semantics of
-                  Just (p, n) -> (p, [n])
-                  Nothing     -> (wildP, [])
-                opPattern = conP nodeConstructor ((conP opConstructor [semPat]) : childPatterns)
+                  Bind (p, n) -> ([p], [n])
+                  NoBind      -> ([wildP], [])
+                  NoSemantics -> ([], [])
+                opPattern = conP nodeConstructor ((conP opConstructor semPat) : childPatterns)
                 opConstExp = if bindOp then [conE opConstructor] else []
                 opBody = normalB $ appE (varE (mkName "return")) (tupE $ opConstExp ++ (map varE (semName ++ childNames)))
         
@@ -62,28 +70,34 @@ instMatchExp nodeName matchLambda =
   
                        
 -- (a, b, c) <- ...
-instBindingPattern :: Maybe (Q Pat) -> Maybe (Q Pat) -> [Q Pat] -> Q Pat
-instBindingPattern mOpConstPat mSemPat childPats = tupP patterns
-  where patterns = (maybeList mOpConstPat) ++ (maybeList mSemPat) ++ childPats
+instBindingPattern :: Maybe (Q Pat) -> SemPattern -> [Q Pat] -> Q Pat
+instBindingPattern mOpConstPat semPat childPats = tupP patterns
+  where patterns = (maybeList mOpConstPat) ++ (semList semPat) ++ childPats
         maybeList (Just x) = [x]
         maybeList Nothing  = []
+        
+        semList (Bind (pat, _)) = [pat]
+        semList NoBind         = []
+        semList NoSemantics    = []
   
 -- (a, b, c) <- matchOp q (\op -> case op of ...)
-instStatement :: Maybe (Q Pat) -> Maybe (Q Pat) -> [Q Pat] -> Q Exp -> Q Stmt
-instStatement mOpConstPat mSemPat childPats matchExp =
-  case (mSemPat, childPats) of
-    (Nothing, []) -> noBindS matchExp
-    (_, _)        -> bindS (instBindingPattern mOpConstPat mSemPat childPats) matchExp
+instStatement :: Maybe (Q Pat) -> SemPattern -> [Q Pat] -> Q Exp -> Q Stmt
+instStatement mOpConstPat semPat childPats matchExp =
+  case (semPat, childPats) of
+    (NoBind, [])      -> noBindS matchExp
+    (NoSemantics, []) -> noBindS matchExp
+    (_, _)            -> bindS (instBindingPattern mOpConstPat semPat childPats) matchExp
   
-semPatternName :: Sem -> Maybe (Q Pat, Name)
-semPatternName WildS      = Nothing
-semPatternName (NamedS s) = let name = mkName s in Just (varP name, name)
+semPatternName :: Maybe Sem -> SemPattern
+semPatternName (Just WildS)      = NoBind
+semPatternName (Just (NamedS s)) = let name = mkName s in Bind (varP name, name)
+semPatternName Nothing           = NoSemantics
                                                    
 instStmtWrapper :: Name              -- ^ The name of the node on which to match
                    -> Name           -- ^ The name of the node constructor (BinOp, UnOp, NullOp)
                    -> [Name]         -- ^ The name of the operator constructors
                    -> Maybe (Q Pat)  -- ^ The binding name for the operator constructor
-                   -> Maybe (Q Pat, Name)  -- ^ Pattern binding the semantical information (or wildcard)
+                   -> SemPattern     -- ^ Pattern binding the semantical information (or wildcard)
                    -> [Q Pat]        -- ^ The list of patterns binding the node children
                    -> [Name]         -- ^ The list of variables for the children (may be empty)
                    -> Q Stmt         -- ^ Returns the case expression
@@ -91,7 +105,7 @@ instStmtWrapper nodeName nodeKind operNames mOpConstPat semantics childPats chil
   let matchCase   = instMatchCase nodeKind operNames semantics childPats childNames (isJust mOpConstPat)
       matchLambda = instMatchLambda matchCase
       matchExp    = instMatchExp nodeName matchLambda
-  in instStatement mOpConstPat (fmap fst semantics) childPats matchExp
+  in instStatement mOpConstPat semantics childPats matchExp
      
 opInfo :: Op -> (Maybe (Q Pat), [Name])
 opInfo (NamedOp bindingName opNames) = (Just $ varP $ mkName bindingName, map mkName opNames)
@@ -133,6 +147,24 @@ gen nodeName (BinP op semBinding child1 child2) = do
   
   maybeDescend child1 nameLeft
   maybeDescend child2 nameRight
+  
+gen nodeName (TerP op semBinding child1 child2 child3) = do
+  let semantics = semPatternName semBinding
+      (mOpConstPat, opNames) = opInfo op
+      
+  name1 <- lift (childName child1)
+  name2 <- lift (childName child2)
+  name3 <- lift (childName child3)
+  
+  let childNames = name1 ++ name2 ++ name3
+      childPatterns = map varP childNames
+      statement = instStmtWrapper nodeName terOpName opNames mOpConstPat semantics childPatterns childNames
+      
+  emit statement
+  
+  maybeDescend child1 name1
+  maybeDescend child2 name2
+  maybeDescend child3 name3
   
 childName :: Child -> Q [Name]
 childName WildC          = return []
