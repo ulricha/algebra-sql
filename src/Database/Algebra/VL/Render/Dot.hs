@@ -105,8 +105,8 @@ opDotLabel tm i (UnOp FalsePositions _) = labelToDoc i "FalsePositions" empty (l
 opDotLabel tm i (UnOp R1 _) = labelToDoc i "R1" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R2 _) = labelToDoc i "R2" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R3 _) = labelToDoc i "R3" empty (lookupTags i tm)
-opDotLabel tm i (UnOp (ProjectGenRename p1 p2) _) = 
-  labelToDoc i "ProjectGenRename" pLabel (lookupTags i tm)
+opDotLabel tm i (UnOp (ProjectRename p1 p2) _) = 
+  labelToDoc i "ProjectRename" pLabel (lookupTags i tm)
   where pLabel = parens $ (renderProjection (text "posnew", p1)) <> comma <+> (renderProjection (text "posold", p2))
 opDotLabel tm i (UnOp Select _) = labelToDoc i "Select" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Only _) = labelToDoc i "Only" empty (lookupTags i tm)

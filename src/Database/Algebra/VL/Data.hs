@@ -94,7 +94,7 @@ data UnOp = Unique
           | R1 
           | R2
           | R3
-          | ProjectGenRename Projection Projection
+          | ProjectRename Projection Projection
           | Select
           | Only
           | Singleton
