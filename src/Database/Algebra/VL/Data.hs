@@ -51,10 +51,10 @@ instance Show VecOp where
     
 data Projection = Number
                 | Payload Int
-                | Descr
-                | Pos
-                | PosNew
-                | PosOld
+                | DescrCol
+                | PosCol
+                | PosNewCol
+                | PosOldCol
                 deriving (Eq, Ord, Generic, Show)
 
 data VLVal = VLInt Int

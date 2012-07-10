@@ -65,10 +65,10 @@ renderTableKey [] = text "NOKEY"
 renderProjection :: (Doc, Projection) -> Doc
 renderProjection (d, Payload j) = d <> colon <> int j
 renderProjection (d, Number) = d <> colon <> text "#"
-renderProjection (d, Descr) = d <> colon <> text "descr"
-renderProjection (d, Pos) = d <> colon <> text "pos"
-renderProjection (d, PosOld) = d <> colon <> text "posold"
-renderProjection (d, PosNew) = d <> colon <> text "posnew"
+renderProjection (d, DescrCol) = d <> colon <> text "descr"
+renderProjection (d, PosCol) = d <> colon <> text "pos"
+renderProjection (d, PosOldCol) = d <> colon <> text "posold"
+renderProjection (d, PosNewCol) = d <> colon <> text "posnew"
 
 -- create the node label from an operator description
 opDotLabel :: NodeMap [Tag] -> AlgNode -> VL -> Doc
