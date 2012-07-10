@@ -96,6 +96,8 @@ data UnOp = Unique
           | R3
           | ProjectGenRename Projection Projection
           | Select
+          | Only
+          | Singleton
     deriving (Eq, Ord, Generic, Show)
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
