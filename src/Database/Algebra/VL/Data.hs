@@ -95,7 +95,7 @@ data UnOp = Unique
           | R2
           | R3
           | ProjectRename Projection Projection
-          | Select
+          | SelectItem
           | Only
           | Singleton
     deriving (Eq, Ord, Generic, Show)
