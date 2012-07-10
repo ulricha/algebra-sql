@@ -4,6 +4,7 @@ module Database.Algebra.Rewrite.Match
        ( Match
        , runMatch
        , parents
+       , operator
        , hasPath
        , predicate
        , predicateM
@@ -40,6 +41,9 @@ runMatch d pm (M match) = runReader (runMaybeT match) env
 -- | Returns the parents of a node in a Match context.
 parents :: AlgNode -> Match o p [AlgNode]
 parents q = M $ asks ((Dag.parents q) . dag)
+            
+operator :: AlgNode -> Match o p o
+operator q = M $ asks ((Dag.operator q) . dag)
 
 hasPath :: AlgNode -> AlgNode -> Match o p Bool
 hasPath q1 q2 = M $ asks ((Dag.hasPath q1 q2) . dag)

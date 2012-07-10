@@ -50,7 +50,11 @@ instance Show VecOp where
     show Disj = "||"
     
 data Projection = Number
-                | Map Int
+                | Payload Int
+                | Descr
+                | Pos
+                | PosNew
+                | PosOld
                 deriving (Eq, Ord, Generic, Show)
 
 data VLVal = VLInt Int
@@ -90,7 +94,7 @@ data UnOp = Unique
           | R1 
           | R2
           | R3
-          | ProjectGen [Projection]
+          | ProjectGenRename Projection Projection
           | Select
     deriving (Eq, Ord, Generic, Show)
 

@@ -62,9 +62,13 @@ renderTableKey [x] = text x
 renderTableKey (x:xs) = text x <> comma <+> renderTableKey xs
 renderTableKey [] = text "NOKEY"
                     
-renderProjection :: (Int, Projection) -> Doc
-renderProjection (i, Map j) = int i <> colon <> int j
-renderProjection (i, Number) = int i <> colon <> text "#"
+renderProjection :: (Doc, Projection) -> Doc
+renderProjection (d, Payload j) = d <> colon <> int j
+renderProjection (d, Number) = d <> colon <> text "#"
+renderProjection (d, Descr) = d <> colon <> text "descr"
+renderProjection (d, Pos) = d <> colon <> text "pos"
+renderProjection (d, PosOld) = d <> colon <> text "posold"
+renderProjection (d, PosNew) = d <> colon <> text "posnew"
 
 -- create the node label from an operator description
 opDotLabel :: NodeMap [Tag] -> AlgNode -> VL -> Doc
@@ -101,7 +105,9 @@ opDotLabel tm i (UnOp FalsePositions _) = labelToDoc i "FalsePositions" empty (l
 opDotLabel tm i (UnOp R1 _) = labelToDoc i "R1" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R2 _) = labelToDoc i "R2" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R3 _) = labelToDoc i "R3" empty (lookupTags i tm)
-opDotLabel tm i (UnOp (ProjectGen ps) _) = labelToDoc i "ProjectGen" (bracketList renderProjection $ zip [1..] ps) (lookupTags i tm)
+opDotLabel tm i (UnOp (ProjectGenRename p1 p2) _) = 
+  labelToDoc i "ProjectGenRename" pLabel (lookupTags i tm)
+  where pLabel = parens $ (renderProjection (text "posnew", p1)) <> comma <+> (renderProjection (text "posold", p2))
 opDotLabel tm i (UnOp Select _) = labelToDoc i "Select" empty (lookupTags i tm)
 opDotLabel tm i (BinOp GroupBy _ _) = labelToDoc i "GroupBy" empty (lookupTags i tm)
 opDotLabel tm i (BinOp SortWith _ _) = labelToDoc i "SortWith" empty (lookupTags i tm)
