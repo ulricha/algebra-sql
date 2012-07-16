@@ -5,6 +5,7 @@ import qualified Data.Map as M
 import Control.Monad.State
 import Control.Monad.Reader
 
+import Database.Algebra.Aux
 import Database.Algebra.Dag.Common
 
 
@@ -40,7 +41,8 @@ runGraph l =  constructAlgPlan . flip runState initialBuildState . flip runReade
         constructAlgPlan (r, s) = (algMap s, r, tags s)
 
 reverseAlgMap :: AlgMap alg -> M.Map AlgNode alg
-reverseAlgMap m = M.fromList $ map (\(a, b) -> (b, a)) $ M.toList m
+reverseAlgMap = reverseMap
+                  
 
 -- | Tag a subtree with a comment
 tag :: String -> AlgNode -> GraphM res alg AlgNode
