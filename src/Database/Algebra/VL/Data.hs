@@ -98,6 +98,7 @@ data UnOp = Unique
           | SelectItem
           | Only
           | Singleton
+          | VecBinOpSingle VecOp
     deriving (Eq, Ord, Generic, Show)
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
