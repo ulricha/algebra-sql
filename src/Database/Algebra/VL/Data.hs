@@ -56,7 +56,7 @@ data Projection = Number
                 | PosNewCol
                 | PosOldCol
                 deriving (Eq, Ord, Generic, Show)
-
+                         
 data VLVal = VLInt Int
            | VLNat Int
            | VLBool Bool
@@ -98,7 +98,7 @@ data UnOp = Unique
           | SelectItem
           | Only
           | Singleton
-          | VecBinOpSingle VecOp
+          | VecBinOpSingle (VecOp, DBCol, DBCol)
     deriving (Eq, Ord, Generic, Show)
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)

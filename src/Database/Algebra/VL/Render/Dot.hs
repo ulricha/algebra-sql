@@ -110,7 +110,8 @@ opDotLabel tm i (UnOp (ProjectRename p1 p2) _) =
   where pLabel = parens $ (renderProjection (text "posnew", p1)) <> comma <+> (renderProjection (text "posold", p2))
 opDotLabel tm i (UnOp SelectItem _) = labelToDoc i "SelectItem" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Only _) = labelToDoc i "Only" empty (lookupTags i tm)
-opDotLabel tm i (UnOp (VecBinOpSingle op) _) = labelToDoc i "VecBinOpSingle" (text $ show op) (lookupTags i tm)
+opDotLabel tm i (UnOp (VecBinOpSingle (op, c1, c2)) _) = 
+  labelToDoc i "VecBinOpSingle" ((text $ show op) <+> (int c1) <+> (int c2)) (lookupTags i tm)
 opDotLabel tm i (UnOp Singleton _) = labelToDoc i "Singleton" empty (lookupTags i tm)
 opDotLabel tm i (BinOp GroupBy _ _) = labelToDoc i "GroupBy" empty (lookupTags i tm)
 opDotLabel tm i (BinOp SortWith _ _) = labelToDoc i "SortWith" empty (lookupTags i tm)
