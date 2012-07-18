@@ -33,7 +33,7 @@ renderRow = hcat . punctuate comma . map renderTblVal
 
 renderTblVal :: VLVal -> Doc
 renderTblVal (VLInt i) = integer $ fromIntegral i
-renderTblVal (VLNat i) = integer $ fromIntegral i
+renderTblVal (VLNat i) = text "#" <> (integer $ fromIntegral i)
 renderTblVal (VLBool b) = text $ show b
 renderTblVal (VLString s) = doubleQuotes $ text $ escape s
 renderTblVal (VLDouble d) = double d
@@ -69,6 +69,7 @@ renderProjection (d, DescrCol) = d <> colon <> text "descr"
 renderProjection (d, PosCol) = d <> colon <> text "pos"
 renderProjection (d, PosOldCol) = d <> colon <> text "posold"
 renderProjection (d, PosNewCol) = d <> colon <> text "posnew"
+renderProjection (d, ConstCol v) = d <> colon <> renderTblVal v
 
 -- create the node label from an operator description
 opDotLabel :: NodeMap [Tag] -> AlgNode -> VL -> Doc
@@ -105,9 +106,18 @@ opDotLabel tm i (UnOp FalsePositions _) = labelToDoc i "FalsePositions" empty (l
 opDotLabel tm i (UnOp R1 _) = labelToDoc i "R1" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R2 _) = labelToDoc i "R2" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R3 _) = labelToDoc i "R3" empty (lookupTags i tm)
-opDotLabel tm i (UnOp (ProjectRename p1 p2) _) = 
+opDotLabel tm i (UnOp (ProjectRename (p1, p2)) _) = 
   labelToDoc i "ProjectRename" pLabel (lookupTags i tm)
   where pLabel = parens $ (renderProjection (text "posnew", p1)) <> comma <+> (renderProjection (text "posold", p2))
+opDotLabel tm i (UnOp (ProjectValue (pDescr, pPos, pCols)) _) =
+  labelToDoc i "ProjectValue" pLabel (lookupTags i tm)
+  where pLabel = parens $ (renderProjection (text "descr", pDescr)) 
+                 <> comma 
+                 <+> (renderProjection (text "pos", pPos))
+                 <> comma
+                 <+> valCols
+        valCols = bracketList (\(j, p) -> renderProjection (itemLabel j, p)) $ zip ([1..] :: [Int]) pCols
+        itemLabel j = (text "item") <> (int j)
 opDotLabel tm i (UnOp SelectItem _) = labelToDoc i "SelectItem" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Only _) = labelToDoc i "Only" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (VecBinOpSingle (op, c1, c2)) _) = 
@@ -133,6 +143,8 @@ opDotLabel tm i (BinOp PairA _ _) = labelToDoc i "PairA" empty (lookupTags i tm)
 opDotLabel tm i (BinOp PairL _ _) = labelToDoc i "PairL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp ZipL _ _) = labelToDoc i "ZipL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp CartProduct _ _) = labelToDoc i "CartProduct" empty (lookupTags i tm)
+opDotLabel tm i (BinOp (ThetaJoin (op, left, right)) _ _) = 
+  labelToDoc i "ThetaJoin" ((text $ show op) <+> (int left) <+> (int right)) (lookupTags i tm)
 opDotLabel tm i (TerOp CombineVec _ _ _) = labelToDoc i "CombineVec" empty (lookupTags i tm)
 
 opDotColor :: VL -> DotColor

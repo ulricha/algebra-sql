@@ -50,6 +50,7 @@ instance Show VecOp where
     show Disj = "||"
     
 data Projection = Number
+                | ConstCol VLVal
                 | Payload Int
                 | DescrCol
                 | PosCol
@@ -94,7 +95,8 @@ data UnOp = Unique
           | R1 
           | R2
           | R3
-          | ProjectRename Projection Projection
+          | ProjectRename (Projection, Projection)
+          | ProjectValue (Projection, Projection, [Projection])
           | SelectItem
           | Only
           | Singleton
@@ -121,6 +123,7 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | PairL
            | ZipL       -- (DBV, RenameVector, RenameVector)
            | CartProduct -- DBV
+           | ThetaJoin (VecOp, DBCol, DBCol)
     deriving (Eq, Ord, Generic, Show)
     
 data TerOp = CombineVec  -- (DBV, RenameVector, RenameVector)
