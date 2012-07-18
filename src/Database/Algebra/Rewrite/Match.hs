@@ -6,6 +6,7 @@ module Database.Algebra.Rewrite.Match
        , parents
        , operator
        , hasPath
+       , rootNodes
        , predicate
        , predicateM
        , try
@@ -47,6 +48,9 @@ operator q = M $ asks ((Dag.operator q) . dag)
 
 hasPath :: AlgNode -> AlgNode -> Match o p Bool
 hasPath q1 q2 = M $ asks ((Dag.hasPath q1 q2) . dag)
+                
+rootNodes :: Match o p [AlgNode]
+rootNodes = M $ asks (Dag.rootNodes . dag)
 
 -- | Fails the complete match if the predicate is False.
 predicate :: Bool -> Match o p ()
