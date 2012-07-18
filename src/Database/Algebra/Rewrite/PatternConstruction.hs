@@ -47,7 +47,7 @@ instMatchCase :: Name           -- ^ The name of the node constructor (BinOp, Un
                  -> SemPattern -- ^ If the semantical pattern is not a wildcard: the name of the binding variable
                  -> [Q Pat]     -- ^ The list of patterns binding the node children
                  -> [Name]      -- ^ The list of variables for the children (may be empty)
-                 -> Bool        -- ^ Bind the operator name
+                 -> Bool        -- ^ Bind the operator name (or don't)
                  -> Q Exp       -- ^ Returns the case expression
 instMatchCase nodeConstructor opConstructors semantics childPatterns childNames bindOp = 
   caseE (varE opName) ((map opAlternative opConstructors) ++ [catchAllCase])
@@ -166,8 +166,9 @@ gen nodeName (TerP op semBinding child1 child2 child3) = do
   maybeDescend child2 name2
   maybeDescend child3 name3
   
+
 childName :: Child -> Q [Name]
-childName WildC          = return []
+childName WildC          = newName "child" >>= (\n -> return [n])
 childName (NameC s)      = return [mkName s]
 childName (NodeC _)        = newName "child" >>= (\n -> return [n])
 childName (NamedNodeC s _) = return [mkName s]
@@ -186,7 +187,6 @@ maybeDescend c ns =
         [n] -> gen n o
         _   -> error "PatternConstruction.gen: no name for child pattern"
     Nothing  -> return ()
-                                                        
 
 assembleStatements :: Q [Stmt] -> Q Exp -> Q Exp
 assembleStatements patternStatements userExpr = do
