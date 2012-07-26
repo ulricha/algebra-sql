@@ -49,6 +49,7 @@ instance Show VecOp where
     show Conj = "&&"
     show Disj = "||"
     
+{-
 data Projection = Number
                 | ConstCol VLVal
                 | Payload Int
@@ -57,7 +58,28 @@ data Projection = Number
                 | PosNewCol
                 | PosOldCol
                 deriving (Eq, Ord, Generic, Show)
+-}
+    
+data ISTransProj = STDescrCol
+                 | STPosCol
+                 | STNumber
+                 deriving (Eq, Ord, Generic, Show)
                          
+data DescrProj = DescrConst VLVal
+               | DescrIdentity
+               | DescrPosCol
+               deriving (Eq, Ord, Generic, Show)
+                        
+data PosProj = PosNumber
+             | PosConst VLVal
+             | PosIdentity
+             deriving (Eq, Ord, Generic, Show)
+                         
+data PayloadProj = PLNumber
+                 | PLConst VLVal
+                 | PLCol DBCol
+                 deriving (Eq, Ord, Generic, Show)
+                          
 data VLVal = VLInt Int
            | VLNat Int
            | VLBool Bool
@@ -95,8 +117,8 @@ data UnOp = Unique
           | R1 
           | R2
           | R3
-          | ProjectRename (Projection, Projection)
-          | ProjectValue (Projection, Projection, [Projection])
+          | ProjectRename (ISTransProj, ISTransProj)
+          | ProjectValue (DescrProj, PosProj, [PayloadProj])
           | SelectItem
           | Only
           | Singleton

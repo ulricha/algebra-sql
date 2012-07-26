@@ -62,14 +62,25 @@ renderTableKey [x] = text x
 renderTableKey (x:xs) = text x <> comma <+> renderTableKey xs
 renderTableKey [] = text "NOKEY"
                     
-renderProjection :: (Doc, Projection) -> Doc
-renderProjection (d, Payload j) = d <> colon <> int j
-renderProjection (d, Number) = d <> colon <> text "#"
-renderProjection (d, DescrCol) = d <> colon <> text "descr"
-renderProjection (d, PosCol) = d <> colon <> text "pos"
-renderProjection (d, PosOldCol) = d <> colon <> text "posold"
-renderProjection (d, PosNewCol) = d <> colon <> text "posnew"
-renderProjection (d, ConstCol v) = d <> colon <> renderTblVal v
+renderPayloadProj :: (Doc, PayloadProj) -> Doc
+renderPayloadProj (d, PLNumber) = d <> colon <> text "#"
+renderPayloadProj (d, PLConst v) = d <> colon <> renderTblVal v
+renderPayloadProj (d, PLCol c) = d <> colon <> int c
+
+renderISTransProj :: (Doc, ISTransProj) -> Doc
+renderISTransProj (d, STDescrCol) = d <> colon <> text "descr"
+renderISTransProj (d, STPosCol)   = d <> colon <> text "pos"
+renderISTransProj (d, STNumber)   = d <> colon <> text "#"
+
+renderDescrProj :: (Doc, DescrProj) -> Doc
+renderDescrProj (d, DescrConst v)  = d <> colon <> renderTblVal v
+renderDescrProj (d, DescrIdentity) = d <> colon <> text "descr"
+renderDescrProj (d, DescrPosCol)   = d <> colon <> text "pos"
+                                     
+renderPosProj :: (Doc, PosProj) -> Doc
+renderPosProj (d, PosNumber) = d <> colon <> text "#"
+renderPosProj (d, PosConst v) = d <> colon <> renderTblVal v
+renderPosProj (d, PosIdentity) = d <> colon <> text "pos"
 
 -- create the node label from an operator description
 opDotLabel :: NodeMap [Tag] -> AlgNode -> VL -> Doc
@@ -108,15 +119,15 @@ opDotLabel tm i (UnOp R2 _) = labelToDoc i "R2" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R3 _) = labelToDoc i "R3" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (ProjectRename (p1, p2)) _) = 
   labelToDoc i "ProjectRename" pLabel (lookupTags i tm)
-  where pLabel = parens $ (renderProjection (text "posnew", p1)) <> comma <+> (renderProjection (text "posold", p2))
+  where pLabel = parens $ (renderISTransProj (text "posnew", p1)) <> comma <+> (renderISTransProj (text "posold", p2))
 opDotLabel tm i (UnOp (ProjectValue (pDescr, pPos, pCols)) _) =
   labelToDoc i "ProjectValue" pLabel (lookupTags i tm)
-  where pLabel = parens $ (renderProjection (text "descr", pDescr)) 
+  where pLabel = parens $ (renderDescrProj (text "descr", pDescr)) 
                  <> comma 
-                 <+> (renderProjection (text "pos", pPos))
+                 <+> (renderPosProj (text "pos", pPos))
                  <> comma
                  <+> valCols
-        valCols = bracketList (\(j, p) -> renderProjection (itemLabel j, p)) $ zip ([1..] :: [Int]) pCols
+        valCols = bracketList (\(j, p) -> renderPayloadProj (itemLabel j, p)) $ zip ([1..] :: [Int]) pCols
         itemLabel j = (text "item") <> (int j)
 opDotLabel tm i (UnOp SelectItem _) = labelToDoc i "SelectItem" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Only _) = labelToDoc i "Only" empty (lookupTags i tm)
@@ -138,7 +149,7 @@ opDotLabel tm i (BinOp (VecBinOp o) _ _) = labelToDoc i "BinOp" (text $ show o) 
 opDotLabel tm i (BinOp (VecBinOpL o) _ _) = labelToDoc i "BinOpL" (text $ show o) (lookupTags i tm)
 opDotLabel tm i (BinOp VecSumL _ _) = labelToDoc i "VecSumL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp (SelectPos o) _ _) = labelToDoc i "SelectPos" (text $ show o) (lookupTags i tm)
-opDotLabel tm i (BinOp (SelectPosL o) _ _) = labelToDoc i "GroupBy" (text $ show o) (lookupTags i tm)
+opDotLabel tm i (BinOp (SelectPosL o) _ _) = labelToDoc i "SelectPosL" (text $ show o) (lookupTags i tm)
 opDotLabel tm i (BinOp PairA _ _) = labelToDoc i "PairA" empty (lookupTags i tm)
 opDotLabel tm i (BinOp PairL _ _) = labelToDoc i "PairL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp ZipL _ _) = labelToDoc i "ZipL" empty (lookupTags i tm)

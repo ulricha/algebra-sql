@@ -19,7 +19,10 @@ instance ToJSON NullOp where
 instance ToJSON VLVal where
 instance ToJSON VLType where
 instance ToJSON VecOp where
-instance ToJSON Projection where
+instance ToJSON DescrProj where
+instance ToJSON PosProj where
+instance ToJSON PayloadProj where
+instance ToJSON ISTransProj where
 
 instance FromJSON TerOp where
 instance FromJSON BinOp where
@@ -28,7 +31,10 @@ instance FromJSON NullOp where
 instance FromJSON VLVal where
 instance FromJSON VLType where
 instance FromJSON VecOp where
-instance FromJSON Projection where
+instance FromJSON DescrProj where
+instance FromJSON PosProj where
+instance FromJSON PayloadProj where
+instance FromJSON ISTransProj where
 
 instance ToJSON Plan where
 instance FromJSON Plan where
