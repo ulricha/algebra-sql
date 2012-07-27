@@ -170,9 +170,9 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | SelectPosL VecOp -- (DBV, RenameVector)
            | PairA
            | PairL
-           | ZipL       -- (DBV, RenameVector, RenameVector)
-           | CartProduct -- DBV
-           | ThetaJoin (VecOp, DBCol, DBCol)
+           | ZipL            -- (DBV, RenameVector, RenameVector)
+           | CartProductFlat -- DBV
+           | ThetaJoinFlat (VecOp, DBCol, DBCol)
     deriving (Eq, Ord, Generic, Show)
     
 data TerOp = CombineVec  -- (DBV, RenameVector, RenameVector)
