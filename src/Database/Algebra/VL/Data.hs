@@ -65,13 +65,13 @@ data ISTransProj = STDescrCol
                  | STNumber
                  deriving (Eq, Ord, Generic, Show)
                          
-data DescrProj = DescrConst VLVal
+data DescrProj = DescrConst Nat
                | DescrIdentity
                | DescrPosCol
                deriving (Eq, Ord, Generic, Show)
                         
 data PosProj = PosNumber
-             | PosConst VLVal
+             | PosConst Nat
              | PosIdentity
              deriving (Eq, Ord, Generic, Show)
                          
@@ -80,8 +80,35 @@ data PayloadProj = PLNumber
                  | PLCol DBCol
                  deriving (Eq, Ord, Generic, Show)
                           
+newtype Nat = N Int deriving (Eq, Ord, Generic, Show)
+                             
+instance Integral Nat where
+  quot (N i1) (N i2)    = N $ quot i1 i2
+  rem (N i1) (N i2)     = N $ rem i1 i2
+  div (N i1) (N i2)     = N $ div i1 i2
+  mod (N i1) (N i2)     = N $ mod i1 i2
+  quotRem (N i1) (N i2) = let (q, r) = quotRem i1 i2 in (N q, N r)
+  divMod (N i1) (N i2)  = let (d, m) = divMod i1 i2 in (N d, N m)
+  toInteger (N i)       = toInteger i
+  
+instance Real Nat where
+  toRational (N i) = toRational i
+  
+instance Enum Nat where
+  toEnum         = N
+  fromEnum (N i) = i
+  
+instance Num Nat where
+  (N i1) + (N i2) = N $ i1 + i2
+  (N i1) * (N i2) = N $ i1 * i2
+  (N i1) - (N i2) = N $ i1 - i2
+  negate (N i)    = N $ negate i
+  abs (N i)       = N $ abs i
+  signum (N i)    = N $ signum i
+  fromInteger i   = N $ fromInteger i
+                          
 data VLVal = VLInt Int
-           | VLNat Int
+           | VLNat Nat
            | VLBool Bool
            | VLString String
            | VLDouble Double

@@ -73,13 +73,13 @@ renderISTransProj (d, STPosCol)   = d <> colon <> text "pos"
 renderISTransProj (d, STNumber)   = d <> colon <> text "#"
 
 renderDescrProj :: (Doc, DescrProj) -> Doc
-renderDescrProj (d, DescrConst v)  = d <> colon <> renderTblVal v
+renderDescrProj (d, DescrConst v)  = d <> colon <> (integer $ toInteger v)
 renderDescrProj (d, DescrIdentity) = d <> colon <> text "descr"
 renderDescrProj (d, DescrPosCol)   = d <> colon <> text "pos"
                                      
 renderPosProj :: (Doc, PosProj) -> Doc
 renderPosProj (d, PosNumber) = d <> colon <> text "#"
-renderPosProj (d, PosConst v) = d <> colon <> renderTblVal v
+renderPosProj (d, PosConst v) = d <> colon <> (integer $ toInteger v)
 renderPosProj (d, PosIdentity) = d <> colon <> text "pos"
 
 -- create the node label from an operator description
