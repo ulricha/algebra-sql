@@ -81,6 +81,17 @@ renderPosProj :: (Doc, PosProj) -> Doc
 renderPosProj (d, PosNumber) = d <> colon <> text "#"
 renderPosProj (d, PosConst v) = d <> colon <> (integer $ toInteger v)
 renderPosProj (d, PosIdentity) = d <> colon <> text "pos"
+                                 
+renderExpr1 :: Expr1 -> Doc
+renderExpr1 (App1 op e1 e2) = (parens $ renderExpr1 e1) <+> (text $ show op) <+> (parens $ renderExpr1 e2)
+renderExpr1 (Constant1 val) = renderTblVal val
+renderExpr1 (Column1 c)     = text "col" <> int c
+
+renderExpr2 :: Expr2 -> Doc
+renderExpr2 (App2 op e1 e2)      = (parens $ renderExpr2 e1) <+> (text $ show op) <+> (parens $ renderExpr2 e2)
+renderExpr2 (Constant2 val)      = renderTblVal val
+renderExpr2 (Column2Left (L c))  = text "lcol" <> int c
+renderExpr2 (Column2Right (R c)) = text "rcol" <> int c
 
 -- create the node label from an operator description
 opDotLabel :: NodeMap [Tag] -> AlgNode -> VL -> Doc
@@ -131,8 +142,8 @@ opDotLabel tm i (UnOp (ProjectValue (pDescr, pPos, pCols)) _) =
         itemLabel j = (text "item") <> (int j)
 opDotLabel tm i (UnOp SelectItem _) = labelToDoc i "SelectItem" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Only _) = labelToDoc i "Only" empty (lookupTags i tm)
-opDotLabel tm i (UnOp (VecBinOpSingle (op, c1, c2)) _) = 
-  labelToDoc i "VecBinOpSingle" ((text $ show op) <+> (int c1) <+> (int c2)) (lookupTags i tm)
+opDotLabel tm i (UnOp (CompExpr1 expr) _) = 
+  labelToDoc i "CompExpr1" (renderExpr1 expr) (lookupTags i tm)
 opDotLabel tm i (UnOp Singleton _) = labelToDoc i "Singleton" empty (lookupTags i tm)
 opDotLabel tm i (BinOp GroupBy _ _) = labelToDoc i "GroupBy" empty (lookupTags i tm)
 opDotLabel tm i (BinOp SortWith _ _) = labelToDoc i "SortWith" empty (lookupTags i tm)
@@ -145,8 +156,8 @@ opDotLabel tm i (BinOp PropFilter _ _) = labelToDoc i "PropFilter" empty (lookup
 opDotLabel tm i (BinOp PropReorder _ _) = labelToDoc i "PropReorder" empty (lookupTags i tm)
 opDotLabel tm i (BinOp Append _ _) = labelToDoc i "Append" empty (lookupTags i tm)
 opDotLabel tm i (BinOp RestrictVec _ _) = labelToDoc i "RestrictVec" empty (lookupTags i tm)
-opDotLabel tm i (BinOp (VecBinOp o) _ _) = labelToDoc i "BinOp" (text $ show o) (lookupTags i tm)
-opDotLabel tm i (BinOp (VecBinOpL o) _ _) = labelToDoc i "BinOpL" (text $ show o) (lookupTags i tm)
+opDotLabel tm i (BinOp (CompExpr2 expr) _ _) = labelToDoc i "CompExpr2" (renderExpr2 expr) (lookupTags i tm)
+opDotLabel tm i (BinOp (CompExpr2L expr) _ _) = labelToDoc i "CompExpr2L" (renderExpr2 expr) (lookupTags i tm)
 opDotLabel tm i (BinOp VecSumL _ _) = labelToDoc i "VecSumL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp (SelectPos o) _ _) = labelToDoc i "SelectPos" (text $ show o) (lookupTags i tm)
 opDotLabel tm i (BinOp (SelectPosL o) _ _) = labelToDoc i "SelectPosL" (text $ show o) (lookupTags i tm)

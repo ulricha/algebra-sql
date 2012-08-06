@@ -33,6 +33,20 @@ data VecOp = Add
            | Conj 
            | Disj 
            deriving (Eq, Ord, Generic)
+
+data Expr1 = App1 VecOp Expr1 Expr1
+           | Column1 DBCol
+           | Constant1 VLVal
+           deriving (Eq, Ord, Show, Generic)
+                    
+newtype LeftCol = L DBCol deriving (Eq, Ord, Show, Generic)
+newtype RightCol = R DBCol deriving (Eq, Ord, Show, Generic)
+
+data Expr2 = App2 VecOp Expr2 Expr2
+           | Column2Left LeftCol
+           | Column2Right RightCol
+           | Constant2 VLVal
+           deriving (Eq, Ord, Show, Generic)
     
 instance Show VecOp where
     show Add = "+"
@@ -48,17 +62,6 @@ instance Show VecOp where
     show Cons = ":"
     show Conj = "&&"
     show Disj = "||"
-    
-{-
-data Projection = Number
-                | ConstCol VLVal
-                | Payload Int
-                | DescrCol
-                | PosCol
-                | PosNewCol
-                | PosOldCol
-                deriving (Eq, Ord, Generic, Show)
--}
     
 data ISTransProj = STDescrCol
                  | STPosCol
@@ -149,8 +152,9 @@ data UnOp = Unique
           | SelectItem
           | Only
           | Singleton
-          | VecBinOpSingle (VecOp, DBCol, DBCol)
+          | CompExpr1 Expr1
     deriving (Eq, Ord, Generic, Show)
+             
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | SortWith   -- (DBV, PropVector)
@@ -163,8 +167,8 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | PropReorder -- (DBV, PropVector)
            | Append     -- (DBV, RenameVector, RenameVector)
            | RestrictVec -- VL (DBV, RenameVector)
-           | VecBinOp VecOp
-           | VecBinOpL VecOp
+           | CompExpr2 Expr2
+           | CompExpr2L Expr2
            | VecSumL
            | SelectPos VecOp -- (DBV, RenameVector)
            | SelectPosL VecOp -- (DBV, RenameVector)
