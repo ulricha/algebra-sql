@@ -1,4 +1,4 @@
-module Database.Algebra.VL.Render.Dot(renderVLDot) where
+module Database.Algebra.VL.Render.Dot(renderVLDot, renderTblVal) where
     
 import qualified Data.Map as Map
 import Data.List
