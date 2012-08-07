@@ -6,6 +6,8 @@ module Database.Algebra.Rewrite.Traversal
        , sequenceRewrites ) where
 
 import Control.Monad
+  
+import qualified Data.Set as S
 
 import Database.Algebra.Dag
 import Database.Algebra.Dag.Common
@@ -16,31 +18,35 @@ import Database.Algebra.Rewrite.Rule
 -- at every node. Properties are re-inferred after every change.
 preOrder :: Operator o => DagRewrite o (NodeMap p) -> RuleSet o p -> DagRewrite o Bool
 preOrder infer rules = 
-  let traverse (changedPrev, mProps) q = do
-        props <- case mProps of
-          Just ps -> return ps
-          Nothing -> infer
-
-        changedSelf <- applyRuleSet props rules q
-      
-        let mProps' = if changedSelf then Nothing else Just props
-        op <- operatorM q
-        let cs = opChildren op
-        (changedChild, mProps'') <- foldM descend (changedSelf, mProps') cs
-        if changedChild 
-           then return (True, Nothing)
-           else return (changedPrev || (changedSelf || changedChild), mProps'')
-
-      descend (changedPrev, mProps) c = do
+  let traverse (changedPrev, mProps, visited) q =
+        if q `S.member` visited
+        then return (changedPrev, mProps, visited)
+        else do
           props <- case mProps of
             Just ps -> return ps
             Nothing -> infer
-          traverse (changedPrev, Just props) c
+
+          changedSelf <- applyRuleSet props rules q
+      
+          let mProps' = if changedSelf then Nothing else Just props
+          op <- operatorM q
+          let cs = opChildren op
+          (changedChild, mProps'', visited') <- foldM descend (changedSelf, mProps', visited) cs
+          let visited'' = S.insert q visited'
+          if changedChild 
+            then return (True, Nothing, visited'')
+            else return (changedPrev || (changedSelf || changedChild), mProps'', visited'')
+
+      descend (changedPrev, mProps, visited) c = do
+          props <- case mProps of
+            Just ps -> return ps
+            Nothing -> infer
+          traverse (changedPrev, Just props, visited) c
 
   in do
     pm <- infer
     rs <- rootNodesM
-    (changed, _) <- foldM traverse (False, Just pm) rs
+    (changed, _, _) <- foldM traverse (False, Just pm, S.empty) rs
     return changed
 
 {- | Map a ruleset over the nodes of a DAG in topological order. This function assumes that
@@ -60,29 +66,33 @@ topologically infer rules = do
 -- every node. Properties are re-inferred after every change.
 postOrder :: Operator o => DagRewrite o (NodeMap p) -> RuleSet o p -> DagRewrite o Bool
 postOrder infer rules = 
-  let traverse (changedPrev, props) q = do
-        op <- operatorM q
-        let cs = opChildren op
-        (changedChild, mProps) <- foldM descend (False, props) cs
-        props' <- case mProps of
-              Just ps -> return ps
-              Nothing -> infer
+  let traverse (changedPrev, props, visited) q =
+        if q `S.member` visited
+        then return (changedPrev, props, visited)
+        else do
+          op <- operatorM q
+          let cs = opChildren op
+          (changedChild, mProps, visited') <- foldM descend (False, props, visited) cs
+          props' <- case mProps of
+            Just ps -> return ps
+            Nothing -> infer
         
-        changedSelf <- applyRuleSet props' rules q
-        if changedSelf
-          then return (True, Nothing)
-          else return (changedChild || changedPrev, Just props')
+          changedSelf <- applyRuleSet props' rules q
+          let visited'' = S.insert q visited'
+          if changedSelf
+            then return (True, Nothing, visited'')
+            else return (changedChild || changedPrev, Just props', visited'')
       
-      descend (changedPrev, mProps) c = do
+      descend (changedPrev, mProps, visited) c = do
           props <- case mProps of
             Just ps -> return ps
             Nothing -> infer
-          traverse (changedPrev, Just props) c
+          traverse (changedPrev, Just props, visited) c
         
   in do
     pm <- infer
     rs <- rootNodesM
-    (changed, _) <- foldM traverse (False, Just pm) rs
+    (changed, _, _) <- foldM traverse (False, Just pm, S.empty) rs
     return changed
   
 -- | Iteratively apply a rewrite, until no further changes occur.
