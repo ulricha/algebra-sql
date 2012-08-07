@@ -166,7 +166,7 @@ opDotLabel tm i (BinOp PairL _ _) = labelToDoc i "PairL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp ZipL _ _) = labelToDoc i "ZipL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp CartProductFlat _ _) = labelToDoc i "CartProductFlat" empty (lookupTags i tm)
 opDotLabel tm i (BinOp (ThetaJoinFlat expr) _ _) = 
-  labelToDoc i "ThetaJoinFlat" (renderExpr2 expr) (lookupTags i tm)
+  labelToDoc i "ThetaJoinFlat" (renderExpr1 expr) (lookupTags i tm)
 opDotLabel tm i (TerOp CombineVec _ _ _) = labelToDoc i "CombineVec" empty (lookupTags i tm)
 
 opDotColor :: VL -> DotColor
