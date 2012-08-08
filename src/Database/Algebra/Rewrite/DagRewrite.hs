@@ -34,6 +34,7 @@ module Database.Algebra.Rewrite.DagRewrite
 
 import Control.Monad.State
 import Control.Monad.Writer
+import Control.Applicative
 import qualified Data.Sequence as Seq
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -42,8 +43,7 @@ import Database.Algebra.Dag.Common
 import Database.Algebra.Dag
   
 -- | Cache some topological information about the DAG.
-data Cache = Cache { cachedTopOrdering      :: Maybe [AlgNode]
-                   } 
+data Cache = Cache { cachedTopOrdering :: Maybe [AlgNode] } 
              
 emptyCache :: Cache
 emptyCache = Cache Nothing 
@@ -56,7 +56,7 @@ data RewriteState a = RewriteState { nodeIDSupply   :: AlgNode       -- ^ Supply
                       
                       
 -- | A Monad for DAG rewrites, parameterized over the type of algebra operators.
-newtype DagRewrite a r = D (WriterT Log (State (RewriteState a)) r) deriving (Monad)
+newtype DagRewrite a r = D (WriterT Log (State (RewriteState a)) r) deriving (Monad, Functor, Applicative)
                                                                              
 -- FIXME Map.findMax might call error
 initRewriteState :: AlgebraDag a -> RewriteState a

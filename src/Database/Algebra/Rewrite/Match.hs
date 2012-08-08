@@ -8,11 +8,7 @@ module Database.Algebra.Rewrite.Match
        , hasPath
        , rootNodes
        , predicate
-       , predicateM
        , try
-       , notM
-       , (<&&>)
-       , (<||>)
        , properties
        , matchOp
        , pattern
@@ -21,6 +17,7 @@ module Database.Algebra.Rewrite.Match
 import qualified Data.Map as M
 import Control.Monad.Reader
 import Control.Monad.Trans.Maybe
+import Control.Applicative
   
 import Database.Algebra.Dag.Common
 import qualified Database.Algebra.Dag as Dag
@@ -31,7 +28,7 @@ data Env o p = Env { dag :: Dag.AlgebraDag o
 
 -- | The Match monad models the failing of a match and provides limited read-only access
 -- to the DAG.
-newtype Match o p a = M (MaybeT (Reader (Env o p)) a) deriving Monad
+newtype Match o p a = M (MaybeT (Reader (Env o p)) a) deriving (Monad, Functor, Applicative)
      
 -- | Runs a match on the supplied DAG. If the Match fails, 'Nothing' is returned.
 -- If the Match succeeds, it returns just the result.
@@ -57,13 +54,6 @@ predicate :: Bool -> Match o p ()
 predicate True    = M $ return ()
 predicate False   = M $ fail ""
                
-predicateM :: Match o p Bool -> Match o p ()
-predicateM match = do
-  b <- match
-  if b
-    then return ()
-    else fail ""
-  
 -- | Fails the complete match if the value is Nothing
 try :: Maybe a -> Match o p a
 try (Just x) = return x
@@ -82,16 +72,3 @@ properties q = do
     case M.lookup q pm of
       Just p -> return p
       Nothing -> error $ "Match.properties: no properties for node " ++ (show q)
-
--- | Monadic boolean 'or' operator
-notM :: Monad m => m Bool -> m Bool
-notM = liftM not
-          
--- | Monadic boolean 'and' operator
-(<&&>) :: Monad m => m Bool -> m Bool -> m Bool
-(<&&>) = liftM2 (&&)
-         
--- | Monadic boolean 'or' operator
-(<||>) :: Monad m => m Bool -> m Bool -> m Bool
-(<||>) = liftM2 (||)
-
