@@ -17,14 +17,14 @@ import Database.Algebra.Rewrite.Rule
 -- | Infer properties, then traverse the DAG in preorder fashion and apply the rule set 
 -- at every node. Properties are re-inferred after every change.
 preOrder :: (DagRewrite (r o) o, Dag.Operator o) => r o (NodeMap p) -> RuleSet r o p -> r o Bool
-preOrder infer rules = 
+preOrder inferAction rules = 
   let traverse (changedPrev, mProps, visited) q =
         if q `S.member` visited
         then return (changedPrev, mProps, visited)
         else do
           props <- case mProps of
             Just ps -> return ps
-            Nothing -> infer
+            Nothing -> inferAction
 
           changedSelf <- applyRuleSet props rules q
       
@@ -40,11 +40,11 @@ preOrder infer rules =
       descend (changedPrev, mProps, visited) c = do
           props <- case mProps of
             Just ps -> return ps
-            Nothing -> infer
+            Nothing -> inferAction
           traverse (changedPrev, Just props, visited) c
 
   in do
-    pm <- infer
+    pm <- inferAction
     rs <- rootNodes
     (changed, _, _) <- foldM traverse (False, Just pm, S.empty) rs
     return changed
@@ -54,9 +54,9 @@ preOrder infer rules =
      once.
 -}
 topologically :: (DagRewrite (r o) o, Dag.Operator o) => r o (NodeMap p) -> RuleSet r o p -> r o Bool
-topologically infer rules = do
+topologically inferAction rules = do
   topoOrdering <- topsort
-  props <- infer
+  props <- inferAction
   let rewriteNode changedPrev q = do
         changed <- applyRuleSet props rules q
         return $ changed || changedPrev
@@ -65,7 +65,7 @@ topologically infer rules = do
 -- | Infer properties, then traverse the DAG in a postorder fashion and apply the rule set at
 -- every node. Properties are re-inferred after every change.
 postOrder :: (DagRewrite (r o) o, Dag.Operator o) => r o (NodeMap p) -> RuleSet r o p -> r o Bool
-postOrder infer rules = 
+postOrder inferAction rules = 
   let traverse (changedPrev, props, visited) q =
         if q `S.member` visited
         then return (changedPrev, props, visited)
@@ -75,7 +75,7 @@ postOrder infer rules =
           (changedChild, mProps, visited') <- foldM descend (False, props, visited) cs
           props' <- case mProps of
             Just ps -> return ps
-            Nothing -> infer
+            Nothing -> inferAction
         
           changedSelf <- applyRuleSet props' rules q
           let visited'' = S.insert q visited'
@@ -86,11 +86,11 @@ postOrder infer rules =
       descend (changedPrev, mProps, visited) c = do
           props <- case mProps of
             Just ps -> return ps
-            Nothing -> infer
+            Nothing -> inferAction
           traverse (changedPrev, Just props, visited) c
         
   in do
-    pm <- infer
+    pm <- inferAction
     rs <- rootNodes
     (changed, _, _) <- foldM traverse (False, Just pm, S.empty) rs
     return changed
