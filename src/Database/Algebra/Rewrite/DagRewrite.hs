@@ -5,6 +5,7 @@ module Database.Algebra.Rewrite.DagRewrite
        (
          -- ** The Rewrite monad
          DagRewrite(..)
+       , DefaultRewrite
        , runRewrite
        , initRewriteState
        , Log
