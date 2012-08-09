@@ -7,15 +7,15 @@ import Database.Algebra.Dag.Common
 import Database.Algebra.Rewrite.DagRewrite
 import Database.Algebra.Rewrite.Match
 
-type Rule o p = AlgNode -> Match o p (DagRewrite o ())
+type Rule r o p = AlgNode -> Match o p (r o ())
               
-type RuleSet o p = [Rule o p]
+type RuleSet r o p = [Rule r o p]
 
 -- | Try a set of rules on a node and apply the rewrite of the first
 -- rule that matches.
-applyRuleSet :: NodeMap p -> RuleSet o p -> AlgNode -> DagRewrite o Bool
+applyRuleSet :: DagRewrite (r o) o => NodeMap p -> RuleSet r o p -> AlgNode -> r o Bool
 applyRuleSet pm rules q = do
-  d <- dagM
+  d <- getDag
   
   let aux []     = return False
       aux (rule:rs) = case runMatch d pm (rule q) of

@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, MultiParamTypeClasses, FlexibleInstances, FunctionalDependencies #-}
 
 -- | This module provides a monadic interface to rewrites on algebra DAGs.
 module Database.Algebra.Rewrite.DagRewrite 
@@ -20,44 +20,44 @@ import qualified Data.Set as S
 import Database.Algebra.Dag.Common
 import qualified Database.Algebra.Dag as Dag
 
-class Monad r => DagRewrite r where
+class Monad r => (DagRewrite r) o | o -> r where
   -- | Log a general message
-  logGeneral :: String -> r o ()
+  logGeneral :: String -> r ()
   -- | Log a rewrite
-  logRewrite :: String -> AlgNode -> r o ()
+  logRewrite :: String -> AlgNode -> r ()
   -- | hasPath a b returns 'True' iff there is a path from a to b in the DAG.
-  hasPath :: AlgNode -> AlgNode -> r o Bool
+  hasPath :: AlgNode -> AlgNode -> r Bool
   -- | Return the set of nodes that are reachable from the specified node.
-  reachableNodesFrom :: AlgNode -> r o (S.Set AlgNode)
+  reachableNodesFrom :: AlgNode -> r (S.Set AlgNode)
   -- | Return the parents of a node
-  parents :: AlgNode -> r o [AlgNode]
+  parents :: AlgNode -> r [AlgNode]
   -- | Return a topological ordering of all reachable nodes in the DAG. 
-  topsort :: Dag.Operator o => r o [AlgNode]
+  topsort :: Dag.Operator o => r [AlgNode]
   -- | Return the operator for a node id.
-  operator :: AlgNode -> r o o
+  operator :: AlgNode -> r o
   -- | Returns the root nodes of the DAG.
-  rootNodes :: r o [AlgNode]
+  rootNodes :: r [AlgNode]
   -- | Exposes the current state of the DAG
-  getDag :: r o (Dag.AlgebraDag o)
+  getDag :: r (Dag.AlgebraDag o)
   -- | Insert an operator into the DAG and return its node id.
-  insert :: Dag.Operator o => o -> r o AlgNode
+  insert :: Dag.Operator o => o -> r AlgNode
   -- | replaceChildM n old new replaces all links from node n to node old with links
   --   to node new 
-  replaceChild :: Dag.Operator o => AlgNode -> AlgNode -> AlgNode -> r o ()
+  replaceChild :: Dag.Operator o => AlgNode -> AlgNode -> AlgNode -> r ()
   -- | relinkParents old new replaces _all_ links to old with links to new
-  relinkParents :: Dag.Operator o => AlgNode -> AlgNode -> r o ()
+  relinkParents :: Dag.Operator o => AlgNode -> AlgNode -> r ()
   -- | Creates a new node from the operator and replaces the old node with it
   -- by rewireing all links to the old node.
-  relinkToNew :: Dag.Operator o => AlgNode -> o -> r o ()
+  relinkToNew :: Dag.Operator o => AlgNode -> o -> r ()
   -- | Replaces the operator at the specified node id with a new operator.
-  replace :: Dag.Operator o => AlgNode -> o -> r o ()
+  replace :: Dag.Operator o => AlgNode -> o -> r ()
   -- | Remove all unreferenced nodes from the DAG: all nodes are unreferenced which
   -- are not reachable from one of the root nodes.
-  pruneUnused :: r o ()
+  pruneUnused :: r ()
   -- | Replaces an entry in the list of root nodes.
-  replaceRoot :: AlgNode -> AlgNode -> r o ()
+  replaceRoot :: AlgNode -> AlgNode -> r ()
   -- | Apply a pure function to the DAG.
-  infer :: (Dag.AlgebraDag o -> b) -> r o b
+  infer :: (Dag.AlgebraDag o -> b) -> r b
   
 -- | Cache some topological information about the DAG.
 data Cache = Cache { cachedTopOrdering :: Maybe [AlgNode] } 
@@ -119,7 +119,7 @@ putCache c =
     s <- get
     put $ s { cache = c }
            
-instance DagRewrite DefaultRewrite where
+instance DagRewrite (DefaultRewrite o) o where
   logGeneral s = D $ tell $ Seq.singleton s
 
   logRewrite rewrite node = 
