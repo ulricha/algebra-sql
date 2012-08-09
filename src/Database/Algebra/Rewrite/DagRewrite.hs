@@ -26,8 +26,6 @@ class Monad r => (DagRewrite r) o | o -> r where
   logGeneral :: String -> r ()
   -- | Log a rewrite
   logRewrite :: String -> AlgNode -> r ()
-  -- | hasPath a b returns 'True' iff there is a path from a to b in the DAG.
-  hasPath :: AlgNode -> AlgNode -> r Bool
   -- | Return the set of nodes that are reachable from the specified node.
   reachableNodesFrom :: AlgNode -> r (S.Set AlgNode)
   -- | Return the parents of a node
@@ -126,11 +124,6 @@ instance DagRewrite (DefaultRewrite o) o where
   logRewrite rewrite node = 
     logGeneral $ "Triggering rewrite " ++ rewrite ++ " at node " ++ (show node)
            
-  hasPath a b =
-    D $ do
-      d <- gets dag
-      return $ Dag.hasPath a b d
-  
   reachableNodesFrom n =
     D $ do
       d <- gets dag
