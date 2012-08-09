@@ -60,7 +60,7 @@ try (Just x) = return x
 try Nothing  = fail ""
                     
 -- | Runs the supplied Match action on the operator that belongs to the given node.
-matchOp :: Dag.Operator o => AlgNode -> (o -> Match o p a) -> Match o p a
+matchOp :: AlgNode -> (o -> Match o p a) -> Match o p a
 matchOp q match = M $ asks ((Dag.operator q) . dag) >>= (\o -> unwrap $ match o)
   where unwrap (M r) = r
 

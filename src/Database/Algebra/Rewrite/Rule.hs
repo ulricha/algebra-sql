@@ -17,7 +17,7 @@ applyRuleSet :: DagRewrite (r o) o => NodeMap p -> RuleSet r o p -> AlgNode -> r
 applyRuleSet pm rules q = do
   d <- getDag
   
-  let aux []     = return False
+  let aux []        = return False
       aux (rule:rs) = case runMatch d pm (rule q) of
                           Just rewrite -> rewrite >> return True
                           Nothing      -> aux rs
