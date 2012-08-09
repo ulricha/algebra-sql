@@ -6,7 +6,7 @@ module Database.Algebra.Rewrite.DagRewrite
          -- ** The Rewrite monad
          DagRewrite(..)
        , DefaultRewrite
-       , runRewrite
+       , runDefaultRewrite
        , initRewriteState
        , Log
        ) where
@@ -82,8 +82,8 @@ initRewriteState d =
                                                                
 -- | Run a rewrite action on the supplied graph. Returns the rewritten node map, the potentially
 -- modified list of root nodes, the result of the rewrite and the rewrite log.
-runRewrite :: Dag.Operator a => DefaultRewrite a r -> Dag.AlgebraDag a -> (Dag.AlgebraDag a, r, Log)
-runRewrite (D m) d = (dag s, res, rewriteLog) 
+runDefaultRewrite :: Dag.Operator a => DefaultRewrite a r -> Dag.AlgebraDag a -> (Dag.AlgebraDag a, r, Log)
+runDefaultRewrite (D m) d = (dag s, res, rewriteLog) 
   where ((res, rewriteLog), s) = runState (runWriterT m) (initRewriteState d)  
         
 -- | The log from a sequence of rewrite actions.
