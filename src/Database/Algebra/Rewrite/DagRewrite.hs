@@ -5,7 +5,7 @@ module Database.Algebra.Rewrite.DagRewrite
        (
          -- ** The Rewrite monad
          DagRewrite(..)
-       , DefaultRewrite
+       , DefaultRewrite(..)
        , runDefaultRewrite
        , initRewriteState
        , Log
@@ -21,7 +21,7 @@ import qualified Data.Set as S
 import Database.Algebra.Dag.Common
 import qualified Database.Algebra.Dag as Dag
 
-class Monad r => (DagRewrite r) o | o -> r where
+class Monad r => (DagRewrite r) o | r -> o where
   -- | Log a general message
   logGeneral :: String -> r ()
   -- | Log a rewrite
