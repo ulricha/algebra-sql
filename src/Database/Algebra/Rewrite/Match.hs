@@ -3,10 +3,10 @@
 module Database.Algebra.Rewrite.Match 
        ( Match
        , runMatch
-       , parents
-       , operator
+       , getParents
+       , getOperator
        , hasPath
-       , rootNodes
+       , getRootNodes
        , predicate
        , try
        , properties
@@ -37,17 +37,17 @@ runMatch d pm (M match) = runReader (runMaybeT match) env
   where env = Env { dag = d, propMap = pm }
            
 -- | Returns the parents of a node in a Match context.
-parents :: AlgNode -> Match o p [AlgNode]
-parents q = M $ asks ((Dag.parents q) . dag)
+getParents :: AlgNode -> Match o p [AlgNode]
+getParents q = M $ asks ((Dag.parents q) . dag)
             
-operator :: AlgNode -> Match o p o
-operator q = M $ asks ((Dag.operator q) . dag)
+getOperator :: AlgNode -> Match o p o
+getOperator q = M $ asks ((Dag.operator q) . dag)
 
 hasPath :: AlgNode -> AlgNode -> Match o p Bool
 hasPath q1 q2 = M $ asks ((Dag.hasPath q1 q2) . dag)
                 
-rootNodes :: Match o p [AlgNode]
-rootNodes = M $ asks (Dag.rootNodes . dag)
+getRootNodes :: Match o p [AlgNode]
+getRootNodes = M $ asks (Dag.rootNodes . dag)
 
 -- | Fails the complete match if the predicate is False.
 predicate :: Bool -> Match o p ()
