@@ -13,10 +13,14 @@ import qualified Database.Algebra.Dag as Dag
 import Database.Algebra.Dag.Common
 import Database.Algebra.Rewrite.DagRewrite
 import Database.Algebra.Rewrite.Rule
+import Database.Algebra.Rewrite.Match
 
 -- | Infer properties, then traverse the DAG in preorder fashion and apply the rule set 
 -- at every node. Properties are re-inferred after every change.
-preOrder :: (DagRewrite (r o) o, Dag.Operator o) => r o (NodeMap p) -> RuleSet r o p -> r o Bool
+preOrder :: ( DagRewrite (r o) o
+            , Dag.Operator o
+            , DagMatch (m o p) o p) 
+            => r o (NodeMap p) -> RuleSet m r o p -> r o Bool
 preOrder inferAction rules = 
   let traverse (changedPrev, mProps, visited) q =
         if q `S.member` visited
@@ -53,7 +57,10 @@ preOrder inferAction rules =
      the structur of the DAG is not changed during the rewrites. Properties are only inferred
      once.
 -}
-topologically :: (DagRewrite (r o) o, Dag.Operator o) => r o (NodeMap p) -> RuleSet r o p -> r o Bool
+topologically :: ( DagRewrite (r o) o
+                 , Dag.Operator o
+                 , DagMatch (m o p) o p) 
+                 => r o (NodeMap p) -> RuleSet m r o p -> r o Bool
 topologically inferAction rules = do
   topoOrdering <- topsort
   props <- inferAction
@@ -64,7 +71,10 @@ topologically inferAction rules = do
 
 -- | Infer properties, then traverse the DAG in a postorder fashion and apply the rule set at
 -- every node. Properties are re-inferred after every change.
-postOrder :: (DagRewrite (r o) o, Dag.Operator o) => r o (NodeMap p) -> RuleSet r o p -> r o Bool
+postOrder :: ( DagRewrite (r o) o
+             , Dag.Operator o
+             , DagMatch (m o p) o p) 
+             => r o (NodeMap p) -> RuleSet m r o p -> r o Bool
 postOrder inferAction rules = 
   let traverse (changedPrev, props, visited) q =
         if q `S.member` visited
