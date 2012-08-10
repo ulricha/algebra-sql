@@ -20,7 +20,7 @@ import Database.Algebra.Rewrite.Match
 preOrder :: ( DagRewrite (r o) o
             , Dag.Operator o
             , DagMatch (m o p) o p) 
-            => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o Bool))
+            => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o ()))
             -> r o (NodeMap p) 
             -> RuleSet m r o p 
             -> r o Bool
@@ -63,7 +63,7 @@ preOrder applyMatch inferAction rules =
 topologically :: ( DagRewrite (r o) o
                  , Dag.Operator o
                  , DagMatch (m o p) o p) 
-                 => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o Bool))
+                 => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o ()))
                  -> r o (NodeMap p) 
                  -> RuleSet m r o p 
                  -> r o Bool
@@ -80,7 +80,7 @@ topologically applyRule inferAction rules = do
 postOrder :: ( DagRewrite (r o) o
              , Dag.Operator o
              , DagMatch (m o p) o p) 
-             => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o Bool))
+             => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o ()))
              -> r o (NodeMap p) 
              -> RuleSet m r o p 
              -> r o Bool

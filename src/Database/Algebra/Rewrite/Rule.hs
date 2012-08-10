@@ -16,7 +16,7 @@ type RuleSet m r o p = [Rule m r o p]
 -- rule that matches.
 applyRuleSet :: ( DagRewrite (r o) o
                 , DagMatch (m o p) o p) 
-                => (AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o Bool))
+                => (AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o ()))
                 -> NodeMap p 
                 -> RuleSet m r o p 
                 -> AlgNode 
