@@ -20,8 +20,11 @@ import Database.Algebra.Rewrite.Match
 preOrder :: ( DagRewrite (r o) o
             , Dag.Operator o
             , DagMatch (m o p) o p) 
-            => r o (NodeMap p) -> RuleSet m r o p -> r o Bool
-preOrder inferAction rules = 
+            => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o Bool))
+            -> r o (NodeMap p) 
+            -> RuleSet m r o p 
+            -> r o Bool
+preOrder applyMatch inferAction rules = 
   let traverse (changedPrev, mProps, visited) q =
         if q `S.member` visited
         then return (changedPrev, mProps, visited)
@@ -30,7 +33,7 @@ preOrder inferAction rules =
             Just ps -> return ps
             Nothing -> inferAction
 
-          changedSelf <- applyRuleSet props rules q
+          changedSelf <- applyRuleSet applyMatch props rules q
       
           let mProps' = if changedSelf then Nothing else Just props
           op <- operator q
@@ -60,12 +63,15 @@ preOrder inferAction rules =
 topologically :: ( DagRewrite (r o) o
                  , Dag.Operator o
                  , DagMatch (m o p) o p) 
-                 => r o (NodeMap p) -> RuleSet m r o p -> r o Bool
-topologically inferAction rules = do
+                 => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o Bool))
+                 -> r o (NodeMap p) 
+                 -> RuleSet m r o p 
+                 -> r o Bool
+topologically applyRule inferAction rules = do
   topoOrdering <- topsort
   props <- inferAction
   let rewriteNode changedPrev q = do
-        changed <- applyRuleSet props rules q
+        changed <- applyRuleSet applyRule props rules q
         return $ changed || changedPrev
   foldM rewriteNode False topoOrdering where
 
@@ -74,8 +80,11 @@ topologically inferAction rules = do
 postOrder :: ( DagRewrite (r o) o
              , Dag.Operator o
              , DagMatch (m o p) o p) 
-             => r o (NodeMap p) -> RuleSet m r o p -> r o Bool
-postOrder inferAction rules = 
+             => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o Bool))
+             -> r o (NodeMap p) 
+             -> RuleSet m r o p 
+             -> r o Bool
+postOrder applyRule inferAction rules = 
   let traverse (changedPrev, props, visited) q =
         if q `S.member` visited
         then return (changedPrev, props, visited)
@@ -87,7 +96,7 @@ postOrder inferAction rules =
             Just ps -> return ps
             Nothing -> inferAction
         
-          changedSelf <- applyRuleSet props' rules q
+          changedSelf <- applyRuleSet applyRule props' rules q
           let visited'' = S.insert q visited'
           if changedSelf
             then return (True, Nothing, visited'')
