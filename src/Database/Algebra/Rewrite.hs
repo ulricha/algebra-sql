@@ -1,14 +1,11 @@
 module Database.Algebra.Rewrite
        ( -- * DAG rewriting
          module Database.Algebra.Rewrite.DagRewrite
-         -- * Pattern matching on DAGs
-       , module Database.Algebra.Rewrite.Match
          -- * Rewrite rules
        , module Database.Algebra.Rewrite.Rule
-         -- * DAG traversals
-       , module Database.Algebra.Rewrite.Traversal ) where
+         -- * Pattern syntax
+       , module Database.Algebra.Rewrite.PatternConstruction) where
 
 import Database.Algebra.Rewrite.DagRewrite
-import Database.Algebra.Rewrite.Match
 import Database.Algebra.Rewrite.Rule
-import Database.Algebra.Rewrite.Traversal
+import Database.Algebra.Rewrite.PatternConstruction(pattern, v)

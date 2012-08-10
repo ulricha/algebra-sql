@@ -47,6 +47,8 @@ library
                       Database.Algebra.Aux
 
                       Database.Algebra.Rewrite
+                      Database.Algebra.Rewrite.Match
+                      Database.Algebra.Rewrite.Traversal
 
                       Database.Algebra.Pathfinder
                       Database.Algebra.Pathfinder.Render.XML
@@ -87,12 +89,10 @@ library
                       Database.Algebra.X100.Render.X100Code
                       Database.Algebra.Impossible
 
-                      Database.Algebra.Rewrite.DagRewrite
                       Database.Algebra.Rewrite.PatternSyntax
-                      Database.Algebra.Rewrite.PatternConstruction
-                      Database.Algebra.Rewrite.Match
                       Database.Algebra.Rewrite.Rule
-                      Database.Algebra.Rewrite.Traversal
+                      Database.Algebra.Rewrite.DagRewrite
+                      Database.Algebra.Rewrite.PatternConstruction
 
 
 executable x100dot

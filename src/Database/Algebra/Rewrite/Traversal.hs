@@ -13,7 +13,6 @@ import qualified Database.Algebra.Dag as Dag
 import Database.Algebra.Dag.Common
 import Database.Algebra.Rewrite.DagRewrite
 import Database.Algebra.Rewrite.Rule
-import Database.Algebra.Rewrite.Match
 
 -- | Infer properties, then traverse the DAG in preorder fashion and apply the rule set 
 -- at every node. Properties are re-inferred after every change.
@@ -60,8 +59,7 @@ preOrder applyMatch inferAction rules =
      once.
 -}
 topologically :: ( DagRewrite (r o) o
-                 , Dag.Operator o
-                 , DagMatch (m o p) o p) 
+                 , Dag.Operator o)
                  => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o ()))
                  -> r o (NodeMap p) 
                  -> RuleSet m r o p 
@@ -77,8 +75,7 @@ topologically applyRule inferAction rules = do
 -- | Infer properties, then traverse the DAG in a postorder fashion and apply the rule set at
 -- every node. Properties are re-inferred after every change.
 postOrder :: ( DagRewrite (r o) o
-             , Dag.Operator o
-             , DagMatch (m o p) o p) 
+             , Dag.Operator o)
              => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o ()))
              -> r o (NodeMap p) 
              -> RuleSet m r o p 
