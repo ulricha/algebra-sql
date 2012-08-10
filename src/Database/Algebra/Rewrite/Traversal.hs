@@ -18,8 +18,7 @@ import Database.Algebra.Rewrite.Match
 -- | Infer properties, then traverse the DAG in preorder fashion and apply the rule set 
 -- at every node. Properties are re-inferred after every change.
 preOrder :: ( DagRewrite (r o) o
-            , Dag.Operator o
-            , DagMatch (m o p) o p) 
+            , Dag.Operator o)
             => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o ()))
             -> r o (NodeMap p) 
             -> RuleSet m r o p 
