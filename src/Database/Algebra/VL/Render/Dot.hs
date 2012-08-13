@@ -99,7 +99,7 @@ opDotLabel tm i (NullaryOp (SingletonDescr)) = labelToDoc i "SingletonDescr" emp
 opDotLabel tm i (NullaryOp (ConstructLiteralValue tys vals)) = labelToDoc i "ConstructLiteralValue" 
     (bracketList (\t -> renderColumnType t <> text "\n") tys <> comma
     $$ renderData [vals]) (lookupTags i tm)
-opDotLabel tm i (NullaryOp (ConstructLiteralTable tys vals)) = labelToDoc i "ConstructLiteralValue" 
+opDotLabel tm i (NullaryOp (ConstructLiteralTable tys vals)) = labelToDoc i "ConstructLiteralTable" 
         (bracketList renderColumnType tys <> comma
         $$ renderData vals) (lookupTags i tm)
 opDotLabel tm i (NullaryOp (TableRef n tys ks)) = labelToDoc i "TableRef"
