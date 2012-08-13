@@ -3,7 +3,6 @@
 module Database.Algebra.Rewrite.Match 
        ( DefaultMatch(..)
        , runDefaultMatch
-       , pattern
        , getParents
        , getOperator
        , hasPath
@@ -11,8 +10,7 @@ module Database.Algebra.Rewrite.Match
        , predicate
        , try
        , matchOp
-       , properties
-       , v ) where
+       , properties) where
 
 import qualified Data.Map as M
 
@@ -29,7 +27,7 @@ data Env o p = Env { dag :: Dag.AlgebraDag o
 -- | The Match monad models the failing of a match and provides limited read-only access
 -- to the DAG.
 newtype DefaultMatch o p a = M (MaybeT (Reader (Env o p)) a) deriving (Monad, Functor, Applicative)
-
+                                                                      
 -- | Runs a match on the supplied DAG. If the Match fails, 'Nothing' is returned.
 -- If the Match succeeds, it returns just the result.
 runDefaultMatch :: Dag.AlgebraDag o -> NodeMap p -> DefaultMatch o p a -> Maybe a
