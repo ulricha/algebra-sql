@@ -19,21 +19,30 @@ type TypedColumn = (DataColumn, VLType)
 type Key = [DataColumn]
 type DBCol = Int
 
-data VecOp = Add 
-           | Sub 
-           | Div 
-           | Mul 
-           | Mod 
-           | Eq  
-           | Gt  
-           | GtE 
-           | Lt  
-           | LtE 
-           | Cons 
-           | Conj 
-           | Disj 
+data VecCompOp = Eq
+               | Gt
+               | GtE
+               | Lt
+               | LtE
+               deriving (Eq, Ord, Generic)
+                        
+data VecNumOp = Add
+              | Sub
+              | Div
+              | Mul
+              | Mod
+              deriving (Eq, Ord, Generic)
+                       
+data VecBoolOp = Conj
+               | Disj
+               deriving (Eq, Ord, Generic)
+                        
+data VecOp = COp VecCompOp
+           | NOp VecNumOp
+           | BOp VecBoolOp
+           | Cons
            deriving (Eq, Ord, Generic)
-
+             
 data Expr1 = App1 VecOp Expr1 Expr1
            | Column1 DBCol
            | Constant1 VLVal
@@ -49,19 +58,22 @@ data Expr2 = App2 VecOp Expr2 Expr2
            deriving (Eq, Ord, Show, Generic)
     
 instance Show VecOp where
-    show Add = "+"
-    show Sub = "-"
-    show Div = "/"
-    show Mul = "*"
-    show Mod = "%"
+    show (NOp Add)  = "+"
+    show (NOp Sub)  = "-"
+    show (NOp Div)  = "/"
+    show (NOp Mul)  = "*"
+    show (NOp Mod)  = "%"
+    show (COp o)    = show o
+    show Cons       = ":"
+    show (BOp Conj) = "&&"
+    show (BOp Disj) = "||"
+    
+instance Show VecCompOp where
     show Eq  = "=="
     show Gt  = ">"
     show GtE = ">="
     show Lt  = "<"
     show LtE = "<="
-    show Cons = ":"
-    show Conj = "&&"
-    show Disj = "||"
     
 data ISTransProj = STDescrCol
                  | STPosCol
@@ -153,6 +165,8 @@ data UnOp = Unique
           | Only
           | Singleton
           | CompExpr1 Expr1
+          | SelectPos1 VecCompOp Nat
+          | SelectPos1L VecCompOp Nat
     deriving (Eq, Ord, Generic, Show)
              
 
@@ -170,8 +184,8 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | CompExpr2 Expr2
            | CompExpr2L Expr2
            | VecSumL
-           | SelectPos VecOp -- (DBV, RenameVector)
-           | SelectPosL VecOp -- (DBV, RenameVector)
+           | SelectPos VecCompOp -- (DBV, RenameVector)
+           | SelectPosL VecCompOp -- (DBV, RenameVector)
            | PairA
            | PairL
            | ZipL            -- (DBV, RenameVector, RenameVector)

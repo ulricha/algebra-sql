@@ -28,6 +28,9 @@ instance ToJSON Expr2 where
 instance ToJSON Expr1 where
 instance ToJSON LeftCol where
 instance ToJSON RightCol where
+instance ToJSON VecNumOp where
+instance ToJSON VecBoolOp where
+instance ToJSON VecCompOp where
 
 instance FromJSON TerOp where
 instance FromJSON BinOp where
@@ -45,6 +48,9 @@ instance FromJSON Expr2 where
 instance FromJSON Expr1 where
 instance FromJSON LeftCol where
 instance FromJSON RightCol where
+instance FromJSON VecNumOp where
+instance FromJSON VecBoolOp where
+instance FromJSON VecCompOp where
 
 instance ToJSON Plan where
 instance FromJSON Plan where
