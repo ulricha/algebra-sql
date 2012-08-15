@@ -90,8 +90,7 @@ data PosProj = PosNumber
              | PosIdentity
              deriving (Eq, Ord, Generic, Show)
                          
-data PayloadProj = PLNumber
-                 | PLConst VLVal
+data PayloadProj = PLConst VLVal
                  | PLCol DBCol
                  deriving (Eq, Ord, Generic, Show)
                           
@@ -160,7 +159,8 @@ data UnOp = Unique
           | R2
           | R3
           | ProjectRename (ISTransProj, ISTransProj)
-          | ProjectValue (DescrProj, PosProj, [PayloadProj])
+          | ProjectPayload ([PayloadProj])
+          | ProjectAdmin (DescrProj, PosProj)
           | SelectItem
           | Only
           | Singleton

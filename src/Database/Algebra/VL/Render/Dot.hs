@@ -63,7 +63,6 @@ renderTableKey (x:xs) = text x <> comma <+> renderTableKey xs
 renderTableKey [] = text "NOKEY"
                     
 renderPayloadProj :: (Doc, PayloadProj) -> Doc
-renderPayloadProj (d, PLNumber) = d <> colon <> text "#"
 renderPayloadProj (d, PLConst v) = d <> colon <> renderTblVal v
 renderPayloadProj (d, PLCol c) = d <> colon <> int c
 
@@ -131,15 +130,16 @@ opDotLabel tm i (UnOp R3 _) = labelToDoc i "R3" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (ProjectRename (p1, p2)) _) = 
   labelToDoc i "ProjectRename" pLabel (lookupTags i tm)
   where pLabel = parens $ (renderISTransProj (text "posnew", p1)) <> comma <+> (renderISTransProj (text "posold", p2))
-opDotLabel tm i (UnOp (ProjectValue (pDescr, pPos, pCols)) _) =
-  labelToDoc i "ProjectValue" pLabel (lookupTags i tm)
+opDotLabel tm i (UnOp (ProjectPayload pCols) _) =
+  labelToDoc i "ProjectPayload" pLabel (lookupTags i tm)
+  where pLabel = valCols
+        valCols = bracketList (\(j, p) -> renderPayloadProj (itemLabel j, p)) $ zip ([1..] :: [Int]) pCols
+        itemLabel j = (text "item") <> (int j)
+opDotLabel tm i (UnOp (ProjectAdmin (pDescr, pPos)) _) =
+  labelToDoc i "ProjectAdmin" pLabel (lookupTags i tm)
   where pLabel = parens $ (renderDescrProj (text "descr", pDescr)) 
                  <> comma 
                  <+> (renderPosProj (text "pos", pPos))
-                 <> comma
-                 <+> valCols
-        valCols = bracketList (\(j, p) -> renderPayloadProj (itemLabel j, p)) $ zip ([1..] :: [Int]) pCols
-        itemLabel j = (text "item") <> (int j)
 opDotLabel tm i (UnOp SelectItem _) = labelToDoc i "SelectItem" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Only _) = labelToDoc i "Only" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (CompExpr1 expr) _) = 
