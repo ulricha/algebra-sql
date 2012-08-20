@@ -142,8 +142,8 @@ opDotLabel tm i (UnOp (ProjectAdmin (pDescr, pPos)) _) =
                  <+> (renderPosProj (text "pos", pPos))
 opDotLabel tm i (UnOp (SelectExpr e) _) = labelToDoc i "SelectExpr" (renderExpr1 e) (lookupTags i tm)
 opDotLabel tm i (UnOp Only _) = labelToDoc i "Only" empty (lookupTags i tm)
-opDotLabel tm i (UnOp (CompExpr1 expr) _) = 
-  labelToDoc i "CompExpr1" (renderExpr1 expr) (lookupTags i tm)
+opDotLabel tm i (UnOp (CompExpr1L expr) _) = 
+  labelToDoc i "CompExpr1L" (renderExpr1 expr) (lookupTags i tm)
 opDotLabel tm i (UnOp Singleton _) = labelToDoc i "Singleton" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (SelectPos1 o (N p)) _)  = labelToDoc i "SelectPos1" ((text $ show o) <+> int p) (lookupTags i tm)
 opDotLabel tm i (UnOp (SelectPos1L o (N p)) _) = labelToDoc i "SelectPos1L" ((text $ show o) <+> int p) (lookupTags i tm)

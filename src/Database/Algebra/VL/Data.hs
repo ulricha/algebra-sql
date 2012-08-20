@@ -165,7 +165,7 @@ data UnOp = Unique
           | SelectExpr Expr1
           | Only
           | Singleton
-          | CompExpr1 Expr1
+          | CompExpr1L Expr1
           | SelectPos1 VecCompOp Nat
           | SelectPos1L VecCompOp Nat
     deriving (Eq, Ord, Generic, Show)
