@@ -140,7 +140,7 @@ opDotLabel tm i (UnOp (ProjectAdmin (pDescr, pPos)) _) =
   where pLabel = parens $ (renderDescrProj (text "descr", pDescr)) 
                  <> comma 
                  <+> (renderPosProj (text "pos", pPos))
-opDotLabel tm i (UnOp SelectItem _) = labelToDoc i "SelectItem" empty (lookupTags i tm)
+opDotLabel tm i (UnOp (SelectExpr e) _) = labelToDoc i "SelectExpr" (renderExpr1 e) (lookupTags i tm)
 opDotLabel tm i (UnOp Only _) = labelToDoc i "Only" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (CompExpr1 expr) _) = 
   labelToDoc i "CompExpr1" (renderExpr1 expr) (lookupTags i tm)

@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes, GADTs, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
+
 module Database.Algebra.VL.Data where
 
 import GHC.Generics (Generic)
@@ -161,7 +162,7 @@ data UnOp = Unique
           | ProjectRename (ISTransProj, ISTransProj)
           | ProjectPayload ([PayloadProj])
           | ProjectAdmin (DescrProj, PosProj)
-          | SelectItem
+          | SelectExpr Expr1
           | Only
           | Singleton
           | CompExpr1 Expr1
