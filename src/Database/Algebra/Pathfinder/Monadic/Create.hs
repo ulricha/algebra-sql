@@ -1,6 +1,6 @@
 -- | This module exports monadic combinators for creating graphs
 module Database.Algebra.Pathfinder.Monadic.Create (attachM, castM, eqJoinM, eqTJoinM, rankM, differenceM, rowrankM, posSelectM, selectM,
-                                              distinctM, crossM, notM, unionM, projM, aggrM, rownumM, rownum'M, operM) where
+                                              distinctM, crossM, notM, unionM, projM, aggrM, rownumM, rownum'M, operM, thetaJoinM) where
 
 import qualified Database.Algebra.Pathfinder.Data.Create as C    
 import Database.Algebra.Pathfinder.Data.Algebra
@@ -25,6 +25,10 @@ attachM n t v = bind1 (C.attach n t v)
 --  `ResAttrName' afterwards.
 castM :: AttrName -> ResAttrName -> ATy -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 castM n r t = bind1 (C.cast n r t)
+
+-- | Perform theta join on two plans
+thetaJoinM :: String -> String -> String -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+thetaJoinM n1 o n2 = bind2 (C.thetaJoin n1 o n2)
 
 -- | Join two plans where the columns n1 of table 1 and columns n2 of table
 --  2 are equal.
