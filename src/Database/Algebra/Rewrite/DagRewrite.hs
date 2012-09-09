@@ -47,7 +47,7 @@ class Monad r => (DagRewrite r) o | r -> o where
   relinkParents :: Dag.Operator o => AlgNode -> AlgNode -> r ()
   -- | Creates a new node from the operator and replaces the old node with it
   -- by rewireing all links to the old node.
-  relinkToNew :: Dag.Operator o => AlgNode -> o -> r ()
+  relinkToNew :: Dag.Operator o => AlgNode -> o -> r AlgNode
   -- | Replaces the operator at the specified node id with a new operator.
   replace :: Dag.Operator o => AlgNode -> o -> r ()
   -- | Remove all unreferenced nodes from the DAG: all nodes are unreferenced which
@@ -180,6 +180,7 @@ instance DagRewrite (DefaultRewrite o) o where
     if oldNode `elem` rs
       then replaceRoot oldNode newNode
       else return ()
+    return newNode
   
   replace node newOp =
     D $ do
