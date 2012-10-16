@@ -177,6 +177,11 @@ type SemInfPosSel  = (Int, SortInf, Maybe PartAttrName)
 -- element in the pair.
 type SemInfEqJoin  = (LeftAttrName,RightAttrName)
 
+-- | Information on how to perform a theta-join. The first element represents the column from the
+-- first table that has to relate to the column in the second table represnted by the second
+-- element in tuple. The third element represents the type of relation.
+type SemInfThetaJoin = (LeftAttrName, RightAttrName, String)
+
 -- | Information what to put in a literate table
 type SemInfLitTable = [Tuple]
 
@@ -213,7 +218,7 @@ data PFAlgebra where
     Cross      :: AlgNode -> AlgNode -> PFAlgebra                     -- should have two children
     EqJoin     :: SemInfEqJoin -> AlgNode -> AlgNode -> PFAlgebra     -- should have two children 
 --    SemiJoin   :: SemInfEqJoin -> PFAlgebra     -- should have two children 
---    ThetaJoin  :: SemInfThetaJoin -> PFAlgebra  -- should have two children
+    ThetaJoin  :: SemInfThetaJoin -> AlgNode -> AlgNode -> PFAlgebra  -- should have two children
     DisjUnion  :: AlgNode -> AlgNode -> PFAlgebra                     -- should have two children
     Difference :: AlgNode -> AlgNode -> PFAlgebra                     -- should have two children
     Distinct   :: AlgNode -> PFAlgebra                     -- should have one child

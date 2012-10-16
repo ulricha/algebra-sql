@@ -95,6 +95,12 @@ alg2XML gId = do
                                                 xId <- freshId
                                                 tell [mkEqJoinNode xId jc cxId1 cxId2]
                                                 return xId
+    alg2XML' (ThetaJoin ji cId1 cId2) = do
+                                          cxId1 <- alg2XML cId1
+                                          cxId2 <- alg2XML cId2
+                                          xId <- freshId
+                                          tell [mkThetaJoinNode xId ji cxId1 cxId2]
+                                          return xId
     alg2XML' (FunBinOp (op, res, lArg, rArg) cId) = do
                                                         cxId1 <- alg2XML cId
                                                         xId <- freshId
@@ -328,6 +334,15 @@ mkEqJoinNode :: XMLNode -> (LeftAttrName,RightAttrName) -> XMLNode -> XMLNode ->
 mkEqJoinNode xId (lN, rN) cxId1 cxId2 = let contNode = [[attr "position" "1"] `attrsOf` column lN False,
                                                         [attr "position" "2"] `attrsOf` column rN False] `childsOf` contentNode
                                          in [contNode, mkEdge cxId1, mkEdge cxId2]`childsOf` node xId "eqjoin"
+
+-- Create an XML theta-join node.             
+mkThetaJoinNode :: XMLNode -> (LeftAttrName,RightAttrName, String) -> XMLNode -> XMLNode -> Element ()
+mkThetaJoinNode xId (lN, rN, o) cxId1 cxId2 = let contNode = [[[attr "position" "1"] `attrsOf` column lN False,
+                                                              [attr "position" "2"] `attrsOf` column rN False] 
+                                                                  `childsOf` 
+                                                                    ([attr "kind" o] `attrsOf` xmlElem "comparison")]
+                                                                      `childsOf` contentNode
+                                         in [contNode, mkEdge cxId1, mkEdge cxId2] `childsOf` node xId "thetajoin"
                                                         
 -- Create an XML projection node
 mkProjNode :: XMLNode -> [(NewAttrName, OldAttrName)] -> XMLNode -> Element ()
