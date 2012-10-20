@@ -37,6 +37,7 @@ data Node = TerP Op (Maybe Sem) Child Child Child
           | BinP Op (Maybe Sem) Child Child
           | UnP Op (Maybe Sem) Child
           | NullP Op (Maybe Sem)
+          | HoleP Ident Node
           deriving Show
            
 data Child = NodeC Node
@@ -68,28 +69,35 @@ node = do { c1 <- enclosed child
           ; info <- optionMaybe sem
           ; c2 <- enclosed child 
           ; return $ BinP ops info c1 c2 }
-       <|> try ( do { ops <- operator
-                    ; space
-                    ; info <- optionMaybe sem
-                    ; c1 <- enclosed child
-                    ; space
-                    ; c2 <- enclosed child
-                    ; space
-                    ; c3 <- enclosed child
-                    ; return $ TerP ops info c1 c2 c3 })
-       <|> try  (do { ops <- operator
-                    ; space
-                    ; info <- optionMaybe sem
-                    ; c <- enclosed child
-                    ; return $ UnP ops info c })
-       <|> do { ops <- operator
+       <|> try (do { ops <- operator
+                   ; space
+                   ; info <- optionMaybe sem
+                   ; c1 <- enclosed child
+                   ; space
+                   ; c2 <- enclosed child
+                   ; space
+                   ; c3 <- enclosed child
+                   ; return $ TerP ops info c1 c2 c3 })
+       <|> try (do { ops <- operator
+                   ; space
+                   ; info <- optionMaybe sem
+                   ; c <- enclosed child
+                   ; return $ UnP ops info c })
+       <|> try (do { ops <- operator
+                   ; space
+                   ; info <- optionMaybe sem
+                   ; return $ NullP ops info })
+       <|> do { string "{ }"
               ; space
-              ; info <- optionMaybe sem
-              ; return $ NullP ops info }
+              ; name <- ident
+              ; char '='
+              ; n <- node
+              ; return $ HoleP name n }
        
 altSep :: Parser ()
 altSep = space >> char '|' >> space >> return ()
          
+-- [Op1 | Op2 | ...]
 altOps :: Parser [UIdent]
 altOps = do { char '['
            ; ops <- sepBy1 uident altSep

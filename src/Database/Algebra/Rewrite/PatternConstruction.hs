@@ -166,6 +166,8 @@ gen nodeName (TerP op semBinding child1 child2 child3) = do
   maybeDescend child2 (snd patAndName2)
   maybeDescend child3 (snd patAndName3)
   
+gen _ (HoleP _ _) = undefined
+  
   
 {-
 Split the list of matching patterns and binding names.
