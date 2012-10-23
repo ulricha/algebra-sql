@@ -15,7 +15,7 @@ data VLType = Nat | Int | Bool |  Double
             | Pair VLType VLType | VLList VLType
             deriving (Eq, Ord, Generic, Show)
 
-type DataColumn = String 
+type DataColumn = String
 type TypedColumn = (DataColumn, VLType)
 type Key = [DataColumn]
 type DBCol = Int
@@ -144,6 +144,7 @@ data UnOp = Unique
           | DescToRename
           | ToDescr
           | Segment
+          | Unsegment
           | VecSum VLType
           | VecMin
           | VecMinL
@@ -156,7 +157,7 @@ data UnOp = Unique
           | ReverseA -- (DBV, PropVector)
           | ReverseL -- (DBV, PropVector)
           | FalsePositions
-          | R1 
+          | R1
           | R2
           | R3
           | ProjectRename (ISTransProj, ISTransProj)

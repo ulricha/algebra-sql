@@ -26,7 +26,7 @@ renderColumnType = text . show
 
 renderData :: [[VLVal]] -> Doc
 renderData [] = empty
-renderData xs = (flip (<>) semi . sep . punctuate semi . map renderRow) xs 
+renderData xs = (flip (<>) semi . sep . punctuate semi . map renderRow) xs
 
 renderRow :: [VLVal] -> Doc
 renderRow = hcat . punctuate comma . map renderTblVal
@@ -95,16 +95,16 @@ renderExpr2 (Column2Right (R c)) = text "rcol" <> int c
 -- create the node label from an operator description
 opDotLabel :: NodeMap [Tag] -> AlgNode -> VL -> Doc
 opDotLabel tm i (NullaryOp (SingletonDescr)) = labelToDoc i "SingletonDescr" empty (lookupTags i tm)
-opDotLabel tm i (NullaryOp (ConstructLiteralValue tys vals)) = labelToDoc i "ConstructLiteralValue" 
+opDotLabel tm i (NullaryOp (ConstructLiteralValue tys vals)) = labelToDoc i "ConstructLiteralValue"
     (bracketList (\t -> renderColumnType t <> text "\n") tys <> comma
     $$ renderData [vals]) (lookupTags i tm)
-opDotLabel tm i (NullaryOp (ConstructLiteralTable tys vals)) = labelToDoc i "ConstructLiteralTable" 
+opDotLabel tm i (NullaryOp (ConstructLiteralTable tys vals)) = labelToDoc i "ConstructLiteralTable"
         (bracketList renderColumnType tys <> comma
         $$ renderData vals) (lookupTags i tm)
 opDotLabel tm i (NullaryOp (TableRef n tys ks)) = labelToDoc i "TableRef"
         (quotes (text n) <> comma <+> bracketList (\t -> renderTableType t <> text "\n") tys <> comma $$ renderTableKeys ks)
         (lookupTags i tm)
-opDotLabel tm i (UnOp Unique _) = labelToDoc i "Unique" empty (lookupTags i tm)        
+opDotLabel tm i (UnOp Unique _) = labelToDoc i "Unique" empty (lookupTags i tm)
 opDotLabel tm i (UnOp UniqueL _) = labelToDoc i "UniqueL" empty (lookupTags i tm)
 opDotLabel tm i (UnOp NotPrim _) = labelToDoc i "NotPrim" empty (lookupTags i tm)
 opDotLabel tm i (UnOp NotVec _) = labelToDoc i "NotVec" empty (lookupTags i tm)
@@ -112,6 +112,7 @@ opDotLabel tm i (UnOp LengthA _) = labelToDoc i "LengthA" empty (lookupTags i tm
 opDotLabel tm i (UnOp DescToRename _) = labelToDoc i "DescToRename" empty (lookupTags i tm)
 opDotLabel tm i (UnOp ToDescr _) = labelToDoc i "ToDescr" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Segment _) = labelToDoc i "Segment" empty (lookupTags i tm)
+opDotLabel tm i (UnOp Unsegment _) = labelToDoc i "Unsegment" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (VecSum t) _) = labelToDoc i "VecSum" (renderColumnType t) (lookupTags i tm)
 opDotLabel tm i (UnOp VecMin _) = labelToDoc i "VecMin" empty (lookupTags i tm)
 opDotLabel tm i (UnOp VecMinL _) = labelToDoc i "VecMinL" empty (lookupTags i tm)
@@ -127,7 +128,7 @@ opDotLabel tm i (UnOp FalsePositions _) = labelToDoc i "FalsePositions" empty (l
 opDotLabel tm i (UnOp R1 _) = labelToDoc i "R1" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R2 _) = labelToDoc i "R2" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R3 _) = labelToDoc i "R3" empty (lookupTags i tm)
-opDotLabel tm i (UnOp (ProjectRename (p1, p2)) _) = 
+opDotLabel tm i (UnOp (ProjectRename (p1, p2)) _) =
   labelToDoc i "ProjectRename" pLabel (lookupTags i tm)
   where pLabel = parens $ (renderISTransProj (text "posnew", p1)) <> comma <+> (renderISTransProj (text "posold", p2))
 opDotLabel tm i (UnOp (ProjectPayload pCols) _) =
@@ -137,12 +138,12 @@ opDotLabel tm i (UnOp (ProjectPayload pCols) _) =
         itemLabel j = (text "item") <> (int j)
 opDotLabel tm i (UnOp (ProjectAdmin (pDescr, pPos)) _) =
   labelToDoc i "ProjectAdmin" pLabel (lookupTags i tm)
-  where pLabel = parens $ (renderDescrProj (text "descr", pDescr)) 
-                 <> comma 
+  where pLabel = parens $ (renderDescrProj (text "descr", pDescr))
+                 <> comma
                  <+> (renderPosProj (text "pos", pPos))
 opDotLabel tm i (UnOp (SelectExpr e) _) = labelToDoc i "SelectExpr" (renderExpr1 e) (lookupTags i tm)
 opDotLabel tm i (UnOp Only _) = labelToDoc i "Only" empty (lookupTags i tm)
-opDotLabel tm i (UnOp (CompExpr1L expr) _) = 
+opDotLabel tm i (UnOp (CompExpr1L expr) _) =
   labelToDoc i "CompExpr1L" (renderExpr1 expr) (lookupTags i tm)
 opDotLabel tm i (UnOp Singleton _) = labelToDoc i "Singleton" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (SelectPos1 o (N p)) _)  = labelToDoc i "SelectPos1" ((text $ show o) <+> int p) (lookupTags i tm)
@@ -167,7 +168,7 @@ opDotLabel tm i (BinOp PairA _ _) = labelToDoc i "PairA" empty (lookupTags i tm)
 opDotLabel tm i (BinOp PairL _ _) = labelToDoc i "PairL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp ZipL _ _) = labelToDoc i "ZipL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp CartProduct _ _) = labelToDoc i "CartProduct" empty (lookupTags i tm)
-opDotLabel tm i (BinOp (ThetaJoinFlat expr) _ _) = 
+opDotLabel tm i (BinOp (ThetaJoinFlat expr) _ _) =
   labelToDoc i "ThetaJoinFlat" (renderExpr1 expr) (lookupTags i tm)
 opDotLabel tm i (TerOp CombineVec _ _ _) = labelToDoc i "CombineVec" empty (lookupTags i tm)
 
@@ -235,13 +236,13 @@ preamble = graphAttributes $$ nodeAttributes
 
 renderDotNode :: DotNode -> Doc
 renderDotNode (DotNode n l c s) =
-    int n 
+    int n
     <+> (brackets $ (((text "label=") <> (doubleQuotes $ text l))
                      <> comma
                      <+> (text "color=") <> (renderColor c)
                      <> styleDoc))
     <> semi
-    where styleDoc = 
+    where styleDoc =
               case s of
                   Just Solid -> comma <+> text "solid"
                   Nothing -> empty
@@ -252,12 +253,12 @@ renderDotEdge (DotEdge u v) = int u <+> text "->" <+> int v <> semi
 -- | Render a Dot document from the preamble, nodes and edges
 renderDot :: [DotNode] -> [DotEdge] -> Doc
 renderDot ns es = text "digraph" <> (braces $ preamble $$ nodeSection $$ edgeSection)
-    where nodeSection = vcat $ map renderDotNode ns 
+    where nodeSection = vcat $ map renderDotNode ns
           edgeSection = vcat $ map renderDotEdge es
 
 -- | Create an abstract Dot node from an X100 operator description
 constructDotNode :: [AlgNode] -> NodeMap [Tag] -> (AlgNode, VL) -> DotNode
-constructDotNode rootNodes ts (n, op) = 
+constructDotNode rootNodes ts (n, op) =
     if elem n rootNodes then
         DotNode n l c (Just Solid)
     else
@@ -266,11 +267,11 @@ constructDotNode rootNodes ts (n, op) =
           c = opDotColor op
 
 -- | Create an abstract Dot edge
-constructDotEdge :: (AlgNode, AlgNode) -> DotEdge 
+constructDotEdge :: (AlgNode, AlgNode) -> DotEdge
 constructDotEdge = uncurry DotEdge
 
 -- | extract the operator descriptions and list of edges from a DAG
-extractGraphStructure :: Dag.AlgebraDag VL 
+extractGraphStructure :: Dag.AlgebraDag VL
                      -> ([(AlgNode, VL)], [(AlgNode, AlgNode)])
 extractGraphStructure d = (operators, childs)
     where nodes = Dag.topsort d
