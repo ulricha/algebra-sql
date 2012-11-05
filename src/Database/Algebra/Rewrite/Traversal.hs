@@ -16,13 +16,11 @@ import Database.Algebra.Rewrite.Rule
 
 -- | Infer properties, then traverse the DAG in preorder fashion and apply the rule set 
 -- at every node. Properties are re-inferred after every change.
-preOrder :: ( DagRewrite (r o) o
-            , Dag.Operator o)
-            => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o ()))
-            -> r o (NodeMap p) 
-            -> RuleSet m r o p 
-            -> r o Bool
-preOrder applyMatch inferAction rules = 
+preOrder :: Dag.Operator o
+            => Rewrite o e (NodeMap p) 
+            -> RuleSet o p e
+            -> Rewrite o e Bool
+preOrder inferAction rules = 
   let traverse (changedPrev, mProps, visited) q =
         if q `S.member` visited
         then return (changedPrev, mProps, visited)
@@ -31,7 +29,8 @@ preOrder applyMatch inferAction rules =
             Just ps -> return ps
             Nothing -> inferAction
 
-          changedSelf <- applyRuleSet applyMatch props rules q
+          e <- getExtras
+          changedSelf <- applyRuleSet e props rules q
       
           let mProps' = if changedSelf then Nothing else Just props
           op <- operator q
@@ -58,29 +57,26 @@ preOrder applyMatch inferAction rules =
      the structur of the DAG is not changed during the rewrites. Properties are only inferred
      once.
 -}
-topologically :: ( DagRewrite (r o) o
-                 , Dag.Operator o)
-                 => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o ()))
-                 -> r o (NodeMap p) 
-                 -> RuleSet m r o p 
-                 -> r o Bool
-topologically applyRule inferAction rules = do
+topologically :: Dag.Operator o
+                 => Rewrite o e (NodeMap p) 
+                 -> RuleSet o p e
+                 -> Rewrite o e Bool
+topologically inferAction rules = do
   topoOrdering <- topsort
   props <- inferAction
   let rewriteNode changedPrev q = do
-        changed <- applyRuleSet applyRule props rules q
+        e <- getExtras
+        changed <- applyRuleSet e props rules q
         return $ changed || changedPrev
   foldM rewriteNode False topoOrdering where
 
 -- | Infer properties, then traverse the DAG in a postorder fashion and apply the rule set at
 -- every node. Properties are re-inferred after every change.
-postOrder :: ( DagRewrite (r o) o
-             , Dag.Operator o)
-             => (Dag.AlgebraDag o -> NodeMap p -> m o p (r o ()) -> Maybe (r o ()))
-             -> r o (NodeMap p) 
-             -> RuleSet m r o p 
-             -> r o Bool
-postOrder applyRule inferAction rules = 
+postOrder :: Dag.Operator o
+             => Rewrite o e (NodeMap p) 
+             -> RuleSet o p e
+             -> Rewrite o e Bool
+postOrder inferAction rules = 
   let traverse (changedPrev, props, visited) q =
         if q `S.member` visited
         then return (changedPrev, props, visited)
@@ -92,7 +88,8 @@ postOrder applyRule inferAction rules =
             Just ps -> return ps
             Nothing -> inferAction
         
-          changedSelf <- applyRuleSet applyRule props' rules q
+          e <- getExtras
+          changedSelf <- applyRuleSet e props' rules q
           let visited'' = S.insert q visited'
           if changedSelf
             then return (True, Nothing, visited'')
@@ -111,7 +108,7 @@ postOrder applyRule inferAction rules =
     return changed
   
 -- | Iteratively apply a rewrite, until no further changes occur.
-iteratively :: DagRewrite (r o) o => r o Bool -> r o Bool
+iteratively :: Rewrite o e Bool -> Rewrite o e Bool
 iteratively rewrite = aux False
   where aux b = do
           changed <- rewrite
@@ -121,7 +118,7 @@ iteratively rewrite = aux False
   
 -- | Sequence a list of rewrites and propagate information about
 -- wether one of them applied.
-sequenceRewrites :: DagRewrite (r o) o => [r o Bool] -> r o Bool
+sequenceRewrites :: [Rewrite o e Bool] -> Rewrite o e Bool
 sequenceRewrites rewrites = do
   changed <- sequence rewrites
   return $ or changed
