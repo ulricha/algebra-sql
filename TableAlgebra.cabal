@@ -69,7 +69,7 @@ library
                       Database.Algebra.X100.ExprUtils
                       Database.Algebra.X100.ProjectUtils
     hs-source-dirs:   src
-    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -Werror
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind
     other-modules:    Database.Algebra.Pathfinder.Monadic.Create
                       Database.Algebra.Pathfinder.Data.Algebra
                       Database.Algebra.Pathfinder.Data.Create
@@ -98,7 +98,7 @@ library
 
 executable x100dot
     Main-is: Database/Algebra/X100/Tools/DotGen.hs
-    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -Werror
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind
     hs-source-dirs:   src
     build-depends:    base >= 4.2 && < 5, 
                       aeson >= 0.6, 
@@ -113,7 +113,7 @@ executable x100dot
 
 executable vldot
     Main-is: Database/Algebra/VL/Tools/DotGen.hs
-    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -Werror
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind
     hs-source-dirs:   src
     build-depends:    base >= 4.2 && < 5, 
                       aeson >= 0.6, 
@@ -128,7 +128,7 @@ executable vldot
 
 executable x100gen
     Main-is: Database/Algebra/X100/Tools/CodeGen.hs
-    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -Werror
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind
     hs-source-dirs:   src
     build-depends:    base >= 4.2 && < 5, 
                       aeson >= 0.6, 
