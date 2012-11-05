@@ -61,8 +61,8 @@ initRewriteState d e =
                                                                
 -- | Run a rewrite action on the supplied graph. Returns the rewritten node map, the potentially
 -- modified list of root nodes, the result of the rewrite and the rewrite log.
-runRewrite :: Dag.Operator o => Rewrite o e r -> Dag.AlgebraDag o -> e -> (Dag.AlgebraDag o, r, Log)
-runRewrite (R m) d e = (dag s, res, rewriteLog) 
+runRewrite :: Dag.Operator o => Rewrite o e r -> Dag.AlgebraDag o -> e -> (Dag.AlgebraDag o, e, r, Log)
+runRewrite (R m) d e = (dag s, extras s, res, rewriteLog) 
   where ((res, rewriteLog), s) = runState (runWriterT m) (initRewriteState d e)
         
 -- | The log from a sequence of rewrite actions.
