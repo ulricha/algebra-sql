@@ -17,6 +17,7 @@ module Database.Algebra.Rewrite.DagRewrite
        , rootNodes
        , exposeDag
        , getExtras
+       , updateExtras
        , insert
        , replaceChild
        , relinkParents
@@ -153,6 +154,12 @@ exposeDag = R $ gets dag
           
 getExtras :: Rewrite o e e
 getExtras = R $ gets extras
+          
+updateExtras :: e -> Rewrite o e ()
+updateExtras e =
+  R $ do
+    s <- get
+    put $ s { extras = e }
 
 -- | Insert an operator into the DAG and return its node id.
 insert :: Dag.Operator o => o -> Rewrite o e AlgNode
