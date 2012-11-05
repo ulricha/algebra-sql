@@ -167,7 +167,81 @@ gen nodeName (TerP op semBinding child1 child2 child3) = do
   maybeDescend child3 (snd patAndName3)
   
 gen _ (HoleP _ _) = undefined
-  
+{- TODO
+
+- Function to traverse a pattern tree and return the list of all bindings in a canonical order (pre-order)
+- generate function which matches the sub-hole pattern and returns the list of values for the bound variables
+  (either only algnodes or a wrapper for all types (wrapper must be generated, syntax needs to be extended with
+  type annotations.
+- function (not generated) which takes the (generated) match function and searches from the start of the hole
+  top-down for matches of the sub-hole pattern. Return the first match.
+- 
+
+- 
+
+-}
+        
+{-
+-}
+-- First parameter: node at which the hole starts       
+-- Second parameter: function which matches the sub-hole pattern
+-- Returns the node at which the sub-hole pattern matched and the 
+-- list of values for the binders of the sub-hole pattern.
+{-
+searchHolePat :: (AlgNode -> Match o [AlgNode]) -> AlgNode -> Match o (AlgNode, [AlgNode])
+searchHolePat patMatch q =
+  patMatch q 
+-}
+        
+-- | Generate a function which matches a pattern on a certain node.
+-- The generated function returns values for all binders in the pattern are 
+-- returned in the order given by 'binderNames'
+-- Type of the generated function: 
+--      subhole_xy :: AlgNode -> Match o [AlgNode]
+genSubHoleMatch :: Name -> [Name] -> Pattern -> Q Stmt
+genSubHoleMatch rootName binderNames pat = do
+  -- generate the code for matching the pattern
+  patternStatements <- execWriterT $ gen rootName pat
+  -- return values for the binders in the proper order.
+  let returnStatement   = noBindS $ appE (varE 'return) (listE $ map varE binderNames)
+      body              = doE $ patternStatements ++ [returnStatement]
+
+  funName <- newName "subhole"
+  -- the function binding
+  let fun = funD funName [(clause [varP $ mkName "subNode"] (normalB body) [])]
+  letS $ [fun]
+
+semBinder :: Maybe Sem -> [Ident]
+semBinder (Just (NamedS i)) = [i]
+semBinder (Just WildS)      = []
+semBinder Nothing           = []
+
+opBinder :: Op -> [Ident]
+opBinder (NamedOp i _) = [i]
+opBinder (UnnamedOp _) = []
+         
+childBinders :: Child -> [Ident]
+childBinders (NodeC n)        = collectBinders n
+childBinders WildC            = []
+childBinders (NameC i)        = [i]
+childBinders (NamedNodeC i n) = i : collectBinders n
+
+-- Collect binders in pre-order fashion from a pattern tree
+-- TODO: so far, only binders for nodes (type AlgNode) are collected. This is
+-- necessary so that we can return values for them in a list without type-specific
+-- wrappers
+collectBinders :: Node -> [Ident]
+collectBinders (TerP op _ c1 c2 c3) = opBinder op
+                                      -- ++ semBinder sem
+                                      ++ concatMap childBinders [c1, c2, c3]
+collectBinders (BinP op _ c1 c2)    = opBinder op
+                                      -- ++ semBinder sem
+                                      ++ concatMap childBinders [c1, c2]
+collectBinders (UnP op _ c)         = opBinder op
+                                      -- ++ semBinder sem
+                                      ++ childBinders c
+collectBinders (NullP op _)         = opBinder op -- ++ semBinder sem
+collectBinders (HoleP _ _)            = error "collectBinders: Holes in sub-hole patterns not supported"
   
 {-
 Split the list of matching patterns and binding names.
@@ -186,6 +260,8 @@ the name to which it should be bound.
 This distinction is necessary because a child that is not to be bound
 must be matched anyway with a wildcard pattern so that the operator constructor
 has enough parameters in the match.
+    
+
 -}
 childMatchPattern :: Child -> Q (Q Pat, Maybe Name)
 childMatchPattern WildC   = 
@@ -225,20 +301,14 @@ assembleStatements patternStatements userExpr = do
           DoE userStatements -> userStatements
           _ -> error "PatternConstruction.assembleStatements: no do-block supplied"
           
-  return $ DoE $ ps ++ us
-  
+  return $ DoE $ ps ++ us  
+
 -- | Take q quoted variable with the root node on which to apply the pattern, 
 -- a string description of the pattern and the body of the match
 -- and return the complete match statement. The body has to be a quoted ([| ...|])
 -- do-block.
-pattern :: Q Exp -> String -> Q Exp -> Q Exp
-pattern rootExp patternString userExpr = do
-  
-  re <- rootExp
-  
-  let rootName = case re of 
-        VarE n -> n
-        _      -> error "supplied root node is not a quoted variable"
+pattern :: Name -> String -> Q Exp -> Q Exp
+pattern rootName patternString userExpr = do
   
   let pat = parsePattern patternString
   
