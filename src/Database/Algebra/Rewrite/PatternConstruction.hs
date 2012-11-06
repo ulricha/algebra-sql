@@ -2,11 +2,15 @@
 
 module Database.Algebra.Rewrite.PatternConstruction( pattern, v ) where
 
-import Language.Haskell.TH
-import Control.Monad.Writer
-import Data.Maybe
+import           Control.Applicative
+import           Control.Monad.Writer
+import           Data.Maybe
+import           Language.Haskell.TH
   
-import Database.Algebra.Rewrite.PatternSyntax
+import           Database.Algebra.Dag
+import           Database.Algebra.Dag.Common
+import           Database.Algebra.Rewrite.PatternSyntax
+import qualified Database.Algebra.Rewrite.Match as M
 
 type Code a = WriterT [Q Stmt] Q a
 
@@ -112,7 +116,7 @@ opInfo :: Op -> (Maybe (Q Pat), [Name])
 opInfo (NamedOp bindingName opNames) = (Just $ varP $ mkName bindingName, map mkName opNames)
 opInfo (UnnamedOp opNames) = (Nothing, map mkName opNames)
        
--- generate a list of statements from an operator (tree)
+-- generate a list of node matching statements from an operator (tree)
 gen :: Name -> Node -> Code ()
 gen nodeName (NullP op semBinding) = 
   let semantics = semPatternName semBinding
@@ -166,55 +170,74 @@ gen nodeName (TerP op semBinding child1 child2 child3) = do
   maybeDescend child2 (snd patAndName2)
   maybeDescend child3 (snd patAndName3)
   
-gen _ (HoleP _ _) = undefined
-{- TODO
+gen nodeName (HoleP holeStart subHolePat) = do
+  -- collect all binders from the sub-hole pattern in a canonical order
+  let binderNames = map mkName $ collectBinders subHolePat
+  
+  -- generate a function that tries to match the sub-hole pattern at the given node
+  (patMatchFunName, patMatchFunStmt) <- lift $ genSubHoleMatch binderNames subHolePat
+  emit patMatchFunStmt
+  
+  -- (nodeName, binderNames) <- searchHolePat patMatchName holeStart
+  -- Use function searchHolePat to search for a node at which the sub-hole
+  -- pattern matches.
+  let searchExpr = appE (appE (varE 'searchHolePat) (varE patMatchFunName)) (varE nodeName)
+      bindingPat = tupP [varP (mkName holeStart), listP (map varP binderNames)]
 
-- Function to traverse a pattern tree and return the list of all bindings in a canonical order (pre-order)
-- generate function which matches the sub-hole pattern and returns the list of values for the bound variables
-  (either only algnodes or a wrapper for all types (wrapper must be generated, syntax needs to be extended with
-  type annotations.
-- function (not generated) which takes the (generated) match function and searches from the start of the hole
-  top-down for matches of the sub-hole pattern. Return the first match.
-- 
-
-- 
-
--}
-        
-{-
--}
--- First parameter: node at which the hole starts       
--- Second parameter: function which matches the sub-hole pattern
--- Returns the node at which the sub-hole pattern matched and the 
--- list of values for the binders of the sub-hole pattern.
-{-
-searchHolePat :: (AlgNode -> Match o [AlgNode]) -> AlgNode -> Match o (AlgNode, [AlgNode])
-searchHolePat patMatch q =
-  patMatch q 
--}
+  emit $ bindS bindingPat searchExpr
+    
+-- Traverse a DAG (DFS, preorder) and search for a node where the given pattern applies.
+-- Returns the matching node and the list of values for the pattern's binders.
+searchHolePat :: Operator o
+                 => (AlgNode -> M.Match o p e [AlgNode]) 
+                 -> AlgNode 
+                 -> M.Match o p e (AlgNode, [AlgNode])
+searchHolePat patMatch q = do
+  (d, p, e) <- M.exposeEnv
+  case M.runMatch e d p (patMatch q) of
+    Just nodes -> return (q, nodes)
+    Nothing    -> do
+                    children <- opChildren <$> M.getOperator q
+                    searchChildren patMatch children
+                    
+-- Apply searchHolePat to a list of nodes, take the first one that matches.
+searchChildren :: Operator o 
+                  => (AlgNode -> M.Match o p e [AlgNode]) 
+                  -> [AlgNode] 
+                  -> M.Match o p e (AlgNode, [AlgNode])
+searchChildren _        []     = fail "no match"
+searchChildren patMatch (q:qs) = do
+  (d, p, e) <- M.exposeEnv
+  case M.runMatch e d p(searchHolePat patMatch q) of
+    Just nodes -> return nodes
+    Nothing    -> searchChildren patMatch qs 
         
 -- | Generate a function which matches a pattern on a certain node.
--- The generated function returns values for all binders in the pattern are 
--- returned in the order given by 'binderNames'
+-- The generated function returns values for all binders in the pattern
+-- in the canonical order given by 'binderNames'
 -- Type of the generated function: 
 --      subhole_xy :: AlgNode -> Match o [AlgNode]
-genSubHoleMatch :: Name -> [Name] -> Pattern -> Q Stmt
-genSubHoleMatch rootName binderNames pat = do
+genSubHoleMatch :: [Name] -> Pattern -> Q (Name, Q Stmt)
+genSubHoleMatch binderNames pat = do
   -- generate the code for matching the pattern
+  rootName <- newName "subNode"
   patternStatements <- execWriterT $ gen rootName pat
   -- return values for the binders in the proper order.
   let returnStatement   = noBindS $ appE (varE 'return) (listE $ map varE binderNames)
       body              = doE $ patternStatements ++ [returnStatement]
 
-  funName <- newName "subhole"
   -- the function binding
-  let fun = funD funName [(clause [varP $ mkName "subNode"] (normalB body) [])]
-  letS $ [fun]
+  funName <- newName "subhole"
+  let fun  = funD funName [(clause [varP rootName] (normalB body) [])]
+      stmt = letS $ [fun]
+  return (funName, stmt)
 
+{-
 semBinder :: Maybe Sem -> [Ident]
 semBinder (Just (NamedS i)) = [i]
 semBinder (Just WildS)      = []
 semBinder Nothing           = []
+-}
 
 opBinder :: Op -> [Ident]
 opBinder (NamedOp i _) = [i]
@@ -260,8 +283,6 @@ the name to which it should be bound.
 This distinction is necessary because a child that is not to be bound
 must be matched anyway with a wildcard pattern so that the operator constructor
 has enough parameters in the match.
-    
-
 -}
 childMatchPattern :: Child -> Q (Q Pat, Maybe Name)
 childMatchPattern WildC   = 
@@ -312,8 +333,11 @@ pattern rootName patternString userExpr = do
   
   let pat = parsePattern patternString
   
+  -- generate the code that matches the pattern (a list of statements)
   patternStatements <- execWriterT $ gen rootName pat
   
+  -- combine the generated pattern-matching statements with the
+  -- user-supplied additional predicates
   assembleStatements (mapM id patternStatements) userExpr
                           
 -- | Reference a variable that is bound by a pattern in a quoted match body.
