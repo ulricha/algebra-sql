@@ -77,5 +77,7 @@ properties q = do
 lookupExtras :: Match o p e e
 lookupExtras = M $ asks extras
 
-exposeEnv :: Match o p e (Env o p e)
-exposeEnv = M $ ask
+exposeEnv :: Match o p e (Dag.AlgebraDag o, NodeMap p, e)
+exposeEnv = M $ do
+  env <- ask
+  return (dag env, propMap env, extras env)
