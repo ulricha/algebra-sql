@@ -38,6 +38,7 @@ data Node = TerP Op (Maybe Sem) Child Child Child
           | UnP Op (Maybe Sem) Child
           | NullP Op (Maybe Sem)
           | HoleP Ident Node
+          | HoleEq Ident
           deriving Show
            
 data Child = NodeC Node
@@ -69,6 +70,7 @@ node = do { c1 <- enclosed child
           ; info <- optionMaybe sem
           ; c2 <- enclosed child 
           ; return $ BinP ops info c1 c2 }
+
        <|> try (do { ops <- operator
                    ; space
                    ; info <- optionMaybe sem
@@ -78,21 +80,30 @@ node = do { c1 <- enclosed child
                    ; space
                    ; c3 <- enclosed child
                    ; return $ TerP ops info c1 c2 c3 })
+
        <|> try (do { ops <- operator
                    ; space
                    ; info <- optionMaybe sem
                    ; c <- enclosed child
                    ; return $ UnP ops info c })
+
        <|> try (do { ops <- operator
                    ; space
                    ; info <- optionMaybe sem
                    ; return $ NullP ops info })
+
+       <|> try (do { string "{ }"
+                   ; space
+                   ; name <- ident
+                   ; char '='
+                   ; n <- node
+                   ; return $ HoleP name n })
        <|> do { string "{ }"
               ; space
-              ; name <- ident
-              ; char '='
-              ; n <- node
-              ; return $ HoleP name n }
+              ; string "eq"
+              ; name <- enclosed ident
+              ; return $ HoleEq name
+              }
        
 altSep :: Parser ()
 altSep = space >> char '|' >> space >> return ()

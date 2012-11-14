@@ -5,6 +5,7 @@ module Database.Algebra.Rewrite.PatternConstruction( pattern, v ) where
 import           Control.Applicative
 import           Control.Monad.Writer
 import           Data.Maybe
+import           Debug.Trace
 import           Language.Haskell.TH
   
 import           Database.Algebra.Dag
@@ -185,6 +186,9 @@ gen nodeName (HoleP holeStart subHolePat) = do
       bindingPat = tupP [varP (mkName holeStart), listP (map varP binderNames)]
 
   emit $ bindS bindingPat searchExpr
+  
+gen nodeName (HoleEq eqNode) = do
+  emit $ noBindS $ appE (appE (varE 'searchHoleEq) (varE nodeName)) (varE $ mkName eqNode)
     
 -- Traverse a DAG (DFS, preorder) and search for a node where the given pattern applies.
 -- Returns the matching node and the list of values for the pattern's binders.
@@ -194,8 +198,8 @@ searchHolePat :: Operator o
                  -> M.Match o p e (AlgNode, [AlgNode])
 searchHolePat patMatch q = do
   (d, p, e) <- M.exposeEnv
-  case M.runMatch e d p (patMatch q) of
-    Just nodes -> return (q, nodes)
+  trace ("trying node " ++ (show q)) $ case M.runMatch e d p (patMatch q) of
+    Just nodes -> trace "found sub-hole match" $ return (q, nodes)
     Nothing    -> do
                     children <- opChildren <$> M.getOperator q
                     searchChildren patMatch children
@@ -211,6 +215,26 @@ searchChildren patMatch (q:qs) = do
   case M.runMatch e d p(searchHolePat patMatch q) of
     Just nodes -> return nodes
     Nothing    -> searchChildren patMatch qs 
+    
+-- Search for an occurence of the node 'eqNode', starting at 'startNode'
+searchHoleEq :: Operator o => AlgNode -> AlgNode -> M.Match o p e ()
+searchHoleEq startNode eqNode =
+  if startNode == eqNode
+  then return ()
+  else do
+    (d, _, _) <- M.exposeEnv
+    children <- opChildren <$> M.getOperator startNode
+    if nodeOccurs d eqNode children
+      then return ()
+      else fail "no occurence"
+    
+-- Since we only search for occurences of a particular node and no pattern matching
+-- occurs, we do not burden ourselves with the Match monad here.
+nodeOccurs :: Operator o => AlgebraDag o -> AlgNode -> [AlgNode] -> Bool
+nodeOccurs dag eqNode startNodes = 
+  if eqNode `elem` startNodes
+  then True
+  else or $ map (nodeOccurs dag eqNode . opChildren . (flip operator dag)) startNodes
         
 -- | Generate a function which matches a pattern on a certain node.
 -- The generated function returns values for all binders in the pattern
@@ -264,7 +288,8 @@ collectBinders (UnP op _ c)         = opBinder op
                                       -- ++ semBinder sem
                                       ++ childBinders c
 collectBinders (NullP op _)         = opBinder op -- ++ semBinder sem
-collectBinders (HoleP _ _)            = error "collectBinders: Holes in sub-hole patterns not supported"
+collectBinders (HoleP _ _)          = error "collectBinders: Holes in sub-hole patterns not supported"
+collectBinders (HoleEq _)           = []
   
 {-
 Split the list of matching patterns and binding names.
