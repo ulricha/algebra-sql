@@ -40,7 +40,7 @@ failName = mkName "fail"
          
 catchAllCase :: Q Match
 catchAllCase = match wildP (normalB (appE (varE failName) (litE (stringL "")))) []
-               
+
 data SemPattern = Bind (Q Pat, Name)
                 | NoBind
                 | NoSemantics
@@ -71,7 +71,6 @@ instMatchLambda body = lam1E (varP opName) body
 instMatchExp :: Name -> Q Exp -> Q Exp
 instMatchExp nodeName matchLambda = 
   appE (appE (varE matchOp) (varE nodeName)) matchLambda
-  
                        
 -- (a, b, c) <- ...
 instBindingPattern :: Maybe (Q Pat) -> SemPattern -> [Q Pat] -> Q Pat
