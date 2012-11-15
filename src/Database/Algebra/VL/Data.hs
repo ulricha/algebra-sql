@@ -192,6 +192,10 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | PairL
            | ZipL            -- (DBV, RenameVector, RenameVector)
            | CartProduct
+           -- FIXME bad name: be more descriptive
+           -- This ThetaJoin variant uses the pos column of the left input as the new descriptor
+           | ThetaJoinPos Expr1
+           -- This ThetaJoin variant uses the descr column of the left input as the new descriptor
            | ThetaJoin Expr1
     deriving (Eq, Ord, Generic, Show)
     

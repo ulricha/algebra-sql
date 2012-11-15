@@ -5,7 +5,6 @@ module Database.Algebra.Rewrite.PatternConstruction( pattern, v ) where
 import           Control.Applicative
 import           Control.Monad.Writer
 import           Data.Maybe
-import           Debug.Trace
 import           Language.Haskell.TH
   
 import           Database.Algebra.Dag
@@ -198,8 +197,8 @@ searchHolePat :: Operator o
                  -> M.Match o p e (AlgNode, [AlgNode])
 searchHolePat patMatch q = do
   (d, p, e) <- M.exposeEnv
-  trace ("trying node " ++ (show q)) $ case M.runMatch e d p (patMatch q) of
-    Just nodes -> trace "found sub-hole match" $ return (q, nodes)
+  case M.runMatch e d p (patMatch q) of
+    Just nodes -> return (q, nodes)
     Nothing    -> do
                     children <- opChildren <$> M.getOperator q
                     searchChildren patMatch children
