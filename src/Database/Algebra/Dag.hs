@@ -48,7 +48,7 @@ data AlgebraDag a = AlgebraDag { nodeMap       :: NodeMap a   -- ^ Return the no
                                , rootNodes     :: [AlgNode]   -- ^ Return the (possibly modified) list of root nodes from a DAG
                                }
 
-class Operator a where
+class Ord a => Operator a where
     opChildren :: a -> [AlgNode]
     replaceOpChild :: a -> AlgNode -> AlgNode -> a
     

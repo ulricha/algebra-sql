@@ -44,20 +44,27 @@ data Cache = Cache { cachedTopOrdering :: Maybe [AlgNode] }
 emptyCache :: Cache
 emptyCache = Cache Nothing 
 
-data RewriteState o e = RewriteState { nodeIDSupply   :: AlgNode       -- ^ Supply of fresh node ids
-                                     , dag            :: Dag.AlgebraDag o  -- ^ The DAG itself
-                                     , cache          :: Cache         -- ^ Cache of some topological information
-                                     , extras         ::               e -- ^ Polymorphic container for whatever needs to be provided additionally.
+data RewriteState o e = RewriteState { nodeIDSupply   :: AlgNode          -- ^ Supply of fresh node ids
+                                     , opMap          :: M.Map o AlgNode  -- ^ 
+                                     , dag            :: Dag.AlgebraDag o -- ^ The DAG itself
+                                     , cache          :: Cache            -- ^ Cache of some topological information
+                                     , extras         ::               e  -- ^ Polymorphic container for whatever needs to be provided additionally.
                                      }
                       
 -- | A Monad for DAG rewrites, parameterized over the type of algebra operators.
 newtype Rewrite o e a = R (WriterT Log (State (RewriteState o e)) a) deriving (Monad, Functor, Applicative)
                                                                              
 -- FIXME Map.findMax might call error
-initRewriteState :: Dag.AlgebraDag o -> e -> RewriteState o e
+initRewriteState :: Ord o => Dag.AlgebraDag o -> e -> RewriteState o e
 initRewriteState d e =
     let maxIR = fst $ M.findMax $ Dag.nodeMap d
-    in RewriteState { nodeIDSupply = maxIR + 1, dag = d, cache = emptyCache, extras = e }
+        om = M.foldrWithKey (\n o m -> M.insert o n m) M.empty $ Dag.nodeMap d
+    in RewriteState { nodeIDSupply = maxIR + 1
+                    , dag = d
+                    , cache = emptyCache
+                    , extras = e
+                    , opMap = om
+                    }
                                                                
 -- | Run a rewrite action on the supplied graph. Returns the rewritten node map, the potentially
 -- modified list of root nodes, the result of the rewrite and the rewrite log.
@@ -165,11 +172,17 @@ updateExtras e =
 insert :: Dag.Operator o => o -> Rewrite o e AlgNode
 insert op = 
   R $ do
-    n <- unwrapR freshNodeID
     s <- get
-    unwrapR invalidateCacheM
-    unwrapR $ putDag $ Dag.insert n op $ dag s
-    return n
+    let om = opMap s
+    case M.lookup op om of
+      Just n  -> return n
+      Nothing -> do
+                   n <- unwrapR freshNodeID
+                   unwrapR invalidateCacheM 
+                   unwrapR $ putDag $ Dag.insert n op $ dag s
+                   s' <- get
+                   put $ s' { opMap = M.insert op n om }
+                   return n
 
 -- | replaceChildM n old new replaces all links from node n to node old with links
 --   to node new 
