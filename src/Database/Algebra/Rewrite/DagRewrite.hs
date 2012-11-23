@@ -122,7 +122,7 @@ reachableNodesFrom n =
   R $ do
     d <- gets dag
     return $ Dag.reachableNodesFrom n d
-
+    
 -- | Return the parents of a node
 parents :: AlgNode -> Rewrite o e [AlgNode]
 parents n = 

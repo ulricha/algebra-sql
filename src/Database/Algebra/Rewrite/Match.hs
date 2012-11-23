@@ -7,6 +7,7 @@ module Database.Algebra.Rewrite.Match
        , getOperator
        , hasPath
        , getRootNodes
+       , isReachable
        , predicate
        , try
        , matchOp
@@ -15,12 +16,13 @@ module Database.Algebra.Rewrite.Match
        , properties) where
 
 import qualified Data.Map as M
+import qualified Data.Set as S
 
-import Control.Monad.Reader
-import Control.Monad.Trans.Maybe
-import Control.Applicative
+import           Control.Monad.Reader
+import           Control.Monad.Trans.Maybe
+import           Control.Applicative
   
-import Database.Algebra.Dag.Common
+import           Database.Algebra.Dag.Common
 import qualified Database.Algebra.Dag as Dag
   
 data Env o p e = Env { dag :: Dag.AlgebraDag o
@@ -81,3 +83,11 @@ exposeEnv :: Match o p e (Dag.AlgebraDag o, NodeMap p, e)
 exposeEnv = M $ do
   env <- ask
   return (dag env, propMap env, extras env)
+
+-- Returns true iff the given node is reachable in the DAG
+isReachable :: AlgNode -> Match o p e Bool
+isReachable n =
+  M $ do
+    d <- asks dag
+    let nodes = Dag.reachableNodes d
+    return $ S.member n nodes
