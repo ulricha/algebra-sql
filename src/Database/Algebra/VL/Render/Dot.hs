@@ -168,8 +168,6 @@ opDotLabel tm i (BinOp PairA _ _) = labelToDoc i "PairA" empty (lookupTags i tm)
 opDotLabel tm i (BinOp PairL _ _) = labelToDoc i "PairL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp ZipL _ _) = labelToDoc i "ZipL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp CartProduct _ _) = labelToDoc i "CartProduct" empty (lookupTags i tm)
-opDotLabel tm i (BinOp (ThetaJoinPos expr) _ _) =
-  labelToDoc i "ThetaJoinPos" (renderExpr1 expr) (lookupTags i tm)
 opDotLabel tm i (BinOp (ThetaJoin expr) _ _) =
   labelToDoc i "ThetaJoin" (renderExpr1 expr) (lookupTags i tm)
 opDotLabel tm i (TerOp CombineVec _ _ _) = labelToDoc i "CombineVec" empty (lookupTags i tm)
