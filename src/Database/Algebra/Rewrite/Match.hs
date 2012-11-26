@@ -7,7 +7,6 @@ module Database.Algebra.Rewrite.Match
        , getOperator
        , hasPath
        , getRootNodes
-       , isReachable
        , predicate
        , try
        , matchOp
@@ -41,7 +40,9 @@ runMatch e d pm (M match) = runReader (runMaybeT match) env
      
 -- | Returns the parents of a node in a Match context.
 getParents :: AlgNode -> Match o p e [AlgNode]
-getParents q = M $ asks ((Dag.parents q) . dag)
+getParents q = do
+  parentNodes <- M $ asks ((Dag.parents q) . dag)
+  filterM isReachable parentNodes
           
 getOperator :: AlgNode -> Match o p e o
 getOperator q = M $ asks ((Dag.operator q) . dag)

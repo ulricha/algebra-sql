@@ -28,14 +28,15 @@ module Database.Algebra.Rewrite.DagRewrite
        , infer
        ) where
 
-import Control.Monad.State
-import Control.Monad.Writer
-import Control.Applicative
-import qualified Data.Sequence as Seq
+import           Control.Applicative
+import           Control.Monad.State
+import           Control.Monad.Writer
 import qualified Data.Map as M
+import qualified Data.Sequence as Seq
 import qualified Data.Set as S
+import           Debug.Trace
   
-import Database.Algebra.Dag.Common
+import           Database.Algebra.Dag.Common
 import qualified Database.Algebra.Dag as Dag
 
 -- | Cache some topological information about the DAG.
@@ -125,10 +126,9 @@ reachableNodesFrom n =
     
 -- | Return the parents of a node
 parents :: AlgNode -> Rewrite o e [AlgNode]
-parents n = 
-  R $ do
-    d <- gets dag
-    return $ Dag.parents n d
+parents n = do
+  parentNodes <- R $ gets ((Dag.parents n) . dag)
+  filterM isReachable parentNodes
 
 -- | Return a topological ordering of all reachable nodes in the DAG. 
 topsort :: Dag.Operator o => Rewrite o e [AlgNode]
@@ -230,6 +230,14 @@ pruneUnused =
         unwrapR invalidateCacheM
         unwrapR $ putDag dag'
       Nothing -> return ()
+
+-- Returns true iff the given node is reachable in the DAG
+isReachable :: AlgNode -> Rewrite o e Bool
+isReachable n =
+  R $ do
+    d <- gets dag
+    let nodes = Dag.reachableNodes d
+    return $ S.member n nodes
   
 -- | Replaces an entry in the list of root nodes.
 replaceRoot :: AlgNode -> AlgNode -> Rewrite o e ()
