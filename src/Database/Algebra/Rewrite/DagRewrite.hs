@@ -50,14 +50,15 @@ data RewriteState o e = RewriteState { nodeIDSupply   :: AlgNode          -- ^ S
                                      , dag            :: Dag.AlgebraDag o -- ^ The DAG itself
                                      , cache          :: Cache            -- ^ Cache of some topological information
                                      , extras         ::               e  -- ^ Polymorphic container for whatever needs to be provided additionally.
+                                     , debugFlag      :: Bool             -- ^ Wether to output log messages via Debug.Trace.trace
                                      }
                       
 -- | A Monad for DAG rewrites, parameterized over the type of algebra operators.
 newtype Rewrite o e a = R (WriterT Log (State (RewriteState o e)) a) deriving (Monad, Functor, Applicative)
                                                                              
 -- FIXME Map.findMax might call error
-initRewriteState :: Ord o => Dag.AlgebraDag o -> e -> RewriteState o e
-initRewriteState d e =
+initRewriteState :: Ord o => Dag.AlgebraDag o -> e -> Bool -> RewriteState o e
+initRewriteState d e debug =
     let maxIR = fst $ M.findMax $ Dag.nodeMap d
         om = M.foldrWithKey (\n o m -> M.insert o n m) M.empty $ Dag.nodeMap d
     in RewriteState { nodeIDSupply = maxIR + 1
@@ -65,13 +66,14 @@ initRewriteState d e =
                     , cache = emptyCache
                     , extras = e
                     , opMap = om
+                    , debugFlag = debug
                     }
                                                                
 -- | Run a rewrite action on the supplied graph. Returns the rewritten node map, the potentially
 -- modified list of root nodes, the result of the rewrite and the rewrite log.
-runRewrite :: Dag.Operator o => Rewrite o e r -> Dag.AlgebraDag o -> e -> (Dag.AlgebraDag o, e, r, Log)
-runRewrite (R m) d e = (dag s, extras s, res, rewriteLog) 
-  where ((res, rewriteLog), s) = runState (runWriterT m) (initRewriteState d e)
+runRewrite :: Dag.Operator o => Rewrite o e r -> Dag.AlgebraDag o -> e -> Bool -> (Dag.AlgebraDag o, e, r, Log)
+runRewrite (R m) d e debug = (dag s, extras s, res, rewriteLog) 
+  where ((res, rewriteLog), s) = runState (runWriterT m) (initRewriteState d e debug)
         
 -- | The log from a sequence of rewrite actions.
 type Log = Seq.Seq String
@@ -110,7 +112,12 @@ putCache c =
            
 -- | Log a general message
 logGeneral :: String -> Rewrite o e ()
-logGeneral s = R $ tell $ Seq.singleton s
+logGeneral msg =  do
+  d <- R $ gets debugFlag
+  if d 
+    then trace msg $ R $ tell $ Seq.singleton msg
+    else R $ tell $ Seq.singleton msg
+    
 
 -- | Log a rewrite
 logRewrite :: String -> AlgNode -> Rewrite o e ()
