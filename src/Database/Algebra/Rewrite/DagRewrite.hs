@@ -49,7 +49,7 @@ data RewriteState o e = RewriteState { nodeIDSupply   :: AlgNode          -- ^ S
                                      , opMap          :: M.Map o AlgNode  -- ^ 
                                      , dag            :: Dag.AlgebraDag o -- ^ The DAG itself
                                      , cache          :: Cache            -- ^ Cache of some topological information
-                                     , extras         ::               e  -- ^ Polymorphic container for whatever needs to be provided additionally.
+                                     , extras         :: e                -- ^ Polymorphic container for whatever needs to be provided additionally.
                                      , debugFlag      :: Bool             -- ^ Wether to output log messages via Debug.Trace.trace
                                      }
                       
@@ -117,7 +117,6 @@ logGeneral msg =  do
   if d 
     then trace msg $ R $ tell $ Seq.singleton msg
     else R $ tell $ Seq.singleton msg
-    
 
 -- | Log a rewrite
 logRewrite :: String -> AlgNode -> Rewrite o e ()
