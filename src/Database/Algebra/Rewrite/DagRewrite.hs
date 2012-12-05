@@ -19,6 +19,7 @@ module Database.Algebra.Rewrite.DagRewrite
        , getExtras
        , updateExtras
        , insert
+       , insertNoShare
        , replaceChild
        , relinkParents
        , relinkToNew
@@ -174,7 +175,8 @@ updateExtras e =
     s <- get
     put $ s { extras = e }
 
--- | Insert an operator into the DAG and return its node id.
+-- | Insert an operator into the DAG and return its node id. If the operator is already
+-- present (same op, same children), reuse it.
 insert :: Dag.Operator o => o -> Rewrite o e AlgNode
 insert op = 
   R $ do
@@ -189,6 +191,16 @@ insert op =
                    s' <- get
                    put $ s' { opMap = M.insert op n om }
                    return n
+                   
+-- | Insert an operator into the DAG and return its node id WITHOUT reusing an
+-- operator if it is already present.
+insertNoShare :: Dag.Operator o => o -> Rewrite o e AlgNode
+insertNoShare op =
+  R $ do
+    s <- get
+    n <- unwrapR freshNodeID
+    unwrapR $ putDag $ Dag.insert n op $ dag s
+    return n
 
 -- | replaceChildM n old new replaces all links from node n to node old with links
 --   to node new 
