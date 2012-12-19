@@ -84,11 +84,3 @@ exposeEnv :: Match o p e (Dag.AlgebraDag o, NodeMap p, e)
 exposeEnv = M $ do
   env <- ask
   return (dag env, propMap env, extras env)
-
--- Returns true iff the given node is reachable in the DAG
-isReachable :: AlgNode -> Match o p e Bool
-isReachable n =
-  M $ do
-    d <- asks dag
-    let nodes = Dag.reachableNodes d
-    return $ S.member n nodes
