@@ -94,6 +94,7 @@ library
                       Database.Algebra.Rewrite.Rule
                       Database.Algebra.Rewrite.DagRewrite
                       Database.Algebra.Rewrite.PatternConstruction
+                      Database.Algebra.Rewrite.Properties
 
 
 executable x100dot

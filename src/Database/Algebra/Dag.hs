@@ -109,7 +109,6 @@ operator n d =
         Nothing -> error $ "AlgebraDag.operator: lookup failed for " ++ (show n)
     
 -- | Return a topological ordering of all nodes which are reachable from the root nodes.
--- The second parameter is the set of nodes which are reachable from the root nodes.
 topsort :: Operator a => AlgebraDag a -> [AlgNode]
 topsort d = filter (flip S.member (reachableNodes d)) $ DFS.topsort $ graph d
             

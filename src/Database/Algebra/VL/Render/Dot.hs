@@ -1,13 +1,13 @@
 module Database.Algebra.VL.Render.Dot(renderVLDot, renderTblVal) where
-    
-import qualified Data.IntMap as Map
-import Data.List
 
-import Text.PrettyPrint
-  
-import Database.Algebra.VL.Data
-import Database.Algebra.Dag.Common as C
-import qualified Database.Algebra.Dag as Dag
+import qualified Data.IntMap                 as Map
+import           Data.List
+
+import           Text.PrettyPrint
+
+import qualified Database.Algebra.Dag        as Dag
+import           Database.Algebra.Dag.Common as C
+import           Database.Algebra.VL.Data
 
 nodeToDoc :: AlgNode -> Doc
 nodeToDoc n = (text "id:") <+> (int n)
@@ -61,7 +61,7 @@ renderTableKey :: Key -> Doc
 renderTableKey [x] = text x
 renderTableKey (x:xs) = text x <> comma <+> renderTableKey xs
 renderTableKey [] = text "NOKEY"
-                    
+
 renderPayloadProj :: (Doc, PayloadProj) -> Doc
 renderPayloadProj (d, PLConst v) = d <> colon <> renderTblVal v
 renderPayloadProj (d, PLCol c) = d <> colon <> int c
@@ -75,12 +75,12 @@ renderDescrProj :: (Doc, DescrProj) -> Doc
 renderDescrProj (d, DescrConst v)  = d <> colon <> (integer $ toInteger v)
 renderDescrProj (d, DescrIdentity) = d <> colon <> text "descr"
 renderDescrProj (d, DescrPosCol)   = d <> colon <> text "pos"
-                                     
+
 renderPosProj :: (Doc, PosProj) -> Doc
 renderPosProj (d, PosNumber) = d <> colon <> text "#"
 renderPosProj (d, PosConst v) = d <> colon <> (integer $ toInteger v)
 renderPosProj (d, PosIdentity) = d <> colon <> text "pos"
-                                 
+
 renderExpr1 :: Expr1 -> Doc
 renderExpr1 (App1 op e1 e2) = (parens $ renderExpr1 e1) <+> (text $ show op) <+> (parens $ renderExpr1 e2)
 renderExpr1 (Constant1 val) = renderTblVal val
@@ -282,6 +282,7 @@ constructDotEdge :: (AlgNode, AlgNode) -> DotEdge
 constructDotEdge = uncurry DotEdge
 
 -- | extract the operator descriptions and list of edges from a DAG
+-- FIXME no apparent reason to use topological ordering here
 extractGraphStructure :: Dag.AlgebraDag VL
                      -> ([(AlgNode, VL)], [(AlgNode, AlgNode)])
 extractGraphStructure d = (operators, childs)
