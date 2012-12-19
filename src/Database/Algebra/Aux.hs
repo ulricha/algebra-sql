@@ -1,13 +1,14 @@
 -- | This module provides some very general helper functions.
 module Database.Algebra.Aux where
 
-import qualified Data.Map as M
+import qualified Data.IntMap as IM
+import qualified Data.Map    as M
 
 -- | Perform a map lookup and fail with the given error string if the key
 -- is not present
-lookupUnsafe :: (Ord k, Show k, Show a) => M.Map k a -> String -> k -> a
-lookupUnsafe m s u = 
-    case M.lookup u m of
+lookupUnsafe :: Show a => IM.IntMap a -> String -> Int -> a
+lookupUnsafe m s u =
+    case IM.lookup u m of
         Just p -> p
         Nothing -> error $ s ++ " " ++ (show u) ++ " in " ++ (show m)
 

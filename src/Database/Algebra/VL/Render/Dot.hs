@@ -1,6 +1,6 @@
 module Database.Algebra.VL.Render.Dot(renderVLDot, renderTblVal) where
     
-import qualified Data.Map as Map
+import qualified Data.IntMap as Map
 import Data.List
 
 import Text.PrettyPrint

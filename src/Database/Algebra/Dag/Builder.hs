@@ -1,12 +1,13 @@
 {-# LANGUAGE GADTs #-}
 module Database.Algebra.Dag.Builder where
-    
-import qualified Data.Map as M
-import Control.Monad.State
-import Control.Monad.Reader
 
-import Database.Algebra.Aux
-import Database.Algebra.Dag.Common
+import           Control.Monad.Reader
+import           Control.Monad.State
+import qualified Data.IntMap                 as IM
+import qualified Data.Map                    as M
+
+import           Database.Algebra.Aux
+import           Database.Algebra.Dag.Common
 
 
 data BuildState alg = BuildState {
@@ -20,7 +21,7 @@ data BuildState alg = BuildState {
 -- | The variable environment is a mapping from variable names to graphnodes that represent
 -- | their compiled form.
 -- | The state monad gives access to a supply of fresh variables, and maintains a map from
--- | nodes to node ids. When a node is inserted and an equal node (equal means, equal node 
+-- | nodes to node ids. When a node is inserted and an equal node (equal means, equal node
 -- | and equal child nodes) already exists in the map the node id for that already existing
 -- | node is returned. This allows maximal sharing.
 type GraphM res alg = ReaderT (Gam res, AlgNode) (State (BuildState alg))
@@ -37,12 +38,12 @@ type AlgPlan alg res = (AlgMap alg, res, NodeMap [Tag])
 
 runGraph :: alg -> GraphM r alg res -> AlgPlan alg res
 runGraph l =  constructAlgPlan . flip runState initialBuildState . flip runReaderT ([], 1)
-  where initialBuildState = BuildState { supply = 2, algMap = M.singleton l 1, tags = M.empty }
+  where initialBuildState = BuildState { supply = 2, algMap = M.singleton l 1, tags = IM.empty }
         constructAlgPlan (r, s) = (algMap s, r, tags s)
 
 reverseAlgMap :: AlgMap alg -> M.Map AlgNode alg
 reverseAlgMap = reverseMap
-                  
+
 
 -- | Tag a subtree with a comment
 tag :: String -> AlgNode -> GraphM res alg AlgNode
@@ -54,21 +55,21 @@ tag s c = do
 tagM :: String -> GraphM res alg AlgNode -> GraphM res alg AlgNode
 tagM s = (=<<) (tag s)
 
--- Add tag 
+-- Add tag
 addTag :: AlgNode -> String -> GraphM res alg ()
-addTag i c = modify insertTag 
+addTag i c = modify insertTag
   where
     -- insertTag :: (Int, M.Map Algebra AlgNode, NodeMap [Tag]) -> (Int, M.Map Algebra AlgNode, NodeMap [Tag])
     insertTag :: BuildState a -> BuildState a
-    insertTag s = s { tags = M.insertWith (++) i [c] $ tags s }
+    insertTag s = s { tags = IM.insertWith (++) i [c] $ tags s }
 
 -- | Get the current loop table
 getLoop :: GraphM res alg AlgNode
-getLoop = do 
+getLoop = do
             (_, l) <- ask
             return l
 
--- | Get the current variable environment            
+-- | Get the current variable environment
 getGamma :: GraphM res alg (Gam res)
 getGamma = do
             (g, _) <- ask
@@ -89,18 +90,18 @@ findNode n = do
               return $ M.lookup n m
 
 -- | Insert a node into the graph construction environment, first check if the node already exists
--- | if so return its id, otherwise insert it and return its id.              
+-- | if so return its id, otherwise insert it and return its id.
 insertNode :: Ord alg => alg -> GraphM res alg AlgNode
 insertNode n = do
-                            v <- findNode n             
+                            v <- findNode n
                             case v of
                                 (Just n') -> return n'
                                 Nothing -> insertNode' n
 
--- | Blindly insert a node, get a fresh id and return that                                 
+-- | Blindly insert a node, get a fresh id and return that
 insertNode' :: Ord alg => alg  -> GraphM res alg AlgNode
-insertNode' n = do 
-                              i <- getFreshId 
+insertNode' n = do
+                              i <- getFreshId
                               s <- get
                               let m' = M.insert n i (algMap s)
                               put $ s { algMap = m' }
@@ -111,16 +112,16 @@ withBinding :: String -> a -> GraphM a alg r -> GraphM a alg r
 withBinding n v a = do
                      local (\(g, alg) -> ((n, v):g, alg)) a
 
--- | Evaluate the graph construction computation with a differnt gamma, 
--- | and loop table. Return within he current computational context.                     
+-- | Evaluate the graph construction computation with a differnt gamma,
+-- | and loop table. Return within he current computational context.
 withContext :: Gam a -> AlgNode -> GraphM a alg r -> GraphM a alg r
 withContext gam loop = local (\_ -> (gam, loop))
 
--- | Lookup a variable in the environment                     
+-- | Lookup a variable in the environment
 fromGam :: String -> GraphM a alg a
 fromGam n = do
              (m, _) <- ask
              case lookup n m of
                  Just r -> return r
                  Nothing -> error $ "Variable: " ++ n ++ " could not be found, should not be possible!"
-                 
+

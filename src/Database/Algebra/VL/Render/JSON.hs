@@ -3,7 +3,7 @@
 module Database.Algebra.VL.Render.JSON(serializePlan, deserializePlan, planToFile, planFromFile) where
 
 import GHC.Generics(Generic)
-import qualified Data.Map as M
+import qualified Data.IntMap as M
 import Control.Monad
 
 import qualified Data.ByteString.Lazy.Char8 as BL

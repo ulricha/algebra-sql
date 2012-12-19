@@ -24,7 +24,7 @@ module Database.Algebra.Dag
        , pruneUnused
        ) where
 
-import qualified Data.Map as M
+import qualified Data.IntMap as M
 import qualified Data.Set as S
 import qualified Data.Graph.Inductive.Graph as G
 import qualified Data.Graph.Inductive.Query.DFS as DFS

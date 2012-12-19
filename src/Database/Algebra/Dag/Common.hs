@@ -1,16 +1,17 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Database.Algebra.Dag.Common where
 
-import qualified Data.Map as M
-import GHC.Generics (Generic)
+import qualified Data.IntMap  as IM
+import qualified Data.Map     as M
+import           GHC.Generics (Generic)
 
-import Data.Aeson (ToJSON, FromJSON)
+import           Data.Aeson   (FromJSON, ToJSON)
 
 -- | Identifiers for DAG nodes.
-type AlgNode = Int 
+type AlgNode = Int
 
 type AlgMap alg = M.Map alg AlgNode
-type NodeMap a = M.Map AlgNode a
+type NodeMap a = IM.IntMap a
 
 type Tag = String
 

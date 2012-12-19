@@ -14,7 +14,7 @@ module Database.Algebra.Rewrite.Match
        , exposeEnv
        , properties) where
 
-import qualified Data.Map as M
+import qualified Data.IntMap as M
 import qualified Data.Set as S
 
 import           Control.Monad.Reader
