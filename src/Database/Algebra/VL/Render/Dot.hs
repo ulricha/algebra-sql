@@ -173,7 +173,18 @@ opDotLabel tm i (BinOp (ThetaJoin expr) _ _) =
 opDotLabel tm i (TerOp CombineVec _ _ _) = labelToDoc i "CombineVec" empty (lookupTags i tm)
 
 opDotColor :: VL -> DotColor
+opDotColor (BinOp DistDesc _ _)      = Red
+opDotColor (BinOp CartProduct _ _)   = Red
+opDotColor (BinOp (ThetaJoin _) _ _) = Green
+opDotColor (BinOp SortWith _ _)      = Tomato
+opDotColor (BinOp GroupBy _ _)       = Tomato
+opDotColor (BinOp PropRename _ _)    = Tan
+opDotColor (BinOp DistLift _ _)      = Tan
+opDotColor (BinOp RestrictVec _ _)   = DodgerBlue
+opDotColor (TerOp CombineVec _ _ _)  = DodgerBlue
+opDotColor (UnOp (SelectExpr _) _)   = LightSkyBlue
 opDotColor _ = Gray
+
 -- Dot colors
 data DotColor = Tomato
               | Salmon
