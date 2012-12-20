@@ -15,5 +15,10 @@ lookupUnsafe m s u =
 replace :: Eq a => a -> a -> a -> a
 replace orig new x = if x == orig then new else x
 
+reverseToIntMap :: M.Map a Int -> IM.IntMap a
+reverseToIntMap m = IM.fromList $ map (\(a, b) -> (b, a)) $ M.toList m
+                
 reverseMap :: Ord b => M.Map a b -> M.Map b a
 reverseMap m = M.fromList $ map (\(a, b) -> (b, a)) $ M.toList m
+
+
