@@ -33,6 +33,7 @@ import           Control.Applicative
 import           Control.Monad.State
 import           Control.Monad.Writer
 import qualified Data.IntMap                 as IM
+import qualified Data.List                   as L
 import qualified Data.Map                    as M
 import qualified Data.Sequence               as Seq
 import qualified Data.Set                    as S
@@ -59,16 +60,18 @@ data RewriteState o e = RewriteState { nodeIDSupply   :: AlgNode          -- ^ S
 newtype Rewrite o e a = R (WriterT Log (State (RewriteState o e)) a) deriving (Monad, Functor, Applicative)
 
 -- FIXME Map.findMax might call error
-initRewriteState :: Ord o => Dag.AlgebraDag o -> e -> Bool -> RewriteState o e
+initRewriteState :: (Ord o, Dag.Operator o) => Dag.AlgebraDag o -> e -> Bool -> RewriteState o e
 initRewriteState d e debug =
     let maxIR = fst $ IM.findMax $ Dag.nodeMap d
         om = IM.foldrWithKey (\n o m -> M.insert o n m) M.empty $ Dag.nodeMap d
+
     in RewriteState { nodeIDSupply = maxIR + 1
                     , dag = d
                     , cache = emptyCache
                     , extras = e
                     , opMap = om
                     , debugFlag = debug
+                    , refCountMap = initRefCount $ Dag.nodeMap d
                     }
 
 -- | Run a rewrite action on the supplied graph. Returns the rewritten node map, the potentially

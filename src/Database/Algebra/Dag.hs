@@ -18,19 +18,19 @@ module Database.Algebra.Dag
        , insert
        , delete
        , replace
-       , replaceChild 
+       , replaceChild
        , replaceRoot
          -- * House cleaning
        , pruneUnused
        ) where
 
-import qualified Data.IntMap as M
-import qualified Data.Set as S
-import qualified Data.Graph.Inductive.Graph as G
-import qualified Data.Graph.Inductive.Query.DFS as DFS
-import Data.Graph.Inductive.PatriciaTree
-  
-import Database.Algebra.Dag.Common
+import qualified Data.Graph.Inductive.Graph        as G
+import           Data.Graph.Inductive.PatriciaTree
+import qualified Data.Graph.Inductive.Query.DFS    as DFS
+import qualified Data.IntMap                       as M
+import qualified Data.Set                          as S
+
+import           Database.Algebra.Dag.Common
 {-
 
 general:
@@ -39,48 +39,60 @@ want to keep tidying up to a minimum (garbage collection)
 all operations should only consider nodes that are valid, i.e. reachable from roots
 
 relevant operations: topsort!, parents, reachableNodesFrom
-  
+
 cache reachable nodes -> DagRewrite
 -}
 
 data AlgebraDag a = AlgebraDag { nodeMap       :: NodeMap a   -- ^ Return the nodemap of a DAG
                                , graph         :: UGr         -- ^ Auxilliary representation for topological information
                                , rootNodes     :: [AlgNode]   -- ^ Return the (possibly modified) list of root nodes from a DAG
+                               , refCountMap   :: NodeMap Int -- ^ A map storing the number of parents for each nod e.
                                }
 
 class Ord a => Operator a where
     opChildren :: a -> [AlgNode]
     replaceOpChild :: a -> AlgNode -> AlgNode -> a
-    
+
+-- For every node, count the number of parents (or list of edges to the node).
+-- We don't consider the graph a multi-graph, so an edge (u, v) is only counted once.
+initRefCount :: Dag.Operator o => NodeMap o -> NodeMap Int
+initRefCount nm    = IM.foldr' insertEdge IM.empty nm
+  where insertEdge op rm = L.foldl' incParents rm (L.nub $ Dag.opChildren op)
+        incParents rm n  = IM.insert n ((IM.findWithDefault 0 n rm) + 1) rm
+
 -- | Create a DAG from a map of NodeIDs and algebra operators and a list of root nodes.
 mkDag :: Operator a => NodeMap a -> [AlgNode] -> AlgebraDag a
-mkDag m rs = AlgebraDag { nodeMap = m, graph = g, rootNodes = rs }
+mkDag m rs = AlgebraDag { nodeMap = m
+                        , graph = g
+                        , rootNodes = rs 
+                        , refCountMap = initRefCount m
+                        }
     where g = uncurry G.mkUGraph $ M.foldrWithKey aux ([], []) m
           aux n op (allNodes, allEdges) = (n : allNodes, es ++ allEdges)
               where es = map (\v -> (n, v)) $ opChildren op
-          
+
 -- | Replace an entry in the list of root nodes with a new node. The root node must be
 -- present in the DAG.
 replaceRoot :: AlgebraDag a -> AlgNode -> AlgNode -> AlgebraDag a
 replaceRoot d old new = d { rootNodes = rs' }
   where rs' = map doReplace $ rootNodes d
         doReplace r = if r == old then new else r
-        
+
 -- | Insert a new node into the DAG.
 insert :: Operator a => AlgNode -> a -> AlgebraDag a -> AlgebraDag a
-insert n op d = 
+insert n op d =
     let cs = opChildren op
         g' = G.insEdges (map (\c -> (n, c, ())) cs) $ G.insNode (n, ()) $ graph d
         m' = M.insert n op $ nodeMap d
     in d { nodeMap = m', graph = g' }
-       
+
 -- | Delete a node from the DAG.
 delete :: Operator a => AlgNode -> AlgebraDag a -> AlgebraDag a
 delete n d =
     let g' = G.delNode n $ graph d
         m' = M.delete n $ nodeMap d
     in d { nodeMap = m', graph = g' }
-       
+
 replace :: Operator a => AlgNode -> a -> AlgebraDag a -> AlgebraDag a
 replace node newOp d =
   let oldChildren = opChildren $ operator node d
@@ -89,38 +101,38 @@ replace node newOp d =
       g'          = G.delEdges [ (node, c) | c <- oldChildren ] $ graph d
       g''         = G.insEdges [ (node, c, ()) | c <- newChildren ] g'
   in d { nodeMap = nm', graph = g'' }
-       
+
 -- | Return the list of parents of a node.
 parents :: AlgNode -> AlgebraDag a -> [AlgNode]
 parents n d = G.pre (graph d) n
-              
+
 -- | 'replaceChild n old new' replaces all links from node n to node old with links to node new.
 replaceChild :: Operator a => AlgNode -> AlgNode -> AlgNode -> AlgebraDag a -> AlgebraDag a
-replaceChild n old new d = 
+replaceChild n old new d =
     let m' = M.insert n (replaceOpChild (operator n d) old new) $ nodeMap d
         g' = G.insEdge (n, new, ()) $ G.delEdge (n, old) $ graph d
     in d { nodeMap = m', graph = g' }
-       
+
 -- | Returns the operator for a node.
 operator :: AlgNode -> AlgebraDag a -> a
-operator n d = 
+operator n d =
     case M.lookup n $ nodeMap d of
         Just op -> op
         Nothing -> error $ "AlgebraDag.operator: lookup failed for " ++ (show n)
-    
+
 -- | Return a topological ordering of all nodes which are reachable from the root nodes.
 topsort :: Operator a => AlgebraDag a -> [AlgNode]
 topsort d = filter (flip S.member (reachableNodes d)) $ DFS.topsort $ graph d
-            
+
 -- | Return the set of nodes that are reachable from at least one root node
 reachableNodes :: AlgebraDag a -> S.Set AlgNode
 reachableNodes d = S.fromList $ concatMap (flip DFS.reachable $ graph d) $ rootNodes d
-                   
+
 -- | Prune unreferenced nodes (i.e. unreachable from any root node) from the DAG.
 pruneUnused :: AlgebraDag a -> Maybe (AlgebraDag a)
 pruneUnused d =
     let g = graph d
-        m = nodeMap d 
+        m = nodeMap d
         allNodes = S.fromList $ G.nodes g
         reachable = reachableNodes d
         unreachable = S.difference allNodes reachable
@@ -129,12 +141,12 @@ pruneUnused d =
        else let g' = G.delNodes (S.toList $ unreachable) g
                 m' = S.fold M.delete m unreachable
             in Just $ d { nodeMap = m', graph = g' }
-    
+
 -- | Return all nodes that are reachable from one node.
 reachableNodesFrom :: AlgNode -> AlgebraDag a -> S.Set AlgNode
 reachableNodesFrom n d = S.fromList $ DFS.reachable n $ graph d
-                     
+
 -- | Tests wether there is a path from the first to the second node.
 hasPath :: AlgNode -> AlgNode -> AlgebraDag a -> Bool
 hasPath a b d = b `S.member` (reachableNodesFrom a d)
-                
+
