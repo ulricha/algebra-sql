@@ -24,7 +24,6 @@ module Database.Algebra.Rewrite.DagRewrite
        , relinkParents
        , relinkToNew
        , replace
-       , pruneUnused
        , replaceRoot
        , infer
        ) where
@@ -135,9 +134,7 @@ reachableNodesFrom n =
 
 -- | Return the parents of a node
 parents :: AlgNode -> Rewrite o e [AlgNode]
-parents n = do
-  parentNodes <- R $ gets ((Dag.parents n) . dag)
-  filterM isReachable parentNodes
+parents n = R $ gets ((Dag.parents n) . dag)
 
 -- | Return a topological ordering of all reachable nodes in the DAG.
 topsort :: Dag.Operator o => Rewrite o e [AlgNode]
@@ -238,26 +235,6 @@ replace node newOp =
     d <- gets dag
     unwrapR invalidateCacheM
     unwrapR $ putDag $ Dag.replace node newOp d
-
--- | Remove all unreferenced nodes from the DAG: all nodes are unreferenced which
--- are not reachable from one of the root nodes.
-pruneUnused :: Rewrite o e ()
-pruneUnused =
-  R $ do
-    s <- get
-    case Dag.pruneUnused $ dag s of
-      Just dag' -> do
-        unwrapR invalidateCacheM
-        unwrapR $ putDag dag'
-      Nothing -> return ()
-
--- Returns true iff the given node is reachable in the DAG
-isReachable :: AlgNode -> Rewrite o e Bool
-isReachable n =
-  R $ do
-    d <- gets dag
-    let nodes = Dag.reachableNodes d
-    return $ S.member n nodes
 
 -- | Replaces an entry in the list of root nodes.
 replaceRoot :: Dag.Operator o => AlgNode -> AlgNode -> Rewrite o e ()

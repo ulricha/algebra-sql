@@ -11,7 +11,6 @@ module Database.Algebra.Dag
          -- FIXME is topological sorting still necessary?
        , topsort
        , hasPath
-       , reachableNodes
        , reachableNodesFrom
        , operator
          -- * DAG modification functions
@@ -20,7 +19,6 @@ module Database.Algebra.Dag
        , replace
        , replaceChild
        , replaceRoot
-       , pruneUnused
        ) where
 
 import           Control.Exception.Base
@@ -32,8 +30,8 @@ import qualified Data.List                         as L
 import qualified Data.Set                          as S
 
 import           Database.Algebra.Dag.Common
-{-
 
+{-
 general:
 
 want to keep tidying up to a minimum (garbage collection)
@@ -192,26 +190,7 @@ operator n d =
 
 -- | Return a topological ordering of all nodes which are reachable from the root nodes.
 topsort :: Operator a => AlgebraDag a -> [AlgNode]
-topsort d = filter (flip S.member (reachableNodes d)) $ DFS.topsort $ graph d
-
--- | Return the set of nodes that are reachable from at least one root node
-reachableNodes :: AlgebraDag a -> S.Set AlgNode
-reachableNodes d = S.fromList $ concatMap (flip DFS.reachable $ graph d) $ rootNodes d
-
--- FIXME function should no longer be necessary.
--- | Prune unreferenced nodes (i.e. unreachable from any root node) from the DAG.
-pruneUnused :: AlgebraDag a -> Maybe (AlgebraDag a)
-pruneUnused d =
-    let g = graph d
-        m = nodeMap d
-        allNodes = S.fromList $ G.nodes g
-        reachable = reachableNodes d
-        unreachable = S.difference allNodes reachable
-    in if S.null unreachable
-       then Nothing
-       else let g' = G.delNodes (S.toList $ unreachable) g
-                m' = S.fold M.delete m unreachable
-            in Just $ d { nodeMap = m', graph = g' }
+topsort d = DFS.topsort $ graph d
 
 -- | Return all nodes that are reachable from one node.
 reachableNodesFrom :: AlgNode -> AlgebraDag a -> S.Set AlgNode

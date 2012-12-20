@@ -293,10 +293,7 @@ extractGraphStructure d = (operators, childs)
 -- | Render an VL plan into a dot file (GraphViz).
 renderVLDot :: NodeMap [Tag] -> [AlgNode] -> NodeMap VL -> String
 renderVLDot ts roots m = render $ renderDot dotNodes dotEdges
-    where (opLabels, edges) = extractGraphStructure dPruned
+    where (opLabels, edges) = extractGraphStructure d
           d = Dag.mkDag m roots
-          dPruned = case Dag.pruneUnused d of
-                      Just d' -> d'
-                      Nothing  -> d
           dotNodes = map (constructDotNode roots ts) opLabels
           dotEdges = map constructDotEdge edges
