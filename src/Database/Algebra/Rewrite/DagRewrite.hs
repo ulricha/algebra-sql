@@ -33,7 +33,6 @@ import           Control.Applicative
 import           Control.Monad.State
 import           Control.Monad.Writer
 import qualified Data.IntMap                 as IM
-import qualified Data.List                   as L
 import qualified Data.Map                    as M
 import qualified Data.Sequence               as Seq
 import qualified Data.Set                    as S
@@ -71,7 +70,6 @@ initRewriteState d e debug =
                     , extras = e
                     , opMap = om
                     , debugFlag = debug
-                    , refCountMap = initRefCount $ Dag.nodeMap d
                     }
 
 -- | Run a rewrite action on the supplied graph. Returns the rewritten node map, the potentially
@@ -262,7 +260,7 @@ isReachable n =
     return $ S.member n nodes
 
 -- | Replaces an entry in the list of root nodes.
-replaceRoot :: AlgNode -> AlgNode -> Rewrite o e ()
+replaceRoot :: Dag.Operator o => AlgNode -> AlgNode -> Rewrite o e ()
 replaceRoot oldRoot newRoot = do
   R $ do
     s <- get
