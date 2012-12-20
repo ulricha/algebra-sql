@@ -1,15 +1,16 @@
 module Database.Algebra.Pathfinder.Render.XMLUtils where
-    
-import Text.XML.HaXml.Types
 
-import Database.Algebra.Pathfinder.Data.Algebra
-import Database.Algebra.Dag.Common
+import           Text.XML.HaXml.Types
 
-import qualified Data.Map as M
+import           Database.Algebra.Dag.Common
+import           Database.Algebra.Pathfinder.Data.Algebra
 
-import Control.Monad.State
-import Control.Monad.Writer
-import Control.Monad.Reader
+import qualified Data.IntMap                              as IM
+import qualified Data.Map                                 as M
+
+import           Control.Monad.Reader
+import           Control.Monad.State
+import           Control.Monad.Writer
 
 -- Convenient alias for column names
 type ColName = String
@@ -32,12 +33,12 @@ type Dictionary = M.Map GraphNode XMLNode
 -- are the node ids from the graph. The state monad keeps track of the supply of fresh ids
 -- for xml nodes and the dictionary for looking up whether a certain graphnode already has
 -- an xml representation.
-type XML = WriterT [Element ()] (ReaderT (M.Map AlgNode PFAlgebra, M.Map AlgNode [String], Bool) (State (Int, Dictionary)))
+type XML = WriterT [Element ()] (ReaderT (M.Map AlgNode PFAlgebra, NodeMap [String], Bool) (State (Int, Dictionary)))
 
 getTags :: GraphNode -> XML (Maybe [String])
 getTags i = do
              (_, ts, _) <- ask
-             return $ M.lookup i ts
+             return $ IM.lookup i ts
 
 -- Debug enabled?
 debugEnabled :: XML Bool
@@ -49,7 +50,7 @@ debugEnabled = do
 isDefined :: GraphNode -> XML (Maybe XMLNode)
 isDefined g = do
                 (_, d) <- get
-                return $ M.lookup g d 
+                return $ M.lookup g d
 
 -- Get a fresh xml node id.
 freshId :: XML Int
@@ -58,7 +59,7 @@ freshId = do
             put (n + 1, d)
             return n
 
--- Add a mapping from a graphnode to an xml node id to the dictionary            
+-- Add a mapping from a graphnode to an xml node id to the dictionary
 addNodeTrans :: GraphNode -> XMLNode -> XML ()
 addNodeTrans gId xId = do
                         (n, d) <- get
@@ -72,7 +73,7 @@ getNode i = do
 
 
 -- Run the monad and return a list of xml elements from the monad.
-runXML :: Bool -> M.Map AlgNode PFAlgebra -> M.Map AlgNode [String] -> XML a -> [Element ()]
+runXML :: Bool -> M.Map AlgNode PFAlgebra -> NodeMap [String] -> XML a -> [Element ()]
 runXML debug m t = snd . fst . flip runState (0, M.empty) . flip runReaderT (m, t, debug) . runWriterT
 
 -- * Helper functions for constructing xml nodes
@@ -82,7 +83,7 @@ infixr 0 `dataChildOf`
 infixr 0 `attrsOf`
 
 -- | Childs of takes a list of xml elements, and nests them in the xml element given as a second argument
-childsOf :: [Element ()] -> Element () -> Element () 
+childsOf :: [Element ()] -> Element () -> Element ()
 childsOf cs (Elem n attrs cs') = Elem n attrs $ cs' ++ [CElem c () | c <- cs]
 
 -- | Data child of takes some data that can be printed and adds that as child to the xml element given as second argument
@@ -99,7 +100,7 @@ column n v = let new = case v of
                         False -> "false"
               in [attr "name" n, attr "new" new] `attrsOf` xmlElem "column"
 
--- | XML element representing a type              
+-- | XML element representing a type
 typeN :: ATy -> Element ()
 typeN t = [attr "name" $ show t] `attrsOf` xmlElem "type"
 

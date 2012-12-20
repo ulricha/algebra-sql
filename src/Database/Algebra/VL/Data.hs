@@ -1,12 +1,16 @@
-{-# LANGUAGE RankNTypes, GADTs, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module Database.Algebra.VL.Data where
 
-import GHC.Generics (Generic)
+import           GHC.Generics                (Generic)
 
-import Database.Algebra.Aux
-import Database.Algebra.Dag(Operator, replaceOpChild, opChildren)
-import Database.Algebra.Dag.Common
+import           Database.Algebra.Aux
+import           Database.Algebra.Dag        (Operator, opChildren, replaceOpChild)
+import           Database.Algebra.Dag.Common
 
 type VL = Algebra TerOp BinOp UnOp NullOp AlgNode
 
@@ -26,29 +30,28 @@ data VecCompOp = Eq
                | Lt
                | LtE
                deriving (Eq, Ord, Generic)
-                        
+
 data VecNumOp = Add
               | Sub
               | Div
               | Mul
               | Mod
               deriving (Eq, Ord, Generic)
-                       
+
 data VecBoolOp = Conj
                | Disj
                deriving (Eq, Ord, Generic)
-                        
+
 data VecOp = COp VecCompOp
            | NOp VecNumOp
            | BOp VecBoolOp
-           | Cons
            deriving (Eq, Ord, Generic)
-             
+
 data Expr1 = App1 VecOp Expr1 Expr1
            | Column1 DBCol
            | Constant1 VLVal
            deriving (Eq, Ord, Show, Generic)
-                    
+
 newtype LeftCol = L DBCol deriving (Eq, Ord, Show, Generic)
 newtype RightCol = R DBCol deriving (Eq, Ord, Show, Generic)
 
@@ -57,7 +60,7 @@ data Expr2 = App2 VecOp Expr2 Expr2
            | Column2Right RightCol
            | Constant2 VLVal
            deriving (Eq, Ord, Show, Generic)
-    
+
 instance Show VecOp where
     show (NOp Add)  = "+"
     show (NOp Sub)  = "-"
@@ -65,38 +68,37 @@ instance Show VecOp where
     show (NOp Mul)  = "*"
     show (NOp Mod)  = "%"
     show (COp o)    = show o
-    show Cons       = ":"
     show (BOp Conj) = "&&"
     show (BOp Disj) = "||"
-    
+
 instance Show VecCompOp where
     show Eq  = "=="
     show Gt  = ">"
     show GtE = ">="
     show Lt  = "<"
     show LtE = "<="
-    
+
 data ISTransProj = STDescrCol
                  | STPosCol
                  | STNumber
                  deriving (Eq, Ord, Generic, Show)
-                         
+
 data DescrProj = DescrConst Nat
                | DescrIdentity
                | DescrPosCol
                deriving (Eq, Ord, Generic, Show)
-                        
+
 data PosProj = PosNumber
              | PosConst Nat
              | PosIdentity
              deriving (Eq, Ord, Generic, Show)
-                         
+
 data PayloadProj = PLConst VLVal
                  | PLCol DBCol
                  deriving (Eq, Ord, Generic, Show)
-                          
+
 newtype Nat = N Int deriving (Eq, Ord, Generic, Show)
-                             
+
 instance Integral Nat where
   quot (N i1) (N i2)    = N $ quot i1 i2
   rem (N i1) (N i2)     = N $ rem i1 i2
@@ -105,14 +107,14 @@ instance Integral Nat where
   quotRem (N i1) (N i2) = let (q, r) = quotRem i1 i2 in (N q, N r)
   divMod (N i1) (N i2)  = let (d, m) = divMod i1 i2 in (N d, N m)
   toInteger (N i)       = toInteger i
-  
+
 instance Real Nat where
   toRational (N i) = toRational i
-  
+
 instance Enum Nat where
   toEnum         = N
   fromEnum (N i) = i
-  
+
 instance Num Nat where
   (N i1) + (N i2) = N $ i1 + i2
   (N i1) * (N i2) = N $ i1 * i2
@@ -121,7 +123,7 @@ instance Num Nat where
   abs (N i)       = N $ abs i
   signum (N i)    = N $ signum i
   fromInteger i   = N $ fromInteger i
-                          
+
 data VLVal = VLInt Int
            | VLNat Nat
            | VLBool Bool
@@ -170,7 +172,7 @@ data UnOp = Unique
           | SelectPos1 VecCompOp Nat
           | SelectPos1L VecCompOp Nat
     deriving (Eq, Ord, Generic, Show)
-             
+
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | SortWith   -- (DBV, PropVector)
@@ -194,7 +196,7 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | CartProduct
            | ThetaJoin Expr1
     deriving (Eq, Ord, Generic, Show)
-    
+
 data TerOp = CombineVec  -- (DBV, RenameVector, RenameVector)
     deriving (Eq, Ord, Generic, Show)
 
