@@ -4,6 +4,8 @@ module Database.Algebra.Dag
          AlgebraDag
        , Operator(..)
        , nodeMap
+       -- FIXME refCountMap is only exposed for debugging -> remove
+       , refCountMap
        , rootNodes
        , mkDag
          -- * Query functions for topological and operator information
@@ -65,14 +67,29 @@ initRefCount rs nm = L.foldl' incParents (M.foldr' insertEdge M.empty nm) rs
 
 -- | Create a DAG from a map of NodeIDs and algebra operators and a list of root nodes.
 mkDag :: Operator a => NodeMap a -> [AlgNode] -> AlgebraDag a
-mkDag m rs = AlgebraDag { nodeMap = m
+mkDag m rs = AlgebraDag { nodeMap = mNormalized
                         , graph = g
                         , rootNodes = rs
-                        , refCountMap = initRefCount rs m
+                        , refCountMap = initRefCount rs mNormalized
                         }
-    where g = uncurry G.mkUGraph $ M.foldrWithKey aux ([], []) m
+    where mNormalized = normalizeMap rs m
+          g =  uncurry G.mkUGraph $ M.foldrWithKey aux ([], []) mNormalized
           aux n op (allNodes, allEdges) = (n : allNodes, es ++ allEdges)
               where es = map (\v -> (n, v)) $ opChildren op
+
+reachable :: Operator a => NodeMap a -> [AlgNode] -> S.Set AlgNode
+reachable m rs = L.foldl' traverse S.empty rs
+  where traverse :: S.Set AlgNode -> AlgNode -> S.Set AlgNode
+        traverse s n = L.foldl' traverse (S.insert n s) (opChildren $ lookupOp n)
+
+        lookupOp n = case M.lookup n m of
+                       Just op -> op
+                       Nothing -> error $ "node not present in map: " ++ (show n)
+
+normalizeMap :: Operator a => [AlgNode] -> NodeMap a -> NodeMap a
+normalizeMap rs m =
+  let reachableNodes = reachable m rs
+  in M.filterWithKey (\n _ -> S.member n reachableNodes) m
 
 -- Utility functions to maintain the reference counter map and eliminate no
 -- longer referenced nodes.
@@ -94,11 +111,12 @@ decrRefCount d n =
 -- traversed.
 cutEdge :: Operator a => AlgebraDag a -> AlgNode -> AlgebraDag a
 cutEdge d edgeTarget =
+  trace ("cutting edge to " ++ (show edgeTarget)) $
   let d'          = decrRefCount d edgeTarget
       newRefCount = lookupRefCount edgeTarget d'
   in if newRefCount == 0
      then let cs = opChildren $ operator edgeTarget d'
-              d'' = delete edgeTarget d'
+              d'' = trace ("deleting " ++ (show edgeTarget)) $ delete edgeTarget d'
           in L.foldl' cutEdge d'' cs
      else d'
 
@@ -108,9 +126,10 @@ cutEdge d edgeTarget =
 -- an edge with the same edge.
 cutEdge' :: Operator a => AlgebraDag a -> AlgNode -> AlgebraDag a
 cutEdge' d edgeTarget =
+  trace ("cutting edge (nondecr) to " ++ (show edgeTarget)) $
   if (lookupRefCount edgeTarget d) == 0
   then let cs = opChildren $ operator edgeTarget d
-           d' = delete edgeTarget d
+           d' = trace ("deleting " ++ (show edgeTarget)) $ delete edgeTarget d
        in L.foldl' cutEdge d' cs
   else d
 
@@ -123,7 +142,7 @@ addEdgeTo d n =
 -- present in the DAG.
 replaceRoot :: Operator a => AlgebraDag a -> AlgNode -> AlgNode -> AlgebraDag a
 replaceRoot d old new =
-  if old `elem` (rootNodes d)            
+  if old `elem` (rootNodes d)
   then let rs'         = map doReplace $ rootNodes d
            doReplace r = if r == old then new else r
            d'          = trace ((show $ rootNodes d) ++ (show rs')) $ d { rootNodes = rs' }
