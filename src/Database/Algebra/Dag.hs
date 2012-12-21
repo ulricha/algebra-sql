@@ -31,6 +31,8 @@ import qualified Data.Set                          as S
 
 import           Database.Algebra.Dag.Common
 
+import           Debug.Trace
+
 {-
 general:
 
@@ -120,14 +122,15 @@ addEdgeTo d n =
 -- | Replace an entry in the list of root nodes with a new node. The root node must be
 -- present in the DAG.
 replaceRoot :: Operator a => AlgebraDag a -> AlgNode -> AlgNode -> AlgebraDag a
-replaceRoot d old new = assert (old /= new) $
-                               -- cut the virtual edge to the old root
-                               -- and insert a virtual edge to the new root
-                               (flip addEdgeTo new $ cutEdge d' old)
-
-  where rs'         = map doReplace $ rootNodes d
-        doReplace r = if r == old then new else r
-        d'          = d { rootNodes = rs' }
+replaceRoot d old new =
+  if old `elem` (rootNodes d)            
+  then let rs'         = map doReplace $ rootNodes d
+           doReplace r = if r == old then new else r
+           d'          = trace ((show $ rootNodes d) ++ (show rs')) $ d { rootNodes = rs' }
+       in -- cut the virtual edge to the old root
+          -- and insert a virtual edge to the new root
+          assert (old /= new) $ (flip addEdgeTo new $ cutEdge d' old)
+  else d
 
 -- | Insert a new node into the DAG.
 insert :: Operator a => AlgNode -> a -> AlgebraDag a -> AlgebraDag a
