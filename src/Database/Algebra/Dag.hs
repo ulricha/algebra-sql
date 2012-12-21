@@ -30,6 +30,7 @@ import qualified Data.Graph.Inductive.Query.DFS    as DFS
 import qualified Data.IntMap                       as M
 import qualified Data.List                         as L
 import qualified Data.Set                          as S
+import           Text.Printf
 
 import           Database.Algebra.Dag.Common
 
@@ -106,6 +107,15 @@ decrRefCount d n =
       refCount' = assert (refCount /= 0) $ refCount - 1
   in d { refCountMap = M.insert n refCount' (refCountMap d) }
 
+-- | Delete a node from the node map and the aux graph
+-- Beware: this leaves the DAG in an inconsistent state, because
+-- reference counters have to be updated.
+delete' :: Operator a => AlgNode -> AlgebraDag a -> AlgebraDag a
+delete' n d =
+    let g' = G.delNode n $ graph d
+        m' = M.delete n $ nodeMap d
+    in d { nodeMap = m', graph = g' }
+
 -- Cut an edge to a node reference counting wise.
 -- If the ref count becomes zero, the node is deleted and the children are
 -- traversed.
@@ -116,9 +126,10 @@ cutEdge d edgeTarget =
       newRefCount = lookupRefCount edgeTarget d'
   in if newRefCount == 0
      then let cs = opChildren $ operator edgeTarget d'
-              d'' = trace ("deleting " ++ (show edgeTarget)) $ delete edgeTarget d'
+              d'' = trace ("deleting " ++ (show edgeTarget)) $ delete' edgeTarget d'
           in L.foldl' cutEdge d'' cs
      else d'
+
 
 -- Don't decrement the ref counter of the top target node edgeTarget.
 -- Prune it if it's already zero and then traverse the children.
@@ -129,7 +140,7 @@ cutEdge' d edgeTarget =
   trace ("cutting edge (nondecr) to " ++ (show edgeTarget)) $
   if (lookupRefCount edgeTarget d) == 0
   then let cs = opChildren $ operator edgeTarget d
-           d' = trace ("deleting " ++ (show edgeTarget)) $ delete edgeTarget d
+           d' = trace ("deleting " ++ (show edgeTarget)) $ delete' edgeTarget d
        in L.foldl' cutEdge d' cs
   else d
 
@@ -143,7 +154,8 @@ addEdgeTo d n =
 replaceRoot :: Operator a => AlgebraDag a -> AlgNode -> AlgNode -> AlgebraDag a
 replaceRoot d old new =
   if old `elem` (rootNodes d)
-  then let rs'         = map doReplace $ rootNodes d
+  then trace (printf "replaceRoot %d -> %d" old new) $
+       let rs'         = map doReplace $ rootNodes d
            doReplace r = if r == old then new else r
            d'          = trace ((show $ rootNodes d) ++ (show rs')) $ d { rootNodes = rs' }
        in -- cut the virtual edge to the old root
@@ -159,13 +171,17 @@ insert n op d =
         m'  = M.insert n op $ nodeMap d
     in L.foldl' addEdgeTo (d { nodeMap = m', graph = g' }) cs
 
--- | Delete a node from the DAG.
+-- | Delete a node from the DAG
+-- Beware: This combinator should be avoided, as it might leave the DAG in
+-- an inconsistent state when edges to n are not cared for.
+-- FIXME: remove combinator
 delete :: Operator a => AlgNode -> AlgebraDag a -> AlgebraDag a
 delete n d =
-    let g' = G.delNode n $ graph d
+    let cs = opChildren $ operator n d
+        g' = G.delNode n $ graph d
         m' = M.delete n $ nodeMap d
         d' = d { nodeMap = m', graph = g' }
-    in cutEdge d' n
+    in L.foldl' cutEdge d' cs
 
 -- Update reference counters if nodes are not simply inserted or deleted but
 -- edges are replaced by other edges.  We must not delete nodes before the new
@@ -173,6 +189,7 @@ delete n d =
 -- a node is no longer referenced (edges might be replaced by themselves).
 replaceEdgesRef :: Operator a => [AlgNode] -> [AlgNode] -> AlgebraDag a -> AlgebraDag a
 replaceEdgesRef oldChildren newChildren d =
+  trace (printf "replaceEdgesRef %s %s" (show oldChildren) (show newChildren)) $
   let -- First, decrement refcounters for the old children
       d'  = L.foldl' decrRefCount d oldChildren
       -- Then, increment refcounters for the new children
@@ -198,10 +215,14 @@ parents n d = G.pre (graph d) n
 -- | 'replaceChild n old new' replaces all links from node n to node old with links to node new.
 replaceChild :: Operator a => AlgNode -> AlgNode -> AlgNode -> AlgebraDag a -> AlgebraDag a
 replaceChild n old new d =
-    let m' = M.insert n (replaceOpChild (operator n d) old new) $ nodeMap d
-        g' = G.insEdge (n, new, ()) $ G.delEdge (n, old) $ graph d
-        d' = d { nodeMap = m', graph = g' }
-    in replaceEdgesRef [old] [new] d'
+  trace (printf "replaceChild %d: %d -> %d" n old new) $
+  let op = operator n d
+  in if old `elem` opChildren op
+     then let m' = M.insert n (replaceOpChild op old new) $ nodeMap d
+              g' = G.insEdge (n, new, ()) $ G.delEdge (n, old) $ graph d
+              d' = d { nodeMap = m', graph = g' }
+          in replaceEdgesRef [old] [new] d'
+     else d
 
 -- | Returns the operator for a node.
 operator :: AlgNode -> AlgebraDag a -> a
