@@ -45,6 +45,70 @@ all operations should only consider nodes that are valid, i.e. reachable from ro
 relevant operations: topsort!, parents, reachableNodesFrom
 
 cache reachable nodes -> DagRewrite
+
+Problem: the similarity to garbage collection does not really hold: We must not
+only not delete a node if it is still referenced in the DAG (DAG-level edge),
+but also, if a reference to the node is still held by the user, that is a
+rewrite rule still holds a reference to a node.
+
+Possible solutions:
+
+1. model this somehow, that is register references to a node explicitly.
+
+Idea: register all nodes which you want to relink to or from explicitly.
+
+Problems: awful code propably, plus: explicit references would have to be
+explicitly dereferenced propably.
+
+2. Explicitly trigger pruning of nodes: have a 'commit' action which triggers
+rewriting and is necessary to get the DAG into a consistent state.
+
+Problem: In a single rule, the graph is not necessarily consistent. Can this
+become a problem?
+
+Inside of a rule: Problematic is a parent lookup which returns nodes which are
+no longer reachable. In that case, we haven't inferred properties for this node,
+so that the lookup fails.
+
+However, during one rule, properties are not reinferred. A node which is made
+unreachable by a rewrite action will still have its properties around since we
+are still in the same rule. After the rule, it will be pruned by 'commit', so
+that it will no longer occur anyway.
+
+Implementation: for every rewrite action which unlinks nodes (e.g. replace
+etc.), record the node that is replaced (as part of the state -> DagRewrite).
+Then: pass a list of nodes to commit
+
+  commit :: [AlgNode] -> AlgebraDag o -> AlgebraDag o
+
+and start pruning from these node.
+
+Problem again: the parts of the graph that are to be pruned according to the
+given top nodes might overlap: Pruning the first node might remove nodes which
+would be removed by the second node as well. This is propably not a problem, we
+just have to be careful to accept failing node lookups during pruning.
+
+The commit call could be inserted in Template Haskell automatically after the
+statement sequence to eliminate a possibility for errors.
+
+3. Order all rewrite actions in a way that nodes are only unlinked when they are
+no longer referenced. This is error prone and will fail. Not an option.
+
+Plan of action:
+
+0. re-design the rewriting API -> replaceRoot, replace etc.
+
+1. In all rewrite actions, remove pruning and maintenance of the reference
+counter.
+
+2. Add a commit combinator to DAG.
+
+3. Add further state to DagRewrite: list of nodes which were unlinked
+
+4. maintain this list in DagRewrite actions.
+
+5. Insert a call to commit in the TH code.
+
 -}
 
 data AlgebraDag a = AlgebraDag { nodeMap       :: NodeMap a   -- ^ Return the nodemap of a DAG
@@ -198,8 +262,9 @@ replaceEdgesRef oldChildren newChildren d =
   -- by new edges.
   in L.foldl' cutEdge' d'' oldChildren
 
-replace :: Operator a => AlgNode -> a -> AlgebraDag a -> AlgebraDag a
+replace :: (Operator a, Show a) => AlgNode -> a -> AlgebraDag a -> AlgebraDag a
 replace node newOp d =
+  trace (printf "replace %d -> %s" node (show newOp)) $
   let oldChildren = opChildren $ operator node d
       newChildren = opChildren newOp
       nm'         = M.insert node newOp $ nodeMap d
@@ -213,6 +278,7 @@ parents :: AlgNode -> AlgebraDag a -> [AlgNode]
 parents n d = G.pre (graph d) n
 
 -- | 'replaceChild n old new' replaces all links from node n to node old with links to node new.
+-- This is the internal variant which does not perform garbage collection.
 replaceChild :: Operator a => AlgNode -> AlgNode -> AlgNode -> AlgebraDag a -> AlgebraDag a
 replaceChild n old new d =
   trace (printf "replaceChild %d: %d -> %d" n old new) $
@@ -243,3 +309,22 @@ reachableNodesFrom n d = S.fromList $ DFS.reachable n $ graph d
 hasPath :: AlgNode -> AlgNode -> AlgebraDag a -> Bool
 hasPath a b d = b `S.member` (reachableNodesFrom a d)
 
+{-
+{-
+-}
+replaceChild' :: AlgNode -> AlgNode -> AlgNode -> AlgebraDag a -> AlgebraDag a
+replaceChild' = undefined
+
+{-
+1. look up parents
+2. for each parent:
+-}
+replace :: AlgNode -> AlgNode -> AlgebraDag a -> AlgebraDag a
+replace = undefined
+
+{-
+-}
+replaceChild :: AlgNode -> AlgNode -> AlgNode -> AlgebraDag a -> AlgebraDag a
+replaceChild = undefined
+
+-}

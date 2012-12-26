@@ -229,7 +229,7 @@ relinkToNew oldNode newOp = do
   return newNode
 
 -- | Replaces the operator at the specified node id with a new operator.
-replace :: Dag.Operator o => AlgNode -> o -> Rewrite o e ()
+replace :: (Show o, Dag.Operator o) => AlgNode -> o -> Rewrite o e ()
 replace node newOp =
   R $ do
     d <- gets dag
