@@ -21,11 +21,11 @@ module Database.Algebra.Rewrite.DagRewrite
        , insert
        , insertNoShare
        , replaceChild
-       , relinkParents
-       , relinkToNew
        , replace
+       , replaceWithNew
        , replaceRoot
        , infer
+       , collect
        ) where
 
 import           Control.Applicative
@@ -52,7 +52,53 @@ data RewriteState o e = RewriteState { nodeIDSupply   :: AlgNode          -- ^ S
                                      , cache          :: Cache            -- ^ Cache of some topological information
                                      , extras         :: e                -- ^ Polymorphic container for whatever needs to be provided additionally.
                                      , debugFlag      :: Bool             -- ^ Wether to output log messages via Debug.Trace.trace
+                                     , collectNodes   :: S.Set AlgNode    -- ^ List of nodes which must be checked during garbage collection
                                      }
+
+{-
+
+The API as it should be:
+
+logGeneral
+logRewrite
+reachableNodesFrom (?)
+parents
+topsort (should not be necessary)
+operator
+rootNodes (?)
+exposeDag
+getExtras
+updateExtras
+insert
+insertNoShare (necessary because of the Reuse/FlowMat problem)
+replaceChild
+relinkParents -> replace'
+replace -> eliminate
+replaceRoot -> merge into replace?
+infer
+
+-> essential rewrite actions:
+
+insert :: o -> DagRewrite
+insertNoShare
+replace'
+replaceChild
+
+-> auxilliary actions/query
+
+logGeneral
+logRewrite
+reachableNodesFrom (?)
+parents
+topsort (?)
+operator
+ootNodes (?)
+exposeDag
+getExtras
+updateExtras
+infer
+
+-}
 
 -- | A Monad for DAG rewrites, parameterized over the type of algebra operators.
 newtype Rewrite o e a = R (WriterT Log (State (RewriteState o e)) a) deriving (Monad, Functor, Applicative)
@@ -69,6 +115,7 @@ initRewriteState d e debug =
                     , extras = e
                     , opMap = om
                     , debugFlag = debug
+                    , collectNodes = S.empty
                     }
 
 -- | Run a rewrite action on the supplied graph. Returns the rewritten node map, the potentially
@@ -210,41 +257,44 @@ replaceChild n old new =
     unwrapR invalidateCacheM
     unwrapR $ putDag $ Dag.replaceChild n old new $ dag s
 
--- | relinkParents old new replaces _all_ links to old with links to new
-relinkParents :: Dag.Operator o => AlgNode -> AlgNode -> Rewrite o e ()
-relinkParents old new = do
+-- | replace old new replaces _all_ links to old with links to new
+replace :: Dag.Operator o => AlgNode -> AlgNode -> Rewrite o e ()
+replace old new = do
   ps <- parents old
   forM_ ps $ (\p -> replaceChild p old new)
+  addCollectNode old
+  R $ do s <- get
+         unwrapR $ putDag $ Dag.replaceRoot (dag s) old new
 
 -- | Creates a new node from the operator and replaces the old node with it
 -- by rewireing all links to the old node.
-relinkToNew :: Dag.Operator o => AlgNode -> o -> Rewrite o e AlgNode
-relinkToNew oldNode newOp = do
+replaceWithNew :: Dag.Operator o => AlgNode -> o -> Rewrite o e AlgNode
+replaceWithNew oldNode newOp = do
   newNode <- insert newOp
-  rs <- rootNodes
-  relinkParents oldNode newNode
-  if oldNode `elem` rs
-    then replaceRoot oldNode newNode
-    else return ()
+  replace oldNode newNode
+  addCollectNode oldNode
   return newNode
 
--- | Replaces the operator at the specified node id with a new operator.
-replace :: (Show o, Dag.Operator o) => AlgNode -> o -> Rewrite o e ()
-replace node newOp =
-  R $ do
-    d <- gets dag
-    unwrapR invalidateCacheM
-    unwrapR $ putDag $ Dag.replace node newOp d
+-- | Apply a pure function to the DAG.
+infer :: (Dag.AlgebraDag o -> b) -> Rewrite o e b
+infer f = R $ liftM f $ gets dag
 
--- | Replaces an entry in the list of root nodes.
+addCollectNode :: AlgNode -> Rewrite o e ()
+addCollectNode n =
+  R $ do
+    s <- get
+    put $ s { collectNodes = S.insert n $ collectNodes s }
+
+collect :: Dag.Operator o => Rewrite o e ()
+collect =
+  R $ do
+    s <- get
+    put $ s { dag = Dag.collect (collectNodes s) (dag s) }
+
 replaceRoot :: Dag.Operator o => AlgNode -> AlgNode -> Rewrite o e ()
-replaceRoot oldRoot newRoot = do
+replaceRoot oldRoot newRoot =
   R $ do
     s <- get
     if not $ IM.member newRoot $ Dag.nodeMap $ dag s
       then error "replaceRootM: new root node is not present in the DAG"
       else unwrapR $ putDag $ Dag.replaceRoot (dag s) oldRoot newRoot
-
--- | Apply a pure function to the DAG.
-infer :: (Dag.AlgebraDag o -> b) -> Rewrite o e b
-infer f = R $ liftM f $ gets dag
