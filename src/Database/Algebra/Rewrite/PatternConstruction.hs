@@ -346,20 +346,25 @@ assembleStatements patternStatements userExpr = do
           DoE userStatements -> userStatements
           _ -> error "PatternConstruction.assembleStatements: no do-block supplied"
 
+      -- The call to collect
       collectStmt = NoBindS $ VarE 'R.collect
 
+      -- Extract the returned sequence of rewrite actions and patch the
+      -- call to collect at the end
       returnStmt = case last us of
                      NoBindS (InfixE (Just (VarE returnName)) (VarE dollarName) (Just (DoE rewriteStmts)))
                        | dollarName == '($) && returnName == 'return    ->
-                       let rewriteStmts' = rewriteStmts ++ [collectStmt]
-                       in NoBindS (InfixE (Just (VarE returnName)) (VarE dollarName) (Just (DoE rewriteStmts')))
+                         let rewriteStmts' = rewriteStmts ++ [collectStmt]
+                         in NoBindS (InfixE (Just (VarE returnName)) (VarE dollarName) (Just (DoE rewriteStmts')))
                      s                                                  -> error $ show s
 
+      -- reassemble the user statements
       us' = init us ++ [returnStmt]
 
+  -- Return a do block consisting of the pattern statements and the user statements.
   return $ DoE $ ps ++ us'
 
--- | Take q quoted variable with the root node on which to apply the pattern,
+-- | Take a quoted variable with the root node on which to apply the pattern,
 -- a string description of the pattern and the body of the match
 -- and return the complete match statement. The body has to be a quoted ([| ...|])
 -- do-block.
