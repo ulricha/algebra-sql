@@ -16,6 +16,9 @@ module Database.Algebra.Rewrite.Match
 
 import qualified Data.IntMap                 as M
 
+import           Debug.Trace
+import           Text.Printf
+
 import           Control.Applicative
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Maybe
@@ -43,7 +46,7 @@ getParents q = do
   M $ asks ((Dag.parents q) . dag)
 
 getOperator :: AlgNode -> Match o p e o
-getOperator q = M $ asks ((Dag.operator q) . dag)
+getOperator q = trace (printf "Match.getOperator %d" q) $! M $ asks ((Dag.operator q) . dag)
 
 hasPath :: AlgNode -> AlgNode -> Match o p e Bool
 hasPath q1 q2 = M $ asks ((Dag.hasPath q1 q2) . dag)
@@ -63,7 +66,7 @@ try Nothing  = fail ""
 
 -- | Runs the supplied Match action on the operator that belongs to the given node.
 matchOp :: AlgNode -> (o -> Match o p e a) -> Match o p e a
-matchOp q match = M $ asks ((Dag.operator q) . dag) >>= (\o -> unwrap $ match o)
+matchOp q match = trace (printf "Match.matchOp %d" q) $! M $ asks ((Dag.operator q) . dag) >>= (\o -> unwrap $ match o)
   where unwrap (M r) = r
 
 -- | Look up the properties for a given node.

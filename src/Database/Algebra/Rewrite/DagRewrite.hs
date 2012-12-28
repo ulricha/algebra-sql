@@ -14,6 +14,7 @@ module Database.Algebra.Rewrite.DagRewrite
        , parents
        , topsort
        , operator
+       , operatorSafe
        , rootNodes
        , exposeDag
        , getExtras
@@ -203,6 +204,12 @@ operator n =
   R $ do
     d <- gets dag
     return $ Dag.operator n d
+
+operatorSafe :: AlgNode -> Rewrite o e (Maybe o)
+operatorSafe n =
+  R $ do
+    d <- gets dag
+    return $ IM.lookup n (Dag.nodeMap d)
 
 -- | Returns the root nodes of the DAG.
 rootNodes :: Rewrite o e [AlgNode]

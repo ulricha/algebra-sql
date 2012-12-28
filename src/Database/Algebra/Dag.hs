@@ -211,8 +211,8 @@ collect collectNodes d = trace ("collect " ++ (show collectNodes)) $ trace (show
           case refCountSafe n di of
             Just rc -> if rc == 0
                        then -- node is unreferenced -> collect it
-                            trace (printf "collecting %d" n) $ 
-                            let cs = opChildren $ trace "operator collect" $! operator n di
+                            trace (printf "collecting %d" n) $
+                            let cs = opChildren $ operator n di
                                 d' = delete' n di
                             in L.foldl' cutEdge d' cs
 
@@ -229,7 +229,7 @@ cutEdge d edgeTarget =
   let d'          = decrRefCount d edgeTarget
       newRefCount = lookupRefCount edgeTarget d'
   in if newRefCount == 0
-     then let cs  = opChildren $ trace "operator cutEdge" $! operator edgeTarget d'
+     then let cs  = opChildren $ operator edgeTarget d'
               d'' = trace ("deleting " ++ (show edgeTarget)) $ delete' edgeTarget d'
           in trace ("cutting edges to children " ++ (show cs)) $ L.foldl' cutEdge d'' cs
      else d'
