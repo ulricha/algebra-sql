@@ -195,30 +195,24 @@ decrRefCount d n =
 -- reference counters have to be updated.
 delete' :: Operator a => AlgNode -> AlgebraDag a -> AlgebraDag a
 delete' n d =
-    let g'  = G.delNode n $ graph d
-        m'  = M.delete n $ nodeMap d
-        rc' = M.delete n $ refCountMap d
-    in d { nodeMap = m', graph = g', refCountMap = rc' }
-
+  trace (printf "delete' %d" n) $
+  let g'  = G.delNode n $ graph d
+      m'  = M.delete n $ nodeMap d
+      rc' = M.delete n $ refCountMap d
+  in d { nodeMap = m', graph = g', refCountMap = rc' }
 
 refCountSafe :: AlgNode -> AlgebraDag o -> Maybe Int
 refCountSafe n d = M.lookup n $ refCountMap d
 
-{-
-TODO
-For each node in the list (fold):
-1. check if its unreferenced -> refcount == 0?
-2. if yes: delete it, cut links to children, collect recursively
--}
-
 collect :: Operator o => S.Set AlgNode -> AlgebraDag o -> AlgebraDag o
-collect collectNodes d = S.foldl' tryCollectNode d collectNodes
+collect collectNodes d = trace ("collect " ++ (show collectNodes)) $ trace (show $ refCountMap d) $ S.foldl' tryCollectNode d collectNodes
   where tryCollectNode :: Operator o => AlgebraDag o -> AlgNode -> AlgebraDag o
         tryCollectNode di n =
           case refCountSafe n di of
             Just rc -> if rc == 0
                        then -- node is unreferenced -> collect it
-                            let cs = opChildren $ operator n di
+                            trace (printf "collecting %d" n) $ 
+                            let cs = opChildren $ trace "operator collect" $! operator n di
                                 d' = delete' n di
                             in L.foldl' cutEdge d' cs
 
@@ -228,15 +222,16 @@ collect collectNodes d = S.foldl' tryCollectNode d collectNodes
 -- Cut an edge to a node reference counting wise.
 -- If the ref count becomes zero, the node is deleted and the children are
 -- traversed.
+
 cutEdge :: Operator a => AlgebraDag a -> AlgNode -> AlgebraDag a
 cutEdge d edgeTarget =
   trace ("cutting edge to " ++ (show edgeTarget)) $
   let d'          = decrRefCount d edgeTarget
       newRefCount = lookupRefCount edgeTarget d'
   in if newRefCount == 0
-     then let cs = opChildren $ operator edgeTarget d'
+     then let cs  = opChildren $ trace "operator cutEdge" $! operator edgeTarget d'
               d'' = trace ("deleting " ++ (show edgeTarget)) $ delete' edgeTarget d'
-          in L.foldl' cutEdge d'' cs
+          in trace ("cutting edges to children " ++ (show cs)) $ L.foldl' cutEdge d'' cs
      else d'
 
 addRefTo :: AlgebraDag a -> AlgNode -> AlgebraDag a
@@ -264,7 +259,8 @@ insert n op d =
     let cs  = opChildren op
         g'  = G.insEdges (map (\c -> (n, c, ())) cs) $ G.insNode (n, ()) $ graph d
         m'  = M.insert n op $ nodeMap d
-    in L.foldl' addRefTo (d { nodeMap = m', graph = g' }) cs
+        rc' = M.insert n 0 $ refCountMap d
+    in L.foldl' addRefTo (d { nodeMap = m', graph = g', refCountMap = rc' }) cs
 
 -- Update reference counters if nodes are not simply inserted or deleted but
 -- edges are replaced by other edges.  We must not delete nodes before the new

@@ -267,12 +267,11 @@ replace old new = do
          unwrapR $ putDag $ Dag.replaceRoot (dag s) old new
 
 -- | Creates a new node from the operator and replaces the old node with it
--- by rewireing all links to the old node.
+-- by rewiring all links to the old node.
 replaceWithNew :: Dag.Operator o => AlgNode -> o -> Rewrite o e AlgNode
 replaceWithNew oldNode newOp = do
   newNode <- insert newOp
   replace oldNode newNode
-  addCollectNode oldNode
   return newNode
 
 -- | Apply a pure function to the DAG.
@@ -285,11 +284,12 @@ addCollectNode n =
     s <- get
     put $ s { collectNodes = S.insert n $ collectNodes s }
 
-collect :: Dag.Operator o => Rewrite o e ()
+collect :: (Show o, Dag.Operator o) => Rewrite o e ()
 collect =
   R $ do
     s <- get
-    put $ s { dag = Dag.collect (collectNodes s) (dag s) }
+    let d' = Dag.collect (collectNodes s) (dag s)
+    put s { dag = d', collectNodes = S.empty }
 
 replaceRoot :: Dag.Operator o => AlgNode -> AlgNode -> Rewrite o e ()
 replaceRoot oldRoot newRoot =

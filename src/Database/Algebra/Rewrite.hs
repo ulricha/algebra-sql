@@ -10,7 +10,8 @@ module Database.Algebra.Rewrite
          -- * Property inference
        , module Database.Algebra.Rewrite.Properties
          -- * Pattern syntax
-       , module Database.Algebra.Rewrite.PatternConstruction) where
+       , module Database.Algebra.Rewrite.PatternConstruction
+       ) where
 
 import           Database.Algebra.Rewrite.DagRewrite
 import           Database.Algebra.Rewrite.Match

@@ -352,10 +352,10 @@ assembleStatements patternStatements userExpr = do
       -- Extract the returned sequence of rewrite actions and patch the
       -- call to collect at the end
       returnStmt = case last us of
-                     NoBindS (InfixE (Just (VarE returnName)) (VarE dollarName) (Just (DoE rewriteStmts)))
+                     NoBindS (InfixE (Just (VarE returnName)) (VarE dollarName) (Just rewriteExpr))
                        | dollarName == '($) && returnName == 'return    ->
-                         let rewriteStmts' = rewriteStmts ++ [collectStmt]
-                         in NoBindS (InfixE (Just (VarE returnName)) (VarE dollarName) (Just (DoE rewriteStmts')))
+                         let rewriteExpr' = DoE [NoBindS rewriteExpr, collectStmt]
+                         in NoBindS (InfixE (Just (VarE returnName)) (VarE dollarName) (Just rewriteExpr'))
                      s                                                  -> error $ show s
 
       -- reassemble the user statements
