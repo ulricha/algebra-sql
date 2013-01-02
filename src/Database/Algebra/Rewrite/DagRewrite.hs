@@ -33,7 +33,6 @@ import           Control.Applicative
 import           Control.Monad.State
 import           Control.Monad.Writer
 import qualified Data.IntMap                 as IM
-import qualified Data.Map                    as M
 import qualified Data.Sequence               as Seq
 import qualified Data.Set                    as S
 import           Debug.Trace
@@ -48,14 +47,13 @@ data Cache = Cache { cachedTopOrdering :: Maybe [AlgNode] }
 emptyCache :: Cache
 emptyCache = Cache Nothing
 
-data RewriteState o e = RewriteState { nodeIDSupply   :: AlgNode          -- ^ Supply of fresh node ids
-                                     , opMap          :: M.Map o AlgNode  -- ^
-                                     , dag            :: Dag.AlgebraDag o -- ^ The DAG itself
-                                     , cache          :: Cache            -- ^ Cache of some topological information
-                                     , extras         :: e                -- ^ Polymorphic container for whatever needs to be provided additionally.
-                                     , debugFlag      :: Bool             -- ^ Wether to output log messages via Debug.Trace.trace
-                                     , collectNodes   :: S.Set AlgNode    -- ^ List of nodes which must be checked during garbage collection
-                                     }
+data RewriteState o e = RewriteState
+  { dag            :: Dag.AlgebraDag o -- ^ The DAG itself
+  , cache          :: Cache            -- ^ Cache of some topological information
+  , extras         :: e                -- ^ Polymorphic container for whatever needs to be provided additionally.
+  , debugFlag      :: Bool             -- ^ Wether to output log messages via Debug.Trace.trace
+  , collectNodes   :: S.Set AlgNode    -- ^ List of nodes which must be checked during garbage collection
+  }
 
 {-
 
@@ -108,17 +106,12 @@ newtype Rewrite o e a = R (WriterT Log (State (RewriteState o e)) a) deriving (M
 -- FIXME Map.findMax might call error
 initRewriteState :: (Ord o, Dag.Operator o) => Dag.AlgebraDag o -> e -> Bool -> RewriteState o e
 initRewriteState d e debug =
-    let maxIR = fst $ IM.findMax $ Dag.nodeMap d
-        om = IM.foldrWithKey (\n o m -> M.insert o n m) M.empty $ Dag.nodeMap d
-
-    in RewriteState { nodeIDSupply = maxIR + 1
-                    , dag = d
-                    , cache = emptyCache
-                    , extras = e
-                    , opMap = om
-                    , debugFlag = debug
-                    , collectNodes = S.empty
-                    }
+    RewriteState { dag = d
+                 , cache = emptyCache
+                 , extras = e
+                 , debugFlag = debug
+                 , collectNodes = S.empty
+                 }
 
 -- | Run a rewrite action on the supplied graph. Returns the rewritten node map, the potentially
 -- modified list of root nodes, the result of the rewrite and the rewrite log.
@@ -128,15 +121,6 @@ runRewrite (R m) d e debug = (dag s, extras s, res, rewriteLog)
 
 -- | The log from a sequence of rewrite actions.
 type Log = Seq.Seq String
-
--- | Return a fresh node id (only used internally).
-freshNodeID :: Rewrite o e AlgNode
-freshNodeID =
-  R $ do
-    s <- get
-    let n = nodeIDSupply s
-    put $ s { nodeIDSupply = n + 1 }
-    return n
 
 -- FIXME unwrapR should not be necessary: just provide a type alias for the monad stack
 unwrapR :: Rewrite o e a -> WriterT Log (State (RewriteState o e)) a
@@ -234,26 +218,21 @@ updateExtras e =
 insert :: (Dag.Operator o, Show o) => o -> Rewrite o e AlgNode
 insert op =
   R $ do
-    s <- get
-    let om = opMap s
-    case M.lookup op om of
-      Just n  -> return n
-      Nothing -> do
-                   n <- unwrapR freshNodeID
-                   trace (printf "insert %s at %d" (show op) n) $ unwrapR invalidateCacheM
-                   unwrapR $ putDag $ Dag.insert n op $ dag s
-                   s' <- get
-                   put $ s' { opMap = M.insert op n om }
-                   return n
+    d <- gets dag
+    unwrapR invalidateCacheM
+    let (n, d') = Dag.insert op d
+    trace (printf "insert %s at %d" (show op) n) $ unwrapR $ putDag d'
+    return n
 
 -- | Insert an operator into the DAG and return its node id WITHOUT reusing an
 -- operator if it is already present.
 insertNoShare :: Dag.Operator o => o -> Rewrite o e AlgNode
 insertNoShare op =
   R $ do
-    s <- get
-    n <- unwrapR freshNodeID
-    unwrapR $ putDag $ Dag.insert n op $ dag s
+    d <- gets dag
+    unwrapR invalidateCacheM
+    let (n, d') = Dag.insertNoShare op d
+    unwrapR $ putDag d'
     return n
 
 -- | replaceChildM n old new replaces all links from node n to node old with links

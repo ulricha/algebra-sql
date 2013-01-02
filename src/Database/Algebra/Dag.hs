@@ -17,6 +17,7 @@ module Database.Algebra.Dag
        , operator
          -- * DAG modification functions
        , insert
+       , insertNoShare
        , replaceChild
        , replaceRoot
        , collect
@@ -46,8 +47,9 @@ import           Control.Exception.Base
 import qualified Data.Graph.Inductive.Graph        as G
 import           Data.Graph.Inductive.PatriciaTree
 import qualified Data.Graph.Inductive.Query.DFS    as DFS
-import qualified Data.IntMap                       as M
+import qualified Data.IntMap                       as IM
 import qualified Data.List                         as L
+import qualified Data.Map                          as M
 import qualified Data.Set                          as S
 import           Text.Printf
 
@@ -130,11 +132,14 @@ counter.
 
 -}
 
-data AlgebraDag a = AlgebraDag { nodeMap       :: NodeMap a   -- ^ Return the nodemap of a DAG
-                               , graph         :: UGr         -- ^ Auxilliary representation for topological information
-                               , rootNodes     :: [AlgNode]   -- ^ Return the (possibly modified) list of root nodes from a DAG
-                               , refCountMap   :: NodeMap Int -- ^ A map storing the number of parents for each nod e.
-                               }
+data AlgebraDag a = AlgebraDag
+  { nodeMap     :: NodeMap a       -- ^ Return the nodemap of a DAG
+  , opMap       :: M.Map a AlgNode -- ^ reverse index from operators to nodeids
+  , nextNodeID  :: AlgNode         -- ^ the next node id to be used when inserting a node
+  , graph       :: UGr             -- ^ Auxilliary representation for topological information
+  , rootNodes   :: [AlgNode]       -- ^ Return the (possibly modified) list of root nodes from a DAG
+  , refCountMap :: NodeMap Int     -- ^ A map storing the number of parents for each nod e.
+  }
 
 class (Ord a, Show a) => Operator a where
     opChildren :: a -> [AlgNode]
@@ -145,9 +150,12 @@ class (Ord a, Show a) => Operator a where
 -- once.  We insert one virtual edge for every root node, to make sure that root
 -- nodes are not pruned if they don't have any incoming edges.
 initRefCount :: Operator o => [AlgNode] -> NodeMap o -> NodeMap Int
-initRefCount rs nm = L.foldl' incParents (M.foldr' insertEdge M.empty nm) rs
+initRefCount rs nm = L.foldl' incParents (IM.foldr' insertEdge IM.empty nm) rs
   where insertEdge op rm = L.foldl' incParents rm (L.nub $ opChildren op)
-        incParents rm n  = M.insert n ((M.findWithDefault 0 n rm) + 1) rm
+        incParents rm n  = IM.insert n ((IM.findWithDefault 0 n rm) + 1) rm
+
+initOpMap :: Ord o => NodeMap o -> M.Map o AlgNode
+initOpMap nm = IM.foldrWithKey (\n o om -> M.insert o n om) M.empty nm
 
 -- | Create a DAG from a map of NodeIDs and algebra operators and a list of root nodes.
 mkDag :: Operator a => NodeMap a -> [AlgNode] -> AlgebraDag a
@@ -155,9 +163,11 @@ mkDag m rs = AlgebraDag { nodeMap = mNormalized
                         , graph = g
                         , rootNodes = rs
                         , refCountMap = initRefCount rs mNormalized
+                        , opMap = initOpMap m
+                        , nextNodeID = 1 + (fst $ IM.findMax m)
                         }
     where mNormalized = normalizeMap rs m
-          g =  uncurry G.mkUGraph $ M.foldrWithKey aux ([], []) mNormalized
+          g =  uncurry G.mkUGraph $ IM.foldrWithKey aux ([], []) mNormalized
           aux n op (allNodes, allEdges) = (n : allNodes, es ++ allEdges)
               where es = map (\v -> (n, v)) $ opChildren op
 
@@ -166,21 +176,21 @@ reachable m rs = L.foldl' traverse S.empty rs
   where traverse :: S.Set AlgNode -> AlgNode -> S.Set AlgNode
         traverse s n = L.foldl' traverse (S.insert n s) (opChildren $ lookupOp n)
 
-        lookupOp n = case M.lookup n m of
+        lookupOp n = case IM.lookup n m of
                        Just op -> op
                        Nothing -> error $ "node not present in map: " ++ (show n)
 
 normalizeMap :: Operator a => [AlgNode] -> NodeMap a -> NodeMap a
 normalizeMap rs m =
   let reachableNodes = reachable m rs
-  in M.filterWithKey (\n _ -> S.member n reachableNodes) m
+  in IM.filterWithKey (\n _ -> S.member n reachableNodes) m
 
 -- Utility functions to maintain the reference counter map and eliminate no
 -- longer referenced nodes.
 
 lookupRefCount :: AlgNode -> AlgebraDag a -> Int
 lookupRefCount n d =
-  case M.lookup n (refCountMap d) of
+  case IM.lookup n (refCountMap d) of
     Just c  -> c
     Nothing -> error $ "no refcount value for node " ++ (show n)
 
@@ -188,7 +198,7 @@ decrRefCount :: AlgebraDag a -> AlgNode -> AlgebraDag a
 decrRefCount d n =
   let refCount = lookupRefCount n d
       refCount' = assert (refCount /= 0) $ refCount - 1
-  in d { refCountMap = M.insert n refCount' (refCountMap d) }
+  in d { refCountMap = IM.insert n refCount' (refCountMap d) }
 
 -- | Delete a node from the node map and the aux graph
 -- Beware: this leaves the DAG in an inconsistent state, because
@@ -196,13 +206,17 @@ decrRefCount d n =
 delete' :: Operator a => AlgNode -> AlgebraDag a -> AlgebraDag a
 delete' n d =
   trace (printf "delete' %d" n) $
-  let g'  = G.delNode n $ graph d
-      m'  = M.delete n $ nodeMap d
-      rc' = M.delete n $ refCountMap d
-  in d { nodeMap = m', graph = g', refCountMap = rc' }
+  let op     = operator n d
+      g'     = G.delNode n $ graph d
+      m'     = IM.delete n $ nodeMap d
+      rc'    = IM.delete n $ refCountMap d
+      opMap' = case M.lookup op $ opMap d of
+                 Just n' | n == n' -> M.delete op $ opMap d
+                 _                 -> opMap d
+  in d { nodeMap = m', graph = g', refCountMap = rc', opMap = opMap' }
 
 refCountSafe :: AlgNode -> AlgebraDag o -> Maybe Int
-refCountSafe n d = M.lookup n $ refCountMap d
+refCountSafe n d = IM.lookup n $ refCountMap d
 
 collect :: Operator o => S.Set AlgNode -> AlgebraDag o -> AlgebraDag o
 collect collectNodes d = trace ("collect " ++ (show collectNodes)) $ S.foldl' tryCollectNode d collectNodes
@@ -237,7 +251,7 @@ cutEdge d edgeTarget =
 addRefTo :: AlgebraDag a -> AlgNode -> AlgebraDag a
 addRefTo d n =
   let refCount = lookupRefCount n d
-  in assert (refCount /= 0) $ d { refCountMap = M.insert n (refCount + 1) (refCountMap d) }
+  in assert (refCount /= 0) $ d { refCountMap = IM.insert n (refCount + 1) (refCountMap d) }
 
 -- | Replace an entry in the list of root nodes with a new node. The root node must be
 -- present in the DAG.
@@ -254,13 +268,43 @@ replaceRoot d old new =
   else d
 
 -- | Insert a new node into the DAG.
-insert :: Operator a => AlgNode -> a -> AlgebraDag a -> AlgebraDag a
-insert n op d =
-    let cs  = opChildren op
-        g'  = G.insEdges (map (\c -> (n, c, ())) cs) $ G.insNode (n, ()) $ graph d
-        m'  = M.insert n op $ nodeMap d
-        rc' = M.insert n 0 $ refCountMap d
-    in L.foldl' addRefTo (d { nodeMap = m', graph = g', refCountMap = rc' }) cs
+insert :: Operator a => a -> AlgebraDag a -> (AlgNode, AlgebraDag a)
+insert op d =
+  -- check if an equivalent operator is already present
+  case M.lookup op $ opMap d of
+    Just n  -> (n, d)
+    Nothing ->
+      -- no operator can be reused, insert a new one
+      let cs     = opChildren op
+          n      = nextNodeID d
+          g'     = G.insEdges (map (\c -> (n, c, ())) cs) $ G.insNode (n, ()) $ graph d
+          m'     = IM.insert n op $ nodeMap d
+          rc'    = IM.insert n 0 $ refCountMap d
+          opMap' = M.insert op n $ opMap d
+          d'     = d { nodeMap = m'
+                     , graph = g'
+                     , refCountMap = rc'
+                     , opMap = opMap'
+                     , nextNodeID = n + 1
+                     }
+      in (n, L.foldl' addRefTo d' cs)
+
+insertNoShare :: Operator a => a -> AlgebraDag a -> (AlgNode, AlgebraDag a)
+insertNoShare op d =
+  -- check if an equivalent operator is already present
+  let cs     = opChildren op
+      n      = nextNodeID d
+      g'     = G.insEdges (map (\c -> (n, c, ())) cs) $ G.insNode (n, ()) $ graph d
+      m'     = IM.insert n op $ nodeMap d
+      rc'    = IM.insert n 0 $ refCountMap d
+      opMap' = M.insert op n $ opMap d
+      d'     = d { nodeMap = m'
+                 , graph = g'
+                 , refCountMap = rc'
+                 , opMap = opMap'
+                 , nextNodeID = n + 1
+                 }
+  in (n, L.foldl' addRefTo d' cs)
 
 -- Update reference counters if nodes are not simply inserted or deleted but
 -- edges are replaced by other edges.  We must not delete nodes before the new
@@ -279,13 +323,12 @@ parents :: AlgNode -> AlgebraDag a -> [AlgNode]
 parents n d = G.pre (graph d) n
 
 -- | 'replaceChild n old new' replaces all links from node n to node old with links to node new.
--- This is the internal variant which does not perform garbage collection.
 replaceChild :: Operator a => AlgNode -> AlgNode -> AlgNode -> AlgebraDag a -> AlgebraDag a
 replaceChild n old new d =
   trace (printf "replaceChild %d: %d -> %d" n old new) $
   let op = operator n d
   in if old `elem` opChildren op && old /= new
-     then let m' = M.insert n (replaceOpChild op old new) $ nodeMap d
+     then let m' = IM.insert n (replaceOpChild op old new) $ nodeMap d
               g' = G.insEdge (n, new, ()) $ G.delEdge (n, old) $ graph d
               d' = d { nodeMap = m', graph = g' }
           in replaceEdgesRef [old] [new] d'
@@ -294,7 +337,7 @@ replaceChild n old new d =
 -- | Returns the operator for a node.
 operator :: Operator a => AlgNode -> AlgebraDag a -> a
 operator n d =
-    case M.lookup n $ nodeMap d of
+    case IM.lookup n $ nodeMap d of
         Just op -> op
         Nothing -> error $ "AlgebraDag.operator: lookup failed for " ++ (show n) ++ "\n" ++ (show $ nodeMap d)
 
