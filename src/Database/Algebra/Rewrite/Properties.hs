@@ -20,7 +20,7 @@ putProperty n p = do
   put $ M.insert n p pm
 
 
-traverse :: Operator o => (o -> AlgNode -> NodeMap p -> p) -> AlgNode -> Inference p o ()
+traverse :: (Show o, Operator o) => (o -> AlgNode -> NodeMap p -> p) -> AlgNode -> Inference p o ()
 traverse inferWorker n = do
   visited <- hasBeenVisited n
   if visited

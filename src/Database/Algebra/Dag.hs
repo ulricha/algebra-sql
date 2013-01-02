@@ -136,7 +136,7 @@ data AlgebraDag a = AlgebraDag { nodeMap       :: NodeMap a   -- ^ Return the no
                                , refCountMap   :: NodeMap Int -- ^ A map storing the number of parents for each nod e.
                                }
 
-class Ord a => Operator a where
+class (Ord a, Show a) => Operator a where
     opChildren :: a -> [AlgNode]
     replaceOpChild :: a -> AlgNode -> AlgNode -> a
 
@@ -205,8 +205,8 @@ refCountSafe :: AlgNode -> AlgebraDag o -> Maybe Int
 refCountSafe n d = M.lookup n $ refCountMap d
 
 collect :: Operator o => S.Set AlgNode -> AlgebraDag o -> AlgebraDag o
-collect collectNodes d = trace ("collect " ++ (show collectNodes)) $ trace (show $ refCountMap d) $ S.foldl' tryCollectNode d collectNodes
-  where tryCollectNode :: Operator o => AlgebraDag o -> AlgNode -> AlgebraDag o
+collect collectNodes d = trace ("collect " ++ (show collectNodes)) $ S.foldl' tryCollectNode d collectNodes
+  where tryCollectNode :: (Show o, Operator o) => AlgebraDag o -> AlgNode -> AlgebraDag o
         tryCollectNode di n =
           case refCountSafe n di of
             Just rc -> if rc == 0
@@ -292,11 +292,11 @@ replaceChild n old new d =
      else d
 
 -- | Returns the operator for a node.
-operator :: AlgNode -> AlgebraDag a -> a
+operator :: Operator a => AlgNode -> AlgebraDag a -> a
 operator n d =
     case M.lookup n $ nodeMap d of
         Just op -> op
-        Nothing -> error $ "AlgebraDag.operator: lookup failed for " ++ (show n)
+        Nothing -> error $ "AlgebraDag.operator: lookup failed for " ++ (show n) ++ "\n" ++ (show $ nodeMap d)
 
 -- | Return a topological ordering of all nodes which are reachable from the root nodes.
 topsort :: Operator a => AlgebraDag a -> [AlgNode]

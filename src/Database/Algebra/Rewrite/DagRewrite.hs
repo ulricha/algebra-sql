@@ -37,6 +37,7 @@ import qualified Data.Map                    as M
 import qualified Data.Sequence               as Seq
 import qualified Data.Set                    as S
 import           Debug.Trace
+import           Text.Printf
 
 import qualified Database.Algebra.Dag        as Dag
 import           Database.Algebra.Dag.Common
@@ -199,7 +200,7 @@ topsort =
         return ordering
 
 -- | Return the operator for a node id.
-operator :: AlgNode -> Rewrite o e o
+operator :: Dag.Operator o => AlgNode -> Rewrite o e o
 operator n =
   R $ do
     d <- gets dag
@@ -230,7 +231,7 @@ updateExtras e =
 
 -- | Insert an operator into the DAG and return its node id. If the operator is already
 -- present (same op, same children), reuse it.
-insert :: Dag.Operator o => o -> Rewrite o e AlgNode
+insert :: (Dag.Operator o, Show o) => o -> Rewrite o e AlgNode
 insert op =
   R $ do
     s <- get
@@ -239,7 +240,7 @@ insert op =
       Just n  -> return n
       Nothing -> do
                    n <- unwrapR freshNodeID
-                   unwrapR invalidateCacheM
+                   trace (printf "insert %s at %d" (show op) n) $ unwrapR invalidateCacheM
                    unwrapR $ putDag $ Dag.insert n op $ dag s
                    s' <- get
                    put $ s' { opMap = M.insert op n om }
@@ -275,7 +276,7 @@ replace old new = do
 
 -- | Creates a new node from the operator and replaces the old node with it
 -- by rewiring all links to the old node.
-replaceWithNew :: Dag.Operator o => AlgNode -> o -> Rewrite o e AlgNode
+replaceWithNew :: (Dag.Operator o, Show o) => AlgNode -> o -> Rewrite o e AlgNode
 replaceWithNew oldNode newOp = do
   newNode <- insert newOp
   replace oldNode newNode
