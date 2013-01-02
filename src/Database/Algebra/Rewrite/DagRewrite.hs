@@ -36,7 +36,6 @@ import qualified Data.IntMap                 as IM
 import qualified Data.Sequence               as Seq
 import qualified Data.Set                    as S
 import           Debug.Trace
-import           Text.Printf
 
 import qualified Database.Algebra.Dag        as Dag
 import           Database.Algebra.Dag.Common
@@ -221,7 +220,7 @@ insert op =
     d <- gets dag
     unwrapR invalidateCacheM
     let (n, d') = Dag.insert op d
-    trace (printf "insert %s at %d" (show op) n) $ unwrapR $ putDag d'
+    unwrapR $ putDag d'
     return n
 
 -- | Insert an operator into the DAG and return its node id WITHOUT reusing an

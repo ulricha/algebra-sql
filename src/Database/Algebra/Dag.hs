@@ -51,11 +51,8 @@ import qualified Data.IntMap                       as IM
 import qualified Data.List                         as L
 import qualified Data.Map                          as M
 import qualified Data.Set                          as S
-import           Text.Printf
 
 import           Database.Algebra.Dag.Common
-
-import           Debug.Trace
 
 {-
 general:
@@ -174,7 +171,9 @@ mkDag m rs = AlgebraDag { nodeMap = mNormalized
 reachable :: Operator a => NodeMap a -> [AlgNode] -> S.Set AlgNode
 reachable m rs = L.foldl' traverse S.empty rs
   where traverse :: S.Set AlgNode -> AlgNode -> S.Set AlgNode
-        traverse s n = L.foldl' traverse (S.insert n s) (opChildren $ lookupOp n)
+        traverse s n = if S.member n s
+                       then s
+                       else L.foldl' traverse (S.insert n s) (opChildren $ lookupOp n)
 
         lookupOp n = case IM.lookup n m of
                        Just op -> op
@@ -205,7 +204,6 @@ decrRefCount d n =
 -- reference counters have to be updated.
 delete' :: Operator a => AlgNode -> AlgebraDag a -> AlgebraDag a
 delete' n d =
-  trace (printf "delete' %d" n) $
   let op     = operator n d
       g'     = G.delNode n $ graph d
       m'     = IM.delete n $ nodeMap d
@@ -219,13 +217,12 @@ refCountSafe :: AlgNode -> AlgebraDag o -> Maybe Int
 refCountSafe n d = IM.lookup n $ refCountMap d
 
 collect :: Operator o => S.Set AlgNode -> AlgebraDag o -> AlgebraDag o
-collect collectNodes d = trace ("collect " ++ (show collectNodes)) $ S.foldl' tryCollectNode d collectNodes
+collect collectNodes d = S.foldl' tryCollectNode d collectNodes
   where tryCollectNode :: (Show o, Operator o) => AlgebraDag o -> AlgNode -> AlgebraDag o
         tryCollectNode di n =
           case refCountSafe n di of
             Just rc -> if rc == 0
                        then -- node is unreferenced -> collect it
-                            trace (printf "collecting %d" n) $
                             let cs = opChildren $ operator n di
                                 d' = delete' n di
                             in L.foldl' cutEdge d' cs
@@ -239,13 +236,12 @@ collect collectNodes d = trace ("collect " ++ (show collectNodes)) $ S.foldl' tr
 
 cutEdge :: Operator a => AlgebraDag a -> AlgNode -> AlgebraDag a
 cutEdge d edgeTarget =
-  trace ("cutting edge to " ++ (show edgeTarget)) $
   let d'          = decrRefCount d edgeTarget
       newRefCount = lookupRefCount edgeTarget d'
   in if newRefCount == 0
      then let cs  = opChildren $ operator edgeTarget d'
-              d'' = trace ("deleting " ++ (show edgeTarget)) $ delete' edgeTarget d'
-          in trace ("cutting edges to children " ++ (show cs)) $ L.foldl' cutEdge d'' cs
+              d'' = delete' edgeTarget d'
+          in L.foldl' cutEdge d'' cs
      else d'
 
 addRefTo :: AlgebraDag a -> AlgNode -> AlgebraDag a
@@ -258,10 +254,9 @@ addRefTo d n =
 replaceRoot :: Operator a => AlgebraDag a -> AlgNode -> AlgNode -> AlgebraDag a
 replaceRoot d old new =
   if old `elem` (rootNodes d)
-  then trace (printf "replaceRoot %d -> %d" old new) $
-       let rs'         = map doReplace $ rootNodes d
+  then let rs'         = map doReplace $ rootNodes d
            doReplace r = if r == old then new else r
-           d'          = trace ((show $ rootNodes d) ++ (show rs')) $ d { rootNodes = rs' }
+           d'          = d { rootNodes = rs' }
        in -- cut the virtual edge to the old root
           -- and insert a virtual edge to the new root
           assert (old /= new) $ addRefTo (decrRefCount d' old) new
@@ -312,7 +307,6 @@ insertNoShare op d =
 -- a node is no longer referenced (edges might be replaced by themselves).
 replaceEdgesRef :: Operator a => [AlgNode] -> [AlgNode] -> AlgebraDag a -> AlgebraDag a
 replaceEdgesRef oldChildren newChildren d =
-  trace (printf "replaceEdgesRef %s %s" (show oldChildren) (show newChildren)) $
   let -- First, decrement refcounters for the old children
       d'  = L.foldl' decrRefCount d oldChildren
       -- Then, increment refcounters for the new children
@@ -325,7 +319,6 @@ parents n d = G.pre (graph d) n
 -- | 'replaceChild n old new' replaces all links from node n to node old with links to node new.
 replaceChild :: Operator a => AlgNode -> AlgNode -> AlgNode -> AlgebraDag a -> AlgebraDag a
 replaceChild n old new d =
-  trace (printf "replaceChild %d: %d -> %d" n old new) $
   let op = operator n d
   in if old `elem` opChildren op && old /= new
      then let m' = IM.insert n (replaceOpChild op old new) $ nodeMap d
@@ -352,39 +345,3 @@ reachableNodesFrom n d = S.fromList $ DFS.reachable n $ graph d
 -- | Tests wether there is a path from the first to the second node.
 hasPath :: AlgNode -> AlgNode -> AlgebraDag a -> Bool
 hasPath a b d = b `S.member` (reachableNodesFrom a d)
-
-{-
-{-
--}
-replaceChild' :: AlgNode -> AlgNode -> AlgNode -> AlgebraDag a -> AlgebraDag a
-replaceChild' = undefined
-
-{-
-1. look up parents
-2. for each parent:
--}
-replace :: AlgNode -> AlgNode -> AlgebraDag a -> AlgebraDag a
-replace = undefined
-
-{-
--}
-replaceChild :: AlgNode -> AlgNode -> AlgNode -> AlgebraDag a -> AlgebraDag a
-replaceChild = undefined
-
--}
-
-{-
-replaceOp :: AlgNode -> o -> AlgebraDag o -> AlgebraDag o
-replaceOp = undefined
--replace :: (Operator a, Show a) => AlgNode -> a -> AlgebraDag a -> AlgebraDag a
--replace node newOp d =
--  trace (printf "replace %d -> %s" node (show newOp)) $
--  let oldChildren = opChildren $ operator node d
--      newChildren = opChildren newOp
--      nm'         = M.insert node newOp $ nodeMap d
--      g'          = G.delEdges [ (node, c) | c <- oldChildren ] $ graph d
--      g''         = G.insEdges [ (node, c, ()) | c <- newChildren ] g'
--      d'          = d { nodeMap = nm', graph = g'' }
--  in replaceEdgesRef oldChildren newChildren d'
-+  in L.foldl' addRefTo d' newChildren
--}
