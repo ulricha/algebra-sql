@@ -54,51 +54,6 @@ data RewriteState o e = RewriteState
   , collectNodes   :: S.Set AlgNode    -- ^ List of nodes which must be checked during garbage collection
   }
 
-{-
-
-The API as it should be:
-
-logGeneral
-logRewrite
-reachableNodesFrom (?)
-parents
-topsort (should not be necessary)
-operator
-rootNodes (?)
-exposeDag
-getExtras
-updateExtras
-insert
-insertNoShare (necessary because of the Reuse/FlowMat problem)
-replaceChild
-relinkParents -> replace'
-replace -> eliminate
-replaceRoot -> merge into replace?
-infer
-
--> essential rewrite actions:
-
-insert :: o -> DagRewrite
-insertNoShare
-replace'
-replaceChild
-
--> auxilliary actions/query
-
-logGeneral
-logRewrite
-reachableNodesFrom (?)
-parents
-topsort (?)
-operator
-ootNodes (?)
-exposeDag
-getExtras
-updateExtras
-infer
-
--}
-
 -- | A Monad for DAG rewrites, parameterized over the type of algebra operators.
 newtype Rewrite o e a = R (WriterT Log (State (RewriteState o e)) a) deriving (Monad, Functor, Applicative)
 
