@@ -1,4 +1,8 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+
 {-|
 The Algebra module provides the internal datatypes used for
 constructing algebaric plans. It is not recommended to use these
@@ -9,8 +13,9 @@ module Database.Algebra.Pathfinder.Data.Algebra where
 
 import           Numeric                     (showFFloat)
 
+import           Database.Algebra.Aux
+import           Database.Algebra.Dag        (Operator, opChildren, replaceOpChild)
 import           Database.Algebra.Dag.Common
-import           Database.Algebra.Dag
 
 -- | The column data type is used to represent the table structure while
 --  compiling ferry core into an PFAlgebraic plan
@@ -207,42 +212,45 @@ type SemUnOp = (ResAttrName, AttrName)
 
 type SemInfAggr  = ([(AggrType, ResAttrName, Maybe AttrName)], Maybe PartAttrName)
 
+data NullOp = LitTable SemInfLitTable SchemaInfos
+            | EmptyTable SchemaInfos
+            | TableRef SemInfTableRef
+            deriving (Ord, Eq, Show)
 
--- | PFAlgebraic operations. These operation do not reference their own children directly
--- they only contain the information that is needed to perform the operation.
-data PFAlgebra where
-    RowNum     :: SemInfRowNum -> AlgNode -> PFAlgebra     -- Should have one child
---    RowId      :: SemInfRowId -> PFAlgebra      -- should have one child
-    RowRank    :: SemInfRank -> AlgNode -> PFAlgebra       -- should have one child
-    Rank       :: SemInfRank -> AlgNode -> PFAlgebra       -- should have one child
-    Proj       :: SemInfProj -> AlgNode -> PFAlgebra       -- should have one child
-    Sel        :: SemInfSel  -> AlgNode -> PFAlgebra       -- should have one child
-    PosSel     :: SemInfPosSel -> AlgNode -> PFAlgebra     -- should have one child
-    Cross      :: AlgNode -> AlgNode -> PFAlgebra                     -- should have two children
-    EqJoin     :: SemInfEqJoin -> AlgNode -> AlgNode -> PFAlgebra     -- should have two children
---    SemiJoin   :: SemInfEqJoin -> PFAlgebra     -- should have two children
-    ThetaJoin  :: SemInfThetaJoin -> AlgNode -> AlgNode -> PFAlgebra  -- should have two children
-    DisjUnion  :: AlgNode -> AlgNode -> PFAlgebra                     -- should have two children
-    Difference :: AlgNode -> AlgNode -> PFAlgebra                     -- should have two children
-    Distinct   :: AlgNode -> PFAlgebra                     -- should have one child
-    LitTable   :: SemInfLitTable -> SchemaInfos -> PFAlgebra
-    EmptyTable :: SchemaInfos -> PFAlgebra
-    TableRef   :: SemInfTableRef -> PFAlgebra
-    Attach     :: SemInfAttach -> AlgNode -> PFAlgebra     -- should have one child
-    FunBinOp   :: SemBinOp -> AlgNode -> PFAlgebra         -- should have one child
-    Cast       :: SemInfCast -> AlgNode -> PFAlgebra       -- should have one child
---    FunNumEq   :: SemInfBinOp -> PFAlgebra      -- should have one child
---    FunNumGt   :: SemInfBinOp -> PFAlgebra      -- should have one child
---    Fun1To1    :: SemInfFun1To1 -> PFAlgebra    -- should have one child
---    FunBoolAnd :: SemInfBinOp -> PFAlgebra      -- should have one child
---    FunBoolOr  :: SemInfBinOp -> PFAlgebra      -- should have one child
-    FunBoolNot :: SemUnOp -> AlgNode -> PFAlgebra       -- should have one child
-    Aggr       :: SemInfAggr -> AlgNode -> PFAlgebra    -- should have one child
---    FunAggrCnt :: SemInfFunAggrCnt -> PFAlgebra -- should have one child
---    SerializeRel :: SemInfSerRel -> PFAlgebra   -- should have two children
-    Dummy :: String -> AlgNode -> PFAlgebra -- Should have one child
-  deriving (Show, Eq, Ord)
+data UnOp = RowNum SemInfRowNum
+          | RowRank SemInfRank
+          | Rank SemInfRank
+          | Proj SemInfProj
+          | Sel SemInfSel
+          | PosSel SemInfPosSel
+          | Distinct ()
+          | Attach SemInfAttach
+          | FunBinOp SemBinOp
+          | Cast SemInfCast
+          | FunBoolNot SemUnOp
+          | Aggr SemInfAggr
+          | Dummy String
+          deriving (Ord, Eq, Show)
+
+data BinOp = Cross ()
+           | EqJoin SemInfEqJoin
+           | ThetaJoin SemInfThetaJoin
+           | DisjUnion ()
+           | Difference ()
+           deriving (Ord, Eq, Show)
+
+type PFAlgebra = Algebra () BinOp UnOp NullOp AlgNode
+
+replaceChild :: forall t b u n c. Eq c => c -> c -> Algebra t b u n c -> Algebra t b u n c
+replaceChild o n (TerOp op c1 c2 c3) = TerOp op (replace o n c1) (replace o n c2) (replace o n c3)
+replaceChild o n (BinOp op c1 c2) = BinOp op (replace o n c1) (replace o n c2)
+replaceChild o n (UnOp op c) = UnOp op (replace o n c)
+replaceChild _ _ (NullaryOp op) = NullaryOp op
 
 instance Operator PFAlgebra where
-  opChildren     = undefined
-  replaceOpChild = undefined
+    opChildren (TerOp _ c1 c2 c3) = [c1, c2, c3]
+    opChildren (BinOp _ c1 c2) = [c1, c2]
+    opChildren (UnOp _ c) = [c]
+    opChildren (NullaryOp _) = []
+
+    replaceOpChild op old new = replaceChild old new op
