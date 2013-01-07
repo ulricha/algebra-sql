@@ -2,10 +2,10 @@
 This module contains helper functions for constructing algebraic plans.
 -}
 module Database.Algebra.Pathfinder.Data.Create where
-    
-import Database.Algebra.Pathfinder.Data.Algebra
-import Database.Algebra.Dag.Common
-import Database.Algebra.Dag.Builder
+
+import           Database.Algebra.Dag.Builder
+import           Database.Algebra.Dag.Common
+import           Database.Algebra.Pathfinder.Data.Algebra
 
 -- * Value constructors
 
@@ -45,7 +45,7 @@ surT = ASur
 
 -- * Graph construction combinators for table PFAlgebra
 
--- | Construct an empty table node with 
+-- | Construct an empty table node with
 emptyTable :: SchemaInfos -> GraphM a PFAlgebra AlgNode
 emptyTable = insertNode . EmptyTable
 
@@ -55,7 +55,7 @@ emptyTable = insertNode . EmptyTable
 -- The third argument describes the database keys (one table key can
 -- span over multiple columns).
 dbTable :: String -> Columns -> KeyInfos -> GraphM a PFAlgebra AlgNode
-dbTable n cs ks = insertNode $ TableRef (n, attr, ks) 
+dbTable n cs ks = insertNode $ TableRef (n, attr, ks)
   where
     attr = map (\c -> case c of
                         (NCol n' [Col i t]) -> (n', "item" ++ show i, t)
@@ -74,7 +74,7 @@ litTable' v s = insertNode $ LitTable v s
 attach :: ResAttrName -> ATy -> AVal -> AlgNode -> GraphM a PFAlgebra AlgNode
 attach n t v c = insertNode $ Attach (n, (t, v)) c
 
--- | Cast column `AttrName' to type `ATy' and give it the name 
+-- | Cast column `AttrName' to type `ATy' and give it the name
 --  `ResAttrName' afterwards.
 cast :: AttrName -> ResAttrName -> ATy -> AlgNode -> GraphM a PFAlgebra AlgNode
 cast n r t c = insertNode $ Cast (r, n, t) c
@@ -92,7 +92,7 @@ eqTJoin eqs projI q1 q2 = let (a, b) = head eqs
               filterEqs :: (String, String) -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
               filterEqs (l, r) res = proj projI =<< select resCol =<< oper "==" resCol l r =<< res
 
-thetaJoin :: String -> String -> String -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
+thetaJoin :: LeftAttrName -> String -> RightAttrName -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
 thetaJoin n1 o n2 c1 c2 = insertNode $ ThetaJoin (n1, n2, o) c1 c2
 
 -- | Assign a number to each row in column 'ResAttrName' incrementing

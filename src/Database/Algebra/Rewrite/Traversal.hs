@@ -1,18 +1,51 @@
 module Database.Algebra.Rewrite.Traversal
        ( preOrder
        , postOrder
+       , applyToAll
        , topologically
        , iteratively
        , sequenceRewrites ) where
 
+import           Control.Applicative
 import           Control.Monad
 
+import qualified Data.IntMap                         as M
 import qualified Data.Set                            as S
 
 import qualified Database.Algebra.Dag                as Dag
 import           Database.Algebra.Dag.Common
 import           Database.Algebra.Rewrite.DagRewrite
 import           Database.Algebra.Rewrite.Rule
+
+applyToAll :: Rewrite o e (NodeMap p) -> RuleSet o p e -> Rewrite o e Bool
+applyToAll inferProps rules = iterateRewrites False 0
+  where iterateRewrites anyChanges offset = do
+          -- drop the first nodes, assuming that we already visited them
+          nodes <- drop offset <$> M.keys <$> Dag.nodeMap <$> exposeDag
+
+          -- re-infer properties
+          props <- inferProps
+
+          extras <- getExtras
+
+          -- try to apply the rewrites, beginning with node at position offset
+          matchedOffset <- traverseNodes offset props extras rules nodes
+
+          case matchedOffset of
+            -- A rewrite applied at offset o -> we continue at this offset
+            Just o -> iterateRewrites True o
+            -- No rewrite applied -> report if any changes occured at all
+            Nothing -> return anyChanges
+
+traverseNodes :: Int -> NodeMap p -> e -> RuleSet o p e -> [AlgNode] -> Rewrite o e (Maybe Int)
+traverseNodes offset props extras rules nodes =
+  case nodes of
+    n : ns -> do
+      changed <- applyRuleSet extras props rules n
+      if changed
+        then return $ Just offset
+        else traverseNodes (offset + 1) props extras rules ns
+    []     -> return Nothing
 
 -- | Infer properties, then traverse the DAG in preorder fashion and apply the rule set
 -- at every node. Properties are re-inferred after every change.

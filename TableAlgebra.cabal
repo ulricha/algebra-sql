@@ -41,6 +41,7 @@ library
                       aeson >= 0.6,
                       ghc-prim >= 0.2,
                       bytestring >= 0.9
+
     exposed-modules:  Database.Algebra.Dag
                       Database.Algebra.Dag.Builder
                       Database.Algebra.Dag.Common
@@ -49,9 +50,14 @@ library
                       Database.Algebra.Rewrite
                       Database.Algebra.Rewrite.Match
                       Database.Algebra.Rewrite.Traversal
+                      Database.Algebra.Rewrite.Rule
+                      Database.Algebra.Rewrite.Properties
+                      Database.Algebra.Rewrite.PatternConstruction
+                      Database.Algebra.Rewrite.DagRewrite
 
                       Database.Algebra.Pathfinder
                       Database.Algebra.Pathfinder.Render.XML
+                      Database.Algebra.Pathfinder.Data.Algebra
 
                       Database.Algebra.VL.Data
                       Database.Algebra.VL.Render.Dot
@@ -71,7 +77,6 @@ library
     hs-source-dirs:   src
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -auto-all
     other-modules:    Database.Algebra.Pathfinder.Monadic.Create
-                      Database.Algebra.Pathfinder.Data.Algebra
                       Database.Algebra.Pathfinder.Data.Create
                       Database.Algebra.Pathfinder.Render.XMLUtils
                       Database.Algebra.X100.Render.Sharing
@@ -89,13 +94,7 @@ library
                       Database.Algebra.X100.Render.Dot
                       Database.Algebra.X100.Render.X100Code
                       Database.Algebra.Impossible
-
-                      Database.Algebra.Rewrite.PatternSyntax
-                      Database.Algebra.Rewrite.Rule
-                      Database.Algebra.Rewrite.DagRewrite
-                      Database.Algebra.Rewrite.PatternConstruction
-                      Database.Algebra.Rewrite.Properties
-
+                      Database.Algebra.Rewrite.PatternSyntax		      
 
 executable x100dot
     Main-is: Database/Algebra/X100/Tools/DotGen.hs

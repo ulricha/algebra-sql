@@ -1,15 +1,16 @@
 {-# LANGUAGE GADTs #-}
-{-| 
-The Algebra module provides the internal datatypes used for 
+{-|
+The Algebra module provides the internal datatypes used for
 constructing algebaric plans. It is not recommended to use these
 datatypes directly instead it is adviced the to use the functions
 provided by the module Database.Algebra.Pathfinder.Algebra.Create
 -}
 module Database.Algebra.Pathfinder.Data.Algebra where
 
-import Numeric (showFFloat)
+import           Numeric                     (showFFloat)
 
-import Database.Algebra.Dag.Common
+import           Database.Algebra.Dag.Common
+import           Database.Algebra.Dag
 
 -- | The column data type is used to represent the table structure while
 --  compiling ferry core into an PFAlgebraic plan
@@ -21,21 +22,21 @@ data Column where
     NCol :: String -> Columns -> Column
   deriving (Show)
 
--- | One table can have multiple columns     
+-- | One table can have multiple columns
 type Columns = [Column]
 
 -- | Sorting rows in a direction
 data SortDir = Asc
              | Desc
     deriving (Eq, Ord)
-    
-data AggrType = Avg 
-              | Max 
-              | Min 
-              | Sum 
-              | Count 
-              | All 
-              | Prod 
+
+data AggrType = Avg
+              | Max
+              | Min
+              | Sum
+              | Count
+              | All
+              | Prod
               | Dist
     deriving (Eq, Ord)
 
@@ -53,22 +54,22 @@ instance Show AggrType where
 instance Show SortDir where
     show Asc  = "ascending"
     show Desc = "descending"
-    
+
 -- | PFAlgebraic types
 --  At this level we do not have any structural types anymore
 --  those are represented by columns. ASur is used for surrogate
 --  values that occur for nested lists.
 data ATy where
-    AInt :: ATy             
-    AStr :: ATy             
+    AInt :: ATy
+    AStr :: ATy
     ABool :: ATy
-    ADec :: ATy             
-    ADouble :: ATy          
-    ANat :: ATy             
+    ADec :: ATy
+    ADouble :: ATy
+    ANat :: ATy
     ASur :: ATy
       deriving (Eq, Ord)
-      
--- | Show the PFAlgebraic types in a way that is compatible with 
+
+-- | Show the PFAlgebraic types in a way that is compatible with
 --  the xml plan.
 instance Show ATy where
   show AInt     = "int"
@@ -79,20 +80,20 @@ instance Show ATy where
   show ANat     = "nat"
   show ASur     = "nat"
 
--- | Wrapper around values that can occur in an PFAlgebraic plan                  
+-- | Wrapper around values that can occur in an PFAlgebraic plan
 data AVal where
   VInt :: Integer -> AVal
   VStr :: String -> AVal
   VBool :: Bool -> AVal
   VDouble :: Double -> AVal
-  VDec :: Float -> AVal 
+  VDec :: Float -> AVal
   VNat :: Integer -> AVal
     deriving (Eq, Ord)
 
 -- | Show the values in the way compatible with the xml plan.
 instance Show AVal where
   show (VInt x)     = show x
-  show (VStr x)     = x 
+  show (VStr x)     = x
   show (VBool True)  = "true"
   show (VBool False) = "false"
   show (VDouble x)     =  show x
@@ -105,7 +106,7 @@ type ATyVal = (ATy, AVal)
 -- | Attribute name or column name
 type AttrName            = String
 
--- | Result attribute name, used as type synonym where the name for a result column of a computation is needed              
+-- | Result attribute name, used as type synonym where the name for a result column of a computation is needed
 type ResAttrName         = AttrName
 
 -- | Sort attribute name, used as type synonym where a column for sorting is needed
@@ -130,7 +131,7 @@ type LeftAttrName        = AttrName
 type RightAttrName       = AttrName
 --
 -- | Name of a database table
-type TableName           = String  
+type TableName           = String
 
 -- | List of table attribute information consisting of (column name, new column name, type of column)
 type TableAttrInf        = [(AttrName, AttrName, ATy)]
@@ -144,17 +145,19 @@ type KeyInfos            = [KeyInfo]
 -- | Sort information, a list (ordered in sorting priority), of pair of columns and their sort direction--
 type SortInf              = [(SortAttrName, SortDir)]
 
+-- | New and old attribute name
 type ProjPair             = (NewAttrName, OldAttrName)
+
 -- | Projection information, a list of new attribute names, and their old names.
-type ProjInf              = [ProjPair]  
+type ProjInf              = [ProjPair]
 
 -- | A tuple is a list of values
 type Tuple = [AVal]
 
 -- | Schema information, represents a table structure, the first element of the tuple is the column name the second its type.
-type SchemaInfos = [(AttrName, ATy)]    
+type SchemaInfos = [(AttrName, ATy)]
 
-type SemInfRowNum  = (ResAttrName, SortInf, Maybe PartAttrName) 
+type SemInfRowNum  = (ResAttrName, SortInf, Maybe PartAttrName)
 
 -- | Information that specifies how to perform the rank operation.
 --  its first element is the column where the output of the operation is inserted
@@ -169,7 +172,7 @@ type SemInfProj    = ProjInf
 type SemInfSel     = SelAttrName
 
 -- | Information that specifies how to select element at a certain position
-type SemInfPosSel  = (Int, SortInf, Maybe PartAttrName) 
+type SemInfPosSel  = (Int, SortInf, Maybe PartAttrName)
 
 
 -- | Information on how to perform an eq-join. The first element represents the column from the
@@ -212,12 +215,12 @@ data PFAlgebra where
 --    RowId      :: SemInfRowId -> PFAlgebra      -- should have one child
     RowRank    :: SemInfRank -> AlgNode -> PFAlgebra       -- should have one child
     Rank       :: SemInfRank -> AlgNode -> PFAlgebra       -- should have one child
-    Proj       :: SemInfProj -> AlgNode -> PFAlgebra       -- should have one child   
-    Sel        :: SemInfSel  -> AlgNode -> PFAlgebra       -- should have one child  
+    Proj       :: SemInfProj -> AlgNode -> PFAlgebra       -- should have one child
+    Sel        :: SemInfSel  -> AlgNode -> PFAlgebra       -- should have one child
     PosSel     :: SemInfPosSel -> AlgNode -> PFAlgebra     -- should have one child
     Cross      :: AlgNode -> AlgNode -> PFAlgebra                     -- should have two children
-    EqJoin     :: SemInfEqJoin -> AlgNode -> AlgNode -> PFAlgebra     -- should have two children 
---    SemiJoin   :: SemInfEqJoin -> PFAlgebra     -- should have two children 
+    EqJoin     :: SemInfEqJoin -> AlgNode -> AlgNode -> PFAlgebra     -- should have two children
+--    SemiJoin   :: SemInfEqJoin -> PFAlgebra     -- should have two children
     ThetaJoin  :: SemInfThetaJoin -> AlgNode -> AlgNode -> PFAlgebra  -- should have two children
     DisjUnion  :: AlgNode -> AlgNode -> PFAlgebra                     -- should have two children
     Difference :: AlgNode -> AlgNode -> PFAlgebra                     -- should have two children
@@ -231,7 +234,7 @@ data PFAlgebra where
 --    FunNumEq   :: SemInfBinOp -> PFAlgebra      -- should have one child
 --    FunNumGt   :: SemInfBinOp -> PFAlgebra      -- should have one child
 --    Fun1To1    :: SemInfFun1To1 -> PFAlgebra    -- should have one child
---    FunBoolAnd :: SemInfBinOp -> PFAlgebra      -- should have one child      
+--    FunBoolAnd :: SemInfBinOp -> PFAlgebra      -- should have one child
 --    FunBoolOr  :: SemInfBinOp -> PFAlgebra      -- should have one child
     FunBoolNot :: SemUnOp -> AlgNode -> PFAlgebra       -- should have one child
     Aggr       :: SemInfAggr -> AlgNode -> PFAlgebra    -- should have one child
@@ -239,3 +242,7 @@ data PFAlgebra where
 --    SerializeRel :: SemInfSerRel -> PFAlgebra   -- should have two children
     Dummy :: String -> AlgNode -> PFAlgebra -- Should have one child
   deriving (Show, Eq, Ord)
+
+instance Operator PFAlgebra where
+  opChildren     = undefined
+  replaceOpChild = undefined
