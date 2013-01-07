@@ -34,6 +34,23 @@ serializeAlgebra cols qGId = do
                                     tell [[contentN, edgeNil, edgeQ] `childsOf` node xId "serialize relation"]
                                     return xId
 
+arOptoFn :: String -> String
+arOptoFn "+" = "add"
+arOptoFn "-" = "subtract"
+arOptoFn "/" = "divide"
+arOptoFn "*" = "multiply"
+arOptoFn "%" = "modulo"
+arOptoFn _ = $impossible
+
+relOptoFn :: String -> String
+relOptoFn ">" = "gt"
+relOptoFn "==" = "eq"
+relOptoFn "and" = "and"
+relOptoFn "or" = "or"
+relOptoFn "&&" = "and"
+relOptoFn "||" = "or"
+relOptoFn _ = $impossible
+
 -- XML defintion of iter column
 iterCol :: Element ()
 iterCol =  [attr "name" "iter", attr "new" "false", attr "function" "iter"] `attrsOf` xmlElem "column"
@@ -298,22 +315,6 @@ mkBinOpNode xId op res lArg rArg cId | elem op ["+", "-", "*", "%", "/"] = mkFnN
                                      | elem op [">", "==", "and", "or", "&&", "||"] = mkRelFnNode xId (relOptoFn op) res lArg rArg cId
                                      | elem op ["<" ] = mkBinOpNode xId ">" res rArg lArg cId
                                      | otherwise = $impossible
-        where
-            arOptoFn :: String -> String
-            arOptoFn "+" = "add"
-            arOptoFn "-" = "subtract"
-            arOptoFn "/" = "divide"
-            arOptoFn "*" = "multiply"
-            arOptoFn "%" = "modulo"
-            arOptoFn _ = $impossible
-            relOptoFn :: String -> String
-            relOptoFn ">" = "gt"
-            relOptoFn "==" = "eq"
-            relOptoFn "and" = "and"
-            relOptoFn "or" = "or"
-            relOptoFn "&&" = "and"
-            relOptoFn "||" = "or"
-            relOptoFn _ = $impossible
 
 -- Create an XML relational function node
 mkRelFnNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
@@ -342,7 +343,7 @@ mkThetaJoinNode :: XMLNode -> (LeftAttrName,RightAttrName, String) -> XMLNode ->
 mkThetaJoinNode xId (lN, rN, o) cxId1 cxId2 = let contNode = [[[attr "position" "1"] `attrsOf` column lN False,
                                                               [attr "position" "2"] `attrsOf` column rN False]
                                                                   `childsOf`
-                                                                    ([attr "kind" o] `attrsOf` xmlElem "comparison")]
+                                                                    ([attr "kind" $ relOptoFn o] `attrsOf` xmlElem "comparison")]
                                                                       `childsOf` contentNode
                                          in [contNode, mkEdge cxId1, mkEdge cxId2] `childsOf` node xId "thetajoin"
 
