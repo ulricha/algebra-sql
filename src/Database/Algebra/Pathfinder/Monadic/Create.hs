@@ -27,8 +27,8 @@ castM :: AttrName -> ResAttrName -> ATy -> GraphM a PFAlgebra AlgNode -> GraphM 
 castM n r t = bind1 (C.cast n r t)
 
 -- | Perform theta join on two plans
-thetaJoinM :: LeftAttrName -> String -> RightAttrName -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
-thetaJoinM n1 o n2 = bind2 (C.thetaJoin n1 o n2)
+thetaJoinM :: [(LeftAttrName, RightAttrName, String)] -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+thetaJoinM cond = bind2 (C.thetaJoin cond)
 
 -- | Join two plans where the columns n1 of table 1 and columns n2 of table
 --  2 are equal.

@@ -339,12 +339,14 @@ mkEqJoinNode xId (lN, rN) cxId1 cxId2 = let contNode = [[attr "position" "1"] `a
                                          in [contNode, mkEdge cxId1, mkEdge cxId2]`childsOf` node xId "eqjoin"
 
 -- Create an XML theta-join node.
-mkThetaJoinNode :: XMLNode -> (LeftAttrName,RightAttrName, String) -> XMLNode -> XMLNode -> Element ()
-mkThetaJoinNode xId (lN, rN, o) cxId1 cxId2 = let contNode = [[[attr "position" "1"] `attrsOf` column lN False,
-                                                              [attr "position" "2"] `attrsOf` column rN False]
-                                                                  `childsOf`
-                                                                    ([attr "kind" $ relOptoFn o] `attrsOf` xmlElem "comparison")]
-                                                                      `childsOf` contentNode
+mkThetaJoinNode :: XMLNode -> [(LeftAttrName,RightAttrName, String)] -> XMLNode -> XMLNode -> Element ()
+mkThetaJoinNode xId joinCond cxId1 cxId2 = let contNode = [ [[attr "position" "1"] `attrsOf` column lN False,
+                                                                [attr "position" "2"] `attrsOf` column rN False]
+                                                                   `childsOf`
+                                                                     ([attr "kind" $ relOptoFn o] `attrsOf` xmlElem "comparison")
+                                                             | (lN, rN, o) <- joinCond
+                                                             ]
+                                                             `childsOf` contentNode
                                          in [contNode, mkEdge cxId1, mkEdge cxId2] `childsOf` node xId "thetajoin"
 
 -- Create an XML projection node

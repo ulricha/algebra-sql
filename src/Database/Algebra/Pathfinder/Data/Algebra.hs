@@ -188,7 +188,7 @@ type SemInfEqJoin  = (LeftAttrName,RightAttrName)
 -- | Information on how to perform a theta-join. The first element represents the column from the
 -- first table that has to relate to the column in the second table represnted by the second
 -- element in tuple. The third element represents the type of relation.
-type SemInfThetaJoin = (LeftAttrName, RightAttrName, String)
+type SemInfThetaJoin = [(LeftAttrName, RightAttrName, String)]
 
 -- | Information what to put in a literate table
 type SemInfLitTable = [Tuple]
