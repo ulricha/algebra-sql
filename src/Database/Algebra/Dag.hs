@@ -237,7 +237,7 @@ operator :: Operator a => AlgNode -> AlgebraDag a -> a
 operator n d =
     case IM.lookup n $ nodeMap d of
         Just op -> op
-        Nothing -> error $ "AlgebraDag.operator: lookup failed for " ++ (show n) ++ "\n" ++ (show $ nodeMap d)
+        Nothing -> error $ "AlgebraDag.operator: lookup failed for " ++ (show n) ++ "\n" ++ (show $ map fst $ IM.toList $ nodeMap d)
 
 -- | Return a topological ordering of all nodes which are reachable from the root nodes.
 topsort :: Operator a => AlgebraDag a -> [AlgNode]
