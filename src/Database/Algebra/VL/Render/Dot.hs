@@ -114,6 +114,7 @@ opDotLabel tm i (UnOp ToDescr _) = labelToDoc i "ToDescr" empty (lookupTags i tm
 opDotLabel tm i (UnOp Segment _) = labelToDoc i "Segment" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Unsegment _) = labelToDoc i "Unsegment" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (VecSum t) _) = labelToDoc i "VecSum" (renderColumnType t) (lookupTags i tm)
+opDotLabel tm i (UnOp VecAvg _) = labelToDoc i "VecAvg" empty (lookupTags i tm)
 opDotLabel tm i (UnOp VecMin _) = labelToDoc i "VecMin" empty (lookupTags i tm)
 opDotLabel tm i (UnOp VecMinL _) = labelToDoc i "VecMinL" empty (lookupTags i tm)
 opDotLabel tm i (UnOp VecMax _) = labelToDoc i "VecMax" empty (lookupTags i tm)
@@ -162,6 +163,7 @@ opDotLabel tm i (BinOp RestrictVec _ _) = labelToDoc i "RestrictVec" empty (look
 opDotLabel tm i (BinOp (CompExpr2 expr) _ _) = labelToDoc i "CompExpr2" (renderExpr2 expr) (lookupTags i tm)
 opDotLabel tm i (BinOp (CompExpr2L expr) _ _) = labelToDoc i "CompExpr2L" (renderExpr2 expr) (lookupTags i tm)
 opDotLabel tm i (BinOp VecSumL _ _) = labelToDoc i "VecSumL" empty (lookupTags i tm)
+opDotLabel tm i (BinOp VecAvgL _ _) = labelToDoc i "VecAvgL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp (SelectPos o) _ _) = labelToDoc i "SelectPos" (text $ show o) (lookupTags i tm)
 opDotLabel tm i (BinOp (SelectPosL o) _ _) = labelToDoc i "SelectPosL" (text $ show o) (lookupTags i tm)
 opDotLabel tm i (BinOp PairA _ _) = labelToDoc i "PairA" empty (lookupTags i tm)
@@ -176,6 +178,7 @@ opDotColor :: VL -> DotColor
 opDotColor (BinOp DistDesc _ _)      = Red
 opDotColor (BinOp CartProduct _ _)   = Red
 opDotColor (BinOp (ThetaJoin _) _ _) = Green
+opDotColor (BinOp PairL _ _)         = YellowGreen
 opDotColor (BinOp SortWith _ _)      = Tomato
 opDotColor (BinOp GroupBy _ _)       = Tomato
 opDotColor (BinOp PropRename _ _)    = Tan
@@ -183,6 +186,10 @@ opDotColor (BinOp DistLift _ _)      = Tan
 opDotColor (BinOp RestrictVec _ _)   = DodgerBlue
 opDotColor (TerOp CombineVec _ _ _)  = DodgerBlue
 opDotColor (UnOp (SelectExpr _) _)   = LightSkyBlue
+opDotColor (UnOp (VecSum _) _)       = Crimson
+opDotColor (UnOp VecAvg _)           = Crimson
+opDotColor (BinOp VecSumL _ _)       = Crimson
+opDotColor (BinOp VecAvgL _ _)       = Crimson
 opDotColor _ = Gray
 
 -- Dot colors
@@ -195,6 +202,8 @@ data DotColor = Tomato
               | Red
               | Crimson
               | Green
+              | SeaGreen
+              | YellowGreen
               | Sienna
               | Beige
               | DodgerBlue
@@ -210,6 +219,8 @@ renderColor Tan = text "tan"
 renderColor Red = text "red"
 renderColor Crimson = text "crimson"
 renderColor Green = text "green"
+renderColor SeaGreen = text "seagreen"
+renderColor YellowGreen = text "yellowgreen"
 renderColor Sienna = text "sienna"
 renderColor Beige = text "beige"
 renderColor DodgerBlue = text "dodgerblue"

@@ -148,6 +148,7 @@ data UnOp = Unique
           | Segment
           | Unsegment
           | VecSum VLType
+          | VecAvg
           | VecMin
           | VecMinL
           | VecMax
@@ -188,6 +189,7 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | CompExpr2 Expr2
            | CompExpr2L Expr2
            | VecSumL
+           | VecAvgL
            | SelectPos VecCompOp -- (DBV, RenameVector)
            | SelectPosL VecCompOp -- (DBV, RenameVector)
            | PairA
