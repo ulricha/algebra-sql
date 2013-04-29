@@ -45,6 +45,7 @@ data VecBoolOp = Conj
 data VecOp = COp VecCompOp
            | NOp VecNumOp
            | BOp VecBoolOp
+           | Like
            deriving (Eq, Ord, Generic)
 
 data Expr1 = App1 VecOp Expr1 Expr1
@@ -70,6 +71,7 @@ instance Show VecOp where
     show (COp o)    = show o
     show (BOp Conj) = "&&"
     show (BOp Disj) = "||"
+    show Like       = "LIKE"
 
 instance Show VecCompOp where
     show Eq  = "=="
