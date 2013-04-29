@@ -21,6 +21,15 @@ labelToDoc n s as ts = (nodeToDoc n) $$ ((text s) <> (parens as)) $$ (tagsToDoc 
 lookupTags :: AlgNode -> NodeMap [Tag] -> [Tag]
 lookupTags n m = Map.findWithDefault [] n m
 
+renderFun :: Doc -> [Doc] -> Doc
+renderFun name args = name <> parens (hsep $ punctuate comma args)
+
+renderAggrFun :: AggrFun -> Doc
+renderAggrFun (Sum c)   = renderFun (text "sum") [int c]
+renderAggrFun (Min c)   = renderFun (text "min") [int c]
+renderAggrFun (Max c)   = renderFun (text "max") [int c]
+renderAggrFun Count = renderFun (text "count") []
+
 renderColumnType :: VLType -> Doc
 renderColumnType = text . show
 
@@ -64,7 +73,8 @@ renderTableKey [] = text "NOKEY"
 
 renderPayloadProj :: (Doc, PayloadProj) -> Doc
 renderPayloadProj (d, PLConst v) = d <> colon <> renderTblVal v
-renderPayloadProj (d, PLCol c) = d <> colon <> int c
+renderPayloadProj (d, PLCol c)   = d <> colon <> int c
+renderPayloadProj (d, PLExpr e)  = d <> colon <> renderExpr1 e
 
 renderISTransProj :: (Doc, ISTransProj) -> Doc
 renderISTransProj (d, STDescrCol) = d <> colon <> text "descr"
@@ -149,6 +159,7 @@ opDotLabel tm i (UnOp (CompExpr1L expr) _) =
 opDotLabel tm i (UnOp Singleton _) = labelToDoc i "Singleton" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (SelectPos1 o (N p)) _)  = labelToDoc i "SelectPos1" ((text $ show o) <+> int p) (lookupTags i tm)
 opDotLabel tm i (UnOp (SelectPos1L o (N p)) _) = labelToDoc i "SelectPos1L" ((text $ show o) <+> int p) (lookupTags i tm)
+opDotLabel tm i (UnOp (VecAggr g as) _) = labelToDoc i "Aggr" (bracketList int g <+> bracketList renderAggrFun as) (lookupTags i tm)
 opDotLabel tm i (BinOp GroupBy _ _) = labelToDoc i "GroupBy" empty (lookupTags i tm)
 opDotLabel tm i (BinOp SortWith _ _) = labelToDoc i "SortWith" empty (lookupTags i tm)
 opDotLabel tm i (BinOp LengthSeg _ _) = labelToDoc i "LengthSeg" empty (lookupTags i tm)

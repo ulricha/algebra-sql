@@ -24,6 +24,12 @@ type TypedColumn = (DataColumn, VLType)
 type Key = [DataColumn]
 type DBCol = Int
 
+data AggrFun = Sum DBCol
+             | Min DBCol
+             | Max DBCol
+             | Count
+               deriving (Eq, Ord, Show, Read, Generic)
+
 data VecCompOp = Eq
                | Gt
                | GtE
@@ -97,6 +103,7 @@ data PosProj = PosNumber
 
 data PayloadProj = PLConst VLVal
                  | PLCol DBCol
+                 | PLExpr Expr1
                  deriving (Eq, Ord, Generic, Show)
 
 newtype Nat = N Int deriving (Eq, Ord, Generic, Show)
@@ -174,6 +181,7 @@ data UnOp = Unique
           | CompExpr1L Expr1
           | SelectPos1 VecCompOp Nat
           | SelectPos1L VecCompOp Nat
+          | VecAggr [DBCol] [AggrFun]
     deriving (Eq, Ord, Generic, Show)
 
 
