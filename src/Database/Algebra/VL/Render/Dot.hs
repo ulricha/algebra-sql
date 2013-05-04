@@ -28,6 +28,7 @@ renderAggrFun :: AggrFun -> Doc
 renderAggrFun (Sum c)   = renderFun (text "sum") [int c]
 renderAggrFun (Min c)   = renderFun (text "min") [int c]
 renderAggrFun (Max c)   = renderFun (text "max") [int c]
+renderAggrFun (Avg c)   = renderFun (text "avg") [int c]
 renderAggrFun Count = renderFun (text "count") []
 
 renderColumnType :: VLType -> Doc
@@ -120,8 +121,7 @@ opDotLabel tm i (UnOp NotPrim _) = labelToDoc i "NotPrim" empty (lookupTags i tm
 opDotLabel tm i (UnOp NotVec _) = labelToDoc i "NotVec" empty (lookupTags i tm)
 opDotLabel tm i (UnOp LengthA _) = labelToDoc i "LengthA" empty (lookupTags i tm)
 opDotLabel tm i (UnOp DescToRename _) = labelToDoc i "DescToRename" empty (lookupTags i tm)
-opDotLabel tm i (UnOp ToDescr _) = labelToDoc i "ToDescr" empty (lookupTags i tm)
-opDotLabel tm i (UnOp Segment _) = labelToDoc i "Segment" empty (lookupTags i tm)
+Opdotlabel tm i (UnOp Segment _) = labelToDoc i "Segment" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Unsegment _) = labelToDoc i "Unsegment" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (VecSum t) _) = labelToDoc i "VecSum" (renderColumnType t) (lookupTags i tm)
 opDotLabel tm i (UnOp VecAvg _) = labelToDoc i "VecAvg" empty (lookupTags i tm)

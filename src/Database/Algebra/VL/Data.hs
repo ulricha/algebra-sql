@@ -27,6 +27,7 @@ type DBCol = Int
 data AggrFun = Sum DBCol
              | Min DBCol
              | Max DBCol
+             | Avg DBCol
              | Count
                deriving (Eq, Ord, Show, Read, Generic)
 
@@ -153,7 +154,6 @@ data UnOp = Unique
           | NotVec
           | LengthA
           | DescToRename
-          | ToDescr
           | Segment
           | Unsegment
           | VecSum VLType
