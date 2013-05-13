@@ -40,10 +40,9 @@ runGraph :: alg -> GraphM r alg res -> AlgPlan alg res
 runGraph l =  constructAlgPlan . flip runState initialBuildState . flip runReaderT ([], 1)
   where initialBuildState = BuildState { supply = 2, algMap = M.singleton l 1, tags = IM.empty }
         constructAlgPlan (r, s) = (algMap s, r, tags s)
-
+        
 reverseAlgMap :: AlgMap alg -> NodeMap alg
 reverseAlgMap = reverseToIntMap
-
 
 -- | Tag a subtree with a comment
 tag :: String -> AlgNode -> GraphM res alg AlgNode
