@@ -181,6 +181,7 @@ opDotLabel tm i (BinOp PairA _ _) = labelToDoc i "PairA" empty (lookupTags i tm)
 opDotLabel tm i (BinOp PairL _ _) = labelToDoc i "PairL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp ZipL _ _) = labelToDoc i "ZipL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp CartProduct _ _) = labelToDoc i "CartProduct" empty (lookupTags i tm)
+opDotLabel tm i (BinOp CartProductL _ _) = labelToDoc i "CartProductL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp (ThetaJoin expr) _ _) =
   labelToDoc i "ThetaJoin" (renderExpr1 expr) (lookupTags i tm)
 opDotLabel tm i (TerOp CombineVec _ _ _) = labelToDoc i "CombineVec" empty (lookupTags i tm)
@@ -188,6 +189,7 @@ opDotLabel tm i (TerOp CombineVec _ _ _) = labelToDoc i "CombineVec" empty (look
 opDotColor :: VL -> DotColor
 opDotColor (BinOp DistDesc _ _)      = Red
 opDotColor (BinOp CartProduct _ _)   = Red
+opDotColor (BinOp CartProductL _ _)  = Red
 opDotColor (BinOp (ThetaJoin _) _ _) = Green
 opDotColor (BinOp PairL _ _)         = YellowGreen
 opDotColor (BinOp SortWith _ _)      = Tomato

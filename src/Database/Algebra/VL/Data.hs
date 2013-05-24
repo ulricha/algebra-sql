@@ -206,6 +206,7 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | PairL
            | ZipL            -- (DBV, RenameVector, RenameVector)
            | CartProduct
+           | CartProductL
            | ThetaJoin Expr1
     deriving (Eq, Ord, Generic, Show)
 
