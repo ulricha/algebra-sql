@@ -117,6 +117,8 @@ opDotLabel tm i (NullaryOp (TableRef n tys ks)) = labelToDoc i "TableRef"
         (lookupTags i tm)
 opDotLabel tm i (UnOp Unique _) = labelToDoc i "Unique" empty (lookupTags i tm)
 opDotLabel tm i (UnOp UniqueL _) = labelToDoc i "UniqueL" empty (lookupTags i tm)
+opDotLabel tm i (UnOp Number _) = labelToDoc i "Number" empty (lookupTags i tm)
+opDotLabel tm i (UnOp NumberL _) = labelToDoc i "NumberL" empty (lookupTags i tm)
 opDotLabel tm i (UnOp NotPrim _) = labelToDoc i "NotPrim" empty (lookupTags i tm)
 opDotLabel tm i (UnOp NotVec _) = labelToDoc i "NotVec" empty (lookupTags i tm)
 opDotLabel tm i (UnOp LengthA _) = labelToDoc i "LengthA" empty (lookupTags i tm)

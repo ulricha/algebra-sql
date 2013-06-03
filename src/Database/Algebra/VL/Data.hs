@@ -150,6 +150,8 @@ data NullOp = SingletonDescr
 
 data UnOp = Unique
           | UniqueL
+          | Number
+          | NumberL
           | NotPrim
           | NotVec
           | LengthA
