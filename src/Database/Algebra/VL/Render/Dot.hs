@@ -184,27 +184,30 @@ opDotLabel tm i (BinOp PairL _ _) = labelToDoc i "PairL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp ZipL _ _) = labelToDoc i "ZipL" empty (lookupTags i tm)
 opDotLabel tm i (BinOp CartProduct _ _) = labelToDoc i "CartProduct" empty (lookupTags i tm)
 opDotLabel tm i (BinOp CartProductL _ _) = labelToDoc i "CartProductL" empty (lookupTags i tm)
-opDotLabel tm i (BinOp (ThetaJoin expr) _ _) =
-  labelToDoc i "ThetaJoin" (renderExpr1 expr) (lookupTags i tm)
+opDotLabel tm i (BinOp (EquiJoin e1 e2) _ _) =
+  labelToDoc i "EquiJoin" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
+opDotLabel tm i (BinOp (EquiJoinL e1 e2) _ _) =
+  labelToDoc i "EquiJoinL" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (TerOp CombineVec _ _ _) = labelToDoc i "CombineVec" empty (lookupTags i tm)
 
 opDotColor :: VL -> DotColor
-opDotColor (BinOp DistDesc _ _)      = Red
-opDotColor (BinOp CartProduct _ _)   = Red
-opDotColor (BinOp CartProductL _ _)  = Red
-opDotColor (BinOp (ThetaJoin _) _ _) = Green
-opDotColor (BinOp PairL _ _)         = YellowGreen
-opDotColor (BinOp SortWith _ _)      = Tomato
-opDotColor (BinOp GroupBy _ _)       = Tomato
-opDotColor (BinOp PropRename _ _)    = Tan
-opDotColor (BinOp DistLift _ _)      = Tan
-opDotColor (BinOp RestrictVec _ _)   = DodgerBlue
-opDotColor (TerOp CombineVec _ _ _)  = DodgerBlue
-opDotColor (UnOp (SelectExpr _) _)   = LightSkyBlue
-opDotColor (UnOp (VecSum _) _)       = Crimson
-opDotColor (UnOp VecAvg _)           = Crimson
-opDotColor (BinOp VecSumL _ _)       = Crimson
-opDotColor (BinOp VecAvgL _ _)       = Crimson
+opDotColor (BinOp DistDesc _ _)        = Red
+opDotColor (BinOp CartProduct _ _)     = Red
+opDotColor (BinOp CartProductL _ _)    = Red
+opDotColor (BinOp (EquiJoin _ _) _ _)  = Green
+opDotColor (BinOp (EquiJoinL _ _) _ _) = Green
+opDotColor (BinOp PairL _ _)           = YellowGreen
+opDotColor (BinOp SortWith _ _)        = Tomato
+opDotColor (BinOp GroupBy _ _)         = Tomato
+opDotColor (BinOp PropRename _ _)      = Tan
+opDotColor (BinOp DistLift _ _)        = Tan
+opDotColor (BinOp RestrictVec _ _)     = DodgerBlue
+opDotColor (TerOp CombineVec _ _ _)    = DodgerBlue
+opDotColor (UnOp (SelectExpr _) _)     = LightSkyBlue
+opDotColor (UnOp (VecSum _) _)         = Crimson
+opDotColor (UnOp VecAvg _)             = Crimson
+opDotColor (BinOp VecSumL _ _)         = Crimson
+opDotColor (BinOp VecAvgL _ _)         = Crimson
 opDotColor _ = Gray
 
 -- Dot colors

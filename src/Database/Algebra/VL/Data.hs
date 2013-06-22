@@ -209,7 +209,8 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | ZipL            -- (DBV, RenameVector, RenameVector)
            | CartProduct
            | CartProductL
-           | ThetaJoin Expr1
+           | EquiJoin Expr1 Expr1
+           | EquiJoinL Expr1 Expr1
     deriving (Eq, Ord, Generic, Show)
 
 data TerOp = CombineVec  -- (DBV, RenameVector, RenameVector)
