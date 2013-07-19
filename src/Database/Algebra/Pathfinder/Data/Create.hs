@@ -91,9 +91,9 @@ eqTJoin eqs projI q1 q2 = let (a, b) = head eqs
                           in foldr filterEqs (eqJoin a b q1 q2) $ tail eqs
         where resCol = "item99999002"
               filterEqs :: (String, String) -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
-              filterEqs (l, r) res = proj projI =<< select resCol =<< oper "==" resCol l r =<< res
+              filterEqs (l, r) res = proj projI =<< select resCol =<< oper (RelFun Eq) resCol l r =<< res
 
-thetaJoin :: [(LeftAttrName, RightAttrName, String)] -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
+thetaJoin :: [(LeftAttrName, RightAttrName, JoinRel)] -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
 thetaJoin cond c1 c2 = insertNode $ BinOp (ThetaJoin cond) c1 c2
 
 -- | Assign a number to each row in column 'ResAttrName' incrementing
@@ -152,7 +152,7 @@ rownum' res sort part c1 = insertNode $ UnOp (RowNum (res, sort, part)) c1
 
 -- | Apply an operator to the element in `LeftAttrName' and `RightAttrName',
 -- store the result in `ResAttrName'
-oper :: String -> ResAttrName -> LeftAttrName -> RightAttrName -> AlgNode -> GraphM a PFAlgebra AlgNode
+oper :: Fun -> ResAttrName -> LeftAttrName -> RightAttrName -> AlgNode -> GraphM a PFAlgebra AlgNode
 oper o r la ra c = insertNode $ UnOp (FunBinOp (o, r, la, ra)) c
 
 

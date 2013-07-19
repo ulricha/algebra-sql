@@ -34,23 +34,6 @@ serializeAlgebra cols qGId = do
                                     tell [[contentN, edgeNil, edgeQ] `childsOf` node xId "serialize relation"]
                                     return xId
 
-arOptoFn :: String -> String
-arOptoFn "+" = "add"
-arOptoFn "-" = "subtract"
-arOptoFn "/" = "divide"
-arOptoFn "*" = "multiply"
-arOptoFn "%" = "modulo"
-arOptoFn _ = $impossible
-
-relOptoFn :: String -> String
-relOptoFn ">" = "gt"
-relOptoFn "==" = "eq"
-relOptoFn "and" = "and"
-relOptoFn "or" = "or"
-relOptoFn "&&" = "and"
-relOptoFn "||" = "or"
-relOptoFn _ = $impossible
-
 -- XML defintion of iter column
 iterCol :: Element ()
 iterCol =  [attr "name" "iter", attr "new" "false", attr "function" "iter"] `attrsOf` xmlElem "column"
@@ -310,11 +293,9 @@ mkColumn (n, t) = [attr "type" $ show t] `attrsOf` column n True
 --  1. Arithmatic operators, represented in xml as function nodes
 --  2. Relational operators, represented in xml as relational function nodes
 --  3. Operators that can be expressed in terms of other operators
-mkBinOpNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
-mkBinOpNode xId op res lArg rArg cId | elem op ["+", "-", "*", "%", "/"] = mkFnNode xId (arOptoFn op) res lArg rArg cId
-                                     | elem op [">", "==", "and", "or", "&&", "||"] = mkRelFnNode xId (relOptoFn op) res lArg rArg cId
-                                     | elem op ["<" ] = mkBinOpNode xId ">" res rArg lArg cId
-                                     | otherwise = $impossible
+mkBinOpNode :: XMLNode -> Fun -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
+mkBinOpNode xId (Fun1to1 f) res lArg rArg cId = mkFnNode xId (show f) res lArg rArg cId
+mkBinOpNode xId (RelFun r) res lArg rArg cId = mkRelFnNode xId (show r) res lArg rArg cId
 
 -- Create an XML relational function node
 mkRelFnNode :: XMLNode -> String -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
@@ -339,11 +320,11 @@ mkEqJoinNode xId (lN, rN) cxId1 cxId2 = let contNode = [[attr "position" "1"] `a
                                          in [contNode, mkEdge cxId1, mkEdge cxId2]`childsOf` node xId "eqjoin"
 
 -- Create an XML theta-join node.
-mkThetaJoinNode :: XMLNode -> [(LeftAttrName,RightAttrName, String)] -> XMLNode -> XMLNode -> Element ()
+mkThetaJoinNode :: XMLNode -> [(LeftAttrName,RightAttrName, JoinRel)] -> XMLNode -> XMLNode -> Element ()
 mkThetaJoinNode xId joinCond cxId1 cxId2 = let contNode = [ [[attr "position" "1"] `attrsOf` column lN False,
                                                                 [attr "position" "2"] `attrsOf` column rN False]
                                                                    `childsOf`
-                                                                     ([attr "kind" $ relOptoFn o] `attrsOf` xmlElem "comparison")
+                                                                     ([attr "kind" $ show o] `attrsOf` xmlElem "comparison")
                                                              | (lN, rN, o) <- joinCond
                                                              ]
                                                              `childsOf` contentNode

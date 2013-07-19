@@ -87,12 +87,12 @@ instance Show ATy where
 
 -- | Wrapper around values that can occur in an PFAlgebraic plan
 data AVal where
-  VInt :: Integer -> AVal
-  VStr :: String -> AVal
-  VBool :: Bool -> AVal
+  VInt    :: Integer -> AVal
+  VStr    :: String -> AVal
+  VBool   :: Bool -> AVal
   VDouble :: Double -> AVal
-  VDec :: Float -> AVal
-  VNat :: Integer -> AVal
+  VDec    :: Float -> AVal
+  VNat    :: Integer -> AVal
     deriving (Eq, Ord)
 
 -- | Show the values in the way compatible with the xml plan.
@@ -159,14 +159,15 @@ type ProjInf              = [ProjPair]
 -- | A tuple is a list of values
 type Tuple = [AVal]
 
--- | Schema information, represents a table structure, the first element of the tuple is the column name the second its type.
+-- | Schema information, represents a table structure, the first element of the
+-- tuple is the column name the second its type.
 type SchemaInfos = [(AttrName, ATy)]
 
 type SemInfRowNum  = (ResAttrName, SortInf, Maybe PartAttrName)
 
--- | Information that specifies how to perform the rank operation.
---  its first element is the column where the output of the operation is inserted
---  the second element represents the sorting criteria that determine the ranking.
+-- | Information that specifies how to perform the rank operation.  its first
+--  element is the column where the output of the operation is inserted the
+--  second element represents the sorting criteria that determine the ranking.
 type SemInfRank    = (ResAttrName,  SortInf)
 
 -- | Information that specifies a projection
@@ -180,15 +181,33 @@ type SemInfSel     = SelAttrName
 type SemInfPosSel  = (Int, SortInf, Maybe PartAttrName)
 
 
--- | Information on how to perform an eq-join. The first element represents the column from the
--- first table that has to be equal to the column in the second table represented by the second
--- element in the pair.
+-- | Information on how to perform an eq-join. The first element represents the
+-- column from the first table that has to be equal to the column in the second
+-- table represented by the second element in the pair.
 type SemInfEqJoin  = (LeftAttrName,RightAttrName)
 
--- | Information on how to perform a theta-join. The first element represents the column from the
--- first table that has to relate to the column in the second table represnted by the second
--- element in tuple. The third element represents the type of relation.
-type SemInfThetaJoin = [(LeftAttrName, RightAttrName, String)]
+-- | Information on how to perform a theta-join. The first element represents
+-- the column from the first table that has to relate to the column in the
+-- second table represnted by the second element in tuple. The third element
+-- represents the type of relation.
+type SemInfThetaJoin = [(LeftAttrName, RightAttrName, JoinRel)]
+
+-- | Comparison operators which can be used for ThetaJoins.
+data JoinRel = EqJ -- equal
+             | GtJ -- greater than
+             | GeJ -- greater equal
+             | LtJ -- less than
+             | LeJ -- less equal
+             | NeJ -- not equal
+             deriving (Eq, Ord)
+             
+instance Show JoinRel where
+  show EqJ = "eq"
+  show GtJ = "gt"
+  show GeJ = "ge"
+  show LtJ = "lt"
+  show LeJ = "le"
+  show NeJ = "ne"
 
 -- | Information what to put in a literate table
 type SemInfLitTable = [Tuple]
@@ -206,7 +225,46 @@ type SemInfCast     = (ResAttrName, AttrName, ATy)
 -- The second element the column name for its result
 -- The third element is the left argument for the operator
 -- The fourth element is the right argument for the operator
-type SemBinOp = (String, ResAttrName, LeftAttrName, RightAttrName)
+type SemBinOp = (Fun, ResAttrName, LeftAttrName, RightAttrName) -- FIXME
+     
+-- | Binary functions, arithmetic and logical operators.
+data Fun1to1 = Plus
+             | Minus
+             | Times
+             | Div
+             | Modulo
+             | Contains
+             | SimilarTo
+             | Concat
+             deriving (Eq, Ord)
+     
+instance Show Fun1to1 where
+  show Minus     = "subtract"
+  show Plus      = "add"
+  show Times     = "multiply"
+  show Div       = "divide"
+  show Modulo    = "modulo"
+  show Contains  = "fn:contains"
+  show Concat    = "fn:concat"
+  show SimilarTo = "fn:similar_to"
+         
+data RelFun = Gt
+            | Eq
+            | And
+            | Or
+            deriving (Eq, Ord)
+            
+instance Show RelFun where
+  show Gt  = "gt"
+  show Eq  = "eq"
+  show And = "and"
+  show Or  = "or"
+            
+data Fun = Fun1to1 Fun1to1 | RelFun RelFun deriving (Eq, Ord)
+
+instance Show Fun where
+  show (Fun1to1 f) = show f
+  show (RelFun r)  = show r
 
 type SemUnOp = (ResAttrName, AttrName)
 

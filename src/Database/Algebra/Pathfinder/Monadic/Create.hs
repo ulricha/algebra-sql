@@ -27,7 +27,7 @@ castM :: AttrName -> ResAttrName -> ATy -> GraphM a PFAlgebra AlgNode -> GraphM 
 castM n r t = bind1 (C.cast n r t)
 
 -- | Perform theta join on two plans
-thetaJoinM :: [(LeftAttrName, RightAttrName, String)] -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+thetaJoinM :: [(LeftAttrName, RightAttrName, JoinRel)] -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 thetaJoinM cond = bind2 (C.thetaJoin cond)
 
 -- | Join two plans where the columns n1 of table 1 and columns n2 of table
@@ -95,5 +95,5 @@ rownum'M res sort part = bind1 (C.rownum' res sort part)
 
 -- | Apply an operator to the element in `LeftAttrName' and `RightAttrName',
 -- store the result in `ResAttrName'
-operM :: String -> ResAttrName -> LeftAttrName -> RightAttrName -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+operM :: Fun -> ResAttrName -> LeftAttrName -> RightAttrName -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 operM o r la ra = bind1 (C.oper o r la ra)
