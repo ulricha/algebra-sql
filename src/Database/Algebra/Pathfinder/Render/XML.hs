@@ -6,7 +6,7 @@ module Database.Algebra.Pathfinder.Render.XML (document, mkXMLDocument, mkPlanBu
 {-
 Transform a query plan DAG into an XML representation.
 -}
-import           Control.Monad.Writer
+import           Control.Monad.Writer hiding (All, Sum)
 import           Database.Algebra.Dag.Common
 import           Database.Algebra.Impossible
 import           Database.Algebra.Pathfinder.Data.Algebra
@@ -195,18 +195,38 @@ mkDifference xId cxId1 cxId2 = [mkEdge cxId1, mkEdge cxId2] `childsOf` node xId 
 mkCast :: XMLNode -> AttrName -> AttrName -> ATy -> XMLNode -> Element ()
 mkCast xId o r t c = [[column r True, column o False, typeN t] `childsOf` contentNode, mkEdge c] `childsOf` node xId "cast"
 
-mkAggrs :: XMLNode -> [(AggrType, ResAttrName, Maybe AttrName)] -> Maybe PartAttrName -> XMLNode -> Element ()
+mkAggrs :: XMLNode -> [(AggrType, ResAttrName)] -> Maybe PartAttrName -> XMLNode -> Element ()
 mkAggrs xId aggrs part cId = let partCol = case part of
                                             Nothing -> []
                                             Just x  -> [[attr "function" "partition"] `attrsOf` column x False]
                                  aggr = map mkAggr aggrs
                               in [(partCol ++ aggr) `childsOf` contentNode, mkEdge cId] `childsOf` node xId "aggr"
     where
-        mkAggr :: (AggrType, ResAttrName, Maybe AttrName) -> Element ()
-        mkAggr (aggr, res, arg) = let argCol = case arg of
-                                                    Just arg' -> [[attr "function" "item"] `attrsOf` column arg' False]
-                                                    Nothing -> []
-                                   in ((column res True):argCol) `childsOf` [attr "kind" $ show aggr] `attrsOf` xmlElem "aggregate"
+    
+        unaryAggr :: String -> AttrName -> ResAttrName -> Element ()
+        unaryAggr kind argCol resCol =
+            [resColNode, argColNode] `childsOf` ([attr "kind" kind] `attrsOf` xmlElem "aggregate")
+          where 
+            resColNode = column resCol True
+            argColNode = [attr "function" "item"] `attrsOf` column argCol False
+            
+        nullaryAggr :: String -> ResAttrName -> Element ()
+        nullaryAggr kind resCol =
+            [resColNode] `childsOf` ([attr "kind" kind] `attrsOf` xmlElem "aggregate")
+          where 
+            resColNode = column resCol True
+    
+        mkAggr :: (AggrType, ResAttrName) -> Element ()
+        mkAggr (aggr, res) =
+            case aggr of
+                Avg c -> unaryAggr "avg" c res
+                Max c -> unaryAggr "max" c res
+                Min c -> unaryAggr "min" c res
+                Sum c -> unaryAggr "sum" c res
+                All c -> unaryAggr "all" c res
+                Prod c -> unaryAggr "prod" c res
+                Dist c -> unaryAggr "distinct" c res
+                Count -> nullaryAggr "count" res
 
 mkPosSel :: XMLNode -> Int -> SortInf -> Maybe PartAttrName -> XMLNode -> Element ()
 mkPosSel xId n sort part cId = let sortCols = map mkSortColumn $ zip sort [1..]
@@ -295,6 +315,7 @@ mkColumn (n, t) = [attr "type" $ show t] `attrsOf` column n True
 --  3. Operators that can be expressed in terms of other operators
 mkBinOpNode :: XMLNode -> Fun -> ResAttrName -> LeftAttrName -> RightAttrName -> XMLNode -> Element ()
 mkBinOpNode xId (Fun1to1 f) res lArg rArg cId = mkFnNode xId (show f) res lArg rArg cId
+mkBinOpNode xId (RelFun Lt) res lArg rArg cId = mkBinOpNode xId (RelFun Gt) res rArg lArg cId
 mkBinOpNode xId (RelFun r) res lArg rArg cId = mkRelFnNode xId (show r) res lArg rArg cId
 
 -- Create an XML relational function node

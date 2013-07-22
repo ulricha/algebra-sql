@@ -81,7 +81,7 @@ projM :: ProjInf -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 projM cols = bind1 (C.proj cols)
 
 -- | Apply aggregate functions to a plan
-aggrM :: [(AggrType, ResAttrName, Maybe AttrName)] -> Maybe PartAttrName -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+aggrM :: [(AggrType, ResAttrName)] -> Maybe PartAttrName -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 aggrM aggrs part = bind1 (C.aggr aggrs part)
 
 -- | Similar to rowrank but this will assign a \emph{unique} number to every row

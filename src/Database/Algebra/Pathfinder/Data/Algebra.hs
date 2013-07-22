@@ -12,6 +12,7 @@ provided by the module Database.Algebra.Pathfinder.Algebra.Create
 module Database.Algebra.Pathfinder.Data.Algebra where
 
 import           Numeric                     (showFFloat)
+import           Text.Printf                
 
 import           Database.Algebra.Aux
 import           Database.Algebra.Dag        (Operator, opChildren, replaceOpChild)
@@ -35,25 +36,25 @@ data SortDir = Asc
              | Desc
     deriving (Eq, Ord)
 
-data AggrType = Avg
-              | Max
-              | Min
-              | Sum
+data AggrType = Avg AttrName
+              | Max AttrName
+              | Min AttrName
+              | Sum AttrName
               | Count
-              | All
-              | Prod
-              | Dist
+              | All AttrName
+              | Prod AttrName
+              | Dist AttrName
     deriving (Eq, Ord)
 
 instance Show AggrType where
-    show Avg      = "avg"
-    show Max      = "max"
-    show Min      = "min"
-    show Sum      = "sum"
+    show (Avg c)  = printf "avg(%s)" c
+    show (Max c)  = printf "max(%s)" c
+    show (Min c)  = printf "min(%s)" c
+    show (Sum c)  = printf "sum(%s)" c
     show Count    = "count"
-    show All      = "all"
-    show Prod     = "prod"
-    show Dist     = "distinct"
+    show (All c)  = printf "all(%s)" c
+    show (Prod c) = printf "prod(%s)" c
+    show (Dist c) = printf "dist(%s)" c
 
 -- | The show instance results in values that are accepted in the xml plan.
 instance Show SortDir where
@@ -72,7 +73,7 @@ data ATy where
     ADouble :: ATy
     ANat :: ATy
     ASur :: ATy
-      deriving (Eq, Ord)
+    deriving (Eq, Ord)
 
 -- | Show the PFAlgebraic types in a way that is compatible with
 --  the xml plan.
@@ -249,6 +250,7 @@ instance Show Fun1to1 where
   show SimilarTo = "fn:similar_to"
          
 data RelFun = Gt
+            | Lt
             | Eq
             | And
             | Or
@@ -256,6 +258,7 @@ data RelFun = Gt
             
 instance Show RelFun where
   show Gt  = "gt"
+  show Lt  = "lt"
   show Eq  = "eq"
   show And = "and"
   show Or  = "or"
@@ -268,7 +271,7 @@ instance Show Fun where
 
 type SemUnOp = (ResAttrName, AttrName)
 
-type SemInfAggr  = ([(AggrType, ResAttrName, Maybe AttrName)], Maybe PartAttrName)
+type SemInfAggr  = ([(AggrType, ResAttrName)], Maybe PartAttrName)
 
 data NullOp = LitTable SemInfLitTable SchemaInfos
             | EmptyTable SchemaInfos

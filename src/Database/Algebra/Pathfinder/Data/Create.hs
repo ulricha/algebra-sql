@@ -82,7 +82,7 @@ cast n r t c = insertNode $ UnOp (Cast (r, n, t)) c
 
 -- | Join two plans where the columns n1 of table 1 and columns n2 of table
 --  2 are equal.
-eqJoin :: String -> String -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
+eqJoin :: LeftAttrName -> RightAttrName -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
 eqJoin n1 n2 c1 c2 = insertNode $ BinOp (EqJoin (n1, n2)) c1 c2
 
 -- | The same as eqJoin but with multiple columns.
@@ -138,7 +138,7 @@ proj :: ProjInf -> AlgNode -> GraphM a PFAlgebra AlgNode
 proj cols c = insertNode $ UnOp (Proj cols) c
 
 -- | Apply aggregate functions to a plan
-aggr :: [(AggrType, ResAttrName, Maybe AttrName)] -> Maybe PartAttrName -> AlgNode -> GraphM a PFAlgebra AlgNode
+aggr :: [(AggrType, ResAttrName)] -> Maybe PartAttrName -> AlgNode -> GraphM a PFAlgebra AlgNode
 aggr aggrs part c1 = insertNode $ UnOp (Aggr (aggrs, part)) c1
 
 -- | Similar to rowrank but this will assign a \emph{unique} number to every row
