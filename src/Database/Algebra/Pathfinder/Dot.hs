@@ -1,6 +1,6 @@
 -- Dot
 
-module Dot() where
+module Database.Algebra.Pathfinder.Dot(renderPFDot) where
 
 import qualified Data.IntMap                         		as Map
 import           Data.List 							 		--as List
@@ -12,31 +12,18 @@ import           Database.Algebra.Dag.Common		 		--as DagC
 import           Database.Algebra.Pathfinder.Data.Algebra   as Alg
 --import           Database.Algebra.X100.Render.Common
 
-
----------------- aus X100 Common / angepasst
-
--- Rendering projection information
-
 nodeToDoc :: AlgNode -> Doc
 nodeToDoc n = (text "id:") <+> (int n)
 
 tagsToDoc :: [Tag] -> Doc
 tagsToDoc ts = vcat $ map text ts
 
-
---labelToDoc :: AlgNode -> String -> Doc -> [Tag] -> Doc
---labelToDoc n s as ts = (nodeToDoc n) $$ ((text s) <> (parens as)) $$ (tagsToDoc $ nub ts)
 labelToDoc :: AlgNode -> String -> [Tag] -> Doc
 labelToDoc n s ts = (nodeToDoc n) $$ (text s) <> (tagsToDoc $ nub ts)
 
---renderJoinArgs :: [(ColID, ColID)] -> Doc
---renderJoinArgs cols =
---    let (k1, k2) = unzip cols
---    in bracketList renderColID k1 <> comma <+> bracketList renderColID k2
 
 lookupTags :: AlgNode -> NodeMap [Tag] -> [Tag]
 lookupTags n m = Map.findWithDefault [] n m
-
 
 
 
@@ -66,82 +53,18 @@ renderNullOp (LitTable _ _) = text "LitTable"
 renderNullOp (EmptyTable _) = text "EmptyTable"
 renderNullOp (TableRef _)   = text "TableRef"
 
+data Op = NullaryOp | UnaryOp | BinOp 
+--renderOp :: Op -> Doc
+
+
 bracketList :: (a -> Doc) -> [a] -> Doc
 bracketList f = brackets . hsep . punctuate comma . map f
 
+
+
+
 bracketListLines :: (a -> Doc) -> [a] -> Doc
 bracketListLines f = brackets . vcat . punctuate comma . map f
-
----------------------------------------------------
-
----- | Create an abstract Dot edge
---constructDotEdge :: (AlgNode, AlgNode) -> DotEdge
---constructDotEdge = uncurry DotEdge
-
--- create the node label from an operator description
---opDotLabel :: NodeMap [Tag] -> AlgNode -> PFLabel -> Doc
---opDotLabel tm i ProjL =
---  -- auskommentiert, da nicht mehr (ProjL info)
---  --let bl = if length info > 4
---  --         then bracketListLines
---  --         else bracketList
---     labelToDoc i "Project" (lookupTags i tm)
---opDotLabel tm i (AggrL (ks, as)) =
---     labelToDoc i "Aggr" ((bracketList renderColID ks) <> comma <+> (bracketList renderAggregation as)) (lookupTags i tm)
---opDotLabel tm i (OrdAggrL (ks, as)) =
---     labelToDoc i "OrdAggr" ((bracketList renderColID ks) <> comma <+> (bracketList renderAggregation as)) (lookupTags i tm)
---opDotLabel tm i (UnionL) =
---     labelToDoc i "Union" empty (lookupTags i tm)
---opDotLabel tm i (InlineLoadL (c, d)) =
---    labelToDoc i "InlineLoad"
---    (bracketList renderColumnName c <> comma
---     $$ renderData d <> comma
---     $$ quotes comma <> comma
---     <+> quotes semi <> comma)
---    (lookupTags i tm)
---opDotLabel tm i (SelectL info) =
---     labelToDoc i "Select" (renderExpr info) (lookupTags i tm)
---opDotLabel tm i (MergeUnionL info) =
---     labelToDoc i "MergeUnion" (renderJoinArgs info) (lookupTags i tm)
---opDotLabel tm i (MergeDiffL info) =
---     labelToDoc i "MergeDiff" (renderJoinArgs info) (lookupTags i tm)
---opDotLabel tm i (MergeJoin1L info) =
---     labelToDoc i "MergeJoin1" (renderJoinArgs info) (lookupTags i tm)
---opDotLabel tm i (MergeJoinNL info) =
---     labelToDoc i "MergeJoinN" (renderJoinArgs info) (lookupTags i tm)
---opDotLabel tm i (HashJoin01L info) =
---     labelToDoc i "HashJoin01" (renderJoinArgs info) (lookupTags i tm)
---opDotLabel tm i (HashSemiJoinL info) =
---     labelToDoc i "HashSemiJoinL" (renderJoinArgs info) (lookupTags i tm)
---opDotLabel tm i (HashJoin1L info) =
---     labelToDoc i "HashJoin1" (renderJoinArgs info) (lookupTags i tm)
---opDotLabel tm i (HashJoinNL (hashKeys, extraCond)) =
---     let args  = (renderJoinArgs hashKeys)
---         args' = case extraCond of
---                   Just e  -> args <+> renderExpr e
---                   Nothing -> args
---     in labelToDoc i "HashJoinN" args' (lookupTags i tm)
---opDotLabel tm i (StableSortL info) =
---     labelToDoc i "StableSort" (bracketList renderSortCol info) (lookupTags i tm)
---opDotLabel tm i (SortL info) =
---     labelToDoc i "Sort" (bracketList renderSortCol info) (lookupTags i tm)
---opDotLabel tm i (CartProdL (Just card)) =
---     labelToDoc i "Cartprod" (int card) (lookupTags i tm)
---opDotLabel tm i (CartProdL Nothing) =
---     labelToDoc i "Cartprod" empty (lookupTags i tm)
---opDotLabel tm i (FlowMatL) =  labelToDoc i "FlowMat" empty (lookupTags i tm)
---opDotLabel tm i (MScanL (t, cols, keys)) =
---  let bl = if length cols > 4
---           then bracketListLines
---           else bracketList
---  in labelToDoc i "MScan" (renderTableName t <> comma <+> bl renderScanColumn cols <> comma $$ renderTableKeys keys) (lookupTags i tm)
---opDotLabel tm i (AppendL info) =
---     labelToDoc i "Append" (renderTableName info) (lookupTags i tm)
---opDotLabel tm i NullOpL =
---     labelToDoc i "NullOp" empty (lookupTags i tm)
---opDotLabel tm i (ReuseL label) =
---     labelToDoc i "Reuse" (text label) (lookupTags i tm)
-
 
 
 escapeLabel :: String -> String
@@ -157,12 +80,9 @@ escapeChar c = [c]
 
 constructDotNode :: [AlgNode] -> NodeMap [Tag] -> (AlgNode, PFLabel) -> DotNode
 constructDotNode rootNodes ts (n, op) =
-    if elem n rootNodes then
-        DotNode n l c (Just Solid)
-    else
-        DotNode n l c Nothing
-    where l = "label"
-          c = Tomato
+    DotNode n l c Nothing
+      where l = "F" -- escapeLabel $ render $ opDotLabel ts n op
+            c = Tomato
 
 -- | Create an abstract Dot edge
 constructDotEdge :: (AlgNode, AlgNode) -> DotEdge
@@ -281,9 +201,9 @@ data PFLabel = EmptyTableL
 
 labelOfOp :: PFAlgebra -> PFLabel
 labelOfOp (TerOp _ _ _ _)   = error "keine tertiäre Operation"
-labelOfOp (BinOp op _ _)	= labelOfBinOp op
-labelOfOp (UnOp op _)		= labelOfUnOp op
-labelOfOp (NullaryOp op)	= labelOfNullaryOp op
+labelOfOp (Database.Algebra.Dag.Common.BinOp op _ _)	= labelOfBinOp op
+labelOfOp (Database.Algebra.Dag.Common.UnOp op _)		= labelOfUnOp op
+labelOfOp (Database.Algebra.Dag.Common.NullaryOp op)	= labelOfNullaryOp op
 
 labelOfBinOp :: BinOp -> PFLabel
 labelOfBinOp (Cross _)     		= CrossL
@@ -337,36 +257,3 @@ renderPFDot ts roots m = render $ renderDot dotNodes dotEdges
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
---tagOfLink :: X100ReuseAlgebra -> Maybe [Tag]
---tagOfLink (BinOp _ (Label ll) (Label lr)) = Just ["Label: Left = " ++ ll ++ "Right = " ++ lr]
---tagOfLink (BinOp _ (Label l) _)           = Just ["Label: Left = " ++ l]
---tagOfLink (BinOp _ _ (Label l))           = Just ["Label: Right = " ++ l]
---tagOfLink (UnOp _ (Label l))              = Just ["Label: " ++ l]
---tagOfLink _                               = Nothing
-
---addLinkLabels :: NodeMap [Tag] -> NodeMap X100ReuseAlgebra -> NodeMap [Tag]
---addLinkLabels ts ops = Map.unionWith (++) ts $ Map.foldrWithKey (\n o m -> case tagOfLink o of
---                                                                    Just t -> Map.insert n t m
---                                                                    Nothing -> m) Map.empty ops
-
----- | Render an X100 algebra plan with Reuse operators into a dot file (GraphViz).
---renderX100ReuseDot :: NodeMap [Tag] -> [AlgNode] -> NodeMap X100ReuseAlgebra -> String
---renderX100ReuseDot ts roots m = render $ renderDot dotNodes dotEdges
---    where (opLabels, edges) = extractGraphStructure labelOfReuseOp d
---          d = Dag.mkDag m roots
---          ts' = addLinkLabels ts m
---          dotNodes = map (constructDotNode roots ts') opLabels
---          dotEdges = map constructDotEdge edges

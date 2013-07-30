@@ -2,7 +2,8 @@
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-
+--new, required for JSON
+{-# LANGUAGE DeriveGeneric #-}
 {-|
 The Algebra module provides the internal datatypes used for
 constructing algebaric plans. It is not recommended to use these
@@ -18,6 +19,9 @@ import           Database.Algebra.Aux
 import           Database.Algebra.Dag        (Operator, opChildren, replaceOpChild)
 import           Database.Algebra.Dag.Common
 
+-- required for JSON
+import GHC.Generics (Generic)
+
 -- | The column data type is used to represent the table structure while
 --  compiling ferry core into an PFAlgebraic plan
 --  The col column contains the column number and the type of its contents
@@ -26,7 +30,7 @@ import           Database.Algebra.Dag.Common
 data Column where
     Col :: Int -> ATy -> Column
     NCol :: String -> Columns -> Column
-  deriving (Show)
+  deriving (Show, Generic)
 
 -- | One table can have multiple columns
 type Columns = [Column]
@@ -34,7 +38,7 @@ type Columns = [Column]
 -- | Sorting rows in a direction
 data SortDir = Asc
              | Desc
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Generic, Read)
 
 data AggrType = Avg AttrName
               | Max AttrName
@@ -44,7 +48,7 @@ data AggrType = Avg AttrName
               | All AttrName
               | Prod AttrName
               | Dist AttrName
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Generic)
 
 instance Show AggrType where
     show (Avg c)  = printf "avg(%s)" c
@@ -73,7 +77,7 @@ data ATy where
     ADouble :: ATy
     ANat :: ATy
     ASur :: ATy
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Generic)
 
 -- | Show the PFAlgebraic types in a way that is compatible with
 --  the xml plan.
@@ -94,7 +98,7 @@ data AVal where
   VDouble :: Double -> AVal
   VDec    :: Float -> AVal
   VNat    :: Integer -> AVal
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Generic)
 
 -- | Show the values in the way compatible with the xml plan.
 instance Show AVal where
@@ -200,7 +204,7 @@ data JoinRel = EqJ -- equal
              | LtJ -- less than
              | LeJ -- less equal
              | NeJ -- not equal
-             deriving (Eq, Ord)
+             deriving (Eq, Ord, Generic)
              
 instance Show JoinRel where
   show EqJ = "eq"
@@ -237,7 +241,7 @@ data Fun1to1 = Plus
              | Contains
              | SimilarTo
              | Concat
-             deriving (Eq, Ord)
+             deriving (Eq, Ord, Generic)
      
 instance Show Fun1to1 where
   show Minus     = "subtract"
@@ -254,7 +258,7 @@ data RelFun = Gt
             | Eq
             | And
             | Or
-            deriving (Eq, Ord)
+            deriving (Eq, Ord, Generic)
             
 instance Show RelFun where
   show Gt  = "gt"
@@ -263,7 +267,7 @@ instance Show RelFun where
   show And = "and"
   show Or  = "or"
             
-data Fun = Fun1to1 Fun1to1 | RelFun RelFun deriving (Eq, Ord)
+data Fun = Fun1to1 Fun1to1 | RelFun RelFun deriving (Eq, Ord, Generic)
 
 instance Show Fun where
   show (Fun1to1 f) = show f
@@ -276,7 +280,7 @@ type SemInfAggr  = ([(AggrType, ResAttrName)], Maybe PartAttrName)
 data NullOp = LitTable SemInfLitTable SchemaInfos
             | EmptyTable SchemaInfos
             | TableRef SemInfTableRef
-            deriving (Ord, Eq, Show)
+            deriving (Ord, Eq, Show, Generic)
 
 data UnOp = RowNum SemInfRowNum
           | RowRank SemInfRank
@@ -291,14 +295,14 @@ data UnOp = RowNum SemInfRowNum
           | FunBoolNot SemUnOp
           | Aggr SemInfAggr
           | Dummy String
-          deriving (Ord, Eq, Show)
+          deriving (Ord, Eq, Show, Generic)
 
 data BinOp = Cross ()
            | EqJoin SemInfEqJoin
            | ThetaJoin SemInfThetaJoin
            | DisjUnion ()
            | Difference ()
-           deriving (Ord, Eq, Show)
+           deriving (Ord, Eq, Show, Generic)
 
 type PFAlgebra = Algebra () BinOp UnOp NullOp AlgNode
 
