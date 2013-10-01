@@ -192,6 +192,10 @@ opDotLabel tm i (BinOp (SemiJoin e1 e2) _ _) =
   labelToDoc i "SemiJoin" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (BinOp (SemiJoinL e1 e2) _ _) =
   labelToDoc i "SemiJoinL" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
+opDotLabel tm i (BinOp (AntiJoin e1 e2) _ _) =
+  labelToDoc i "AntiJoin" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
+opDotLabel tm i (BinOp (AntiJoinL e1 e2) _ _) =
+  labelToDoc i "AntiJoinL" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (TerOp CombineVec _ _ _) = labelToDoc i "CombineVec" empty (lookupTags i tm)
 
 opDotColor :: VL -> DotColor

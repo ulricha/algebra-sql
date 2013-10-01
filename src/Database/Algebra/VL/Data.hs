@@ -213,6 +213,8 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | EquiJoinL Expr1 Expr1
            | SemiJoin Expr1 Expr1
            | SemiJoinL Expr1 Expr1
+           | AntiJoin Expr1 Expr1
+           | AntiJoinL Expr1 Expr1
     deriving (Eq, Ord, Generic, Show)
 
 data TerOp = CombineVec  -- (DBV, RenameVector, RenameVector)
