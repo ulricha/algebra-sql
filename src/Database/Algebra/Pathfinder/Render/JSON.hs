@@ -1,7 +1,7 @@
 --JSON
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 
-module Database.Algebra.Pathfinder.JSON(serializePlan, deserializePlan, planToFile, planFromFile) where
+module Database.Algebra.Pathfinder.Render.JSON(serializePlan, deserializePlan, planToFile, planFromFile) where
 
 import GHC.Generics (Generic)    
 import Control.Monad

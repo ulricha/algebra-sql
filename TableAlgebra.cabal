@@ -58,8 +58,8 @@ library
                       Database.Algebra.Pathfinder
                       Database.Algebra.Pathfinder.Render.XML
                       Database.Algebra.Pathfinder.Render.Dot
+                      Database.Algebra.Pathfinder.Render.JSON
                       Database.Algebra.Pathfinder.Data.Algebra
-                      Database.Algebra.Pathfinder.JSON
 
                       Database.Algebra.VL.Data
                       Database.Algebra.VL.Render.Dot
