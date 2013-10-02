@@ -27,7 +27,6 @@ instance ToJSON NullOp where
 instance ToJSON UnOp where
 instance ToJSON BinOp where
 
-
 instance FromJSON Column where
 instance FromJSON ATy where
 instance FromJSON AVal where
@@ -45,7 +44,7 @@ instance FromJSON BinOp where
 instance ToJSON Plan where
 instance FromJSON Plan where
    
-data Plan = Plan {tags :: [(AlgNode, [Tag])], roots :: [AlgNode], graph :: [(AlgNode, PFAlgebra)]}
+data Plan = Plan { tags :: [(AlgNode, [Tag])], roots :: [AlgNode], graph :: [(AlgNode, PFAlgebra)] }
     deriving Generic
 
 serializePlan :: (NodeMap [Tag], [AlgNode], NodeMap PFAlgebra) -> BL.ByteString
@@ -56,7 +55,6 @@ serializePlan (ts, rs, g) = let tags' = M.toList ts
 deserializePlan :: BL.ByteString -> (NodeMap [Tag], [AlgNode], NodeMap PFAlgebra)
 deserializePlan s = let Just (Plan ts rs g) = decode s
                      in (M.fromList ts, rs, M.fromList g)
-
 
 planToFile :: FilePath -> (NodeMap [Tag], [AlgNode], NodeMap PFAlgebra) -> IO ()
 planToFile f t = BL.writeFile f $ serializePlan t

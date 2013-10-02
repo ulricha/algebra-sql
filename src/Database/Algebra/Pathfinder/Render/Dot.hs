@@ -1,6 +1,6 @@
 -- Dot
 
-module Database.Algebra.Pathfinder.Dot(renderPFDot) where
+module Database.Algebra.Pathfinder.Render.Dot(renderPFDot) where
 
 import qualified Data.IntMap                         		as Map
 import           Data.List 							 		--as List
