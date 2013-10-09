@@ -45,7 +45,6 @@ import qualified Database.Algebra.Pathfinder.Data.Algebra as A
 
 -- TODO:
 -- handle escaped sequences and xml entities? how does verbatim work here?
--- convert comments into haddock format
 -- fix top level node deserializer function comments
 -- make comments more precise about what is meant by 'node'
 -- handle deserialization of query_plan_bundle / query_plan / logical_query_plan
