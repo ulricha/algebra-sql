@@ -39,7 +39,7 @@ import Text.XML.HaXml.Verbatim (verbatim)
 
 import Database.Algebra.Dag (mkDag, AlgebraDag)
 import Database.Algebra.Dag.Common (AlgNode, Algebra(NullaryOp, UnOp, BinOp))
-import Database.Algebra.Pathfinder.Data.Algebra
+import qualified Database.Algebra.Pathfinder.Data.Algebra as A
 
 
 
@@ -49,7 +49,7 @@ import Database.Algebra.Pathfinder.Data.Algebra
 -- fix top level node deserializer function comments
 -- make comments more precise about what is meant by 'node'
 -- handle deserialization of query_plan_bundle / query_plan / logical_query_plan
--- import Database.Algebra.Pathfinder.Data.Algebra qualified
+-- use xmlUnEscape? (see XML.hs for locations)
 
 main :: IO ()
 main = do
@@ -82,12 +82,12 @@ parse filename content =
                                 /> tag "node" $ CElem root noPos
 
 -- generate a list of nodes from a list of xml elements FIXME remove
-generateNodes :: [Content i] -> [Maybe (AlgNode, PFAlgebra)]
+generateNodes :: [Content i] -> [Maybe (AlgNode, A.PFAlgebra)]
 -- TODO maybe use sequence here
 generateNodes es = map deserializeNode es
 
 -- FIXME ugly solution for testing purposes
-deserializeQueryPlan :: String -> String -> AlgebraDag PFAlgebra
+deserializeQueryPlan :: String -> String -> AlgebraDag A.PFAlgebra
 deserializeQueryPlan filename content =
     -- FIXME not safe
     mkDag (fromList tuples) [foldl min (head nodeIds) (tail nodeIds)]
@@ -100,7 +100,7 @@ deserializeQueryPlan filename content =
         (nodeIds, _)          = unzip tuples
 
 -- generate a node from an xml element
-deserializeNode :: Content i -> Maybe (AlgNode, PFAlgebra)
+deserializeNode :: Content i -> Maybe (AlgNode, A.PFAlgebra)
 deserializeNode node@(CElem (Elem _ attributes contents) _) = do
 
     identifier <- lookupConvert readMaybe "id" attributes
@@ -114,8 +114,8 @@ deserializeNode node@(CElem (Elem _ attributes contents) _) = do
         
         -- unary operators
         "rownum"     -> deserializeRowNum node
-        "rowrank"    -> deserializeRankOperator node RowRank
-        "rank"       -> deserializeRankOperator node Rank
+        "rowrank"    -> deserializeRankOperator node A.RowRank
+        "rank"       -> deserializeRankOperator node A.Rank
         "project"    -> deserializeProj node
         "select"     -> deserializeSel node
         "pos_sel"    -> deserializePosSel node
@@ -124,11 +124,11 @@ deserializeNode node@(CElem (Elem _ attributes contents) _) = do
         "fun"        -> deserializeBinOpFun node
         
         -- unary operators with RelFun
-        "gt"         -> deserializeBinOpRelFun node Gt
-        "lt"         -> deserializeBinOpRelFun node Lt
-        "eq"         -> deserializeBinOpRelFun node Eq
-        "and"        -> deserializeBinOpRelFun node And
-        "or"         -> deserializeBinOpRelFun node Or
+        "gt"         -> deserializeBinOpRelFun node A.Gt
+        "lt"         -> deserializeBinOpRelFun node A.Lt
+        "eq"         -> deserializeBinOpRelFun node A.Eq
+        "and"        -> deserializeBinOpRelFun node A.And
+        "or"         -> deserializeBinOpRelFun node A.Or
         
         -- unary operators continued
         "cast"       -> deserializeCast node
@@ -193,8 +193,13 @@ lookupVerbatim :: String -> [(QName, AttValue)] -> Maybe String
 lookupVerbatim = lookupConvert return
 
 -- | Looks up an attribute and converts the result with the provided function.
-lookupConvert :: (String -> Maybe a) -> String -> [(QName, AttValue)] -> Maybe a
-lookupConvert fun name attributes = fun . verbatim =<< lookup (N name) attributes
+lookupConvert :: (String -> Maybe a)  -- ^ The function to convert with
+              -> String               -- ^ Name of the attribute
+              -> [(QName, AttValue)]  -- ^ The attribute mapping
+              -> Maybe a
+lookupConvert fun name attributes = do
+    attValStr <- lookup (N name) attributes
+    fun $ verbatim attValStr
 
 -- | Tries to get the name of the result attribute from within a content node.
 deserializeResultAttrName :: Content i -> Maybe String
@@ -214,7 +219,7 @@ deserializePartAttrName contentNode = do
                     `with` attrval (N "function", AttValue $ [Left "partition"])
 
 -- | Tries to get the sort information from the content node.
-deserializeSortInf :: Content i -> Maybe SortInf
+deserializeSortInf :: Content i -> Maybe A.SortInf
 deserializeSortInf contentNode = do
     -- <column function="sort" position=... direction=... name=... />
     let sortInfoNodes = childrenBy siFilter contentNode
@@ -226,7 +231,7 @@ deserializeSortInf contentNode = do
                             )
                             sortInfoNodes
 
-    let tupleConv :: [String] -> Maybe (SortAttrName, SortDir)
+    let tupleConv :: [String] -> Maybe (A.SortAttrName, A.SortDir)
         tupleConv [_, name, dirStr] = do
             direction <- deserializeSortDir dirStr
             return (name, direction)    
@@ -256,15 +261,17 @@ deserializeChildId2 node = case childIdList of
 deserializeContentNode :: Content i -> Maybe (Content i)
 deserializeContentNode node = querySingletonChildByTag "content" node
 
-deserializeEmptyBinaryOpGeneric :: Content i -> (() -> BinOp) -> Maybe PFAlgebra
+deserializeEmptyBinaryOpGeneric :: Content i
+                                -> (() -> A.BinOp)
+                                -> Maybe A.PFAlgebra
 deserializeEmptyBinaryOpGeneric node constructor = do
     (childId1, childId2) <- deserializeChildId2 node
     return $ BinOp (constructor ()) childId1 childId2
 
-deserializeCross :: Content i -> Maybe PFAlgebra
-deserializeCross node = deserializeEmptyBinaryOpGeneric node Cross
+deserializeCross :: Content i -> Maybe A.PFAlgebra
+deserializeCross node = deserializeEmptyBinaryOpGeneric node A.Cross
 
-deserializeEqJoin :: Content i -> Maybe PFAlgebra
+deserializeEqJoin :: Content i -> Maybe A.PFAlgebra
 deserializeEqJoin node = do
     (childId1, childId2) <- deserializeChildId2 node
     
@@ -272,10 +279,10 @@ deserializeEqJoin node = do
     
     infEqJoin <- deserializeBinOpPosArgs contentNode
 
-    return $ BinOp (EqJoin infEqJoin) childId1 childId2
+    return $ BinOp (A.EqJoin infEqJoin) childId1 childId2
 
 
-deserializeThetaJoin :: Content i -> Maybe PFAlgebra
+deserializeThetaJoin :: Content i -> Maybe A.PFAlgebra
 deserializeThetaJoin node = do
     (childId1, childId2) <- deserializeChildId2 node
     
@@ -289,9 +296,12 @@ deserializeThetaJoin node = do
     infThetaJoin <- mapM deserializeComparison
                          $ (childrenBy $ tag "comparison") contentNode
 
-    return $ BinOp (ThetaJoin infThetaJoin) childId1 childId2
+    return $ BinOp (A.ThetaJoin infThetaJoin) childId1 childId2
   where deserializeComparison :: Content i
-                              -> Maybe (LeftAttrName, RightAttrName, JoinRel)
+                              -> Maybe ( A.LeftAttrName
+                                       , A.RightAttrName
+                                       , A.JoinRel
+                                       )
         deserializeComparison compNode = do
             joinRelStr <- queryNodeAttribute "kind" compNode
             joinRel <- deserializeJoinRel joinRelStr
@@ -300,25 +310,25 @@ deserializeThetaJoin node = do
             
             return (leftAttrName, rightAttrName, joinRel)
             
-        deserializeJoinRel :: String -> Maybe JoinRel
+        deserializeJoinRel :: String -> Maybe A.JoinRel
         deserializeJoinRel s = case s of
-            "eq" -> return EqJ
-            "gt" -> return GtJ
-            "ge" -> return GeJ
-            "lt" -> return LtJ
-            "le" -> return LeJ
-            "ne" -> return NeJ
+            "eq" -> return A.EqJ
+            "gt" -> return A.GtJ
+            "ge" -> return A.GeJ
+            "lt" -> return A.LtJ
+            "le" -> return A.LeJ
+            "ne" -> return A.NeJ
             _    -> Nothing
 
 
-deserializeDisjUnion :: Content i -> Maybe PFAlgebra
-deserializeDisjUnion node = deserializeEmptyBinaryOpGeneric node DisjUnion
+deserializeDisjUnion :: Content i -> Maybe A.PFAlgebra
+deserializeDisjUnion node = deserializeEmptyBinaryOpGeneric node A.DisjUnion
 
-deserializeDifference :: Content i -> Maybe PFAlgebra
-deserializeDifference node = deserializeEmptyBinaryOpGeneric node Difference
+deserializeDifference :: Content i -> Maybe A.PFAlgebra
+deserializeDifference node = deserializeEmptyBinaryOpGeneric node A.Difference
 
 
-deserializeDummy :: Content i -> Maybe PFAlgebra
+deserializeDummy :: Content i -> Maybe A.PFAlgebra
 deserializeDummy node = do
     childId <- deserializeChildId1 node
     
@@ -327,9 +337,9 @@ deserializeDummy node = do
     commentNode <- querySingletonChildByTag "comment" contentNode
     comment <- queryTextChild commentNode
     
-    return $ UnOp (Dummy comment) childId
+    return $ UnOp (A.Dummy comment) childId
 
-deserializeAggr :: Content i -> Maybe PFAlgebra
+deserializeAggr :: Content i -> Maybe A.PFAlgebra
 deserializeAggr node = do
     childId <- deserializeChildId1 node
     
@@ -343,28 +353,29 @@ deserializeAggr node = do
     aggrNodes <- mapM deserializeAggregate $ aggrFilter contentNode
     
     
-    return $ UnOp ( Aggr ( aggrNodes
-                         , deserializePartAttrName contentNode
-                         )
+    return $ UnOp ( A.Aggr ( aggrNodes
+                           , deserializePartAttrName contentNode
+                           )
                   )
                   childId
-                  
+
   where aggrFilter = childrenBy $ tag "aggregate"
-        deserializeAggregate :: Content i -> Maybe (AggrType, ResAttrName)
+        deserializeAggregate :: Content i
+                             -> Maybe (A.AggrType, A.ResAttrName)
         deserializeAggregate aggregateNode = do
             aggregateStr <- queryNodeAttribute "kind" aggregateNode
             
             resAttrName <- deserializeNewColumnName aggregateNode
             
             aggregate <- case aggregateStr of
-                "avg"      -> return . Avg =<< aC
-                "max"      -> return . Max =<< aC
-                "min"      -> return . Min =<< aC
-                "sum"      -> return . Sum =<< aC
-                "all"      -> return . All =<< aC
-                "prod"     -> return . Prod =<< aC
-                "distinct" -> return . Dist =<< aC
-                "count"    -> return Count
+                "avg"      -> return . A.Avg =<< aC
+                "max"      -> return . A.Max =<< aC
+                "min"      -> return . A.Min =<< aC
+                "sum"      -> return . A.Sum =<< aC
+                "all"      -> return . A.All =<< aC
+                "prod"     -> return . A.Prod =<< aC
+                "distinct" -> return . A.Dist =<< aC
+                "count"    -> return A.Count
                 _          -> Nothing
 
             return (aggregate, resAttrName)
@@ -372,22 +383,24 @@ deserializeAggr node = do
           -- has to be lazy
           where aC = deserializeOldColumnName aggregateNode
 
-deserializeColumnNameWithNewValue :: Content i -> String -> Maybe ResAttrName
+deserializeColumnNameWithNewValue :: Content i
+                                  -> String
+                                  -> Maybe A.ResAttrName
 deserializeColumnNameWithNewValue contentNode newValue = do
     ranColumn <- querySingletonChildByFilter ranFilter contentNode
     queryNodeAttribute "name" ranColumn
   where ranFilter = tag "column"
                     `with` attrval (N "new", AttValue [Left newValue])
 
-deserializeNewColumnName :: Content i -> Maybe ResAttrName
+deserializeNewColumnName :: Content i -> Maybe A.ResAttrName
 deserializeNewColumnName contentNode =
     deserializeColumnNameWithNewValue contentNode "true"
 
-deserializeOldColumnName :: Content i -> Maybe AttrName
+deserializeOldColumnName :: Content i -> Maybe A.AttrName
 deserializeOldColumnName contentNode = do
     deserializeColumnNameWithNewValue contentNode "false"
 
-deserializeFunBoolNot :: Content i -> Maybe PFAlgebra
+deserializeFunBoolNot :: Content i -> Maybe A.PFAlgebra
 deserializeFunBoolNot node = do
     childId <- deserializeChildId1 node
     
@@ -397,11 +410,11 @@ deserializeFunBoolNot node = do
 
     attrName <- deserializeOldColumnName contentNode
 
-    return $ UnOp (FunBoolNot (resAttrName, attrName))
+    return $ UnOp (A.FunBoolNot (resAttrName, attrName))
                   childId
 
 -- deserialize a cast operator
-deserializeCast :: Content i -> Maybe PFAlgebra
+deserializeCast :: Content i -> Maybe A.PFAlgebra
 deserializeCast node = do
     childId <- deserializeChildId1 node
     
@@ -415,17 +428,18 @@ deserializeCast node = do
     typeStr <- queryNodeAttribute "name" typeNode
     type_ <- deserializeATy typeStr
     
-    return $ UnOp (Cast (resAttrName, attrName, type_))
+    return $ UnOp (A.Cast (resAttrName, attrName, type_))
                   childId
 
-deserializeBinOpResAttrName :: Content i -> Maybe ResAttrName
+deserializeBinOpResAttrName :: Content i -> Maybe A.ResAttrName
 deserializeBinOpResAttrName contentNode = do
     resNode <- querySingletonChildByFilter resColumnFilter contentNode
     queryNodeAttribute "name" resNode
   where resColumnFilter = tag "column" `without` attr "position"
 
 -- deserialize positional arguments used by a BinOp
-deserializeBinOpPosArgs :: Content i -> Maybe (LeftAttrName, RightAttrName)
+deserializeBinOpPosArgs :: Content i
+                        -> Maybe (A.LeftAttrName, A.RightAttrName)
 deserializeBinOpPosArgs contentNode = do
     unsortedResult <- mapM (queryNodeAttributes ["position", "name"]) 
                            $ posColumnFilter contentNode
@@ -437,7 +451,7 @@ deserializeBinOpPosArgs contentNode = do
   where posColumnFilter = (childrenBy $ tag "column" `with` attr "position")
 
 -- deserialize a binary operator with RelFun
-deserializeBinOpRelFun :: Content i -> RelFun -> Maybe PFAlgebra
+deserializeBinOpRelFun :: Content i -> A.RelFun -> Maybe A.PFAlgebra
 deserializeBinOpRelFun node relFun = do
     childId <- deserializeChildId1 node
     
@@ -447,25 +461,25 @@ deserializeBinOpRelFun node relFun = do
 
     (lName, rName) <- deserializeBinOpPosArgs contentNode
 
-    return $ UnOp (FunBinOp ( RelFun relFun
-                            , resAttrName
-                            , lName
-                            , rName
-                            )
+    return $ UnOp ( A.FunBinOp ( A.RelFun relFun
+                               , resAttrName
+                               , lName
+                               , rName
+                               )
                   )
                   childId
 
-deserializeRelFun :: String -> Maybe RelFun
+deserializeRelFun :: String -> Maybe A.RelFun
 deserializeRelFun s = case s of
-    "gt"  -> return Gt
-    "lt"  -> return Lt
-    "eq"  -> return Eq
-    "and" -> return And
-    "or"  -> return Or
+    "gt"  -> return A.Gt
+    "lt"  -> return A.Lt
+    "eq"  -> return A.Eq
+    "and" -> return A.And
+    "or"  -> return A.Or
     _     -> Nothing
     
 -- deserialize a binary operator with Fun1to1 as function
-deserializeBinOpFun :: Content i -> Maybe PFAlgebra
+deserializeBinOpFun :: Content i -> Maybe A.PFAlgebra
 deserializeBinOpFun node = do
     childId <- deserializeChildId1 node
     
@@ -479,29 +493,29 @@ deserializeBinOpFun node = do
 
     (lName, rName) <- deserializeBinOpPosArgs contentNode
 
-    return $ UnOp (FunBinOp ( Fun1to1 fun
-                            , resAttrName
-                            , lName
-                            , rName
-                            )
+    return $ UnOp ( A.FunBinOp ( A.Fun1to1 fun
+                               , resAttrName
+                               , lName
+                               , rName
+                               )
                   )
                   childId
   where kindFilter = (childrenBy $ tag "kind")
 
 -- deserialize the ugly Fun1to1 results of show
-deserializeFun1to1 :: String -> Maybe Fun1to1
+deserializeFun1to1 :: String -> Maybe A.Fun1to1
 deserializeFun1to1 s = case s of
-    "add"           -> return Plus
-    "subtract"      -> return Minus
-    "multiplay"     -> return Times
-    "divide"        -> return Div
-    "modulo"        -> return Modulo
-    "fn:contains"   -> return Contains
-    "fn:similar_to" -> return SimilarTo
-    "fn:concat"     -> return Concat
+    "add"           -> return A.Plus
+    "subtract"      -> return A.Minus
+    "multiplay"     -> return A.Times
+    "divide"        -> return A.Div
+    "modulo"        -> return A.Modulo
+    "fn:contains"   -> return A.Contains
+    "fn:similar_to" -> return A.SimilarTo
+    "fn:concat"     -> return A.Concat
     _               -> Nothing
 
-deserializeAttach :: Content i -> Maybe PFAlgebra
+deserializeAttach :: Content i -> Maybe A.PFAlgebra
 deserializeAttach node = do
     childId <- deserializeChildId1 node
     
@@ -519,14 +533,14 @@ deserializeAttach node = do
     valueStr <- queryTextChild valueNode
     value <- deserializeAVal type_ valueStr
     
-    return $ UnOp (Attach (resAttrName, (type_, value))) childId
+    return $ UnOp (A.Attach (resAttrName, (type_, value))) childId
 
-deserializeDistinct :: Content i -> Maybe PFAlgebra
+deserializeDistinct :: Content i -> Maybe A.PFAlgebra
 deserializeDistinct node = do
     childId <- deserializeChildId1 node
-    return $ UnOp (Distinct ()) childId
+    return $ UnOp (A.Distinct ()) childId
 
-deserializePosSel :: Content i -> Maybe PFAlgebra
+deserializePosSel :: Content i -> Maybe A.PFAlgebra
 deserializePosSel node = do
     childId <- deserializeChildId1 node
     
@@ -539,14 +553,14 @@ deserializePosSel node = do
     positionText <- queryTextChild positionNode
     position <- readMaybe positionText
     
-    return $ UnOp (PosSel ( position
-                          , sortInfo
-                          , deserializePartAttrName contentNode
-                          )
+    return $ UnOp ( A.PosSel ( position
+                             , sortInfo
+                             , deserializePartAttrName contentNode
+                             )
                   )
                   childId
 
-deserializeSel :: Content i -> Maybe PFAlgebra
+deserializeSel :: Content i -> Maybe A.PFAlgebra
 deserializeSel node = do
     childId <- deserializeChildId1 node
     
@@ -556,10 +570,10 @@ deserializeSel node = do
 
     columnName <- queryNodeAttribute "name" columnNode
 
-    return $ UnOp (Sel columnName) childId 
+    return $ UnOp (A.Sel columnName) childId 
 
 -- | Tries to deserialize into 'Proj'.
-deserializeProj :: Content i -> Maybe PFAlgebra
+deserializeProj :: Content i -> Maybe A.PFAlgebra
 deserializeProj node = do
     childId <- deserializeChildId1 node
     
@@ -571,14 +585,16 @@ deserializeProj node = do
     
     projectionInf <- mapM tupleConv projectionLists
     
-    return $ UnOp (Proj $ projectionInf) childId
+    return $ UnOp (A.Proj $ projectionInf) childId
   where tupleConv [x, y] = return (x, y)
         tupleConv _      = Nothing
 
 -- | Tries to deserialize a row rank or rank operator. They use the same
 -- deserialize function because the only difference is the data constructor
 -- itself.
-deserializeRankOperator :: Content i -> (SemInfRank -> UnOp) -> Maybe PFAlgebra
+deserializeRankOperator :: Content i
+                        -> (A.SemInfRank -> A.UnOp)
+                        -> Maybe A.PFAlgebra
 deserializeRankOperator node constructor = do
     childId <- deserializeChildId1 node
 
@@ -596,7 +612,7 @@ deserializeRankOperator node constructor = do
                   childId
 
 -- | Tries to deserialize into a 'RowNum'.
-deserializeRowNum :: Content i -> Maybe PFAlgebra
+deserializeRowNum :: Content i -> Maybe A.PFAlgebra
 deserializeRowNum node = do
 
     childId <- deserializeChildId1 node
@@ -609,16 +625,16 @@ deserializeRowNum node = do
     -- TODO string comparison sufficient ?
     sortInfo <- deserializeSortInf contentNode
     
-    return $ UnOp (RowNum ( resAttrName
-                          , sortInfo
-                          -- optional
-                          , deserializePartAttrName contentNode
-                          )
+    return $ UnOp ( A.RowNum ( resAttrName
+                             , sortInfo
+                             -- optional
+                             , deserializePartAttrName contentNode
+                             )
                   )
                   childId
 
 -- | Tries to deserialize a 'LitTable'.
-deserializeLitTable :: Content i -> Maybe PFAlgebra
+deserializeLitTable :: Content i -> Maybe A.PFAlgebra
 deserializeLitTable node = do
     contentNode <- deserializeContentNode node
 
@@ -629,12 +645,12 @@ deserializeLitTable node = do
     -- FIXME pattern matching safe here?
     let tableContent = transpose $ map (\(_, _, vals) -> vals) results
 
-    return $ NullaryOp $ LitTable tableContent
-                                  $ map (\(n, t, _) -> (n, t))
-                                        results
+    return $ NullaryOp $ A.LitTable tableContent
+                                    $ map (\(n, t, _) -> (n, t))
+                                          results
 
 -- | Tries to deserialize a table column of a 'LitTable'.
-deserializeLitTableColumn :: Content i -> Maybe (AttrName, ATy, [AVal])
+deserializeLitTableColumn :: Content i -> Maybe (A.AttrName, A.ATy, [A.AVal])
 deserializeLitTableColumn columnNode = do
     
     name <- queryNodeAttribute "name" columnNode
@@ -648,7 +664,7 @@ deserializeLitTableColumn columnNode = do
     return (name, type_, map snd result)
 
 -- | Tries to deserialize a value node into a tuple of 'ATy' and 'AVal'.
-deserializeLitTableValue :: Content i -> Maybe (ATy, AVal)
+deserializeLitTableValue :: Content i -> Maybe (A.ATy, A.AVal)
 deserializeLitTableValue valueNode = do
     typeStr <- queryNodeAttribute "type" valueNode
     type_ <- deserializeATy typeStr
@@ -659,7 +675,7 @@ deserializeLitTableValue valueNode = do
     return (type_, value)
 
 -- | Tries to deserialize a 'TableRef'.
-deserializeTableRef :: Content i -> Maybe PFAlgebra
+deserializeTableRef :: Content i -> Maybe A.PFAlgebra
 deserializeTableRef node = do
     propertiesNode <- querySingletonChildByTag "properties" node
     keyInfos <- deserializeTableRefProperties propertiesNode
@@ -667,10 +683,10 @@ deserializeTableRef node = do
     contentElement <- deserializeContentNode node
     (tableName, attrInfo) <- deserializeTableRefContent contentElement
     
-    return $ NullaryOp $ TableRef (tableName, attrInfo, keyInfos)
+    return $ NullaryOp $ A.TableRef (tableName, attrInfo, keyInfos)
 
 -- | Tries to deserialize the properties node into 'KeyInfos'.
-deserializeTableRefProperties :: Content i -> Maybe KeyInfos
+deserializeTableRefProperties :: Content i -> Maybe A.KeyInfos
 deserializeTableRefProperties propertiesNode = do
     -- there should only be one
     keysNode <- querySingletonChildByTag "keys" propertiesNode
@@ -683,7 +699,7 @@ deserializeTableRefProperties propertiesNode = do
     return keyInfos
 
 -- | Tries to deserializes a key node into 'KeyInfo'.
-deserializeKeyInfo :: Content i -> Maybe KeyInfo
+deserializeKeyInfo :: Content i -> Maybe A.KeyInfo
 deserializeKeyInfo keyNode = do
     -- <key><column ..> .. </key>
     -- FIXME mapM to strict?
@@ -695,7 +711,7 @@ deserializeKeyInfo keyNode = do
 
 
 -- | Tries to deserialize a column node below a key node into position and name.
-deserializeKeyInfoColumn :: Content i -> Maybe (Int, AttrName)
+deserializeKeyInfoColumn :: Content i -> Maybe (Int, A.AttrName)
 deserializeKeyInfoColumn columnNode = do
     -- <column name=.. position=..>
     name <- queryNodeAttribute "name" columnNode
@@ -705,7 +721,7 @@ deserializeKeyInfoColumn columnNode = do
     return (position, name)
 
 -- | Tries to deserialize the content node in a 'TableRef'.
-deserializeTableRefContent :: Content i -> Maybe (TableName, TableAttrInf)
+deserializeTableRefContent :: Content i -> Maybe (A.TableName, A.TableAttrInf)
 deserializeTableRefContent contentNode = do
     tableNode <- querySingletonChildByTag "table" contentNode
     name <- queryNodeAttribute "name" tableNode
@@ -717,7 +733,7 @@ deserializeTableRefContent contentNode = do
     return (name, attributeInfo)
 
 -- | Tries to deserialize a column node belonging to a 'TableRef'.
-deserializeTableRefColumn :: Content i -> Maybe (AttrName, AttrName, ATy)
+deserializeTableRefColumn :: Content i -> Maybe (A.AttrName, A.AttrName, A.ATy)
 deserializeTableRefColumn columnNode = do
 
     qAttr <- queryNodeAttributes ["name", "tname", "type"] columnNode
@@ -729,7 +745,7 @@ deserializeTableRefColumn columnNode = do
         _                        -> Nothing
 
 -- | Tries to deserialize an 'EmptyTable'.
-deserializeEmptyTable :: Content i -> Maybe PFAlgebra
+deserializeEmptyTable :: Content i -> Maybe A.PFAlgebra
 deserializeEmptyTable node = do
 
     contentNode <- deserializeContentNode node
@@ -738,11 +754,11 @@ deserializeEmptyTable node = do
     schema <- mapM deserializeEmptyTableColumn
                    $ (childrenBy $ tag "column") contentNode
 
-    return $ NullaryOp $ EmptyTable schema
+    return $ NullaryOp $ A.EmptyTable schema
 
 -- | Tries to deserialize a column node belonging to a 'EmptyTable' into
 -- a tuple containing 'AttrName' and 'ATy'.
-deserializeEmptyTableColumn :: Content i -> Maybe (AttrName, ATy)
+deserializeEmptyTableColumn :: Content i -> Maybe (A.AttrName, A.ATy)
 deserializeEmptyTableColumn columnNode = do
     name <- queryNodeAttribute "name" columnNode
     typeStr <- queryNodeAttribute "type" columnNode
@@ -760,35 +776,35 @@ deserializeBool s = case s of
 
 
 -- | Tries to deserialize a 'String' into 'AVal'.
-deserializeAVal :: ATy -> String -> Maybe AVal
+deserializeAVal :: A.ATy -> String -> Maybe A.AVal
 deserializeAVal t s = case t of
-    AInt    -> return . VInt =<< readMaybe s
-    AStr    -> return . VStr =<< readMaybe s
-    ABool   -> return . VBool =<< readMaybe s
-    ADec    -> return . VDec =<< readMaybe s
-    ADouble -> return . VDouble =<< readMaybe s
-    ANat    -> return . VNat =<< readMaybe s
+    A.AInt    -> return . A.VInt =<< readMaybe s
+    A.AStr    -> return . A.VStr =<< readMaybe s
+    A.ABool   -> return . A.VBool =<< readMaybe s
+    A.ADec    -> return . A.VDec =<< readMaybe s
+    A.ADouble -> return . A.VDouble =<< readMaybe s
+    A.ANat    -> return . A.VNat =<< readMaybe s
     -- FIXME not used because no value type available?
-    ASur    -> Nothing
+    A.ASur    -> Nothing
 
 
 -- | Tries to deserialize a 'String' into 'ATy'.
-deserializeATy :: String -> Maybe ATy
+deserializeATy :: String -> Maybe A.ATy
 deserializeATy s = case s of
-    "int"  -> return AInt
-    "str"  -> return AStr
-    "bool" -> return ABool
-    "dec"  -> return ADec
-    "dbl"  -> return ADouble
-    "nat"  -> return ANat
+    "int"  -> return A.AInt
+    "str"  -> return A.AStr
+    "bool" -> return A.ABool
+    "dec"  -> return A.ADec
+    "dbl"  -> return A.ADouble
+    "nat"  -> return A.ANat
     -- FIXME "nat" is also used for ASur, another mistake ?
     _      -> Nothing
 
 -- | Tries to deserialize a 'String' into 'SortDir'.
-deserializeSortDir :: String -> Maybe SortDir
+deserializeSortDir :: String -> Maybe A.SortDir
 deserializeSortDir s = case s of
-    "ascending"  -> return Asc
-    "descending" -> return Desc
+    "ascending"  -> return A.Asc
+    "descending" -> return A.Desc
     _            -> Nothing
 
 -- FIXME may be defined in ghc 7.6 ?
