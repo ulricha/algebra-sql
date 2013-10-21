@@ -1,18 +1,14 @@
 
--- TODO migrate with XML ?
---module Database.Algebra.Pathfinder.Render.XMLParse
---    ( main
---    , queryNodeAttributes
---    , deserializeRowNum
---    ) where
 
-import Control.Monad (guard, liftM2)
+module Database.Algebra.Pathfinder.Render.XMLParse
+    ( deserializeQueryPlan
+    ) where
+
+import Control.Monad (liftM2)
 import Data.Function (on)
 import Data.List (sortBy, transpose)
 import Data.IntMap (fromList)
-import Data.Maybe (listToMaybe, mapMaybe, catMaybes)
-import System.Environment (getArgs)
-import System.Exit (exitWith, ExitCode(ExitSuccess, ExitFailure))
+import Data.Maybe (listToMaybe)
 
 import Text.XML.HaXml.Parse (xmlParse)
 import Text.XML.HaXml.Posn (noPos, Posn)
@@ -41,64 +37,37 @@ import Database.Algebra.Dag (mkDag, AlgebraDag)
 import Database.Algebra.Dag.Common (AlgNode, Algebra(NullaryOp, UnOp, BinOp))
 import qualified Database.Algebra.Pathfinder.Data.Algebra as A
 
-
-
 -- TODO:
 -- handle escaped sequences and xml entities? how does verbatim work here?
--- fix top level node deserializer function comments
 -- make comments more precise about what is meant by 'node'
--- handle deserialization of query_plan_bundle / query_plan / logical_query_plan
 -- use xmlUnEscape? (see XML.hs for locations)
+-- change error reporting from Maybe to (Either String) or similar
 
-main :: IO ()
-main = do
-    args <- getArgs
-    case args of
-        [filename] -> do
-            content <- readFile filename
-            
-            -- used for debugging purposes
-            mapM_ putStrLn $ parse filename content
-            
-            --putStr content
-            exitWith $ ExitSuccess
-        _          -> do
-            putStrLn "missing filename"
-            exitWith $ ExitFailure 1
+-- | Tries to deserialize a query plan. Can fail due to structural errors.
+deserializeQueryPlan :: String -- ^ Filename used for error reporting.
+                     -> String -- ^ Content of the file.
+                     -> Maybe (AlgebraDag A.PFAlgebra)
+deserializeQueryPlan filename content = do
 
-testParse :: IO (Content Posn)
-testParse = do
-    str <- readFile "../xml_plans/test.xml"
-    let (Document _ _ root _) = xmlParse "" str
-    return (CElem root noPos)
-
-parse :: String -> String -> [String]
-parse filename content =
-    map show $ sortBy compare $ map fst $ catMaybes $ generateNodes $ nodes
-  where (Document _ _ root _) = xmlParse filename content
-        nodes                 = tag "query_plan_bundle" /> tag "query_plan"
-                                /> tag "logical_query_plan"
-                                /> tag "node" $ CElem root noPos
-
--- generate a list of nodes from a list of xml elements FIXME remove
-generateNodes :: [Content i] -> [Maybe (AlgNode, A.PFAlgebra)]
--- TODO maybe use sequence here
-generateNodes es = map deserializeNode es
-
--- FIXME ugly solution for testing purposes
-deserializeQueryPlan :: String -> String -> AlgebraDag A.PFAlgebra
-deserializeQueryPlan filename content =
-    -- FIXME not safe
-    mkDag (fromList tuples) [foldl min (head nodeIds) (tail nodeIds)]
+    tuples <- mapM deserializeNode nodes
+    
+    let nodeIds = map fst tuples
+    
+    case nodeIds of
+        
+        l@(_:_) -> -- use the node with the smallest node id as root
+                   -- TODO correct?
+                   return $ mkDag (fromList tuples)
+                                  [foldl min (head nodeIds) (tail nodeIds)]
+        _       -> Nothing
 
   where (Document _ _ root _) = xmlParse filename content
         nodes                 = tag "query_plan_bundle" /> tag "query_plan"
                                 /> tag "logical_query_plan"
                                 /> tag "node" $ CElem root noPos
-        tuples                = mapMaybe deserializeNode nodes
-        (nodeIds, _)          = unzip tuples
 
--- generate a node from an xml element
+
+-- | Generate a node from an xml element.
 deserializeNode :: Content i -> Maybe (AlgNode, A.PFAlgebra)
 deserializeNode node@(CElem (Elem _ attributes contents) _) = do
 
@@ -146,46 +115,43 @@ deserializeNode node@(CElem (Elem _ attributes contents) _) = do
 
     return (identifier, result)
 
-generateNode _ = Nothing
-
--- TODO Maybe a solution with multiple calls and zip is better.
 -- | Queries multiple attributes from a given node.
-queryNodeAttributes :: [String] -> Content i -> Maybe [String]
-queryNodeAttributes attList (CElem (Elem _ attributes _) _) =
+getNodeAttributes :: [String] -> Content i -> Maybe [String]
+getNodeAttributes attList (CElem (Elem _ attributes _) _) =
     mapM (\att -> lookupVerbatim att attributes)
          attList
 
-queryNodeAttributes _ _ = Nothing
+getNodeAttributes _ _ = Nothing
 
 -- | Queries all given attributes of the given node
 -- and concatenates the text node's content in front.
-queryNodeAttributesWithText :: [String] -> Content i -> Maybe [String]
-queryNodeAttributesWithText attList c = do
-    queriedAttributes <- queryNodeAttributes attList c
-    text <- queryTextChild c
+getNodeAttributesWithText :: [String] -> Content i -> Maybe [String]
+getNodeAttributesWithText attList c = do
+    queriedAttributes <- getNodeAttributes attList c
+    text <- getTextChild c
     return $ text : queriedAttributes
 
 -- | Queries the text content of a given node.
-queryTextChild :: Content i -> Maybe String
-queryTextChild c = do
+getTextChild :: Content i -> Maybe String
+getTextChild c = do
     (CString _ charData _) <- listToMaybe $ childrenBy txt c
     return charData
     
 -- | Queries one attribute from a given node.
-queryNodeAttribute :: String -> Content i -> Maybe String
-queryNodeAttribute attName (CElem (Elem _ attributes _) _) =
+getNodeAttribute :: String -> Content i -> Maybe String
+getNodeAttribute attName (CElem (Elem _ attributes _) _) =
     lookupVerbatim attName attributes
 
-queryNodeAttribute _ _ = Nothing
+getNodeAttribute _ _                                     = Nothing
 
 -- | Assume the current node has only one child with the given tag name
 -- and try to return it.
-querySingletonChildByTag :: String -> Content i -> Maybe (Content i)
-querySingletonChildByTag tagName = listToMaybe . (childrenBy $ tag tagName)
+getSingletonChildByTag :: String -> Content i -> Maybe (Content i)
+getSingletonChildByTag tagName = listToMaybe . (childrenBy $ tag tagName)
 
--- | Same as 'querySingletonChildByTag' but with a filter.
-querySingletonChildByFilter :: CFilter i -> Content i -> Maybe (Content i)
-querySingletonChildByFilter f  c = listToMaybe $ childrenBy f c
+-- | Same as 'getSingletonChildByTag' but with a filter.
+getSingletonChildByFilter :: CFilter i -> Content i -> Maybe (Content i)
+getSingletonChildByFilter f  c = listToMaybe $ childrenBy f c
 
 -- | Looks up an attribute and returns it as a 'String'.
 lookupVerbatim :: String -> [(QName, AttValue)] -> Maybe String
@@ -205,7 +171,7 @@ deserializeResultAttrName :: Content i -> Maybe String
 deserializeResultAttrName contentNode = do
     -- <column name=... />
     ranNode <- listToMaybe $ childrenBy ranFilter contentNode
-    queryNodeAttribute "name" ranNode
+    getNodeAttribute "name" ranNode
   where ranFilter = tag "column" `without` attr "function"
 
 -- | Tries to get the partition attribute name from within a content node.
@@ -213,7 +179,7 @@ deserializePartAttrName :: Content i -> Maybe String
 deserializePartAttrName contentNode = do
     columnNode <- listToMaybe $ childrenBy panFilter contentNode
     
-    queryNodeAttribute "name" columnNode
+    getNodeAttribute "name" columnNode
   where panFilter = tag "column"
                     `with` attrval (N "function", AttValue $ [Left "partition"])
 
@@ -223,10 +189,10 @@ deserializeSortInf contentNode = do
     -- <column function="sort" position=... direction=... name=... />
     let sortInfoNodes = childrenBy siFilter contentNode
     
-    queriedSortInfo <- mapM (queryNodeAttributes [ "position"
-                                                 , "name"
-                                                 , "direction"
-                                                 ]
+    queriedSortInfo <- mapM (getNodeAttributes [ "position"
+                                               , "name"
+                                               , "direction"
+                                               ]
                             )
                             sortInfoNodes
 
@@ -244,8 +210,8 @@ deserializeSortInf contentNode = do
 -- | Try to get a single child id from the edge node's to attribute.
 deserializeChildId1 :: Content i -> Maybe AlgNode
 deserializeChildId1 node = do
-    edgeNode <- querySingletonChildByTag "edge" node
-    toEdge <- queryNodeAttribute "to" edgeNode
+    edgeNode <- getSingletonChildByTag "edge" node
+    toEdge <- getNodeAttribute "to" edgeNode
     readMaybe toEdge
 
 -- | Try to get two child ids from the edge nodes' to attribute.
@@ -253,12 +219,12 @@ deserializeChildId2 :: Content i -> Maybe (AlgNode, AlgNode)
 deserializeChildId2 node = case childIdList of 
         [edgeNode1, edgeNode2] -> liftM2 (,) edgeNode1 edgeNode2
         _                      -> Nothing
-  where childIdList = map (\x -> readMaybe =<< queryNodeAttribute "to" x)
+  where childIdList = map (\x -> readMaybe =<< getNodeAttribute "to" x)
                           $ (childrenBy $ tag "edge") node
 
 -- | Try to get the content child node of another node.
 deserializeContentNode :: Content i -> Maybe (Content i)
-deserializeContentNode node = querySingletonChildByTag "content" node
+deserializeContentNode node = getSingletonChildByTag "content" node
 
 deserializeEmptyBinaryOpGeneric :: Content i
                                 -> (() -> A.BinOp)
@@ -302,7 +268,7 @@ deserializeThetaJoin node = do
                                        , A.JoinRel
                                        )
         deserializeComparison compNode = do
-            joinRelStr <- queryNodeAttribute "kind" compNode
+            joinRelStr <- getNodeAttribute "kind" compNode
             joinRel <- deserializeJoinRel joinRelStr
             
             (leftAttrName, rightAttrName) <- deserializeBinOpPosArgs compNode
@@ -333,8 +299,8 @@ deserializeDummy node = do
     
     contentNode <- deserializeContentNode node
     
-    commentNode <- querySingletonChildByTag "comment" contentNode
-    comment <- queryTextChild commentNode
+    commentNode <- getSingletonChildByTag "comment" contentNode
+    comment <- getTextChild commentNode
     
     return $ UnOp (A.Dummy comment) childId
 
@@ -362,7 +328,7 @@ deserializeAggr node = do
         deserializeAggregate :: Content i
                              -> Maybe (A.AggrType, A.ResAttrName)
         deserializeAggregate aggregateNode = do
-            aggregateStr <- queryNodeAttribute "kind" aggregateNode
+            aggregateStr <- getNodeAttribute "kind" aggregateNode
             
             resAttrName <- deserializeNewColumnName aggregateNode
             
@@ -386,8 +352,8 @@ deserializeColumnNameWithNewValue :: Content i
                                   -> String
                                   -> Maybe A.ResAttrName
 deserializeColumnNameWithNewValue contentNode newValue = do
-    ranColumn <- querySingletonChildByFilter ranFilter contentNode
-    queryNodeAttribute "name" ranColumn
+    ranColumn <- getSingletonChildByFilter ranFilter contentNode
+    getNodeAttribute "name" ranColumn
   where ranFilter = tag "column"
                     `with` attrval (N "new", AttValue [Left newValue])
 
@@ -423,8 +389,8 @@ deserializeCast node = do
 
     attrName <- deserializeOldColumnName contentNode
 
-    typeNode <- querySingletonChildByTag "type" contentNode
-    typeStr <- queryNodeAttribute "name" typeNode
+    typeNode <- getSingletonChildByTag "type" contentNode
+    typeStr <- getNodeAttribute "name" typeNode
     type_ <- deserializeATy typeStr
     
     return $ UnOp (A.Cast (resAttrName, attrName, type_))
@@ -432,15 +398,15 @@ deserializeCast node = do
 
 deserializeBinOpResAttrName :: Content i -> Maybe A.ResAttrName
 deserializeBinOpResAttrName contentNode = do
-    resNode <- querySingletonChildByFilter resColumnFilter contentNode
-    queryNodeAttribute "name" resNode
+    resNode <- getSingletonChildByFilter resColumnFilter contentNode
+    getNodeAttribute "name" resNode
   where resColumnFilter = tag "column" `without` attr "position"
 
 -- deserialize positional arguments used by a BinOp
 deserializeBinOpPosArgs :: Content i
                         -> Maybe (A.LeftAttrName, A.RightAttrName)
 deserializeBinOpPosArgs contentNode = do
-    unsortedResult <- mapM (queryNodeAttributes ["position", "name"]) 
+    unsortedResult <- mapM (getNodeAttributes ["position", "name"]) 
                            $ posColumnFilter contentNode
 
     case map (head . tail) $ sortBy (on compare head) unsortedResult of
@@ -484,8 +450,8 @@ deserializeBinOpFun node = do
     
     contentNode <- deserializeContentNode node
     
-    kindNode <- querySingletonChildByFilter kindFilter contentNode
-    funName <- queryNodeAttribute "name" kindNode
+    kindNode <- getSingletonChildByFilter kindFilter contentNode
+    funName <- getNodeAttribute "name" kindNode
     fun <- deserializeFun1to1 funName
 
     resAttrName <- deserializeBinOpResAttrName contentNode
@@ -520,16 +486,16 @@ deserializeAttach node = do
     
     contentNode <- deserializeContentNode node
     
-    columnNode <- querySingletonChildByTag "column" contentNode
+    columnNode <- getSingletonChildByTag "column" contentNode
     
-    resAttrName <- queryNodeAttribute "name" columnNode
+    resAttrName <- getNodeAttribute "name" columnNode
     
-    valueNode <- querySingletonChildByTag "value" columnNode
+    valueNode <- getSingletonChildByTag "value" columnNode
     
-    typeStr <- queryNodeAttribute "type" valueNode
+    typeStr <- getNodeAttribute "type" valueNode
     type_ <- deserializeATy typeStr
     
-    valueStr <- queryTextChild valueNode
+    valueStr <- getTextChild valueNode
     value <- deserializeAVal type_ valueStr
     
     return $ UnOp (A.Attach (resAttrName, (type_, value))) childId
@@ -548,8 +514,8 @@ deserializePosSel node = do
     sortInfo <- deserializeSortInf contentNode
     
     -- TODO really plain text?
-    positionNode <- querySingletonChildByTag "position" contentNode
-    positionText <- queryTextChild positionNode
+    positionNode <- getSingletonChildByTag "position" contentNode
+    positionText <- getTextChild positionNode
     position <- readMaybe positionText
     
     return $ UnOp ( A.PosSel ( position
@@ -565,9 +531,9 @@ deserializeSel node = do
     
     contentNode <- deserializeContentNode node
     
-    columnNode <- querySingletonChildByTag "column" contentNode
+    columnNode <- getSingletonChildByTag "column" contentNode
 
-    columnName <- queryNodeAttribute "name" columnNode
+    columnName <- getNodeAttribute "name" columnNode
 
     return $ UnOp (A.Sel columnName) childId 
 
@@ -579,7 +545,7 @@ deserializeProj node = do
     contentNode <- deserializeContentNode node
     
     -- FIXME what to do with columns with just the name attribute?
-    projectionLists <- mapM (queryNodeAttributes ["name", "old_name"])
+    projectionLists <- mapM (getNodeAttributes ["name", "old_name"])
                             $ (childrenBy $ tag "column") contentNode
     
     projectionInf <- mapM tupleConv projectionLists
@@ -652,7 +618,7 @@ deserializeLitTable node = do
 deserializeLitTableColumn :: Content i -> Maybe (A.AttrName, A.ATy, [A.AVal])
 deserializeLitTableColumn columnNode = do
     
-    name <- queryNodeAttribute "name" columnNode
+    name <- getNodeAttribute "name" columnNode
 
     -- FIXME is value a single child of column in xml?
     let valueNodes = childrenBy (tag "value") columnNode
@@ -665,10 +631,10 @@ deserializeLitTableColumn columnNode = do
 -- | Tries to deserialize a value node into a tuple of 'ATy' and 'AVal'.
 deserializeLitTableValue :: Content i -> Maybe (A.ATy, A.AVal)
 deserializeLitTableValue valueNode = do
-    typeStr <- queryNodeAttribute "type" valueNode
+    typeStr <- getNodeAttribute "type" valueNode
     type_ <- deserializeATy typeStr
     
-    valueStr <- queryTextChild valueNode
+    valueStr <- getTextChild valueNode
     value <- deserializeAVal type_ valueStr
 
     return (type_, value)
@@ -676,7 +642,7 @@ deserializeLitTableValue valueNode = do
 -- | Tries to deserialize a 'TableRef'.
 deserializeTableRef :: Content i -> Maybe A.PFAlgebra
 deserializeTableRef node = do
-    propertiesNode <- querySingletonChildByTag "properties" node
+    propertiesNode <- getSingletonChildByTag "properties" node
     keyInfos <- deserializeTableRefProperties propertiesNode
     
     contentElement <- deserializeContentNode node
@@ -688,10 +654,9 @@ deserializeTableRef node = do
 deserializeTableRefProperties :: Content i -> Maybe A.KeyInfos
 deserializeTableRefProperties propertiesNode = do
     -- there should only be one
-    keysNode <- querySingletonChildByTag "keys" propertiesNode
+    keysNode <- getSingletonChildByTag "keys" propertiesNode
     
     -- <keys><key> .. </key> .. <keys>
-    -- FIXME mapM too strict?
     keyInfos <- mapM deserializeKeyInfo
                      $ childrenBy (tag "key") keysNode
     
@@ -701,7 +666,6 @@ deserializeTableRefProperties propertiesNode = do
 deserializeKeyInfo :: Content i -> Maybe A.KeyInfo
 deserializeKeyInfo keyNode = do
     -- <key><column ..> .. </key>
-    -- FIXME mapM to strict?
     keyInfos <- mapM deserializeKeyInfoColumn
                      $ (childrenBy $ tag "column") keyNode
 
@@ -713,8 +677,8 @@ deserializeKeyInfo keyNode = do
 deserializeKeyInfoColumn :: Content i -> Maybe (Int, A.AttrName)
 deserializeKeyInfoColumn columnNode = do
     -- <column name=.. position=..>
-    name <- queryNodeAttribute "name" columnNode
-    positionStr <- queryNodeAttribute "position" columnNode
+    name <- getNodeAttribute "name" columnNode
+    positionStr <- getNodeAttribute "position" columnNode
     position <- readMaybe positionStr
 
     return (position, name)
@@ -722,10 +686,9 @@ deserializeKeyInfoColumn columnNode = do
 -- | Tries to deserialize the content node in a 'TableRef'.
 deserializeTableRefContent :: Content i -> Maybe (A.TableName, A.TableAttrInf)
 deserializeTableRefContent contentNode = do
-    tableNode <- querySingletonChildByTag "table" contentNode
-    name <- queryNodeAttribute "name" tableNode
+    tableNode <- getSingletonChildByTag "table" contentNode
+    name <- getNodeAttribute "name" tableNode
     
-    -- FIXME mapM to strict?
     attributeInfo <- mapM deserializeTableRefColumn
                           $ (childrenBy $ tag "column") tableNode
     
@@ -735,7 +698,7 @@ deserializeTableRefContent contentNode = do
 deserializeTableRefColumn :: Content i -> Maybe (A.AttrName, A.AttrName, A.ATy)
 deserializeTableRefColumn columnNode = do
 
-    qAttr <- queryNodeAttributes ["name", "tname", "type"] columnNode
+    qAttr <- getNodeAttributes ["name", "tname", "type"] columnNode
 
     case qAttr of
         [name, newName, typeStr] -> do
@@ -749,7 +712,6 @@ deserializeEmptyTable node = do
 
     contentNode <- deserializeContentNode node
     
-    -- FIXME mapM to strict ?
     schema <- mapM deserializeEmptyTableColumn
                    $ (childrenBy $ tag "column") contentNode
 
@@ -759,12 +721,12 @@ deserializeEmptyTable node = do
 -- a tuple containing 'AttrName' and 'ATy'.
 deserializeEmptyTableColumn :: Content i -> Maybe (A.AttrName, A.ATy)
 deserializeEmptyTableColumn columnNode = do
-    name <- queryNodeAttribute "name" columnNode
-    typeStr <- queryNodeAttribute "type" columnNode
+    name <- getNodeAttribute "name" columnNode
+    typeStr <- getNodeAttribute "type" columnNode
     type_ <- deserializeATy typeStr
 
     return (name, type_)
-    
+
 
 -- | Tries to deserialize a 'String' into 'Bool'.
 deserializeBool :: String -> Maybe Bool
@@ -783,7 +745,7 @@ deserializeAVal t s = case t of
     A.ADec    -> return . A.VDec =<< readMaybe s
     A.ADouble -> return . A.VDouble =<< readMaybe s
     A.ANat    -> return . A.VNat =<< readMaybe s
-    -- FIXME not used because no value type available?
+    -- ANat is the same as ASur, but can not be deserialized
     A.ASur    -> Nothing
 
 
@@ -796,7 +758,7 @@ deserializeATy s = case s of
     "dec"  -> return A.ADec
     "dbl"  -> return A.ADouble
     "nat"  -> return A.ANat
-    -- FIXME "nat" is also used for ASur, another mistake ?
+    -- ASur is the same as ANat
     _      -> Nothing
 
 -- | Tries to deserialize a 'String' into 'SortDir'.
@@ -806,16 +768,14 @@ deserializeSortDir s = case s of
     "descending" -> return A.Desc
     _            -> Nothing
 
--- FIXME may be defined in ghc 7.6 ?
 -- | Wraps a call to reads into a 'Maybe'.
 readMaybe :: Read a => String -> Maybe a
 readMaybe s = case reads s of
     [(x, "")] -> return x
     _         -> Nothing
 
--- FIXME defined in GHC.Exts but without Maybe
 -- | Checks whether every element of the list is the same and returns a 'Maybe'
--- with it.
+-- with it. Defined in GHC.Exts but without 'Maybe'.
 the :: Eq a => [a] -> Maybe a
 the []     = Nothing
 the (x:xs) = helper x xs
