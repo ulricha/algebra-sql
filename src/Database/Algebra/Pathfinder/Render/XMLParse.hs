@@ -3,7 +3,7 @@ module Database.Algebra.Pathfinder.Render.XMLParse
     , deserializeQueryPlanIncomplete
     ) where
 
-import Control.Monad (guard, liftM2)
+import Control.Monad (guard, liftM2, (>=>))
 import Data.Either (lefts, rights)
 import Data.Function (on)
 import Data.IntMap (fromList)
@@ -91,6 +91,7 @@ xmlNodesToQueryPlan xmlNodes =
         optDag  = do
             tuples <- sequence results
             return $ constructDag tuples
+
 -- | Reads all nodes which can be read and packs them into a
 -- graph (but the graph can be wrong).
 xmlNodesToQueryPlanIncomplete :: Show i
@@ -101,7 +102,6 @@ xmlNodesToQueryPlanIncomplete xmlNodes = (constructDag tuples, errors)
   where result = map deserializeNode xmlNodes
         tuples = rights result
         errors = lefts result
-
 
 -- | Select the root nodes and create the DAG.
 constructDag :: [(AlgNode, A.PFAlgebra)]
@@ -158,6 +158,7 @@ deserializeNode node@(CElem (Elem _ attributes contents) _) = do
         "difference" -> deserializeDifference node
 
         -- top level wrapper nodes (TODO what are these for?)
+        -- since they are not referenced they get thrown away
         "nil"        -> return $ NullaryOp $ A.EmptyTable []
         "serialize relation"
                      -> do
@@ -185,7 +186,10 @@ getNodeAttributes _ n = fail $ "xml content has no attributes at " ++ strInfo n
 
 -- | Queries all given attributes of the given node
 -- and concatenates the text node's content in front.
-getNodeAttributesWithText :: (Show i, Monad m) => [String] -> Content i -> m [String]
+getNodeAttributesWithText :: (Show i, Monad m)
+                          => [String]
+                          -> Content i
+                          -> m [String]
 getNodeAttributesWithText attList c = do
     queriedAttributes <- getNodeAttributes attList c
     text <- getTextChild c
@@ -193,10 +197,10 @@ getNodeAttributesWithText attList c = do
 
 -- | Queries the text content of a given node.
 getTextChild :: (Show i, Monad m) => Content i -> m String
-getTextChild c = do
+getTextChild c =
     case childrenBy txt c of
-        [(CString _ charData _)] -> return charData
-        n                        -> fail $ "no text child found at " ++ strInfo c
+        [CString _ charData _] -> return charData
+        n                      -> fail $ "no text child found at " ++ strInfo c
     
 -- | Queries one attribute from a given node.
 getNodeAttribute :: (Show i, Monad m) => String -> Content i -> m String
@@ -228,7 +232,7 @@ lookupVerbatim = lookupConvert return
 
 -- | Looks up an attribute and converts the result with the provided function.
 lookupConvert :: Monad m
-              => (String -> m a)  -- ^ The function to convert with
+              => (String -> m a)      -- ^ The function to convert with
               -> String               -- ^ Name of the attribute
               -> [(QName, AttValue)]  -- ^ The attribute mapping
               -> m a
@@ -302,7 +306,7 @@ deserializeChildId2 node = case childIdList of
         [edgeNode1, edgeNode2] -> liftM2 (,) edgeNode1 edgeNode2
         _                      ->
             fail $ "did only expect two children at " ++ strInfo node
-  where childIdList = map (\x -> readMonadic =<< getNodeAttribute "to" x)
+  where childIdList = map (getNodeAttribute "to" >=> readMonadic)
                           $ (childrenBy $ tag "edge") node
 
 -- | Try to get the content child node of another node.
