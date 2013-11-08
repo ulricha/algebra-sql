@@ -55,10 +55,9 @@ deserializeQueryPlan filename content = do
     
     case nodeIds of
         
-        l@(_:_) -> -- use the node with the smallest node id as root
-                   -- TODO correct?
+        l@(_:_) -> -- Use the node with the biggest node id as root
                    return $ mkDag (fromList tuples)
-                                  [foldl min (head nodeIds) (tail nodeIds)]
+                                  [foldl max (head nodeIds) (tail nodeIds)]
         _       -> Nothing
 
   where (Document _ _ root _) = xmlParse filename content
