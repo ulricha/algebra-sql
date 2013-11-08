@@ -233,7 +233,7 @@ lookupConvert :: Monad m
 lookupConvert fun name attributes = do
     attValStr <- case lookup (N name) attributes of
         Just x  -> return x
-        Nothing -> fail $ "did not found attribute '" ++ name
+        Nothing -> fail $ "did not find attribute '" ++ name
                           ++ "' in association list"
     fun $ verbatim attValStr
 
@@ -830,7 +830,7 @@ deserializeBool s = case s of
 deserializeAVal :: Monad m => A.ATy -> String -> m A.AVal
 deserializeAVal t s = case t of
     A.AInt    -> return . A.VInt =<< readMonadic s
-    A.AStr    -> return . A.VStr =<< readMonadic s
+    A.AStr    -> return $ A.VStr s
     A.ABool   -> return . A.VBool =<< readMonadic s
     A.ADec    -> return . A.VDec =<< readMonadic s
     A.ADouble -> return . A.VDouble =<< readMonadic s
@@ -867,7 +867,7 @@ strInfo = show . info
 readMonadic :: Monad m => Read a => String -> m a
 readMonadic s = case reads s of
     [(x, "")] -> return x
-    _         -> fail "invalid format"
+    _         -> fail $ "invalid format of '" ++ s ++ "'"
 
 -- | Checks whether every element of the list is the same and returns a monad
 -- with it. Defined in GHC.Exts but without monadic context.
