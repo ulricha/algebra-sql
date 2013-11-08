@@ -62,14 +62,16 @@ xmlStartingPathFilter = tag "query_plan_bundle"
 deserializeQueryPlan :: String -- ^ Filename used for error reporting.
                      -> String -- ^ Content of the file.
                      -> (Maybe (AlgebraDag A.PFAlgebra), [String])
-deserializeQueryPlan filename content = xmlNodesToQueryPlan $ parseXml filename content
+deserializeQueryPlan filename content =
+    xmlNodesToQueryPlan $ parseXml filename content
 
 -- | Tries to deserialize a query plan, but build a graph with succesful
 -- results.
 deserializeQueryPlanIncomplete :: String
                                -> String
                                -> (AlgebraDag A.PFAlgebra, [String])
-deserializeQueryPlanIncomplete filename content = xmlNodesToQueryPlanIncomplete $ parseXml filename content
+deserializeQueryPlanIncomplete filename content =
+    xmlNodesToQueryPlanIncomplete $ parseXml filename content
 
 -- | Parse the given string.
 parseXml :: String     -- ^ Filename used for error reporting
@@ -82,7 +84,8 @@ parseXml filename content = xmlStartingPathFilter $ CElem root noPos
 xmlNodesToQueryPlan :: Show i
                     => [Content i]
                     -> (Maybe (AlgebraDag A.PFAlgebra), [String])
-xmlNodesToQueryPlan xmlNodes = (either (const Nothing) Just optDag, lefts results)
+xmlNodesToQueryPlan xmlNodes =
+    (either (const Nothing) Just optDag, lefts results)
   where results :: [Either String (AlgNode, A.PFAlgebra)]
         results = map deserializeNode xmlNodes
         optDag  = do
@@ -104,12 +107,11 @@ xmlNodesToQueryPlanIncomplete xmlNodes = (constructDag tuples, errors)
 constructDag :: [(AlgNode, A.PFAlgebra)]
              -> AlgebraDag A.PFAlgebra
 constructDag mapping =
-    mkDag (fromList mapping)
-          $ case ids of
-               -- at least one element
-               l@(_:_) -> [foldl max (head ids) (tail ids)]
-               _       -> []
-  where ids = map fst mapping
+    mkDag (fromList mapping')
+          $ case mapping' of
+                x:_ -> [fst x]
+                _   -> []
+  where mapping' = drop 2 $ reverse mapping
 
 -- | Generate a node from an xml element.
 deserializeNode :: (Show i, Monad m) => Content i -> m (AlgNode, A.PFAlgebra)
