@@ -631,15 +631,24 @@ deserializeProj node = do
     
     contentNode <- deserializeContentNode node
     
-    -- FIXME what to do with columns with just the name attribute?
-    projectionLists <- mapM (getNodeAttributes ["name", "old_name"])
-                            $ (childrenBy $ tag "column") contentNode
-    
-    projectionInf <- mapM tupleConv projectionLists
-    
+    projectionInf <- mapM f $ (childrenBy $ tag "column") contentNode
+
     return $ UnOp (A.Proj projectionInf) childId
-  where tupleConv [x, y] = return (x, y)
-        tupleConv _      = fail $ "invalid projection list at " ++ strInfo node
+  where f c = do
+            new <- getNodeAttribute "new" c 
+            case new of
+                -- indicates that there is old_name
+                "true"  -> do
+                    [n, o] <- getNodeAttributes ["name", "old_name"] c
+                    return (n, o)
+                -- indicates that source equals target name
+                "false" -> do
+                    n <- getNodeAttribute "name" c
+                    return (n, n)
+                n       ->
+                    fail $ "expected true or false, got '"
+                           ++ n ++ "' at "
+                           ++ strInfo c
 
 -- | Tries to deserialize a row rank or rank operator. They use the same
 -- deserialize function because the only difference is the data constructor
