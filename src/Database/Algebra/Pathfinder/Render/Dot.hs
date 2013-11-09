@@ -221,7 +221,7 @@ renderDot ns es = text "digraph" <> (braces $ preamble $$ nodeSection $$ edgeSec
 
 -- |Labels (to collect all operations (nullary, unary,binary))
 data PFLabel = EmptyTableL SchemaInfos
-      			 | LitTableL SemInfLitTable SchemaInfos
+             | LitTableL SemInfLitTable SchemaInfos
 			       | TableRefL SemInfTableRef    -- nullops
 			       | AggrL SemInfAggr
 			       | AttachL SemInfAttach

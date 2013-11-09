@@ -82,6 +82,7 @@ library
     other-modules:    Database.Algebra.Pathfinder.Monadic.Create
                       Database.Algebra.Pathfinder.Data.Create
                       Database.Algebra.Pathfinder.Render.XMLUtils
+                      Database.Algebra.Pathfinder.Render.XMLParse
                       Database.Algebra.X100.Render.Sharing
                       Database.Algebra.X100.Properties.Schema
                       Database.Algebra.X100.Properties.Card1
