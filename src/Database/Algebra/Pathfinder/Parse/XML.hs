@@ -1,4 +1,4 @@
-module Database.Algebra.Pathfinder.Render.XMLParse
+module Database.Algebra.Pathfinder.Parse.XML
     ( deserializeQueryPlan
     , deserializeQueryPlanIncomplete
     ) where
