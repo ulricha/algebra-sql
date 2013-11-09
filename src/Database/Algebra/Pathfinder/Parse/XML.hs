@@ -3,14 +3,12 @@ module Database.Algebra.Pathfinder.Parse.XML
     , deserializeQueryPlanIncomplete
     ) where
 
-import Control.Monad (guard, liftM2, (>=>))
+import Control.Monad (liftM2, (>=>))
 import Data.Either (lefts, rights)
 import Data.Function (on)
 import Data.IntMap (fromList)
 import Data.List (sortBy, transpose)
-import Data.Maybe (mapMaybe, catMaybes)
-import System.Environment (getArgs)
-import System.Exit (exitWith, ExitCode(ExitSuccess, ExitFailure))
+import Data.Maybe ()
 
 import Text.XML.HaXml.Parse (xmlParse)
 import Text.XML.HaXml.Posn (noPos, Posn)
@@ -21,16 +19,11 @@ import Text.XML.HaXml.Types ( Element (Elem)
                             , AttValue (AttValue)
                             , info
                             )
-import Text.XML.HaXml.Namespaces ( -- we don't use xml namespaces
-                                   localName
-                                 )
 import Text.XML.HaXml.Combinators ( CFilter
                                   , (/>)
                                   , attr
                                   , attrval
-                                  , children
                                   , childrenBy
-                                  , path
                                   , tag
                                   , txt
                                   , with
@@ -115,7 +108,7 @@ constructDag mapping =
 
 -- | Generate a node from an xml element.
 deserializeNode :: (Show i, Monad m) => Content i -> m (AlgNode, A.PFAlgebra)
-deserializeNode node@(CElem (Elem _ attributes contents) _) = do
+deserializeNode node@(CElem (Elem _ attributes _) _) = do
 
     identifier <- lookupConvert readMonadic "id" attributes
     kind <- lookupVerbatim "kind" attributes
@@ -164,17 +157,20 @@ deserializeNode node@(CElem (Elem _ attributes contents) _) = do
                      -> do
 
             -- ignore nil id
-            (_, id) <- deserializeChildId2 node
+            (_, rootId) <- deserializeChildId2 node
 
             -- Since we can't return something useful here just return a dummy
             -- which wraps arround the root node.
-            return $ UnOp (A.Dummy "root node wrapper") id
+            return $ UnOp (A.Dummy "root node wrapper") rootId
 
 
         _  -> fail $ "invalid kind attribute of node with id '"
                      ++ show identifier ++ "' at " ++ strInfo node
 
     return (identifier, result)
+
+deserializeNode n                                    =
+    fail $ "expected node to be a xml tag at " ++ strInfo n
 
 -- | Queries multiple attributes from a given node.
 getNodeAttributes :: (Show i, Monad m) => [String] -> Content i -> m [String]
@@ -184,27 +180,16 @@ getNodeAttributes attList (CElem (Elem _ attributes _) _) =
 
 getNodeAttributes _ n = fail $ "xml content has no attributes at " ++ strInfo n
 
--- | Queries all given attributes of the given node
--- and concatenates the text node's content in front.
-getNodeAttributesWithText :: (Show i, Monad m)
-                          => [String]
-                          -> Content i
-                          -> m [String]
-getNodeAttributesWithText attList c = do
-    queriedAttributes <- getNodeAttributes attList c
-    text <- getTextChild c
-    return $ text : queriedAttributes
-
 -- | Queries the text content of a given node.
 getTextChild :: (Show i, Monad m) => Content i -> m String
 getTextChild c =
     case childrenBy txt c of
         [CString _ charData _] -> return charData
-        n                      -> fail $ "no text child found at " ++ strInfo c
+        _                      -> fail $ "no text child found at " ++ strInfo c
     
 -- | Queries one attribute from a given node.
 getNodeAttribute :: (Show i, Monad m) => String -> Content i -> m String
-getNodeAttribute attName (CElem (Elem _ attributes _) pos) =
+getNodeAttribute attName (CElem (Elem _ attributes _) _) =
     lookupVerbatim attName attributes
 
 getNodeAttribute _ n                                       =
@@ -527,15 +512,6 @@ deserializeBinOpRelFun node relFun = do
                   )
                   childId
 
-deserializeRelFun :: Monad m => String -> m A.RelFun
-deserializeRelFun s = case s of
-    "gt"  -> return A.Gt
-    "lt"  -> return A.Lt
-    "eq"  -> return A.Eq
-    "and" -> return A.And
-    "or"  -> return A.Or
-    n     -> fail $ "invalid RelFun name '" ++ n ++ "' found"
-    
 -- deserialize a binary operator with Fun1to1 as function
 deserializeBinOpFun :: (Show i, Monad m) => Content i -> m A.PFAlgebra
 deserializeBinOpFun node = do
@@ -846,7 +822,7 @@ deserializeAVal :: Monad m => A.ATy -> String -> m A.AVal
 deserializeAVal t s = case t of
     A.AInt    -> return . A.VInt =<< readMonadic s
     A.AStr    -> return $ A.VStr s
-    A.ABool   -> return . A.VBool =<< readMonadic s
+    A.ABool   -> return . A.VBool =<< deserializeBool s
     A.ADec    -> return . A.VDec =<< readMonadic s
     A.ADouble -> return . A.VDouble =<< readMonadic s
     A.ANat    -> return . A.VNat =<< readMonadic s

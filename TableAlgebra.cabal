@@ -60,6 +60,7 @@ library
                       Database.Algebra.Pathfinder.Render.Dot
                       Database.Algebra.Pathfinder.Render.JSON
                       Database.Algebra.Pathfinder.Data.Algebra
+                      Database.Algebra.Pathfinder.Parse.XML
 
                       Database.Algebra.VL.Data
                       Database.Algebra.VL.Render.Dot
