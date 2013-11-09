@@ -802,7 +802,7 @@ deserializeTableRefColumn :: (Show i, Monad m)
                           -> m (A.AttrName, A.AttrName, A.ATy)
 deserializeTableRefColumn columnNode = do
 
-    qAttr <- getNodeAttributes ["name", "tname", "type"] columnNode
+    qAttr <- getNodeAttributes ["tname", "name", "type"] columnNode
 
     case qAttr of
         [name, newName, typeStr] -> do
