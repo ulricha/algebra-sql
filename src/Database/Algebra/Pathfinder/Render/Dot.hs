@@ -19,7 +19,7 @@ tagsToDoc :: [Tag] -> Doc
 tagsToDoc ts = vcat $ map text ts
 
 labelToDoc :: AlgNode -> String -> Doc -> [Tag] -> Doc
-labelToDoc n s as ts = (nodeToDoc n) $$ ((text s) <> (parens as)) $$ (tagsToDoc $ nub ts)
+labelToDoc n s as ts = (nodeToDoc n) <+> ((text s) <> (parens as)) <+> (tagsToDoc $ nub ts)
 
 
 lookupTags :: AlgNode -> NodeMap [Tag] -> [Tag]
