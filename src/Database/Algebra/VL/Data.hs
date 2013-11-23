@@ -102,10 +102,10 @@ data PosProj = PosNumber
              | PosIdentity
              deriving (Eq, Ord, Generic, Show)
 
-data PayloadProj = PLConst VLVal
-                 | PLCol DBCol
-                 | PLExpr Expr1
-                 deriving (Eq, Ord, Generic, Show)
+data Proj = ProjConst VLVal
+          | ProjCol DBCol
+          | ProjExpr Expr1
+          deriving (Eq, Ord, Generic, Show)
 
 newtype Nat = N Int deriving (Eq, Ord, Generic, Show)
 
@@ -164,8 +164,6 @@ data UnOp = Unique
           | VecMinL
           | VecMax
           | VecMaxL
-          | ProjectL [DBCol]
-          | ProjectA [DBCol]
           | IntegerToDoubleA
           | IntegerToDoubleL
           | ReverseA -- (DBV, PropVector)
@@ -175,7 +173,10 @@ data UnOp = Unique
           | R2
           | R3
           | ProjectRename (ISTransProj, ISTransProj) -- (source, target)?
-          | ProjectPayload [PayloadProj]
+
+          | VLProject [Proj]
+          | VLProjectA [Proj]
+
           | ProjectAdmin (DescrProj, PosProj)
           | SelectExpr Expr1
           | Only

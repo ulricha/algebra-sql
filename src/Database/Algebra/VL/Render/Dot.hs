@@ -72,10 +72,10 @@ renderTableKey [x] = text x
 renderTableKey (x:xs) = text x <> comma <+> renderTableKey xs
 renderTableKey [] = text "NOKEY"
 
-renderPayloadProj :: (Doc, PayloadProj) -> Doc
-renderPayloadProj (d, PLConst v) = d <> colon <> renderTblVal v
-renderPayloadProj (d, PLCol c)   = d <> colon <> int c
-renderPayloadProj (d, PLExpr e)  = d <> colon <> renderExpr1 e
+renderProj :: (Doc, Proj) -> Doc
+renderProj (d, ProjConst v) = d <> colon <> renderTblVal v
+renderProj (d, ProjCol c)   = d <> colon <> int c
+renderProj (d, ProjExpr e)  = d <> colon <> renderExpr1 e
 
 renderISTransProj :: (Doc, ISTransProj) -> Doc
 renderISTransProj (d, STDescrCol) = d <> colon <> text "descr"
@@ -131,8 +131,6 @@ opDotLabel tm i (UnOp VecMin _) = labelToDoc i "VecMin" empty (lookupTags i tm)
 opDotLabel tm i (UnOp VecMinL _) = labelToDoc i "VecMinL" empty (lookupTags i tm)
 opDotLabel tm i (UnOp VecMax _) = labelToDoc i "VecMax" empty (lookupTags i tm)
 opDotLabel tm i (UnOp VecMaxL _) = labelToDoc i "VecMaxL" empty (lookupTags i tm)
-opDotLabel tm i (UnOp (ProjectL cols) _) = labelToDoc i "ProjectL" (bracketList (text . show) cols) (lookupTags i tm)
-opDotLabel tm i (UnOp (ProjectA cols) _) = labelToDoc i "ProjectA" (bracketList (text . show) cols) (lookupTags i tm)
 opDotLabel tm i (UnOp IntegerToDoubleA _) = labelToDoc i "IntegerToDoubleA" empty (lookupTags i tm)
 opDotLabel tm i (UnOp IntegerToDoubleL _) = labelToDoc i "IntegerToDoubleL" empty (lookupTags i tm)
 opDotLabel tm i (UnOp ReverseA _) = labelToDoc i "ReverseA" empty (lookupTags i tm)
@@ -144,10 +142,15 @@ opDotLabel tm i (UnOp R3 _) = labelToDoc i "R3" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (ProjectRename (p1, p2)) _) =
   labelToDoc i "ProjectRename" pLabel (lookupTags i tm)
   where pLabel = parens $ (renderISTransProj (text "posnew", p1)) <> comma <+> (renderISTransProj (text "posold", p2))
-opDotLabel tm i (UnOp (ProjectPayload pCols) _) =
-  labelToDoc i "ProjectPayload" pLabel (lookupTags i tm)
+opDotLabel tm i (UnOp (VLProject pCols) _) =
+  labelToDoc i "Project" pLabel (lookupTags i tm)
   where pLabel = valCols
-        valCols = bracketList (\(j, p) -> renderPayloadProj (itemLabel j, p)) $ zip ([1..] :: [Int]) pCols
+        valCols = bracketList (\(j, p) -> renderProj (itemLabel j, p)) $ zip ([1..] :: [Int]) pCols
+        itemLabel j = (text "item") <> (int j)
+opDotLabel tm i (UnOp (VLProjectA pCols) _) =
+  labelToDoc i "ProjectA" pLabel (lookupTags i tm)
+  where pLabel = valCols
+        valCols = bracketList (\(j, p) -> renderProj (itemLabel j, p)) $ zip ([1..] :: [Int]) pCols
         itemLabel j = (text "item") <> (int j)
 opDotLabel tm i (UnOp (ProjectAdmin (pDescr, pPos)) _) =
   labelToDoc i "ProjectAdmin" pLabel (lookupTags i tm)
