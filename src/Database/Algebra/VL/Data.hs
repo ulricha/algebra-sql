@@ -54,8 +54,11 @@ data VecOp = COp VecCompOp
            | BOp VecBoolOp
            | Like
            deriving (Eq, Ord, Generic)
+           
+data VecUnOp = Not deriving (Eq, Ord, Generic)
 
-data Expr1 = App1 VecOp Expr1 Expr1
+data Expr1 = BinApp1 VecOp Expr1 Expr1
+           | UnApp1 VecUnOp Expr1
            | Column1 DBCol
            | Constant1 VLVal
            deriving (Eq, Ord, Show, Generic)
@@ -86,6 +89,9 @@ instance Show VecCompOp where
     show GtE = ">="
     show Lt  = "<"
     show LtE = "<="
+    
+instance Show VecUnOp where
+    show Not = "not"
 
 data ISTransProj = STDescrCol
                  | STPosCol
@@ -101,11 +107,6 @@ data PosProj = PosNumber
              | PosConst Nat
              | PosIdentity
              deriving (Eq, Ord, Generic, Show)
-
-data Proj = ProjConst VLVal
-          | ProjCol DBCol
-          | ProjExpr Expr1
-          deriving (Eq, Ord, Generic, Show)
 
 newtype Nat = N Int deriving (Eq, Ord, Generic, Show)
 
@@ -152,8 +153,6 @@ data UnOp = Unique
           | UniqueL
           | Number
           | NumberL
-          | NotPrim
-          | NotVec
           | LengthA
           | DescToRename
           | Segment
@@ -174,8 +173,8 @@ data UnOp = Unique
           | R3
           | ProjectRename (ISTransProj, ISTransProj) -- (source, target)?
 
-          | VLProject [Proj]
-          | VLProjectA [Proj]
+          | VLProject [Expr1]
+          | VLProjectA [Expr1]
 
           | ProjectAdmin (DescrProj, PosProj)
           | SelectExpr Expr1

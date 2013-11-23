@@ -23,7 +23,6 @@ instance ToJSON VecOp where
 instance ToJSON DescrProj where
 instance ToJSON PosProj where
 instance ToJSON ISTransProj where
-instance ToJSON Proj where
 instance ToJSON Expr2 where
 instance ToJSON Expr1 where
 instance ToJSON LeftCol where
@@ -31,6 +30,7 @@ instance ToJSON RightCol where
 instance ToJSON VecNumOp where
 instance ToJSON VecBoolOp where
 instance ToJSON VecCompOp where
+instance ToJSON VecUnOp where
 instance ToJSON AggrFun where
 
 instance FromJSON TerOp where
@@ -44,7 +44,6 @@ instance FromJSON VecOp where
 instance FromJSON DescrProj where
 instance FromJSON PosProj where
 instance FromJSON ISTransProj where
-instance FromJSON Proj where
 instance FromJSON Expr2 where
 instance FromJSON Expr1 where
 instance FromJSON LeftCol where
@@ -52,6 +51,7 @@ instance FromJSON RightCol where
 instance FromJSON VecNumOp where
 instance FromJSON VecBoolOp where
 instance FromJSON VecCompOp where
+instance FromJSON VecUnOp where
 instance FromJSON AggrFun where
 
 instance ToJSON Plan where
