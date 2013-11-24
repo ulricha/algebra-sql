@@ -97,7 +97,8 @@ renderExpr1 (Constant1 val) = renderTblVal val
 renderExpr1 (Column1 c)     = text "col" <> int c
 
 renderExpr2 :: Expr2 -> Doc
-renderExpr2 (App2 op e1 e2)      = (parens $ renderExpr2 e1) <+> (text $ show op) <+> (parens $ renderExpr2 e2)
+renderExpr2 (BinApp2 op e1 e2)   = (parens $ renderExpr2 e1) <+> (text $ show op) <+> (parens $ renderExpr2 e2)
+renderExpr2 (UnApp2 op e)        = (text $ show op) <+> (parens $ renderExpr2 e)
 renderExpr2 (Constant2 val)      = renderTblVal val
 renderExpr2 (Column2Left (L c))  = text "lcol" <> int c
 renderExpr2 (Column2Right (R c)) = text "rcol" <> int c

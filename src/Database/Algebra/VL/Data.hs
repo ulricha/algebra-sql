@@ -66,7 +66,8 @@ data Expr1 = BinApp1 VecOp Expr1 Expr1
 newtype LeftCol = L DBCol deriving (Eq, Ord, Show, Generic)
 newtype RightCol = R DBCol deriving (Eq, Ord, Show, Generic)
 
-data Expr2 = App2 VecOp Expr2 Expr2
+data Expr2 = BinApp2 VecOp Expr2 Expr2
+           | UnApp2 VecUnOp Expr2
            | Column2Left LeftCol
            | Column2Right RightCol
            | Constant2 VLVal
