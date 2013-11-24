@@ -99,16 +99,6 @@ data ISTransProj = STDescrCol
                  | STNumber
                  deriving (Eq, Ord, Generic, Show)
 
-data DescrProj = DescrConst Nat
-               | DescrIdentity
-               | DescrPosCol
-               deriving (Eq, Ord, Generic, Show)
-
-data PosProj = PosNumber
-             | PosConst Nat
-             | PosIdentity
-             deriving (Eq, Ord, Generic, Show)
-
 newtype Nat = N Int deriving (Eq, Ord, Generic, Show)
 
 instance Integral Nat where
@@ -173,11 +163,8 @@ data UnOp = Unique
           | R2
           | R3
           | ProjectRename (ISTransProj, ISTransProj) -- (source, target)?
-
           | VLProject [Expr1]
           | VLProjectA [Expr1]
-
-          | ProjectAdmin (DescrProj, PosProj)
           | SelectExpr Expr1
           | Only
           | Singleton

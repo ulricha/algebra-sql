@@ -80,16 +80,6 @@ renderISTransProj (d, STDescrCol) = d <> colon <> text "descr"
 renderISTransProj (d, STPosCol)   = d <> colon <> text "pos"
 renderISTransProj (d, STNumber)   = d <> colon <> text "#"
 
-renderDescrProj :: (Doc, DescrProj) -> Doc
-renderDescrProj (d, DescrConst v)  = d <> colon <> (integer $ toInteger v)
-renderDescrProj (d, DescrIdentity) = d <> colon <> text "descr"
-renderDescrProj (d, DescrPosCol)   = d <> colon <> text "pos"
-
-renderPosProj :: (Doc, PosProj) -> Doc
-renderPosProj (d, PosNumber) = d <> colon <> text "#"
-renderPosProj (d, PosConst v) = d <> colon <> (integer $ toInteger v)
-renderPosProj (d, PosIdentity) = d <> colon <> text "pos"
-
 renderExpr1 :: Expr1 -> Doc
 renderExpr1 (BinApp1 op e1 e2) = (parens $ renderExpr1 e1) <+> (text $ show op) <+> (parens $ renderExpr1 e2)
 renderExpr1 (UnApp1 op e) = (text $ show op) <+> (parens $ renderExpr1 e)
@@ -150,11 +140,6 @@ opDotLabel tm i (UnOp (VLProjectA pCols) _) =
   where pLabel = valCols
         valCols = bracketList (\(j, p) -> renderProj (itemLabel j) p) $ zip ([1..] :: [Int]) pCols
         itemLabel j = (text "item") <> (int j)
-opDotLabel tm i (UnOp (ProjectAdmin (pDescr, pPos)) _) =
-  labelToDoc i "ProjectAdmin" pLabel (lookupTags i tm)
-  where pLabel = parens $ (renderDescrProj (text "descr", pDescr))
-                 <> comma
-                 <+> (renderPosProj (text "pos", pPos))
 opDotLabel tm i (UnOp (SelectExpr e) _) = labelToDoc i "SelectExpr" (renderExpr1 e) (lookupTags i tm)
 opDotLabel tm i (UnOp Only _) = labelToDoc i "Only" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Singleton _) = labelToDoc i "Singleton" empty (lookupTags i tm)
