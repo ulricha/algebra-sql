@@ -40,7 +40,7 @@ library
                       parsec >= 3.1,
                       aeson >= 0.6,
                       ghc-prim >= 0.2,
-                      bytestring >= 0.9
+                      bytestring >= 0.9,
                       errors >= 1.0.0
 
     exposed-modules:  Database.Algebra.Dag

@@ -1,26 +1,16 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 module Database.Algebra.Pathfinder.Parse.XML
     ( deserializeQueryPlan
     , deserializeQueryPlanIncomplete
     ) where
 
-<<<<<<< xml-deserializer
 import Control.Monad (liftM2, (>=>))
-=======
-import Control.Monad (guard, liftM2, (>=>))
 import Control.Monad.Error.Class (throwError)
 import Control.Error (hush, headErr)
->>>>>>> local
 import Data.Either (lefts, rights)
 import Data.Function (on)
 import Data.IntMap (fromList)
 import Data.List (sortBy, transpose)
-<<<<<<< xml-deserializer
 import Data.Maybe ()
-=======
-import Data.Maybe (mapMaybe, catMaybes)
->>>>>>> local
 
 import Text.XML.HaXml.Parse (xmlParse)
 import Text.XML.HaXml.Posn (noPos, Posn)
@@ -47,8 +37,6 @@ import Database.Algebra.Dag (mkDag, AlgebraDag)
 import Database.Algebra.Dag.Common (AlgNode, Algebra(NullaryOp, UnOp, BinOp))
 import qualified Database.Algebra.Pathfinder.Data.Algebra as A
 
-
-
 -- TODO:
 -- handle escaped sequences and xml entities? how does verbatim work here?
 -- fix top level node deserializer function comments
@@ -67,7 +55,7 @@ xmlStartingPathFilter = tag "query_plan_bundle"
 -- | Tries to deserialize a query plan. Can fail due to structural errors.
 deserializeQueryPlan :: String -- ^ Filename used for error reporting.
                      -> String -- ^ Content of the file.
-                     -> (Maybe (AlgebraDag A.PFAlgebra), [String])
+                     -> Either [String] (AlgebraDag A.PFAlgebra)
 deserializeQueryPlan filename content =
     xmlNodesToQueryPlan $ parseXml filename content
 
@@ -89,9 +77,11 @@ parseXml filename content = xmlStartingPathFilter $ CElem root noPos
 -- | Reads all nodes and only creates a DAG when there were no errors.
 xmlNodesToQueryPlan :: Show i
                     => [Content i]
-                    -> (Maybe (AlgebraDag A.PFAlgebra), [String])
+                    -> Either [String] (AlgebraDag A.PFAlgebra)
 xmlNodesToQueryPlan xmlNodes =
-    (either (const Nothing) Just optDag, lefts results)
+    case optDag of
+        Right d -> return d
+        Left _  -> Left (lefts results)
   where results :: [Either String (AlgNode, A.PFAlgebra)]
         results = map deserializeNode xmlNodes
         optDag  = do
@@ -120,13 +110,8 @@ constructDag mapping =
   where mapping' = drop 2 $ reverse mapping
 
 -- | Generate a node from an xml element.
-<<<<<<< xml-deserializer
-deserializeNode :: (Show i, Monad m) => Content i -> m (AlgNode, A.PFAlgebra)
-deserializeNode node@(CElem (Elem _ attributes _) _) = do
-=======
 deserializeNode :: Show i => Content i -> Failable (AlgNode, A.PFAlgebra)
-deserializeNode node@(CElem (Elem _ attributes contents) _) = do
->>>>>>> local
+deserializeNode node@(CElem (Elem _ attributes _) _) = do
 
     identifier <- lookupConvert readMonadic "id" attributes
     kind <- lookupVerbatim "kind" attributes
@@ -199,39 +184,17 @@ getNodeAttributes attList (CElem (Elem _ attributes _) _) =
 getNodeAttributes _ n =
     throwError $ "xml content has no attributes at " ++ strInfo n
 
-<<<<<<< xml-deserializer
-=======
--- | Queries all given attributes of the given node
--- and concatenates the text node's content in front.
-getNodeAttributesWithText :: Show i
-                          => [String]
-                          -> Content i
-                          -> Failable [String]
-getNodeAttributesWithText attList c = do
-    queriedAttributes <- getNodeAttributes attList c
-    text <- getTextChild c
-    return $ text : queriedAttributes
-
->>>>>>> local
 -- | Queries the text content of a given node.
 getTextChild :: Show i => Content i -> Failable String
 getTextChild c =
     case childrenBy txt c of
         [CString _ charData _] -> return charData
-<<<<<<< xml-deserializer
-        _                      -> fail $ "no text child found at " ++ strInfo c
-    
--- | Queries one attribute from a given node.
-getNodeAttribute :: (Show i, Monad m) => String -> Content i -> m String
-getNodeAttribute attName (CElem (Elem _ attributes _) _) =
-=======
-        n                      ->
+        _                      ->
             throwError $ "no text child found at " ++ strInfo c
     
 -- | Queries one attribute from a given node.
 getNodeAttribute :: Show i => String -> Content i -> Failable String
-getNodeAttribute attName (CElem (Elem _ attributes _) pos) =
->>>>>>> local
+getNodeAttribute attName (CElem (Elem _ attributes _) _) =
     lookupVerbatim attName attributes
 
 getNodeAttribute _ n                                       =
@@ -565,18 +528,6 @@ deserializeBinOpRelFun node relFun = do
                   )
                   childId
 
-<<<<<<< xml-deserializer
-=======
-deserializeRelFun :: String -> Failable A.RelFun
-deserializeRelFun s = case s of
-    "gt"  -> return A.Gt
-    "lt"  -> return A.Lt
-    "eq"  -> return A.Eq
-    "and" -> return A.And
-    "or"  -> return A.Or
-    n     -> fail $ "invalid RelFun name '" ++ n ++ "' found"
-    
->>>>>>> local
 -- deserialize a binary operator with Fun1to1 as function
 deserializeBinOpFun :: Show i => Content i -> Failable A.PFAlgebra
 deserializeBinOpFun node = do
