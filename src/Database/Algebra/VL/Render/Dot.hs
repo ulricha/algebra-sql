@@ -134,7 +134,7 @@ opDotLabel tm i (UnOp (VLProject pCols) _) =
   labelToDoc i "Project" pLabel (lookupTags i tm)
   where pLabel = valCols
         valCols = bracketList (\(j, p) -> renderProj (itemLabel j) p) $ zip ([1..] :: [Int]) pCols
-        itemLabel j = (text "item") <> (int j)
+        itemLabel j = (text "i") <> (int j)
 opDotLabel tm i (UnOp (VLProjectA pCols) _) =
   labelToDoc i "ProjectA" pLabel (lookupTags i tm)
   where pLabel = valCols
