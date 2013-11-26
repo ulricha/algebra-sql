@@ -1,14 +1,26 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Database.Algebra.Pathfinder.Parse.XML
     ( deserializeQueryPlan
     , deserializeQueryPlanIncomplete
     ) where
 
+<<<<<<< xml-deserializer
 import Control.Monad (liftM2, (>=>))
+=======
+import Control.Monad (guard, liftM2, (>=>))
+import Control.Monad.Error.Class (throwError)
+import Control.Error (hush, headErr)
+>>>>>>> local
 import Data.Either (lefts, rights)
 import Data.Function (on)
 import Data.IntMap (fromList)
 import Data.List (sortBy, transpose)
+<<<<<<< xml-deserializer
 import Data.Maybe ()
+=======
+import Data.Maybe (mapMaybe, catMaybes)
+>>>>>>> local
 
 import Text.XML.HaXml.Parse (xmlParse)
 import Text.XML.HaXml.Posn (noPos, Posn)
@@ -43,6 +55,7 @@ import qualified Database.Algebra.Pathfinder.Data.Algebra as A
 -- make comments more precise about what is meant by 'node'
 -- use xmlUnEscape? (see XML.hs for locations)
 
+type Failable = Either String
 
 -- | The path where the actual nodes are.
 xmlStartingPathFilter :: (Show i) => CFilter i
@@ -107,8 +120,13 @@ constructDag mapping =
   where mapping' = drop 2 $ reverse mapping
 
 -- | Generate a node from an xml element.
+<<<<<<< xml-deserializer
 deserializeNode :: (Show i, Monad m) => Content i -> m (AlgNode, A.PFAlgebra)
 deserializeNode node@(CElem (Elem _ attributes _) _) = do
+=======
+deserializeNode :: Show i => Content i -> Failable (AlgNode, A.PFAlgebra)
+deserializeNode node@(CElem (Elem _ attributes contents) _) = do
+>>>>>>> local
 
     identifier <- lookupConvert readMonadic "id" attributes
     kind <- lookupVerbatim "kind" attributes
@@ -164,8 +182,8 @@ deserializeNode node@(CElem (Elem _ attributes _) _) = do
             return $ UnOp (A.Dummy "root node wrapper") rootId
 
 
-        _  -> fail $ "invalid kind attribute of node with id '"
-                     ++ show identifier ++ "' at " ++ strInfo node
+        _  -> throwError $ "invalid kind attribute of node with id '"
+                           ++ show identifier ++ "' at " ++ strInfo node
 
     return (identifier, result)
 
@@ -173,88 +191,114 @@ deserializeNode n                                    =
     fail $ "expected node to be a xml tag at " ++ strInfo n
 
 -- | Queries multiple attributes from a given node.
-getNodeAttributes :: (Show i, Monad m) => [String] -> Content i -> m [String]
+getNodeAttributes :: Show i => [String] -> Content i -> Failable [String]
 getNodeAttributes attList (CElem (Elem _ attributes _) _) =
     mapM (\att -> lookupVerbatim att attributes)
          attList
 
-getNodeAttributes _ n = fail $ "xml content has no attributes at " ++ strInfo n
+getNodeAttributes _ n =
+    throwError $ "xml content has no attributes at " ++ strInfo n
 
+<<<<<<< xml-deserializer
+=======
+-- | Queries all given attributes of the given node
+-- and concatenates the text node's content in front.
+getNodeAttributesWithText :: Show i
+                          => [String]
+                          -> Content i
+                          -> Failable [String]
+getNodeAttributesWithText attList c = do
+    queriedAttributes <- getNodeAttributes attList c
+    text <- getTextChild c
+    return $ text : queriedAttributes
+
+>>>>>>> local
 -- | Queries the text content of a given node.
-getTextChild :: (Show i, Monad m) => Content i -> m String
+getTextChild :: Show i => Content i -> Failable String
 getTextChild c =
     case childrenBy txt c of
         [CString _ charData _] -> return charData
+<<<<<<< xml-deserializer
         _                      -> fail $ "no text child found at " ++ strInfo c
     
 -- | Queries one attribute from a given node.
 getNodeAttribute :: (Show i, Monad m) => String -> Content i -> m String
 getNodeAttribute attName (CElem (Elem _ attributes _) _) =
+=======
+        n                      ->
+            throwError $ "no text child found at " ++ strInfo c
+    
+-- | Queries one attribute from a given node.
+getNodeAttribute :: Show i => String -> Content i -> Failable String
+getNodeAttribute attName (CElem (Elem _ attributes _) pos) =
+>>>>>>> local
     lookupVerbatim attName attributes
 
 getNodeAttribute _ n                                       =
-    fail $ "xml content has no attributes at " ++ strInfo n
+    throwError $ "xml content has no attributes at " ++ strInfo n
 
 -- | Assume the current node has only one child with the given tag name
 -- and try to return it.
-getSingletonChildByTag :: (Show i, Monad m) => String -> Content i -> m (Content i)
+getSingletonChildByTag :: Show i => String -> Content i -> Failable (Content i)
 getSingletonChildByTag tagName node =
-    asSingleton (childrenBy (tag tagName) node)
-                $ "expected only one child matching '" ++ tagName
-                  ++ "' at " ++ strInfo node
+    headErr ( "expected only one child matching '" ++ tagName
+              ++ "' at " ++ strInfo node
+            )
+            $ childrenBy (tag tagName) node
 
 -- | Same as 'getSingletonChildByTag' but with a filter.
-getSingletonChildByFilter :: (Show i, Monad m)
+getSingletonChildByFilter :: Show i
                           => CFilter i
                           -> Content i
-                          -> m (Content i)
+                          -> Failable (Content i)
 getSingletonChildByFilter f c =
-    asSingleton (childrenBy f c) $ "no singleton child at " ++ strInfo c
+    headErr ("no singleton child at " ++ strInfo c) (childrenBy f c)
 
 -- | Looks up an attribute and returns it as a 'String'.
-lookupVerbatim :: Monad m => String -> [(QName, AttValue)] -> m String
+lookupVerbatim :: String -> [(QName, AttValue)] -> Failable String
 lookupVerbatim = lookupConvert return
 
 -- | Looks up an attribute and converts the result with the provided function.
-lookupConvert :: Monad m
-              => (String -> m a)      -- ^ The function to convert with
-              -> String               -- ^ Name of the attribute
-              -> [(QName, AttValue)]  -- ^ The attribute mapping
-              -> m a
+lookupConvert :: (String -> Failable a) -- ^ The function to convert with
+              -> String                 -- ^ Name of the attribute
+              -> [(QName, AttValue)]    -- ^ The attribute mapping
+              -> Failable a
 lookupConvert fun name attributes = do
     attValStr <- case lookup (N name) attributes of
         Just x  -> return x
-        Nothing -> fail $ "did not find attribute '" ++ name
-                          ++ "' in association list"
+        Nothing -> throwError $ "did not find attribute '" ++ name
+                                ++ "' in association list"
     fun $ verbatim attValStr
 
 -- | Tries to get the name of the result attribute from within a content node.
-deserializeResultAttrName :: (Show i, Monad m) => Content i -> m String
+deserializeResultAttrName :: Show i => Content i -> Failable String
 deserializeResultAttrName contentNode = do
     -- <column name=... />
-    ranNode <- asSingleton (childrenBy ranFilter contentNode)
-                           $ "expected only one column tag without\
-                             \ the function attribute at"
-                             ++ strInfo contentNode
+    ranNode <- headErr ( "expected only one column tag without\
+                         \ the function attribute at"
+                         ++ strInfo contentNode
+                       )
+                       $ childrenBy ranFilter contentNode
     getNodeAttribute "name" ranNode
   where ranFilter = tag "column" `without` attr "function"
 
 
 
 -- | Tries to get the partition attribute name from within a content node.
-deserializePartAttrName :: (Show i, Monad m) => Content i -> m String
+deserializePartAttrName :: Show i => Content i -> Failable String
 deserializePartAttrName contentNode = do
-    columnNode <- asSingleton (childrenBy panFilter contentNode)
-                              $ "expected only one column tag without the\
-                                \ function=partition attribute at "
-                                ++ strInfo contentNode
+    columnNode <- headErr ( "expected only one column tag without the\
+                            \ function=partition attribute at "
+                            ++ strInfo contentNode
+                          )
+                          $ childrenBy panFilter contentNode
     
     getNodeAttribute "name" columnNode
   where panFilter = tag "column"
                     `with` attrval (N "function", AttValue [Left "partition"])
 
 -- | Tries to get the sort information from the content node.
-deserializeSortInf :: (Show i, Monad m) => Content i -> m A.SortInf
+deserializeSortInf :: Show i => Content i -> Failable A.SortInf
 deserializeSortInf contentNode = do
     -- <column function="sort" position=... direction=... name=... />
     let sortInfoNodes = childrenBy siFilter contentNode
@@ -266,12 +310,12 @@ deserializeSortInf contentNode = do
                             )
                             sortInfoNodes
 
-    let tupleConv :: Monad m => [String] -> m (A.SortAttrName, A.SortDir)
+    let tupleConv :: [String] -> Failable (A.SortAttrName, A.SortDir)
         tupleConv [_, name, dirStr] = do
             direction <- deserializeSortDir dirStr
             return (name, direction)    
         tupleConv _                 =
-            fail $ "invalid sort information at " ++ strInfo contentNode
+            throwError $ "invalid sort information at " ++ strInfo contentNode
 
     mapM tupleConv $ sortBy (on compare head) queriedSortInfo
   where siFilter  = tag "column"
@@ -279,37 +323,37 @@ deserializeSortInf contentNode = do
 
 
 -- | Try to get a single child id from the edge node's to attribute.
-deserializeChildId1 :: (Show i, Monad m) => Content i -> m AlgNode
+deserializeChildId1 :: Show i => Content i -> Failable AlgNode
 deserializeChildId1 node = do
     edgeNode <- getSingletonChildByTag "edge" node
     toEdge <- getNodeAttribute "to" edgeNode
     readMonadic toEdge
 
 -- | Try to get two child ids from the edge nodes' to attribute.
-deserializeChildId2 :: (Show i, Monad m) => Content i -> m (AlgNode, AlgNode)
+deserializeChildId2 :: Show i => Content i -> Failable (AlgNode, AlgNode)
 deserializeChildId2 node = case childIdList of 
         [edgeNode1, edgeNode2] -> liftM2 (,) edgeNode1 edgeNode2
         _                      ->
-            fail $ "did only expect two children at " ++ strInfo node
+            throwError $ "did only expect two children at " ++ strInfo node
   where childIdList = map (getNodeAttribute "to" >=> readMonadic)
                           $ (childrenBy $ tag "edge") node
 
 -- | Try to get the content child node of another node.
-deserializeContentNode :: (Show i, Monad m) => Content i -> m (Content i)
+deserializeContentNode :: Show i => Content i -> Failable (Content i)
 deserializeContentNode = getSingletonChildByTag "content"
 
-deserializeEmptyBinaryOpGeneric :: (Show i, Monad m)
+deserializeEmptyBinaryOpGeneric :: Show i
                                 => Content i
                                 -> (() -> A.BinOp)
-                                -> m A.PFAlgebra
+                                -> Failable A.PFAlgebra
 deserializeEmptyBinaryOpGeneric node constructor = do
     (childId1, childId2) <- deserializeChildId2 node
     return $ BinOp (constructor ()) childId1 childId2
 
-deserializeCross :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeCross :: Show i => Content i -> Failable A.PFAlgebra
 deserializeCross node = deserializeEmptyBinaryOpGeneric node A.Cross
 
-deserializeEqJoin :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeEqJoin :: Show i => Content i -> Failable A.PFAlgebra
 deserializeEqJoin node = do
     (childId1, childId2) <- deserializeChildId2 node
     
@@ -320,7 +364,7 @@ deserializeEqJoin node = do
     return $ BinOp (A.EqJoin infEqJoin) childId1 childId2
 
 
-deserializeThetaJoin :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeThetaJoin :: Show i => Content i -> Failable A.PFAlgebra
 deserializeThetaJoin node = do
     (childId1, childId2) <- deserializeChildId2 node
     
@@ -335,12 +379,12 @@ deserializeThetaJoin node = do
                          $ (childrenBy $ tag "comparison") contentNode
 
     return $ BinOp (A.ThetaJoin infThetaJoin) childId1 childId2
-  where deserializeComparison :: (Show i, Monad m)
+  where deserializeComparison :: Show i
                               => Content i
-                              -> m ( A.LeftAttrName
-                                   , A.RightAttrName
-                                   , A.JoinRel
-                                   )
+                              -> Failable ( A.LeftAttrName
+                                          , A.RightAttrName
+                                          , A.JoinRel
+                                          )
         deserializeComparison compNode = do
             joinRelStr <- getNodeAttribute "kind" compNode
             joinRel <- deserializeJoinRel joinRelStr
@@ -349,7 +393,7 @@ deserializeThetaJoin node = do
             
             return (leftAttrName, rightAttrName, joinRel)
             
-        deserializeJoinRel :: Monad m => String -> m A.JoinRel
+        deserializeJoinRel :: String -> Failable A.JoinRel
         deserializeJoinRel s = case s of
             "eq" -> return A.EqJ
             "gt" -> return A.GtJ
@@ -357,16 +401,19 @@ deserializeThetaJoin node = do
             "lt" -> return A.LtJ
             "le" -> return A.LeJ
             "ne" -> return A.NeJ
-            n    -> fail $ "invalid JoinRel value '" ++ n ++ "' at " ++ strInfo node
+            n    -> throwError $ "invalid JoinRel value '"
+                                 ++ n
+                                 ++ "' at "
+                                 ++ strInfo node
 
-deserializeDisjUnion :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeDisjUnion :: Show i => Content i -> Failable A.PFAlgebra
 deserializeDisjUnion node = deserializeEmptyBinaryOpGeneric node A.DisjUnion
 
-deserializeDifference :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeDifference :: Show i => Content i -> Failable A.PFAlgebra
 deserializeDifference node = deserializeEmptyBinaryOpGeneric node A.Difference
 
 
-deserializeDummy :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeDummy :: Show i => Content i -> Failable A.PFAlgebra
 deserializeDummy node = do
     childId <- deserializeChildId1 node
     
@@ -377,7 +424,7 @@ deserializeDummy node = do
     
     return $ UnOp (A.Dummy comment) childId
 
-deserializeAggr :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeAggr :: Show i => Content i -> Failable A.PFAlgebra
 deserializeAggr node = do
     childId <- deserializeChildId1 node
     
@@ -392,15 +439,15 @@ deserializeAggr node = do
     
     
     return $ UnOp ( A.Aggr ( aggrNodes
-                           , deserializePartAttrName contentNode
+                           , hush $ deserializePartAttrName contentNode
                            )
                   )
                   childId
 
   where aggrFilter = childrenBy $ tag "aggregate"
-        deserializeAggregate :: (Show i, Monad m)
+        deserializeAggregate :: Show i
                              => Content i
-                             -> m (A.AggrType, A.ResAttrName)
+                             -> Failable (A.AggrType, A.ResAttrName)
         deserializeAggregate aggregateNode = do
             aggregateStr <- getNodeAttribute "kind" aggregateNode
             
@@ -416,32 +463,35 @@ deserializeAggr node = do
                 "distinct" -> return . A.Dist =<< aC
                 "count"    -> return A.Count
                 n          ->
-                    fail $ "invalid aggregate function name '" ++ n ++ "' at " ++ strInfo node
+                    throwError $ "invalid aggregate function name '"
+                                 ++ n
+                                 ++ "' at "
+                                 ++ strInfo node
 
             return (aggregate, resAttrName)
 
           -- has to be lazy
           where aC = deserializeOldColumnName aggregateNode
 
-deserializeColumnNameWithNewValue :: (Show i, Monad m)
+deserializeColumnNameWithNewValue :: Show i
                                   => Content i
                                   -> String
-                                  -> m A.ResAttrName
+                                  -> Failable A.ResAttrName
 deserializeColumnNameWithNewValue contentNode newValue = do
     ranColumn <- getSingletonChildByFilter ranFilter contentNode
     getNodeAttribute "name" ranColumn
   where ranFilter = tag "column"
                     `with` attrval (N "new", AttValue [Left newValue])
 
-deserializeNewColumnName :: (Show i, Monad m) => Content i -> m A.ResAttrName
+deserializeNewColumnName :: Show i => Content i -> Failable A.ResAttrName
 deserializeNewColumnName contentNode =
     deserializeColumnNameWithNewValue contentNode "true"
 
-deserializeOldColumnName :: (Show i, Monad m) => Content i -> m A.AttrName
+deserializeOldColumnName :: Show i => Content i -> Failable A.AttrName
 deserializeOldColumnName contentNode =
     deserializeColumnNameWithNewValue contentNode "false"
 
-deserializeFunBoolNot :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeFunBoolNot :: Show i => Content i -> Failable A.PFAlgebra
 deserializeFunBoolNot node = do
     childId <- deserializeChildId1 node
     
@@ -455,7 +505,7 @@ deserializeFunBoolNot node = do
                   childId
 
 -- deserialize a cast operator
-deserializeCast :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeCast :: Show i => Content i -> Failable A.PFAlgebra
 deserializeCast node = do
     childId <- deserializeChildId1 node
     
@@ -472,16 +522,16 @@ deserializeCast node = do
     return $ UnOp (A.Cast (resAttrName, attrName, type_))
                   childId
 
-deserializeBinOpResAttrName :: (Show i, Monad m) => Content i -> m A.ResAttrName
+deserializeBinOpResAttrName :: Show i => Content i -> Failable A.ResAttrName
 deserializeBinOpResAttrName contentNode = do
     resNode <- getSingletonChildByFilter resColumnFilter contentNode
     getNodeAttribute "name" resNode
   where resColumnFilter = tag "column" `without` attr "position"
 
 -- deserialize positional arguments used by a BinOp
-deserializeBinOpPosArgs :: (Show i, Monad m)
+deserializeBinOpPosArgs :: Show i
                         => Content i
-                        -> m (A.LeftAttrName, A.RightAttrName)
+                        -> Failable (A.LeftAttrName, A.RightAttrName)
 deserializeBinOpPosArgs contentNode = do
     unsortedResult <- mapM (getNodeAttributes ["position", "name"]) 
                            $ posColumnFilter contentNode
@@ -489,12 +539,15 @@ deserializeBinOpPosArgs contentNode = do
     case map (head . tail) $ sortBy (on compare head) unsortedResult of
         [lName, rName] -> return (lName, rName)
                           -- TODO better error message
-        _              -> fail "invalid number of attributes deserialized"
+        _              -> throwError "invalid number of attributes deserialized"
         
   where posColumnFilter = childrenBy (tag "column" `with` attr "position")
 
 -- deserialize a binary operator with RelFun
-deserializeBinOpRelFun :: (Show i, Monad m) => Content i -> A.RelFun -> m A.PFAlgebra
+deserializeBinOpRelFun :: Show i
+                       => Content i
+                       -> A.RelFun
+                       -> Failable A.PFAlgebra
 deserializeBinOpRelFun node relFun = do
     childId <- deserializeChildId1 node
     
@@ -512,8 +565,20 @@ deserializeBinOpRelFun node relFun = do
                   )
                   childId
 
+<<<<<<< xml-deserializer
+=======
+deserializeRelFun :: String -> Failable A.RelFun
+deserializeRelFun s = case s of
+    "gt"  -> return A.Gt
+    "lt"  -> return A.Lt
+    "eq"  -> return A.Eq
+    "and" -> return A.And
+    "or"  -> return A.Or
+    n     -> fail $ "invalid RelFun name '" ++ n ++ "' found"
+    
+>>>>>>> local
 -- deserialize a binary operator with Fun1to1 as function
-deserializeBinOpFun :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeBinOpFun :: Show i => Content i -> Failable A.PFAlgebra
 deserializeBinOpFun node = do
     childId <- deserializeChildId1 node
     
@@ -537,7 +602,7 @@ deserializeBinOpFun node = do
   where kindFilter = childrenBy (tag "kind")
 
 -- deserialize the ugly Fun1to1 results of show
-deserializeFun1to1 :: Monad m => String -> m A.Fun1to1
+deserializeFun1to1 :: String -> Failable A.Fun1to1
 deserializeFun1to1 s = case s of
     "add"           -> return A.Plus
     "subtract"      -> return A.Minus
@@ -547,9 +612,9 @@ deserializeFun1to1 s = case s of
     "fn:contains"   -> return A.Contains
     "fn:similar_to" -> return A.SimilarTo
     "fn:concat"     -> return A.Concat
-    n               -> fail $ "invalid Fun1to1 name '" ++ n ++ "' found"
+    n               -> throwError $ "invalid Fun1to1 name '" ++ n ++ "' found"
 
-deserializeAttach :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeAttach :: Show i => Content i -> Failable A.PFAlgebra
 deserializeAttach node = do
     childId <- deserializeChildId1 node
     
@@ -569,12 +634,12 @@ deserializeAttach node = do
     
     return $ UnOp (A.Attach (resAttrName, (type_, value))) childId
 
-deserializeDistinct :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeDistinct :: Show i => Content i -> Failable A.PFAlgebra
 deserializeDistinct node = do
     childId <- deserializeChildId1 node
     return $ UnOp (A.Distinct ()) childId
 
-deserializePosSel :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializePosSel :: Show i => Content i -> Failable A.PFAlgebra
 deserializePosSel node = do
     childId <- deserializeChildId1 node
     
@@ -589,12 +654,12 @@ deserializePosSel node = do
     
     return $ UnOp ( A.PosSel ( position
                              , sortInfo
-                             , deserializePartAttrName contentNode
+                             , hush $ deserializePartAttrName contentNode
                              )
                   )
                   childId
 
-deserializeSel :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeSel :: Show i => Content i -> Failable A.PFAlgebra
 deserializeSel node = do
     childId <- deserializeChildId1 node
     
@@ -607,7 +672,7 @@ deserializeSel node = do
     return $ UnOp (A.Sel columnName) childId 
 
 -- | Tries to deserialize into 'Proj'.
-deserializeProj :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeProj :: Show i => Content i -> Failable A.PFAlgebra
 deserializeProj node = do
     childId <- deserializeChildId1 node
     
@@ -628,17 +693,18 @@ deserializeProj node = do
                     n <- getNodeAttribute "name" c
                     return (n, n)
                 n       ->
-                    fail $ "expected true or false, got '"
-                           ++ n ++ "' at "
-                           ++ strInfo c
+                    throwError $ "expected true or false, got '"
+                                 ++ n
+                                 ++ "' at "
+                                 ++ strInfo c
 
 -- | Tries to deserialize a row rank or rank operator. They use the same
 -- deserialize function because the only difference is the data constructor
 -- itself.
-deserializeRankOperator :: (Show i, Monad m)
+deserializeRankOperator :: Show i
                         => Content i
                         -> (A.SemInfRank -> A.UnOp)
-                        -> m A.PFAlgebra
+                        -> Failable A.PFAlgebra
 deserializeRankOperator node constructor = do
     childId <- deserializeChildId1 node
 
@@ -656,7 +722,7 @@ deserializeRankOperator node constructor = do
                   childId
 
 -- | Tries to deserialize into a 'RowNum'.
-deserializeRowNum :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeRowNum :: Show i => Content i -> Failable A.PFAlgebra
 deserializeRowNum node = do
 
     childId <- deserializeChildId1 node
@@ -668,17 +734,17 @@ deserializeRowNum node = do
 
     -- TODO string comparison sufficient ?
     sortInfo <- deserializeSortInf contentNode
-    
+     
     return $ UnOp ( A.RowNum ( resAttrName
                              , sortInfo
                              -- optional
-                             , deserializePartAttrName contentNode
+                             , hush $ deserializePartAttrName contentNode
                              )
                   )
                   childId
 
 -- | Tries to deserialize a 'LitTable'.
-deserializeLitTable :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeLitTable :: Show i => Content i -> Failable A.PFAlgebra
 deserializeLitTable node = do
     contentNode <- deserializeContentNode node
 
@@ -694,9 +760,9 @@ deserializeLitTable node = do
                                           results
 
 -- | Tries to deserialize a table column of a 'LitTable'.
-deserializeLitTableColumn :: (Show i, Monad m)
+deserializeLitTableColumn :: Show i
                           => Content i
-                          -> m (A.AttrName, A.ATy, [A.AVal])
+                          -> Failable (A.AttrName, A.ATy, [A.AVal])
 deserializeLitTableColumn columnNode = do
     
     name <- getNodeAttribute "name" columnNode
@@ -710,7 +776,7 @@ deserializeLitTableColumn columnNode = do
     return (name, type_, map snd result)
 
 -- | Tries to deserialize a value node into a tuple of 'ATy' and 'AVal'.
-deserializeLitTableValue :: (Show i, Monad m) => Content i -> m (A.ATy, A.AVal)
+deserializeLitTableValue :: Show i => Content i -> Failable (A.ATy, A.AVal)
 deserializeLitTableValue valueNode = do
     typeStr <- getNodeAttribute "type" valueNode
     type_ <- deserializeATy typeStr
@@ -721,7 +787,7 @@ deserializeLitTableValue valueNode = do
     return (type_, value)
 
 -- | Tries to deserialize a 'TableRef'.
-deserializeTableRef :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeTableRef :: Show i => Content i -> Failable A.PFAlgebra
 deserializeTableRef node = do
     propertiesNode <- getSingletonChildByTag "properties" node
     keyInfos <- deserializeTableRefProperties propertiesNode
@@ -732,7 +798,7 @@ deserializeTableRef node = do
     return $ NullaryOp $ A.TableRef (tableName, attrInfo, keyInfos)
 
 -- | Tries to deserialize the properties node into 'KeyInfos'.
-deserializeTableRefProperties :: (Show i, Monad m) => Content i -> m A.KeyInfos
+deserializeTableRefProperties :: Show i => Content i -> Failable A.KeyInfos
 deserializeTableRefProperties propertiesNode = do
     -- there should only be one
     keysNode <- getSingletonChildByTag "keys" propertiesNode
@@ -741,7 +807,7 @@ deserializeTableRefProperties propertiesNode = do
     mapM deserializeKeyInfo $ childrenBy (tag "key") keysNode 
 
 -- | Tries to deserializes a key node into 'KeyInfo'.
-deserializeKeyInfo :: (Show i, Monad m) => Content i -> m A.KeyInfo
+deserializeKeyInfo :: Show i => Content i -> Failable A.KeyInfo
 deserializeKeyInfo keyNode = do
     -- <key><column ..> .. </key>
     keyInfos <- mapM deserializeKeyInfoColumn
@@ -752,7 +818,7 @@ deserializeKeyInfo keyNode = do
 
 
 -- | Tries to deserialize a column node below a key node into position and name.
-deserializeKeyInfoColumn :: (Show i, Monad m) => Content i -> m (Int, A.AttrName)
+deserializeKeyInfoColumn :: Show i => Content i -> Failable (Int, A.AttrName)
 deserializeKeyInfoColumn columnNode = do
     -- <column name=.. position=..>
     name <- getNodeAttribute "name" columnNode
@@ -762,7 +828,9 @@ deserializeKeyInfoColumn columnNode = do
     return (position, name)
 
 -- | Tries to deserialize the content node in a 'TableRef'.
-deserializeTableRefContent :: (Show i, Monad m) => Content i -> m (A.TableName, A.TableAttrInf)
+deserializeTableRefContent :: Show i
+                           => Content i
+                           -> Failable (A.TableName, A.TableAttrInf)
 deserializeTableRefContent contentNode = do
     tableNode <- getSingletonChildByTag "table" contentNode
     name <- getNodeAttribute "name" tableNode
@@ -773,9 +841,9 @@ deserializeTableRefContent contentNode = do
     return (name, attributeInfo)
 
 -- | Tries to deserialize a column node belonging to a 'TableRef'.
-deserializeTableRefColumn :: (Show i, Monad m)
+deserializeTableRefColumn :: Show i
                           => Content i
-                          -> m (A.AttrName, A.AttrName, A.ATy)
+                          -> Failable (A.AttrName, A.AttrName, A.ATy)
 deserializeTableRefColumn columnNode = do
 
     qAttr <- getNodeAttributes ["tname", "name", "type"] columnNode
@@ -785,10 +853,10 @@ deserializeTableRefColumn columnNode = do
                                         type_ <- deserializeATy typeStr
                                         return (name, newName, type_)
         _                        ->
-            fail $ "invalid TableRef at " ++ strInfo columnNode
+            throwError $ "invalid TableRef at " ++ strInfo columnNode
 
 -- | Tries to deserialize an 'EmptyTable'.
-deserializeEmptyTable :: (Show i, Monad m) => Content i -> m A.PFAlgebra
+deserializeEmptyTable :: Show i => Content i -> Failable A.PFAlgebra
 deserializeEmptyTable node = do
 
     contentNode <- deserializeContentNode node
@@ -800,7 +868,9 @@ deserializeEmptyTable node = do
 
 -- | Tries to deserialize a column node belonging to a 'EmptyTable' into
 -- a tuple containing 'AttrName' and 'ATy'.
-deserializeEmptyTableColumn :: (Show i, Monad m) => Content i -> m (A.AttrName, A.ATy)
+deserializeEmptyTableColumn :: Show i
+                            => Content i
+                            -> Failable (A.AttrName, A.ATy)
 deserializeEmptyTableColumn columnNode = do
     name <- getNodeAttribute "name" columnNode
     typeStr <- getNodeAttribute "type" columnNode
@@ -810,15 +880,15 @@ deserializeEmptyTableColumn columnNode = do
 
 
 -- | Tries to deserialize a 'String' into 'Bool'.
-deserializeBool :: Monad m => String -> m Bool
+deserializeBool :: String -> Failable Bool
 deserializeBool s = case s of
     "true"  -> return True
     "false" -> return False
-    n       -> fail $ "invalid boolean value '" ++ n ++ "'"
+    n       -> throwError $ "invalid boolean value '" ++ n ++ "'"
 
 
 -- | Tries to deserialize a 'String' into 'AVal'.
-deserializeAVal :: Monad m => A.ATy -> String -> m A.AVal
+deserializeAVal :: A.ATy -> String -> Failable A.AVal
 deserializeAVal t s = case t of
     A.AInt    -> return . A.VInt =<< readMonadic s
     A.AStr    -> return $ A.VStr s
@@ -827,11 +897,11 @@ deserializeAVal t s = case t of
     A.ADouble -> return . A.VDouble =<< readMonadic s
     A.ANat    -> return . A.VNat =<< readMonadic s
     -- ANat is the same as ASur, but can not be deserialized
-    A.ASur    -> fail "invalid surrogate value found"
+    A.ASur    -> throwError "invalid surrogate value found"
 
 
 -- | Tries to deserialize a 'String' into 'ATy'.
-deserializeATy :: (Monad m) => String -> m A.ATy
+deserializeATy :: String -> Failable A.ATy
 deserializeATy s = case s of
     "int"  -> return A.AInt
     "str"  -> return A.AStr
@@ -840,38 +910,33 @@ deserializeATy s = case s of
     "dbl"  -> return A.ADouble
     "nat"  -> return A.ANat
     -- ASur is the same as ANat
-    n      -> fail $ "invalid ATy name '" ++ n ++ "' found"
+    n      -> throwError $ "invalid ATy name '" ++ n ++ "' found"
 
 -- | Tries to deserialize a 'String' into 'SortDir'.
-deserializeSortDir :: Monad m => String -> m A.SortDir
+deserializeSortDir :: String -> Failable A.SortDir
 deserializeSortDir s = case s of
     "ascending"  -> return A.Asc
     "descending" -> return A.Desc
-    n            -> fail $ "invalid SortDor value '" ++ n ++ "' found"
+    n            -> throwError $ "invalid SortDor value '" ++ n ++ "' found"
 
 
 -- | Provide a readable string of the position.
 strInfo :: Show i => Content i -> String
 strInfo = show . info
 
--- | Wraps a call to reads into a monad.
-readMonadic :: Monad m => Read a => String -> m a
+-- | Wraps a call to reads into a monad (the code itself is monadic, the type is
+-- limited to 'Failable').
+readMonadic :: Read a => String -> Failable a
 readMonadic s = case reads s of
     [(x, "")] -> return x
-    _         -> fail $ "invalid format of '" ++ s ++ "'"
+    _         -> throwError $ "invalid format of '" ++ s ++ "'"
 
 -- | Checks whether every element of the list is the same and returns a monad
 -- with it. Defined in GHC.Exts but without monadic context.
-the :: (Eq a, Monad m) => [a] -> m a
-the []     = fail "empty list"
+the :: Eq a => [a] -> Failable a
+the []     = throwError "empty list"
 the (x:xs) = helper x xs
   where helper y []     = return y
         helper y (z:zs) | y == z    = helper z zs
-                        | otherwise = fail "not all values are equal"
-
--- | Convert a singleton list into a monadic value.
-asSingleton :: (Show i, Monad m) => [Content i] -> String -> m (Content i)
-asSingleton cs errorStr = case cs of
-    [c] -> return c
-    _   -> fail errorStr
+                        | otherwise = throwError "not all values are equal"
 
