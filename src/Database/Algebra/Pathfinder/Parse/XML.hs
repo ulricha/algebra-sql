@@ -4,8 +4,8 @@ module Database.Algebra.Pathfinder.Parse.XML
     ) where
 
 import Control.Monad (liftM2, (>=>))
-import Control.Monad.Error.Class (throwError)
-import Control.Error (hush, headErr)
+import Control.Monad.Error.Class (throwError, catchError)
+import Control.Error (hush)
 import Data.Either (lefts, rights)
 import Data.Function (on)
 import Data.IntMap (fromList)
@@ -204,10 +204,14 @@ getNodeAttribute _ n                                       =
 -- and try to return it.
 getSingletonChildByTag :: Show i => String -> Content i -> Failable (Content i)
 getSingletonChildByTag tagName node =
-    headErr ( "expected only one child matching '" ++ tagName
-              ++ "' at " ++ strInfo node
-            )
-            $ childrenBy (tag tagName) node
+    asSingleton (childrenBy (tag tagName) node) `catchError` handler
+  where handler e = throwError $
+                        "getSingletonChildByTag with tag '"
+                        ++ tagName
+                        ++ "' at "
+                        ++ strInfo node
+                        ++ ": "
+                        ++ e
 
 -- | Same as 'getSingletonChildByTag' but with a filter.
 getSingletonChildByFilter :: Show i
@@ -215,7 +219,13 @@ getSingletonChildByFilter :: Show i
                           -> Content i
                           -> Failable (Content i)
 getSingletonChildByFilter f c =
-    headErr ("no singleton child at " ++ strInfo c) (childrenBy f c)
+    asSingleton (childrenBy f c)
+    `catchError` (throwError . ("getSingletonChildByFilter: " ++))
+
+asSingleton :: [a] -> Failable a
+asSingleton []  = throwError "empty list found"
+asSingleton [x] = return x
+asSingleton _   = throwError "list with length greater 1 found"
 
 -- | Looks up an attribute and returns it as a 'String'.
 lookupVerbatim :: String -> [(QName, AttValue)] -> Failable String
@@ -237,28 +247,35 @@ lookupConvert fun name attributes = do
 deserializeResultAttrName :: Show i => Content i -> Failable String
 deserializeResultAttrName contentNode = do
     -- <column name=... />
-    ranNode <- headErr ( "expected only one column tag without\
-                         \ the function attribute at"
-                         ++ strInfo contentNode
-                       )
-                       $ childrenBy ranFilter contentNode
+    ranNode <- getSingletonChildByFilter ranFilter contentNode
+               `catchError`
+               handler
+
     getNodeAttribute "name" ranNode
   where ranFilter = tag "column" `without` attr "function"
-
+        handler e = throwError $
+                        "expected only one column tag without\
+                        \ the function attribute at"
+                        ++ strInfo contentNode
+                        ++ ": "
+                        ++ e
 
 
 -- | Tries to get the partition attribute name from within a content node.
 deserializePartAttrName :: Show i => Content i -> Failable String
 deserializePartAttrName contentNode = do
-    columnNode <- headErr ( "expected only one column tag without the\
-                            \ function=partition attribute at "
-                            ++ strInfo contentNode
-                          )
-                          $ childrenBy panFilter contentNode
-    
+    columnNode <- getSingletonChildByFilter panFilter contentNode
+                  `catchError`
+                  handler
     getNodeAttribute "name" columnNode
   where panFilter = tag "column"
                     `with` attrval (N "function", AttValue [Left "partition"])
+        handler e = throwError $
+                        "expected only one column tag without the\
+                        \ function=partition attribute at "
+                        ++ strInfo contentNode
+                        ++ ": "
+                        ++ e
 
 -- | Tries to get the sort information from the content node.
 deserializeSortInf :: Show i => Content i -> Failable A.SortInf
