@@ -40,7 +40,8 @@ library
                       parsec >= 3.1,
                       aeson >= 0.6,
                       ghc-prim >= 0.2,
-                      bytestring >= 0.9
+                      bytestring >= 0.9,
+                      errors >= 1.0.0
 
     exposed-modules:  Database.Algebra.Dag
                       Database.Algebra.Dag.Builder
@@ -60,6 +61,7 @@ library
                       Database.Algebra.Pathfinder.Render.Dot
                       Database.Algebra.Pathfinder.Render.JSON
                       Database.Algebra.Pathfinder.Data.Algebra
+                      Database.Algebra.Pathfinder.Parse.XML
 
                       Database.Algebra.VL.Data
                       Database.Algebra.VL.Render.Dot
