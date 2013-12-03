@@ -19,14 +19,16 @@ tagsToDoc :: [Tag] -> Doc
 tagsToDoc ts = vcat $ map text ts
 
 labelToDoc :: AlgNode -> String -> Doc -> [Tag] -> Doc
-labelToDoc n s as ts = (nodeToDoc n) <+> ((text s) <> (parens as)) <+> (tagsToDoc $ nub ts)
-
+labelToDoc n s as ts = (nodeToDoc n) $+$ ((text s) <> (parens as)) <+> (tagsToDoc $ nub ts)
 
 lookupTags :: AlgNode -> NodeMap [Tag] -> [Tag]
 lookupTags n m = Map.findWithDefault [] n m
 
 bracketList :: (a -> Doc) -> [a] -> Doc
-bracketList f = brackets . hsep . punctuate comma . map f
+bracketList f = brackets . commas f
+
+commas :: (a -> Doc) -> [a] -> Doc
+commas f = hsep . punctuate comma . map f
 
 renderProj :: ProjPair -> Doc
 renderProj (new, old) | new == old = text new
@@ -56,59 +58,59 @@ renderTheta (left, right, joinR) =
 opDotLabel :: NodeMap [Tag] -> AlgNode -> PFLabel -> Doc
 -- | Nullary operations
 opDotLabel tags i (LitTableL _ _)             = labelToDoc i 
-    "LitTable" empty (lookupTags i tags)
+    "LITTABLE" empty (lookupTags i tags)
 opDotLabel tags i (EmptyTableL _)             = labelToDoc i 
-    "EmptyTable" empty (lookupTags i tags)
+    "EMPTYTABLE" empty (lookupTags i tags)
 opDotLabel tags i (TableRefL _)               = labelToDoc i
-    "Tableref" empty (lookupTags i tags)
+    "TABLE" empty (lookupTags i tags)
 -- |  Binary operations
 opDotLabel tags i (CrossL _)                  = labelToDoc i
-    "Cross" empty (lookupTags i tags)
+    "CROSS" empty (lookupTags i tags)
 opDotLabel tags i (EqJoinL (left,right))      = labelToDoc i
-    "EqJoin" (text $ left ++ "," ++ right) (lookupTags i tags)
+    "EQJOIN" (text $ left ++ "," ++ right) (lookupTags i tags)
 opDotLabel tags i (DifferenceL _)             = labelToDoc i
-    "Diff" empty (lookupTags i tags)
+    "DIFF" empty (lookupTags i tags)
 opDotLabel tags i (DisjUnionL _)              = labelToDoc i
-    "Union" empty (lookupTags i tags)
+    "UNION" empty (lookupTags i tags)
 opDotLabel tags i (ThetaJoinL info)           = labelToDoc i
-    "ThetaJoin" (bracketList renderTheta info) (lookupTags i tags)
+    "THETAJOIN" (bracketList renderTheta info) (lookupTags i tags)
 -- | Unary operations
 opDotLabel tags i (RowNumL (res,sortI,attr))  = labelToDoc i 
-    "Rownum" ((text $ res ++ "<")
-              <+> bracketList renderSortInf sortI 
+    "ROWNUM" ((text $ res ++ "<")
+              <+> (commas renderSortInf sortI)
               <+> (text $ show attr ++ ">"))
     (lookupTags i tags)
 opDotLabel tags i (RowRankL (res,sortInf))    = labelToDoc i
-    "Rowrank" ((text $ res ++ "<") 
-               <+> bracketList renderSortInf sortInf
+    "ROWRANK" ((text $ res ++ "<") 
+               <+> (commas renderSortInf sortInf)
                <+> text "<")                
     (lookupTags i tags)
 opDotLabel tags i (RankL (res,sortInf))       = labelToDoc i
-    "Rank" ((text $ res ++ "<") 
-            <+> bracketList renderSortInf sortInf
+    "RANK" ((text $ res ++ "<") 
+            <+> commas renderSortInf sortInf
             <+> text ">")                
     (lookupTags i tags)
 opDotLabel tags i (ProjL info)                = labelToDoc i 
-    "Proj" (bracketList renderProj info) (lookupTags i tags)
+    "PROJ" (bracketList renderProj info) (lookupTags i tags)
 opDotLabel tags i (SelL info)                 = labelToDoc i
-    "Select" (text info) (lookupTags i tags)
+    "SELECT" (text info) (lookupTags i tags)
 opDotLabel tags i (PosSelL info)              = labelToDoc i
-    "PosSel" (renderPosSel info) (lookupTags i tags)
+    "POSSEL" (renderPosSel info) (lookupTags i tags)
 opDotLabel tags i (DistinctL _)               = labelToDoc i
-    "Distinct" empty (lookupTags i tags)
+    "DISTINCT" empty (lookupTags i tags)
 opDotLabel tags i (AttachL (res, (aty,aval))) = labelToDoc i
-    "Attach" (text $ res ++ "," ++ show aty ++ ":" ++ show aval)
+    "ATTACH" (text $ res ++ "," ++ show aty ++ ":" ++ show aval)
     (lookupTags i tags)
 opDotLabel tags i (FunBinOpL info)            = labelToDoc i
-    "FunBinOp" (renderFunBinOp info) (lookupTags i tags) 
+    "BINOP" (renderFunBinOp info) (lookupTags i tags) 
 opDotLabel tags i (CastL (res,attr,aty))      = labelToDoc i
-    "Cast" (text $ res ++ "," ++ show aty ++ ":" ++ attr) (lookupTags i tags)
+    "CAST" (text $ res ++ "," ++ show aty ++ ":" ++ attr) (lookupTags i tags)
 opDotLabel tags i (FunBoolNotL (res,attr))    = labelToDoc i
-    "FunBoolNot" (text $ res ++ "," ++ attr) (lookupTags i tags)
+    "NOT" (text $ res ++ "," ++ attr) (lookupTags i tags)
 opDotLabel tags i (AggrL (aggrList, attr))    = labelToDoc i
-    "Aggr" ((bracketList renderAggr aggrList) <+> (text $ show attr))
+    "AGGR" ((bracketList renderAggr aggrList) <+> (text $ show attr))
     (lookupTags i tags)
-opDotLabel _ _ (DummyL _)                     = text "dummy"
+opDotLabel _ _ (DummyL tag)                   = text $ "dummy " ++ tag
 
 constructDotNode :: NodeMap [Tag] -> (AlgNode, PFLabel) -> DotNode
 constructDotNode tags (n, op) =
