@@ -72,33 +72,23 @@ renderTableKey [x] = text x
 renderTableKey (x:xs) = text x <> comma <+> renderTableKey xs
 renderTableKey [] = text "NOKEY"
 
-renderPayloadProj :: (Doc, PayloadProj) -> Doc
-renderPayloadProj (d, PLConst v) = d <> colon <> renderTblVal v
-renderPayloadProj (d, PLCol c)   = d <> colon <> int c
-renderPayloadProj (d, PLExpr e)  = d <> colon <> renderExpr1 e
+renderProj :: Doc -> Expr1 -> Doc
+renderProj d e = d <> colon <> renderExpr1 e
 
 renderISTransProj :: (Doc, ISTransProj) -> Doc
 renderISTransProj (d, STDescrCol) = d <> colon <> text "descr"
 renderISTransProj (d, STPosCol)   = d <> colon <> text "pos"
 renderISTransProj (d, STNumber)   = d <> colon <> text "#"
 
-renderDescrProj :: (Doc, DescrProj) -> Doc
-renderDescrProj (d, DescrConst v)  = d <> colon <> (integer $ toInteger v)
-renderDescrProj (d, DescrIdentity) = d <> colon <> text "descr"
-renderDescrProj (d, DescrPosCol)   = d <> colon <> text "pos"
-
-renderPosProj :: (Doc, PosProj) -> Doc
-renderPosProj (d, PosNumber) = d <> colon <> text "#"
-renderPosProj (d, PosConst v) = d <> colon <> (integer $ toInteger v)
-renderPosProj (d, PosIdentity) = d <> colon <> text "pos"
-
 renderExpr1 :: Expr1 -> Doc
-renderExpr1 (App1 op e1 e2) = (parens $ renderExpr1 e1) <+> (text $ show op) <+> (parens $ renderExpr1 e2)
+renderExpr1 (BinApp1 op e1 e2) = (parens $ renderExpr1 e1) <+> (text $ show op) <+> (parens $ renderExpr1 e2)
+renderExpr1 (UnApp1 op e) = (text $ show op) <+> (parens $ renderExpr1 e)
 renderExpr1 (Constant1 val) = renderTblVal val
 renderExpr1 (Column1 c)     = text "col" <> int c
 
 renderExpr2 :: Expr2 -> Doc
-renderExpr2 (App2 op e1 e2)      = (parens $ renderExpr2 e1) <+> (text $ show op) <+> (parens $ renderExpr2 e2)
+renderExpr2 (BinApp2 op e1 e2)   = (parens $ renderExpr2 e1) <+> (text $ show op) <+> (parens $ renderExpr2 e2)
+renderExpr2 (UnApp2 op e)        = (text $ show op) <+> (parens $ renderExpr2 e)
 renderExpr2 (Constant2 val)      = renderTblVal val
 renderExpr2 (Column2Left (L c))  = text "lcol" <> int c
 renderExpr2 (Column2Right (R c)) = text "rcol" <> int c
@@ -119,8 +109,6 @@ opDotLabel tm i (UnOp Unique _) = labelToDoc i "Unique" empty (lookupTags i tm)
 opDotLabel tm i (UnOp UniqueL _) = labelToDoc i "UniqueL" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Number _) = labelToDoc i "Number" empty (lookupTags i tm)
 opDotLabel tm i (UnOp NumberL _) = labelToDoc i "NumberL" empty (lookupTags i tm)
-opDotLabel tm i (UnOp NotPrim _) = labelToDoc i "NotPrim" empty (lookupTags i tm)
-opDotLabel tm i (UnOp NotVec _) = labelToDoc i "NotVec" empty (lookupTags i tm)
 opDotLabel tm i (UnOp LengthA _) = labelToDoc i "LengthA" empty (lookupTags i tm)
 opDotLabel tm i (UnOp DescToRename _) = labelToDoc i "DescToRename" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Segment _) = labelToDoc i "Segment" empty (lookupTags i tm)
@@ -131,8 +119,6 @@ opDotLabel tm i (UnOp VecMin _) = labelToDoc i "VecMin" empty (lookupTags i tm)
 opDotLabel tm i (UnOp VecMinL _) = labelToDoc i "VecMinL" empty (lookupTags i tm)
 opDotLabel tm i (UnOp VecMax _) = labelToDoc i "VecMax" empty (lookupTags i tm)
 opDotLabel tm i (UnOp VecMaxL _) = labelToDoc i "VecMaxL" empty (lookupTags i tm)
-opDotLabel tm i (UnOp (ProjectL cols) _) = labelToDoc i "ProjectL" (bracketList (text . show) cols) (lookupTags i tm)
-opDotLabel tm i (UnOp (ProjectA cols) _) = labelToDoc i "ProjectA" (bracketList (text . show) cols) (lookupTags i tm)
 opDotLabel tm i (UnOp IntegerToDoubleA _) = labelToDoc i "IntegerToDoubleA" empty (lookupTags i tm)
 opDotLabel tm i (UnOp IntegerToDoubleL _) = labelToDoc i "IntegerToDoubleL" empty (lookupTags i tm)
 opDotLabel tm i (UnOp ReverseA _) = labelToDoc i "ReverseA" empty (lookupTags i tm)
@@ -144,20 +130,18 @@ opDotLabel tm i (UnOp R3 _) = labelToDoc i "R3" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (ProjectRename (p1, p2)) _) =
   labelToDoc i "ProjectRename" pLabel (lookupTags i tm)
   where pLabel = parens $ (renderISTransProj (text "posnew", p1)) <> comma <+> (renderISTransProj (text "posold", p2))
-opDotLabel tm i (UnOp (ProjectPayload pCols) _) =
-  labelToDoc i "ProjectPayload" pLabel (lookupTags i tm)
+opDotLabel tm i (UnOp (VLProject pCols) _) =
+  labelToDoc i "Project" pLabel (lookupTags i tm)
   where pLabel = valCols
-        valCols = bracketList (\(j, p) -> renderPayloadProj (itemLabel j, p)) $ zip ([1..] :: [Int]) pCols
+        valCols = bracketList (\(j, p) -> renderProj (itemLabel j) p) $ zip ([1..] :: [Int]) pCols
+        itemLabel j = (text "i") <> (int j)
+opDotLabel tm i (UnOp (VLProjectA pCols) _) =
+  labelToDoc i "ProjectA" pLabel (lookupTags i tm)
+  where pLabel = valCols
+        valCols = bracketList (\(j, p) -> renderProj (itemLabel j) p) $ zip ([1..] :: [Int]) pCols
         itemLabel j = (text "item") <> (int j)
-opDotLabel tm i (UnOp (ProjectAdmin (pDescr, pPos)) _) =
-  labelToDoc i "ProjectAdmin" pLabel (lookupTags i tm)
-  where pLabel = parens $ (renderDescrProj (text "descr", pDescr))
-                 <> comma
-                 <+> (renderPosProj (text "pos", pPos))
 opDotLabel tm i (UnOp (SelectExpr e) _) = labelToDoc i "SelectExpr" (renderExpr1 e) (lookupTags i tm)
 opDotLabel tm i (UnOp Only _) = labelToDoc i "Only" empty (lookupTags i tm)
-opDotLabel tm i (UnOp (CompExpr1L expr) _) =
-  labelToDoc i "CompExpr1L" (renderExpr1 expr) (lookupTags i tm)
 opDotLabel tm i (UnOp Singleton _) = labelToDoc i "Singleton" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (SelectPos1 o (N p)) _)  = labelToDoc i "SelectPos1" ((text $ show o) <+> int p) (lookupTags i tm)
 opDotLabel tm i (UnOp (SelectPos1L o (N p)) _) = labelToDoc i "SelectPos1L" ((text $ show o) <+> int p) (lookupTags i tm)
@@ -204,6 +188,10 @@ opDotColor (BinOp CartProduct _ _)     = Red
 opDotColor (BinOp CartProductL _ _)    = Red
 opDotColor (BinOp (EquiJoin _ _) _ _)  = Green
 opDotColor (BinOp (EquiJoinL _ _) _ _) = Green
+opDotColor (BinOp (SemiJoin _ _) _ _)  = Green
+opDotColor (BinOp (SemiJoinL _ _) _ _) = Green
+opDotColor (BinOp (AntiJoin _ _) _ _)  = Green
+opDotColor (BinOp (AntiJoinL _ _) _ _) = Green
 opDotColor (BinOp PairL _ _)           = YellowGreen
 opDotColor (BinOp SortWith _ _)        = Tomato
 opDotColor (BinOp GroupBy _ _)         = Tomato

@@ -240,6 +240,7 @@ data Fun1to1 = Plus
              | Modulo
              | Contains
              | SimilarTo
+             | Like
              | Concat
              deriving (Eq, Ord, Generic)
      
@@ -252,6 +253,7 @@ instance Show Fun1to1 where
   show Contains  = "fn:contains"
   show Concat    = "fn:concat"
   show SimilarTo = "fn:similar_to"
+  show Like      = "fn:like"
          
 data RelFun = Gt
             | Lt

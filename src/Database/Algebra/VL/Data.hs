@@ -54,8 +54,11 @@ data VecOp = COp VecCompOp
            | BOp VecBoolOp
            | Like
            deriving (Eq, Ord, Generic)
+           
+data VecUnOp = Not deriving (Eq, Ord, Generic)
 
-data Expr1 = App1 VecOp Expr1 Expr1
+data Expr1 = BinApp1 VecOp Expr1 Expr1
+           | UnApp1 VecUnOp Expr1
            | Column1 DBCol
            | Constant1 VLVal
            deriving (Eq, Ord, Show, Generic)
@@ -63,7 +66,8 @@ data Expr1 = App1 VecOp Expr1 Expr1
 newtype LeftCol = L DBCol deriving (Eq, Ord, Show, Generic)
 newtype RightCol = R DBCol deriving (Eq, Ord, Show, Generic)
 
-data Expr2 = App2 VecOp Expr2 Expr2
+data Expr2 = BinApp2 VecOp Expr2 Expr2
+           | UnApp2 VecUnOp Expr2
            | Column2Left LeftCol
            | Column2Right RightCol
            | Constant2 VLVal
@@ -86,25 +90,13 @@ instance Show VecCompOp where
     show GtE = ">="
     show Lt  = "<"
     show LtE = "<="
+    
+instance Show VecUnOp where
+    show Not = "not"
 
 data ISTransProj = STDescrCol
                  | STPosCol
                  | STNumber
-                 deriving (Eq, Ord, Generic, Show)
-
-data DescrProj = DescrConst Nat
-               | DescrIdentity
-               | DescrPosCol
-               deriving (Eq, Ord, Generic, Show)
-
-data PosProj = PosNumber
-             | PosConst Nat
-             | PosIdentity
-             deriving (Eq, Ord, Generic, Show)
-
-data PayloadProj = PLConst VLVal
-                 | PLCol DBCol
-                 | PLExpr Expr1
                  deriving (Eq, Ord, Generic, Show)
 
 newtype Nat = N Int deriving (Eq, Ord, Generic, Show)
@@ -152,8 +144,6 @@ data UnOp = Unique
           | UniqueL
           | Number
           | NumberL
-          | NotPrim
-          | NotVec
           | LengthA
           | DescToRename
           | Segment
@@ -164,8 +154,6 @@ data UnOp = Unique
           | VecMinL
           | VecMax
           | VecMaxL
-          | ProjectL [DBCol]
-          | ProjectA [DBCol]
           | IntegerToDoubleA
           | IntegerToDoubleL
           | ReverseA -- (DBV, PropVector)
@@ -175,12 +163,11 @@ data UnOp = Unique
           | R2
           | R3
           | ProjectRename (ISTransProj, ISTransProj) -- (source, target)?
-          | ProjectPayload [PayloadProj]
-          | ProjectAdmin (DescrProj, PosProj)
+          | VLProject [Expr1]
+          | VLProjectA [Expr1]
           | SelectExpr Expr1
           | Only
           | Singleton
-          | CompExpr1L Expr1
           | SelectPos1 VecCompOp Nat
           | SelectPos1L VecCompOp Nat
           | VecAggr [DBCol] [AggrFun]
