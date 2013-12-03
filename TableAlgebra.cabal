@@ -10,8 +10,6 @@ Description:    The Ferry 2.0 Table Algebra library
                 The library exposes a monadic interface to construct algebraic plans, it 
                 automatically performs common sub-tree elimination so that the resulting plan
                 is as small as possible and the optimiser can do it's work better. 
-                XML rendering is present and needed for interfacing with DSH-Pathfinder, and 
-                for debugging plans with the standalone Pathfinder.
                 .
                 .
                  1. <http://www-db.informatik.uni-tuebingen.de/research/pathfinder>
@@ -23,14 +21,13 @@ Description:    The Ferry 2.0 Table Algebra library
                  4. <http://www-db.informatik.uni-tuebingen.de/files/publications/ferryhaskell.pdf>
 License:        BSD3
 License-file:   LICENSE
-Author:			Jeroen Weijers <jeroen.weijers@uni-tuebingen.de> Tom Schreiber <tom.schreiber@uni-tuebingen.de>, Alexander Ulrich <alexander.ulrich@uni-tuebingen.de>
-Maintainer:		Alexander Ulrich <alexander.ulrich@uni-tuebingen.de>
+Author:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>, Tom Schreiber <tom.schreiber@uni-tuebingen.de>, Alexander Ulrich <alexander.ulrich@uni-tuebingen.de>
+Maintainer:	Alexander Ulrich <alexander.ulrich@uni-tuebingen.de>
 Build-Type:     Simple
 
 library
     buildable:        True
     build-depends:    base >= 4.2 && < 5,  
-                      HaXml >= 1.22, 
                       mtl >= 2.0.1.0, 
                       containers >= 0.3.0.0, 
                       template-haskell >= 2.4.0.0, 
@@ -57,11 +54,9 @@ library
                       Database.Algebra.Rewrite.DagRewrite
 
                       Database.Algebra.Pathfinder
-                      Database.Algebra.Pathfinder.Render.XML
                       Database.Algebra.Pathfinder.Render.Dot
                       Database.Algebra.Pathfinder.Render.JSON
                       Database.Algebra.Pathfinder.Data.Algebra
-                      Database.Algebra.Pathfinder.Parse.XML
 
                       Database.Algebra.VL.Data
                       Database.Algebra.VL.Render.Dot
@@ -82,7 +77,6 @@ library
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -auto-all
     other-modules:    Database.Algebra.Pathfinder.Monadic.Create
                       Database.Algebra.Pathfinder.Data.Create
-                      Database.Algebra.Pathfinder.Render.XMLUtils
                       Database.Algebra.X100.Render.Sharing
                       Database.Algebra.X100.Properties.Schema
                       Database.Algebra.X100.Properties.Card1
@@ -106,7 +100,6 @@ executable x100dot
     hs-source-dirs:   src
     build-depends:    base >= 4.2 && < 5, 
                       aeson >= 0.6, 
-                      HaXml >= 1.22, 
                       mtl >= 2.0.1.0, 
                       containers >= 0.3.0.0,
                       transformers,
@@ -123,7 +116,6 @@ executable vldot
     hs-source-dirs:   src
     build-depends:    base >= 4.2 && < 5, 
                       aeson >= 0.6, 
-                      HaXml >= 1.22, 
                       mtl >= 2.0.1.0, 
                       containers >= 0.3.0.0, 
                       parsec,
@@ -140,7 +132,6 @@ executable x100gen
     hs-source-dirs:   src
     build-depends:    base >= 4.2 && < 5, 
                       aeson >= 0.6, 
-                      HaXml >= 1.22, 
                       mtl >= 2.0.1.0, 
                       containers >= 0.3.0.0, 
                       parsec,
