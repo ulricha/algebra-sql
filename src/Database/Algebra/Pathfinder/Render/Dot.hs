@@ -29,7 +29,8 @@ bracketList :: (a -> Doc) -> [a] -> Doc
 bracketList f = brackets . hsep . punctuate comma . map f
 
 renderProj :: ProjPair -> Doc
-renderProj (new,old) = text $ concat [old,"->",new]
+renderProj (new, old) | new == old = text new
+renderProj (new, old) | otherwise  = text $ concat [new, ":", old]
 
 -- | Rendering of the operations for opDotLabel
 renderPosSel :: SemInfPosSel -> Doc
@@ -58,16 +59,16 @@ opDotLabel tags i (LitTableL _ _)             = labelToDoc i
 opDotLabel tags i (EmptyTableL _)             = labelToDoc i 
     "EmptyTable" empty (lookupTags i tags)
 opDotLabel tags i (TableRefL _)               = labelToDoc i
-    "TableRef" empty (lookupTags i tags)
+    "Tableref" empty (lookupTags i tags)
 -- |  Binary operations
 opDotLabel tags i (CrossL _)                  = labelToDoc i
     "Cross" empty (lookupTags i tags)
 opDotLabel tags i (EqJoinL (left,right))      = labelToDoc i
     "EqJoin" (text $ left ++ "," ++ right) (lookupTags i tags)
 opDotLabel tags i (DifferenceL _)             = labelToDoc i
-    "Difference" empty (lookupTags i tags)
+    "Diff" empty (lookupTags i tags)
 opDotLabel tags i (DisjUnionL _)              = labelToDoc i
-    "DisjUnion" empty (lookupTags i tags)
+    "Union" empty (lookupTags i tags)
 opDotLabel tags i (ThetaJoinL info)           = labelToDoc i
     "ThetaJoin" (bracketList renderJoinArgs info) (lookupTags i tags)
 opDotLabel tags i (SemiJoinL info)           = labelToDoc i
@@ -76,12 +77,12 @@ opDotLabel tags i (AntiJoinL info)           = labelToDoc i
     "AntiJoin" (bracketList renderJoinArgs info) (lookupTags i tags)
 -- | Unary operations
 opDotLabel tags i (RowNumL (res,sortI,attr))  = labelToDoc i 
-    "RowNum" ((text $ res ++ "<")
+    "Rownum" ((text $ res ++ "<")
               <+> bracketList renderSortInf sortI 
               <+> (text $ show attr ++ ">"))
     (lookupTags i tags)
 opDotLabel tags i (RowRankL (res,sortInf))    = labelToDoc i
-    "RowRank" ((text $ res ++ "<") 
+    "Rowrank" ((text $ res ++ "<") 
                <+> bracketList renderSortInf sortInf
                <+> text "<")                
     (lookupTags i tags)
@@ -91,7 +92,7 @@ opDotLabel tags i (RankL (res,sortInf))       = labelToDoc i
             <+> text ">")                
     (lookupTags i tags)
 opDotLabel tags i (ProjL info)                = labelToDoc i 
-    "Project" (bracketList renderProj info) (lookupTags i tags)
+    "Proj" (bracketList renderProj info) (lookupTags i tags)
 opDotLabel tags i (SelL info)                 = labelToDoc i
     "Select" (text info) (lookupTags i tags)
 opDotLabel tags i (PosSelL info)              = labelToDoc i
@@ -111,8 +112,6 @@ opDotLabel tags i (AggrL (aggrList, attr))    = labelToDoc i
     "Aggr" ((bracketList renderAggr aggrList) <+> (text $ show attr))
     (lookupTags i tags)
 opDotLabel _ _ (DummyL _)                     = text "dummy"
-
-
 
 constructDotNode :: NodeMap [Tag] -> (AlgNode, PFLabel) -> DotNode
 constructDotNode tags (n, op) =
