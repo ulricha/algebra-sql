@@ -4,8 +4,8 @@ module Database.Algebra.Pathfinder.Parse.XML
     ) where
 
 import Control.Monad (liftM2, (>=>))
-import Control.Monad.Error.Class (throwError)
-import Control.Error (hush, headErr)
+import Control.Monad.Error.Class (throwError, catchError)
+import Control.Error (hush)
 import Data.Either (lefts, rights)
 import Data.Function (on)
 import Data.IntMap (fromList)
@@ -200,14 +200,26 @@ getNodeAttribute attName (CElem (Elem _ attributes _) _) =
 getNodeAttribute _ n                                       =
     throwError $ "xml content has no attributes at " ++ strInfo n
 
+-- | Append information to an already existing error message. Used as handler
+-- for 'catchError'.
+handleConsecutiveError :: Show i
+                       => String
+                       -> Content i
+                       -> String
+                       -> Failable a
+handleConsecutiveError msg node e =
+    throwError $ msg ++ " at " ++ strInfo node ++ ": " ++ e
+
 -- | Assume the current node has only one child with the given tag name
 -- and try to return it.
 getSingletonChildByTag :: Show i => String -> Content i -> Failable (Content i)
 getSingletonChildByTag tagName node =
-    headErr ( "expected only one child matching '" ++ tagName
-              ++ "' at " ++ strInfo node
-            )
-            $ childrenBy (tag tagName) node
+    asSingleton (childrenBy (tag tagName) node)
+    `catchError` handleConsecutiveError
+                 ( "getSingletonChildByTag with tag '"
+                   ++ tagName
+                 )
+                 node
 
 -- | Same as 'getSingletonChildByTag' but with a filter.
 getSingletonChildByFilter :: Show i
@@ -215,7 +227,13 @@ getSingletonChildByFilter :: Show i
                           -> Content i
                           -> Failable (Content i)
 getSingletonChildByFilter f c =
-    headErr ("no singleton child at " ++ strInfo c) (childrenBy f c)
+    asSingleton (childrenBy f c)
+    `catchError` (throwError . ("getSingletonChildByFilter: " ++))
+
+asSingleton :: [a] -> Failable a
+asSingleton []  = throwError "empty list found"
+asSingleton [x] = return x
+asSingleton _   = throwError "list with length greater 1 found"
 
 -- | Looks up an attribute and returns it as a 'String'.
 lookupVerbatim :: String -> [(QName, AttValue)] -> Failable String
@@ -237,25 +255,23 @@ lookupConvert fun name attributes = do
 deserializeResultAttrName :: Show i => Content i -> Failable String
 deserializeResultAttrName contentNode = do
     -- <column name=... />
-    ranNode <- headErr ( "expected only one column tag without\
-                         \ the function attribute at"
-                         ++ strInfo contentNode
-                       )
-                       $ childrenBy ranFilter contentNode
+    ranNode <- getSingletonChildByFilter ranFilter contentNode
+               `catchError` handleConsecutiveError
+                            "expected exactly one column tag without the\
+                            \ function attribute"
+                            contentNode
+
     getNodeAttribute "name" ranNode
   where ranFilter = tag "column" `without` attr "function"
-
-
 
 -- | Tries to get the partition attribute name from within a content node.
 deserializePartAttrName :: Show i => Content i -> Failable String
 deserializePartAttrName contentNode = do
-    columnNode <- headErr ( "expected only one column tag without the\
-                            \ function=partition attribute at "
-                            ++ strInfo contentNode
-                          )
-                          $ childrenBy panFilter contentNode
-    
+    columnNode <- getSingletonChildByFilter panFilter contentNode
+                  `catchError` handleConsecutiveError
+                               "expected exactly one column tag without the\
+                               \ function=partition attribute"
+                               contentNode
     getNodeAttribute "name" columnNode
   where panFilter = tag "column"
                     `with` attrval (N "function", AttValue [Left "partition"])
@@ -442,9 +458,16 @@ deserializeColumnNameWithNewValue :: Show i
                                   -> Failable A.ResAttrName
 deserializeColumnNameWithNewValue contentNode newValue = do
     ranColumn <- getSingletonChildByFilter ranFilter contentNode
+                 `catchError` handler
     getNodeAttribute "name" ranColumn
   where ranFilter = tag "column"
                     `with` attrval (N "new", AttValue [Left newValue])
+        handler = handleConsecutiveError
+                  ( "expected exactly one column tag with\
+                    \ the new attribute set to '"
+                    ++ newValue
+                  )
+                  contentNode
 
 deserializeNewColumnName :: Show i => Content i -> Failable A.ResAttrName
 deserializeNewColumnName contentNode =
@@ -488,6 +511,10 @@ deserializeCast node = do
 deserializeBinOpResAttrName :: Show i => Content i -> Failable A.ResAttrName
 deserializeBinOpResAttrName contentNode = do
     resNode <- getSingletonChildByFilter resColumnFilter contentNode
+               `catchError` handleConsecutiveError
+                            "expected exactly one column tag with\
+                            \ attribute position" 
+                            contentNode
     getNodeAttribute "name" resNode
   where resColumnFilter = tag "column" `without` attr "position"
 
@@ -534,8 +561,12 @@ deserializeBinOpFun node = do
     childId <- deserializeChildId1 node
     
     contentNode <- deserializeContentNode node
-    
-    kindNode <- getSingletonChildByFilter kindFilter contentNode
+
+    kindNode <- getSingletonChildByTag "kind" contentNode
+                `catchError` handleConsecutiveError
+                             "kind tag not found at"
+                             contentNode
+
     funName <- getNodeAttribute "name" kindNode
     fun <- deserializeFun1to1 funName
 
@@ -550,9 +581,8 @@ deserializeBinOpFun node = do
                                )
                   )
                   childId
-  where kindFilter = childrenBy (tag "kind")
 
--- deserialize the ugly Fun1to1 results of show
+  -- deserialize the ugly Fun1to1 results of show
 deserializeFun1to1 :: String -> Failable A.Fun1to1
 deserializeFun1to1 s = case s of
     "add"           -> return A.Plus
