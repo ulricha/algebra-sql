@@ -124,45 +124,62 @@ renderDotEdge :: DotEdge -> Doc
 renderDotEdge (DotEdge u v) = int u <+> text "->" <+> int v <> semi
 
 renderColor :: DotColor -> Doc
-renderColor Tomato = text "tomato"
-renderColor Salmon = text "salmon"
-renderColor Gray = text "gray"
-renderColor DimGray = text "dimgray"
-renderColor Gold = text "gold"
-renderColor Tan = text "tan"
-renderColor Red = text "red"
-renderColor Crimson = text "crimson"
-renderColor Green = text "green"
-renderColor Sienna = text "sienna"
-renderColor Beige = text "beige"
-renderColor DodgerBlue = text "dodgerblue"
+renderColor Tomato       = text "tomato"
+renderColor Red          = text "red"
+renderColor OrangeRed    = text "orangered"
+renderColor Salmon       = text "salmon"
+renderColor Gray         = text "gray"
+renderColor DimGray      = text "dimgray"
+renderColor Gold         = text "gold"
+renderColor Tan          = text "tan"
+renderColor Crimson      = text "crimson"
+renderColor Green        = text "green"
+renderColor Sienna       = text "sienna"
+renderColor Beige        = text "beige"
+renderColor DodgerBlue   = text "dodgerblue"
 renderColor LightSkyBlue = text "lightskyblue"
+renderColor Gray52       = text "gray52"
+renderColor Gray91       = text "gray91"
+renderColor DarkOrange   = text "darkorange"
+renderColor Orange       = text "orange"
+renderColor White        = text "white"
+renderColor Cyan         = text "cyan"
+renderColor Cyan4        = text "cyan4"
 
 opDotColor :: PFLabel -> DotColor
+
 -- | Nullaryops
-opDotColor (EmptyTableL _)   = Gray
-opDotColor (LitTableL _ _)   = Gray
-opDotColor (TableRefL _)     = Gray
+opDotColor (EmptyTableL _)   = Gray52
+opDotColor (LitTableL _ _)   = Gray52
+opDotColor (TableRefL _)     = Gray52
+
 -- | Unops
+opDotColor (DummyL _)        = White
+opDotColor (AttachL _)       = Gray91
+opDotColor (CastL _)         = Gray91
+opDotColor (FunBoolNotL _)   = Gray52
+opDotColor (FunBinOpL _)     = Gray52
+opDotColor (ProjL _)         = Gray91
+
+opDotColor (PosSelL _)       = Cyan4
+opDotColor (SelL _)          = Cyan
+
+opDotColor (DistinctL _)     = Tan
 opDotColor (AggrL _)         = Gold
-opDotColor (AttachL _)       = Gold
-opDotColor (CastL _)         = Gold
-opDotColor (DistinctL _)     = Gold
-opDotColor (DummyL _)        = Gold
-opDotColor (FunBoolNotL _)    = Gold
-opDotColor (FunBinOpL _)     = Gold
-opDotColor (ProjL _)         = Gold
-opDotColor (RankL _)         = Gold
-opDotColor (RowNumL _)       = Gold
-opDotColor (RowRankL _)      = Gold
-opDotColor (PosSelL _)       = Gold
-opDotColor (SelL _)          = Gold
+
+opDotColor (RankL _)         = Tomato
+opDotColor (RowNumL _)       = Red
+opDotColor (RowRankL _)      = Red
+
 -- | Binops
-opDotColor (CrossL     _)    = Crimson
-opDotColor (DifferenceL _)   = Crimson
-opDotColor (DisjUnionL _)    = Crimson
-opDotColor (EqJoinL    _)    = Crimson
-opDotColor (ThetaJoinL _)    = Crimson
+opDotColor (CrossL     _)    = OrangeRed
+
+opDotColor (DifferenceL _)   = DarkOrange
+opDotColor (DisjUnionL _)    = Orange
+
+opDotColor (EqJoinL    _)    = Green
+
+opDotColor (ThetaJoinL _)    = DodgerBlue
 
 renderDotNode :: DotNode -> Doc
 renderDotNode (DotNode n l c s) =
@@ -190,13 +207,20 @@ data DotColor = Tomato
               | Gold
               | Tan
               | Red
+              | OrangeRed
               | Crimson
               | Green
               | Sienna
               | Beige
               | DodgerBlue
               | LightSkyBlue
-
+              | Gray91
+              | Gray52
+              | DarkOrange
+              | Orange
+              | Cyan
+              | Cyan4
+              | White
 
 -- Type of Dot style options
 data DotStyle = Solid
