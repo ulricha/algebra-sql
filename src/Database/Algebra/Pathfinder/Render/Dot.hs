@@ -47,8 +47,8 @@ renderAggr (aggr, res) = text $ show aggr ++ ":" ++ res
 renderSortInf :: (SortAttrName, SortDir) -> Doc
 renderSortInf (attr, dir) = text $ attr ++ "/" ++ show dir
 
-renderTheta :: (LeftAttrName, RightAttrName, JoinRel) -> Doc
-renderTheta (left, right, joinR) = 
+renderJoinArgs :: (LeftAttrName, RightAttrName, JoinRel) -> Doc
+renderJoinArgs (left, right, joinR) = 
     text $ show joinR ++ ":" ++ left ++ "," ++ right
 
 opDotLabel :: NodeMap [Tag] -> AlgNode -> PFLabel -> Doc
@@ -69,7 +69,11 @@ opDotLabel tags i (DifferenceL _)             = labelToDoc i
 opDotLabel tags i (DisjUnionL _)              = labelToDoc i
     "DisjUnion" empty (lookupTags i tags)
 opDotLabel tags i (ThetaJoinL info)           = labelToDoc i
-    "ThetaJoin" (bracketList renderTheta info) (lookupTags i tags)
+    "ThetaJoin" (bracketList renderJoinArgs info) (lookupTags i tags)
+opDotLabel tags i (SemiJoinL info)           = labelToDoc i
+    "SemiJoin" (bracketList renderJoinArgs info) (lookupTags i tags)
+opDotLabel tags i (AntiJoinL info)           = labelToDoc i
+    "AntiJoin" (bracketList renderJoinArgs info) (lookupTags i tags)
 -- | Unary operations
 opDotLabel tags i (RowNumL (res,sortI,attr))  = labelToDoc i 
     "RowNum" ((text $ res ++ "<")
@@ -149,7 +153,7 @@ opDotColor (AttachL _)       = Gold
 opDotColor (CastL _)         = Gold
 opDotColor (DistinctL _)     = Gold
 opDotColor (DummyL _)        = Gold
-opDotColor (FunBoolNotL _)    = Gold
+opDotColor (FunBoolNotL _)   = Gold
 opDotColor (FunBinOpL _)     = Gold
 opDotColor (ProjL _)         = Gold
 opDotColor (RankL _)         = Gold
@@ -163,6 +167,8 @@ opDotColor (DifferenceL _)   = Crimson
 opDotColor (DisjUnionL _)    = Crimson
 opDotColor (EqJoinL    _)    = Crimson
 opDotColor (ThetaJoinL _)    = Crimson
+opDotColor (SemiJoinL _)     = Crimson
+opDotColor (AntiJoinL _)     = Crimson
 
 renderDotNode :: DotNode -> Doc
 renderDotNode (DotNode n l c s) =
@@ -219,28 +225,30 @@ renderDot ns es = text "digraph" <> (braces $ preamble $$ nodeSection $$ edgeSec
     where nodeSection = vcat $ map renderDotNode ns
           edgeSection = vcat $ map renderDotEdge es
 
--- |Labels (to collect all operations (nullary, unary,binary))
+-- | Labels (to collect all operations (nullary, unary,binary))
 data PFLabel = EmptyTableL SchemaInfos
              | LitTableL SemInfLitTable SchemaInfos
-			       | TableRefL SemInfTableRef    -- nullops
-			       | AggrL SemInfAggr
-			       | AttachL SemInfAttach
-			       | CastL SemInfCast
-			       | DistinctL ()
-			       | DummyL String
-			       | FunBinOpL SemBinOp
-			       | FunBoolNotL SemUnOp
-			       | ProjL SemInfProj
-			       | RankL SemInfRank
-			       | RowNumL SemInfRowNum
-			       | RowRankL SemInfRank
+             | TableRefL SemInfTableRef    -- nullops
+             | AggrL SemInfAggr
+             | AttachL SemInfAttach
+             | CastL SemInfCast
+             | DistinctL ()
+             | DummyL String
+             | FunBinOpL SemBinOp
+             | FunBoolNotL SemUnOp
+             | ProjL SemInfProj
+             | RankL SemInfRank
+             | RowNumL SemInfRowNum
+             | RowRankL SemInfRank
              | SelL SemInfSel
-			       | PosSelL SemInfPosSel        -- unops
-			       | CrossL ()
-			       | DifferenceL ()
-			       | DisjUnionL ()
-			       | EqJoinL SemInfEqJoin
-			       | ThetaJoinL SemInfThetaJoin  -- binops
+             | PosSelL SemInfPosSel        -- unops
+             | CrossL ()
+             | DifferenceL ()
+             | DisjUnionL ()
+             | EqJoinL SemInfEqJoin
+             | ThetaJoinL SemInfJoin  -- binops
+             | SemiJoinL SemInfJoin
+             | AntiJoinL SemInfJoin
 
 labelOfOp :: PFAlgebra -> PFLabel
 labelOfOp (TerOp _ _ _ _)   = error "no tertiary operations"
@@ -252,8 +260,10 @@ labelOfBinOp :: BinOp -> PFLabel
 labelOfBinOp (Cross info)     	= CrossL info
 labelOfBinOp (Difference info)  = DifferenceL info
 labelOfBinOp (DisjUnion info) 	= DisjUnionL info
-labelOfBinOp (EqJoin info)	    = EqJoinL info
+labelOfBinOp (EqJoin info)	= EqJoinL info
 labelOfBinOp (ThetaJoin info)   = ThetaJoinL info
+labelOfBinOp (SemiJoin info)    = SemiJoinL info
+labelOfBinOp (AntiJoin info)    = AntiJoinL info
 
 labelOfUnOp :: UnOp -> PFLabel
 labelOfUnOp (Aggr info) 		   	= AggrL info

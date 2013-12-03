@@ -93,8 +93,14 @@ eqTJoin eqs projI q1 q2 = let (a, b) = head eqs
               filterEqs :: (String, String) -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
               filterEqs (l, r) res = proj projI =<< select resCol =<< oper (RelFun Eq) resCol l r =<< res
 
-thetaJoin :: [(LeftAttrName, RightAttrName, JoinRel)] -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
+thetaJoin :: SemInfJoin -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
 thetaJoin cond c1 c2 = insertNode $ BinOp (ThetaJoin cond) c1 c2
+
+semiJoin :: SemInfJoin -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
+semiJoin cond c1 c2 = insertNode $ BinOp (SemiJoin cond) c1 c2
+
+antiJoin :: SemInfJoin -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
+antiJoin cond c1 c2 = insertNode $ BinOp (AntiJoin cond) c1 c2
 
 -- | Assign a number to each row in column 'ResAttrName' incrementing
 -- sorted by `SortInf'. The numbering is not dense!
