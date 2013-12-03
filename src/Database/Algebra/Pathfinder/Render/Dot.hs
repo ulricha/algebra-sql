@@ -19,7 +19,7 @@ tagsToDoc :: [Tag] -> Doc
 tagsToDoc ts = vcat $ map text ts
 
 labelToDoc :: AlgNode -> String -> Doc -> [Tag] -> Doc
-labelToDoc n s as ts = (nodeToDoc n) $$ ((text s) <> (parens as)) $$ (tagsToDoc $ nub ts)
+labelToDoc n s as ts = (nodeToDoc n) <+> ((text s) <> (parens as)) <+> (tagsToDoc $ nub ts)
 
 
 lookupTags :: AlgNode -> NodeMap [Tag] -> [Tag]
@@ -73,18 +73,18 @@ opDotLabel tags i (ThetaJoinL info)           = labelToDoc i
 -- | Unary operations
 opDotLabel tags i (RowNumL (res,sortI,attr))  = labelToDoc i 
     "RowNum" ((text $ res ++ "<")
-              $$ bracketList renderSortInf sortI 
-              $$ (text $ show attr ++ ">"))
+              <+> bracketList renderSortInf sortI 
+              <+> (text $ show attr ++ ">"))
     (lookupTags i tags)
 opDotLabel tags i (RowRankL (res,sortInf))    = labelToDoc i
     "RowRank" ((text $ res ++ "<") 
-               $$ bracketList renderSortInf sortInf
-               $$ text "<")                
+               <+> bracketList renderSortInf sortInf
+               <+> text "<")                
     (lookupTags i tags)
 opDotLabel tags i (RankL (res,sortInf))       = labelToDoc i
     "Rank" ((text $ res ++ "<") 
-            $$ bracketList renderSortInf sortInf
-            $$ text ">")                
+            <+> bracketList renderSortInf sortInf
+            <+> text ">")                
     (lookupTags i tags)
 opDotLabel tags i (ProjL info)                = labelToDoc i 
     "Project" (bracketList renderProj info) (lookupTags i tags)
@@ -104,7 +104,7 @@ opDotLabel tags i (CastL (res,attr,aty))      = labelToDoc i
 opDotLabel tags i (FunBoolNotL (res,attr))    = labelToDoc i
     "FunBoolNot" (text $ res ++ "," ++ attr) (lookupTags i tags)
 opDotLabel tags i (AggrL (aggrList, attr))    = labelToDoc i
-    "Aggr" ((bracketList renderAggr aggrList) $$ (text $ show attr))
+    "Aggr" ((bracketList renderAggr aggrList) <+> (text $ show attr))
     (lookupTags i tags)
 opDotLabel _ _ (DummyL _)                     = text "dummy"
 
