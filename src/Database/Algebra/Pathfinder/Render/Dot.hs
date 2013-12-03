@@ -46,7 +46,8 @@ renderAggr :: (AggrType, ResAttrName) -> Doc
 renderAggr (aggr, res) = text $ show aggr ++ ":" ++ res
 
 renderSortInf :: (SortAttrName, SortDir) -> Doc
-renderSortInf (attr, dir) = text $ attr ++ "/" ++ show dir
+renderSortInf (attr, Desc) = text $ attr ++ "/desc"
+renderSortInf (attr, Asc)  = text attr
 
 renderJoinArgs :: (LeftAttrName, RightAttrName, JoinRel) -> Doc
 renderJoinArgs (left, right, joinR) = 
