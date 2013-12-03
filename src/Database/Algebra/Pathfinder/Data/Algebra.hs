@@ -195,7 +195,7 @@ type SemInfEqJoin  = (LeftAttrName,RightAttrName)
 -- the column from the first table that has to relate to the column in the
 -- second table represnted by the second element in tuple. The third element
 -- represents the type of relation.
-type SemInfThetaJoin = [(LeftAttrName, RightAttrName, JoinRel)]
+type SemInfJoin = [(LeftAttrName, RightAttrName, JoinRel)]
 
 -- | Comparison operators which can be used for ThetaJoins.
 data JoinRel = EqJ -- equal
@@ -301,7 +301,9 @@ data UnOp = RowNum SemInfRowNum
 
 data BinOp = Cross ()
            | EqJoin SemInfEqJoin
-           | ThetaJoin SemInfThetaJoin
+           | ThetaJoin SemInfJoin
+           | SemiJoin SemInfJoin
+           | AntiJoin SemInfJoin
            | DisjUnion ()
            | Difference ()
            deriving (Ord, Eq, Show, Generic)

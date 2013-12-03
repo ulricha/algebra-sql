@@ -1,6 +1,27 @@
 -- | This module exports monadic combinators for creating graphs
-module Database.Algebra.Pathfinder.Monadic.Create (attachM, castM, eqJoinM, eqTJoinM, rankM, differenceM, rowrankM, posSelectM, selectM,
-                                              distinctM, crossM, notM, unionM, projM, aggrM, rownumM, rownum'M, operM, thetaJoinM) where
+module Database.Algebra.Pathfinder.Monadic.Create 
+  ( attachM
+  , castM
+  , eqJoinM
+  , eqTJoinM
+  , rankM
+  , differenceM
+  , rowrankM
+  , posSelectM
+  , selectM
+  , distinctM
+  , crossM
+  , notM
+  , unionM
+  , projM
+  , aggrM
+  , rownumM
+  , rownum'M
+  , operM
+  , thetaJoinM
+  , semiJoinM
+  , antiJoinM
+  ) where
 
 import           Database.Algebra.Dag.Builder
 import           Database.Algebra.Dag.Common
@@ -27,8 +48,16 @@ castM :: AttrName -> ResAttrName -> ATy -> GraphM a PFAlgebra AlgNode -> GraphM 
 castM n r t = bind1 (C.cast n r t)
 
 -- | Perform theta join on two plans
-thetaJoinM :: [(LeftAttrName, RightAttrName, JoinRel)] -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+thetaJoinM :: SemInfJoin -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 thetaJoinM cond = bind2 (C.thetaJoin cond)
+
+-- | Perform a semi join on two plans
+semiJoinM :: SemInfJoin -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+semiJoinM cond = bind2 (C.semiJoin cond)
+
+-- | Perform an anti join on two plans
+antiJoinM :: SemInfJoin -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+antiJoinM cond = bind2 (C.antiJoin cond)
 
 -- | Join two plans where the columns n1 of table 1 and columns n2 of table
 --  2 are equal.
