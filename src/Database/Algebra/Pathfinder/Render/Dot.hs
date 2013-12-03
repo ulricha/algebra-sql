@@ -19,7 +19,7 @@ tagsToDoc :: [Tag] -> Doc
 tagsToDoc ts = vcat $ map text ts
 
 labelToDoc :: AlgNode -> String -> Doc -> [Tag] -> Doc
-labelToDoc n s as ts = (nodeToDoc n) $+$ ((text s) <> (parens as)) <+> (tagsToDoc $ nub ts)
+labelToDoc n s as ts = (nodeToDoc n) <> text "\\n" <> ((text s) <> (parens as)) <+> (tagsToDoc $ nub ts)
 
 lookupTags :: AlgNode -> NodeMap [Tag] -> [Tag]
 lookupTags n m = Map.findWithDefault [] n m
@@ -54,6 +54,10 @@ renderSortInf (attr, Asc)  = text attr
 renderJoinArgs :: (LeftAttrName, RightAttrName, JoinRel) -> Doc
 renderJoinArgs (left, right, joinR) = 
     text $ show joinR ++ ":" ++ left ++ "," ++ right
+    
+renderGroupingArg :: Maybe AttrName -> Doc
+renderGroupingArg Nothing  = empty
+renderGroupingArg (Just c) = text "/" <> text c
 
 opDotLabel :: NodeMap [Tag] -> AlgNode -> PFLabel -> Doc
 -- | Nullary operations
@@ -81,18 +85,19 @@ opDotLabel tags i (AntiJoinL info)           = labelToDoc i
 -- | Unary operations
 opDotLabel tags i (RowNumL (res,sortI,attr))  = labelToDoc i 
     "ROWNUM" ((text $ res ++ "<")
-              <+> (commas renderSortInf sortI)
-              <+> (text $ show attr ++ ">"))
+              <> (commas renderSortInf sortI)
+              <> text ">"
+              <> renderGroupingArg attr)
     (lookupTags i tags)
 opDotLabel tags i (RowRankL (res,sortInf))    = labelToDoc i
     "ROWRANK" ((text $ res ++ "<") 
-               <+> (commas renderSortInf sortInf)
-               <+> text "<")                
+               <> (commas renderSortInf sortInf)
+               <> text ">")                
     (lookupTags i tags)
 opDotLabel tags i (RankL (res,sortInf))       = labelToDoc i
     "RANK" ((text $ res ++ "<") 
-            <+> commas renderSortInf sortInf
-            <+> text ">")                
+            <> commas renderSortInf sortInf
+            <> text ">")                
     (lookupTags i tags)
 opDotLabel tags i (ProjL info)                = labelToDoc i 
     "PROJ" (bracketList renderProj info) (lookupTags i tags)
