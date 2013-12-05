@@ -50,7 +50,7 @@ renderSortInf (attr, Asc)  = text attr
 
 renderTheta :: (LeftAttrName, RightAttrName, JoinRel) -> Doc
 renderTheta (left, right, joinR) = 
-    text left <+> (text $ show joinR) <+> right
+    text left <+> (text $ show joinR) <+> text right
     
 renderOptCol :: Maybe AttrName -> Doc
 renderOptCol Nothing  = empty
@@ -62,7 +62,7 @@ opDotLabel tags i (LitTableL _ _)             = labelToDoc i
     "LITTABLE" empty (lookupTags i tags)
 opDotLabel tags i (EmptyTableL _)             = labelToDoc i 
     "EMPTYTABLE" empty (lookupTags i tags)
-opDotLabel tags i (TableRefL (name, attrs, keys) = labelToDoc i
+opDotLabel tags i (TableRefL (name, attrs, keys)) = labelToDoc i
     "TABLE" (text name) (lookupTags i tags)
 -- |  Binary operations
 opDotLabel tags i (CrossL _)                  = labelToDoc i
