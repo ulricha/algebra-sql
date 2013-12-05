@@ -42,7 +42,7 @@ renderFunBinOp (fun, resAttr, leftAttr, rightAttr) =
                    ++ ":" ++ leftAttr ++ "," ++ rightAttr
 
 renderAggr :: (AggrType, ResAttrName) -> Doc
-renderAggr (aggr, res) = text $ show aggr ++ ":" ++ res
+renderAggr (aggr, res) = text $ res ++ ":" ++ show aggr
 
 renderSortInf :: (SortAttrName, SortDir) -> Doc
 renderSortInf (attr, Desc) = text $ attr ++ "/desc"
@@ -50,7 +50,7 @@ renderSortInf (attr, Asc)  = text attr
 
 renderJoinArgs :: (LeftAttrName, RightAttrName, JoinRel) -> Doc
 renderJoinArgs (left, right, joinR) = 
-    text $ show joinR ++ ":" ++ left ++ "," ++ right
+    text left <+> (text $ show joinR) <+> text right
     
 renderOptCol :: Maybe AttrName -> Doc
 renderOptCol Nothing  = empty
@@ -62,8 +62,8 @@ opDotLabel tags i (LitTableL _ _)             = labelToDoc i
     "LITTABLE" empty (lookupTags i tags)
 opDotLabel tags i (EmptyTableL _)             = labelToDoc i 
     "EMPTYTABLE" empty (lookupTags i tags)
-opDotLabel tags i (TableRefL _)               = labelToDoc i
-    "TABLE" empty (lookupTags i tags)
+opDotLabel tags i (TableRefL (name, attrs, keys)) = labelToDoc i
+    "TABLE" (text name) (lookupTags i tags)
 -- |  Binary operations
 opDotLabel tags i (CrossL _)                  = labelToDoc i
     "CROSS" empty (lookupTags i tags)
@@ -81,18 +81,18 @@ opDotLabel tags i (AntiJoinL info)           = labelToDoc i
     "ANTIJOIN" (commas renderJoinArgs info) (lookupTags i tags)
 -- | Unary operations
 opDotLabel tags i (RowNumL (res,sortI,attr))  = labelToDoc i 
-    "ROWNUM" ((text $ res ++ "<")
+    "ROWNUM" ((text $ res ++ ":<")
               <> (commas renderSortInf sortI)
               <> text ">"
               <> renderOptCol attr)
     (lookupTags i tags)
 opDotLabel tags i (RowRankL (res,sortInf))    = labelToDoc i
-    "ROWRANK" ((text $ res ++ "<") 
+    "ROWRANK" ((text $ res ++ ":<") 
                <> (commas renderSortInf sortInf)
                <> text ">")                
     (lookupTags i tags)
 opDotLabel tags i (RankL (res,sortInf))       = labelToDoc i
-    "RANK" ((text $ res ++ "<") 
+    "RANK" ((text $ res ++ ":<") 
             <> commas renderSortInf sortInf
             <> text ">")                
     (lookupTags i tags)
@@ -105,7 +105,7 @@ opDotLabel tags i (PosSelL info)              = labelToDoc i
 opDotLabel tags i (DistinctL _)               = labelToDoc i
     "DISTINCT" empty (lookupTags i tags)
 opDotLabel tags i (AttachL (res, (aty,aval))) = labelToDoc i
-    "ATTACH" (text $ res ++ "," ++ show aty ++ ":" ++ show aval)
+    "ATTACH" (text $ res ++ ", " ++ show aval ++ "::" ++ show aty)
     (lookupTags i tags)
 opDotLabel tags i (FunBinOpL info)            = labelToDoc i
     "BINOP" (renderFunBinOp info) (lookupTags i tags) 
