@@ -25,11 +25,11 @@ renderFun :: Doc -> [Doc] -> Doc
 renderFun name args = name <> parens (hsep $ punctuate comma args)
 
 renderAggrFun :: AggrFun -> Doc
-renderAggrFun (Sum c)   = renderFun (text "sum") [int c]
-renderAggrFun (Min c)   = renderFun (text "min") [int c]
-renderAggrFun (Max c)   = renderFun (text "max") [int c]
-renderAggrFun (Avg c)   = renderFun (text "avg") [int c]
-renderAggrFun Count = renderFun (text "count") []
+renderAggrFun (AggrSum c)   = renderFun (text "sum") [int c]
+renderAggrFun (AggrMin c)   = renderFun (text "min") [int c]
+renderAggrFun (AggrMax c)   = renderFun (text "max") [int c]
+renderAggrFun (AggrAvg c)   = renderFun (text "avg") [int c]
+renderAggrFun AggrCount = renderFun (text "count") []
 
 renderColumnType :: VLType -> Doc
 renderColumnType = text . show
@@ -96,31 +96,28 @@ renderExpr2 (Column2Right (R c)) = text "rcol" <> int c
 -- create the node label from an operator description
 opDotLabel :: NodeMap [Tag] -> AlgNode -> VL -> Doc
 opDotLabel tm i (NullaryOp (SingletonDescr)) = labelToDoc i "SingletonDescr" empty (lookupTags i tm)
-opDotLabel tm i (NullaryOp (ConstructLiteralValue tys vals)) = labelToDoc i "ConstructLiteralValue"
-    (bracketList (\t -> renderColumnType t <> text "\n") tys <> comma
-    $$ renderData [vals]) (lookupTags i tm)
-opDotLabel tm i (NullaryOp (ConstructLiteralTable tys vals)) = labelToDoc i "ConstructLiteralTable"
+opDotLabel tm i (NullaryOp (Lit tys vals)) = labelToDoc i "LIT"
         (bracketList renderColumnType tys <> comma
         $$ renderData vals) (lookupTags i tm)
 opDotLabel tm i (NullaryOp (TableRef n tys ks)) = labelToDoc i "TableRef"
         (quotes (text n) <> comma <+> bracketList (\t -> renderTableType t <> text "\n") tys <> comma $$ renderTableKeys ks)
         (lookupTags i tm)
 opDotLabel tm i (UnOp Unique _) = labelToDoc i "Unique" empty (lookupTags i tm)
-opDotLabel tm i (UnOp UniqueL _) = labelToDoc i "UniqueL" empty (lookupTags i tm)
+opDotLabel tm i (UnOp UniqueS _) = labelToDoc i "UniqueS" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Number _) = labelToDoc i "Number" empty (lookupTags i tm)
-opDotLabel tm i (UnOp NumberL _) = labelToDoc i "NumberL" empty (lookupTags i tm)
-opDotLabel tm i (UnOp LengthA _) = labelToDoc i "LengthA" empty (lookupTags i tm)
+opDotLabel tm i (UnOp NumberS _) = labelToDoc i "NumberS" empty (lookupTags i tm)
+opDotLabel tm i (UnOp Length _) = labelToDoc i "Length" empty (lookupTags i tm)
 opDotLabel tm i (UnOp DescToRename _) = labelToDoc i "DescToRename" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Segment _) = labelToDoc i "Segment" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Unsegment _) = labelToDoc i "Unsegment" empty (lookupTags i tm)
-opDotLabel tm i (UnOp (VecSum t) _) = labelToDoc i "VecSum" (renderColumnType t) (lookupTags i tm)
-opDotLabel tm i (UnOp VecAvg _) = labelToDoc i "VecAvg" empty (lookupTags i tm)
-opDotLabel tm i (UnOp VecMin _) = labelToDoc i "VecMin" empty (lookupTags i tm)
-opDotLabel tm i (UnOp VecMinL _) = labelToDoc i "VecMinL" empty (lookupTags i tm)
-opDotLabel tm i (UnOp VecMax _) = labelToDoc i "VecMax" empty (lookupTags i tm)
-opDotLabel tm i (UnOp VecMaxL _) = labelToDoc i "VecMaxL" empty (lookupTags i tm)
-opDotLabel tm i (UnOp ReverseA _) = labelToDoc i "ReverseA" empty (lookupTags i tm)
-opDotLabel tm i (UnOp ReverseL _) = labelToDoc i "ReverseL" empty (lookupTags i tm)
+opDotLabel tm i (UnOp (Sum t) _) = labelToDoc i "Sum" (renderColumnType t) (lookupTags i tm)
+opDotLabel tm i (UnOp Avg _) = labelToDoc i "Avg" empty (lookupTags i tm)
+opDotLabel tm i (UnOp Min _) = labelToDoc i "Min" empty (lookupTags i tm)
+opDotLabel tm i (UnOp MinS _) = labelToDoc i "MinS" empty (lookupTags i tm)
+opDotLabel tm i (UnOp Max _) = labelToDoc i "Max" empty (lookupTags i tm)
+opDotLabel tm i (UnOp MaxS _) = labelToDoc i "MaxS" empty (lookupTags i tm)
+opDotLabel tm i (UnOp Reverse _) = labelToDoc i "Reverse" empty (lookupTags i tm)
+opDotLabel tm i (UnOp ReverseS _) = labelToDoc i "ReverseS" empty (lookupTags i tm)
 opDotLabel tm i (UnOp FalsePositions _) = labelToDoc i "FalsePositions" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R1 _) = labelToDoc i "R1" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R2 _) = labelToDoc i "R2" empty (lookupTags i tm)
@@ -128,80 +125,73 @@ opDotLabel tm i (UnOp R3 _) = labelToDoc i "R3" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (ProjectRename (p1, p2)) _) =
   labelToDoc i "ProjectRename" pLabel (lookupTags i tm)
   where pLabel = parens $ (renderISTransProj (text "posnew", p1)) <> comma <+> (renderISTransProj (text "posold", p2))
-opDotLabel tm i (UnOp (VLProject pCols) _) =
+opDotLabel tm i (UnOp (Project pCols) _) =
   labelToDoc i "Project" pLabel (lookupTags i tm)
   where pLabel = valCols
         valCols = bracketList (\(j, p) -> renderProj (itemLabel j) p) $ zip ([1..] :: [Int]) pCols
         itemLabel j = (text "i") <> (int j)
-opDotLabel tm i (UnOp (VLProjectA pCols) _) =
-  labelToDoc i "ProjectA" pLabel (lookupTags i tm)
-  where pLabel = valCols
-        valCols = bracketList (\(j, p) -> renderProj (itemLabel j) p) $ zip ([1..] :: [Int]) pCols
-        itemLabel j = (text "item") <> (int j)
-opDotLabel tm i (UnOp (SelectExpr e) _) = labelToDoc i "SelectExpr" (renderExpr1 e) (lookupTags i tm)
+opDotLabel tm i (UnOp (Select e) _) = labelToDoc i "Select" (renderExpr1 e) (lookupTags i tm)
 opDotLabel tm i (UnOp Only _) = labelToDoc i "Only" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Singleton _) = labelToDoc i "Singleton" empty (lookupTags i tm)
 opDotLabel tm i (UnOp (SelectPos1 o (N p)) _)  = labelToDoc i "SelectPos1" ((text $ show o) <+> int p) (lookupTags i tm)
-opDotLabel tm i (UnOp (SelectPos1L o (N p)) _) = labelToDoc i "SelectPos1L" ((text $ show o) <+> int p) (lookupTags i tm)
-opDotLabel tm i (UnOp (VecAggr g as) _) = labelToDoc i "Aggr" (bracketList int g <+> bracketList renderAggrFun as) (lookupTags i tm)
+opDotLabel tm i (UnOp (SelectPos1S o (N p)) _) = labelToDoc i "SelectPos1S" ((text $ show o) <+> int p) (lookupTags i tm)
+opDotLabel tm i (UnOp (Aggr g as) _) = labelToDoc i "Aggr" (bracketList int g <+> bracketList renderAggrFun as) (lookupTags i tm)
 opDotLabel tm i (BinOp GroupBy _ _) = labelToDoc i "GroupBy" empty (lookupTags i tm)
-opDotLabel tm i (BinOp SortWith _ _) = labelToDoc i "SortWith" empty (lookupTags i tm)
-opDotLabel tm i (BinOp LengthSeg _ _) = labelToDoc i "LengthSeg" empty (lookupTags i tm)
+opDotLabel tm i (BinOp Sort _ _) = labelToDoc i "Sort" empty (lookupTags i tm)
+opDotLabel tm i (BinOp LengthS _ _) = labelToDoc i "LengthS" empty (lookupTags i tm)
 opDotLabel tm i (BinOp DistPrim _ _) = labelToDoc i "DistPrim" empty (lookupTags i tm)
 opDotLabel tm i (BinOp DistDesc _ _) = labelToDoc i "DistDesc" empty (lookupTags i tm)
-opDotLabel tm i (BinOp DistLift _ _) = labelToDoc i "DistLift" empty (lookupTags i tm)
+opDotLabel tm i (BinOp DistSeg _ _) = labelToDoc i "DistSeg" empty (lookupTags i tm)
 opDotLabel tm i (BinOp PropRename _ _) = labelToDoc i "PropRename" empty (lookupTags i tm)
 opDotLabel tm i (BinOp PropFilter _ _) = labelToDoc i "PropFilter" empty (lookupTags i tm)
 opDotLabel tm i (BinOp PropReorder _ _) = labelToDoc i "PropReorder" empty (lookupTags i tm)
 opDotLabel tm i (BinOp Append _ _) = labelToDoc i "Append" empty (lookupTags i tm)
-opDotLabel tm i (BinOp RestrictVec _ _) = labelToDoc i "RestrictVec" empty (lookupTags i tm)
-opDotLabel tm i (BinOp (CompExpr2 expr) _ _) = labelToDoc i "CompExpr2" (renderExpr2 expr) (lookupTags i tm)
-opDotLabel tm i (BinOp (CompExpr2L expr) _ _) = labelToDoc i "CompExpr2L" (renderExpr2 expr) (lookupTags i tm)
-opDotLabel tm i (BinOp VecSumL _ _) = labelToDoc i "VecSumL" empty (lookupTags i tm)
-opDotLabel tm i (BinOp VecAvgL _ _) = labelToDoc i "VecAvgL" empty (lookupTags i tm)
+opDotLabel tm i (BinOp Restrict _ _) = labelToDoc i "Restrict" empty (lookupTags i tm)
+opDotLabel tm i (BinOp (BinExpr expr) _ _) = labelToDoc i "BinExpr" (renderExpr2 expr) (lookupTags i tm)
+opDotLabel tm i (BinOp SumS _ _) = labelToDoc i "SumS" empty (lookupTags i tm)
+opDotLabel tm i (BinOp AvgS _ _) = labelToDoc i "AvgS" empty (lookupTags i tm)
 opDotLabel tm i (BinOp (SelectPos o) _ _) = labelToDoc i "SelectPos" (text $ show o) (lookupTags i tm)
-opDotLabel tm i (BinOp (SelectPosL o) _ _) = labelToDoc i "SelectPosL" (text $ show o) (lookupTags i tm)
-opDotLabel tm i (BinOp PairA _ _) = labelToDoc i "PairA" empty (lookupTags i tm)
-opDotLabel tm i (BinOp PairL _ _) = labelToDoc i "PairL" empty (lookupTags i tm)
-opDotLabel tm i (BinOp ZipL _ _) = labelToDoc i "ZipL" empty (lookupTags i tm)
+opDotLabel tm i (BinOp (SelectPosS o) _ _) = labelToDoc i "SelectPosS" (text $ show o) (lookupTags i tm)
+opDotLabel tm i (BinOp Zip _ _) = labelToDoc i "Zip" empty (lookupTags i tm)
+opDotLabel tm i (BinOp ZipS _ _) = labelToDoc i "ZipS" empty (lookupTags i tm)
 opDotLabel tm i (BinOp CartProduct _ _) = labelToDoc i "CartProduct" empty (lookupTags i tm)
-opDotLabel tm i (BinOp CartProductL _ _) = labelToDoc i "CartProductL" empty (lookupTags i tm)
+opDotLabel tm i (BinOp CartProductS _ _) = labelToDoc i "CartProductS" empty (lookupTags i tm)
 opDotLabel tm i (BinOp (EquiJoin e1 e2) _ _) =
   labelToDoc i "EquiJoin" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
-opDotLabel tm i (BinOp (EquiJoinL e1 e2) _ _) =
-  labelToDoc i "EquiJoinL" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
+opDotLabel tm i (BinOp (EquiJoinS e1 e2) _ _) =
+  labelToDoc i "EquiJoinS" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (BinOp (SemiJoin e1 e2) _ _) =
   labelToDoc i "SemiJoin" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
-opDotLabel tm i (BinOp (SemiJoinL e1 e2) _ _) =
-  labelToDoc i "SemiJoinL" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
+opDotLabel tm i (BinOp (SemiJoinS e1 e2) _ _) =
+  labelToDoc i "SemiJoinS" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (BinOp (AntiJoin e1 e2) _ _) =
   labelToDoc i "AntiJoin" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
-opDotLabel tm i (BinOp (AntiJoinL e1 e2) _ _) =
-  labelToDoc i "AntiJoinL" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
-opDotLabel tm i (TerOp CombineVec _ _ _) = labelToDoc i "CombineVec" empty (lookupTags i tm)
+opDotLabel tm i (BinOp (AntiJoinS e1 e2) _ _) =
+  labelToDoc i "AntiJoinS" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
+opDotLabel tm i (TerOp Combine _ _ _) = labelToDoc i "Combine" empty (lookupTags i tm)
 
 opDotColor :: VL -> DotColor
 opDotColor (BinOp DistDesc _ _)        = Red
 opDotColor (BinOp CartProduct _ _)     = Red
-opDotColor (BinOp CartProductL _ _)    = Red
+opDotColor (BinOp CartProductS _ _)    = Red
 opDotColor (BinOp (EquiJoin _ _) _ _)  = Green
-opDotColor (BinOp (EquiJoinL _ _) _ _) = Green
+opDotColor (BinOp (EquiJoinS _ _) _ _) = Green
 opDotColor (BinOp (SemiJoin _ _) _ _)  = Green
-opDotColor (BinOp (SemiJoinL _ _) _ _) = Green
+opDotColor (BinOp (SemiJoinS _ _) _ _) = Green
 opDotColor (BinOp (AntiJoin _ _) _ _)  = Green
-opDotColor (BinOp (AntiJoinL _ _) _ _) = Green
-opDotColor (BinOp PairL _ _)           = YellowGreen
-opDotColor (BinOp SortWith _ _)        = Tomato
+opDotColor (BinOp (AntiJoinS _ _) _ _) = Green
+opDotColor (BinOp Zip _ _)             = YellowGreen
+opDotColor (BinOp Sort _ _)            = Tomato
 opDotColor (BinOp GroupBy _ _)         = Tomato
 opDotColor (BinOp PropRename _ _)      = Tan
-opDotColor (BinOp DistLift _ _)        = Tan
-opDotColor (BinOp RestrictVec _ _)     = DodgerBlue
-opDotColor (TerOp CombineVec _ _ _)    = DodgerBlue
-opDotColor (UnOp (SelectExpr _) _)     = LightSkyBlue
-opDotColor (UnOp (VecSum _) _)         = Crimson
-opDotColor (UnOp VecAvg _)             = Crimson
-opDotColor (BinOp VecSumL _ _)         = Crimson
-opDotColor (BinOp VecAvgL _ _)         = Crimson
+opDotColor (BinOp DistSeg _ _)         = Tan
+opDotColor (BinOp Restrict _ _)        = DodgerBlue
+opDotColor (TerOp Combine _ _ _)       = DodgerBlue
+opDotColor (UnOp (Select _) _)         = LightSkyBlue
+opDotColor (UnOp (Sum _) _)         = Crimson
+opDotColor (UnOp Avg _)             = Crimson
+opDotColor (BinOp SumS _ _)         = Crimson
+opDotColor (BinOp AvgS _ _)         = Crimson
 opDotColor _ = Gray
 
 -- Dot colors
