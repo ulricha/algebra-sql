@@ -44,8 +44,8 @@ attachM n t v = bind1 (C.attach n t v)
 
 -- | Cast column `AttrName' to type `ATy' and give it the name
 --  `ResAttrName' afterwards.
-castM :: AttrName -> ResAttrName -> ATy -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
-castM n r t = bind1 (C.cast n r t)
+castM :: ResAttrName -> AttrName -> ATy -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+castM r n t = bind1 (C.cast r n t)
 
 -- | Perform theta join on two plans
 thetaJoinM :: SemInfJoin -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode

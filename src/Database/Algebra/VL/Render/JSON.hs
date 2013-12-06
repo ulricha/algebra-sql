@@ -29,6 +29,7 @@ instance ToJSON VecNumOp where
 instance ToJSON VecBoolOp where
 instance ToJSON VecCompOp where
 instance ToJSON VecUnOp where
+instance ToJSON VecCastOp where
 instance ToJSON AggrFun where
 
 instance FromJSON TerOp where
@@ -48,6 +49,7 @@ instance FromJSON VecNumOp where
 instance FromJSON VecBoolOp where
 instance FromJSON VecCompOp where
 instance FromJSON VecUnOp where
+instance FromJSON VecCastOp where
 instance FromJSON AggrFun where
 
 instance ToJSON Plan where

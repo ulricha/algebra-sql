@@ -24,11 +24,11 @@ type TypedColumn = (DataColumn, VLType)
 type Key = [DataColumn]
 type DBCol = Int
 
-data AggrFun = Sum DBCol
-             | Min DBCol
-             | Max DBCol
-             | Avg DBCol
-             | Count
+data AggrFun = AggrSum DBCol
+             | AggrMin DBCol
+             | AggrMax DBCol
+             | AggrAvg DBCol
+             | AggrCount
                deriving (Eq, Ord, Show, Read, Generic)
 
 data VecCompOp = Eq
@@ -48,6 +48,9 @@ data VecNumOp = Add
 data VecBoolOp = Conj
                | Disj
                deriving (Eq, Ord, Generic)
+               
+data VecCastOp = CastDouble
+               deriving (Eq, Ord, Generic)
 
 data VecOp = COp VecCompOp
            | NOp VecNumOp
@@ -55,7 +58,9 @@ data VecOp = COp VecCompOp
            | Like
            deriving (Eq, Ord, Generic)
            
-data VecUnOp = Not deriving (Eq, Ord, Generic)
+data VecUnOp = Not 
+             | CastOp VecCastOp
+             deriving (Eq, Ord, Generic)
 
 data Expr1 = BinApp1 VecOp Expr1 Expr1
            | UnApp1 VecUnOp Expr1
@@ -93,6 +98,7 @@ instance Show VecCompOp where
     
 instance Show VecUnOp where
     show Not = "not"
+    show (CastOp CastDouble) = "double"
 
 data ISTransProj = STDescrCol
                  | STPosCol
@@ -135,76 +141,69 @@ data VLVal = VLInt Int
            deriving (Eq, Ord, Generic, Show)
 
 data NullOp = SingletonDescr
-            | ConstructLiteralValue [VLType] [VLVal]
-            | ConstructLiteralTable [VLType] [[VLVal]]
+            | Lit [VLType] [[VLVal]]
             | TableRef String [TypedColumn] [Key]
             deriving (Eq, Ord, Generic, Show)
 
 data UnOp = Unique
-          | UniqueL
+          | UniqueS
           | Number
-          | NumberL
-          | LengthA
+          | NumberS
+          | Length
           | DescToRename
           | Segment
           | Unsegment
-          | VecSum VLType
-          | VecAvg
-          | VecMin
-          | VecMinL
-          | VecMax
-          | VecMaxL
-          | IntegerToDoubleA
-          | IntegerToDoubleL
-          | ReverseA -- (DBV, PropVector)
-          | ReverseL -- (DBV, PropVector)
+          | Sum VLType
+          | Avg
+          | Min
+          | MinS
+          | Max
+          | MaxS
+          | Reverse -- (DBV, PropVector)
+          | ReverseS -- (DBV, PropVector)
           | FalsePositions
           | R1
           | R2
           | R3
           | ProjectRename (ISTransProj, ISTransProj) -- (source, target)?
-          | VLProject [Expr1]
-          | VLProjectA [Expr1]
-          | SelectExpr Expr1
+          | Project [Expr1]
+          | Select Expr1
           | Only
           | Singleton
           | SelectPos1 VecCompOp Nat
-          | SelectPos1L VecCompOp Nat
-          | VecAggr [DBCol] [AggrFun]
+          | SelectPos1S VecCompOp Nat
+          | Aggr [DBCol] [AggrFun]
     deriving (Eq, Ord, Generic, Show)
 
-
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
-           | SortWith   -- (DBV, PropVector)
-           | LengthSeg
+           | Sort        -- (DBV, PropVector)
+           | LengthS
            | DistPrim   -- (DBV, PropVector)
            | DistDesc   -- (DBV, PropVector)
-           | DistLift   -- (DBV, PropVector)
+           | DistSeg   -- (DBV, PropVector)
            | PropRename
            | PropFilter -- (DBV, PropVector)
            | PropReorder -- (DBV, PropVector)
            | Append     -- (DBV, RenameVector, RenameVector)
-           | RestrictVec -- VL (DBV, RenameVector)
-           | CompExpr2 Expr2
-           | CompExpr2L Expr2
-           | VecSumL
-           | VecAvgL
+           | Restrict -- VL (DBV, RenameVector)
+           | BinExpr Expr2
+           | SumS
+           | AvgS
            | SelectPos VecCompOp -- (DBV, RenameVector)
-           | SelectPosL VecCompOp -- (DBV, RenameVector)
-           | PairA
-           | PairL
-           | ZipL            -- (DBV, RenameVector, RenameVector)
+           | SelectPosS VecCompOp -- (DBV, RenameVector)
+           | Zip
+           | ZipS            -- (DBV, RenameVector, RenameVector)
            | CartProduct
-           | CartProductL
+           | CartProductS
            | EquiJoin Expr1 Expr1
-           | EquiJoinL Expr1 Expr1
+           | EquiJoinS Expr1 Expr1
            | SemiJoin Expr1 Expr1
-           | SemiJoinL Expr1 Expr1
+           | SemiJoinS Expr1 Expr1
            | AntiJoin Expr1 Expr1
-           | AntiJoinL Expr1 Expr1
+           | AntiJoinS Expr1 Expr1
     deriving (Eq, Ord, Generic, Show)
 
-data TerOp = CombineVec  -- (DBV, RenameVector, RenameVector)
+data TerOp = Combine  -- (DBV, RenameVector, RenameVector)
     deriving (Eq, Ord, Generic, Show)
 
 instance Operator VL where
