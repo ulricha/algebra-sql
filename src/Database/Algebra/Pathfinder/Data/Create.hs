@@ -77,8 +77,8 @@ attach n t v c = insertNode $ UnOp (Attach (n, (t, v))) c
 
 -- | Cast column `AttrName' to type `ATy' and give it the name
 --  `ResAttrName' afterwards.
-cast :: AttrName -> ResAttrName -> ATy -> AlgNode -> GraphM a PFAlgebra AlgNode
-cast n r t c = insertNode $ UnOp (Cast (r, n, t)) c
+cast :: ResAttrName -> AttrName -> ATy -> AlgNode -> GraphM a PFAlgebra AlgNode
+cast r n t c = insertNode $ UnOp (Cast (r, n, t)) c
 
 -- | Join two plans where the columns n1 of table 1 and columns n2 of table
 --  2 are equal.
