@@ -48,6 +48,9 @@ data VecNumOp = Add
 data VecBoolOp = Conj
                | Disj
                deriving (Eq, Ord, Generic)
+               
+data VecCastOp = CastDouble
+               deriving (Eq, Ord, Generic)
 
 data VecOp = COp VecCompOp
            | NOp VecNumOp
@@ -55,7 +58,9 @@ data VecOp = COp VecCompOp
            | Like
            deriving (Eq, Ord, Generic)
            
-data VecUnOp = Not deriving (Eq, Ord, Generic)
+data VecUnOp = Not 
+             | CastOp VecCastOp
+             deriving (Eq, Ord, Generic)
 
 data Expr1 = BinApp1 VecOp Expr1 Expr1
            | UnApp1 VecUnOp Expr1
@@ -93,6 +98,7 @@ instance Show VecCompOp where
     
 instance Show VecUnOp where
     show Not = "not"
+    show (CastOp CastDouble) = "double"
 
 data ISTransProj = STDescrCol
                  | STPosCol
@@ -154,8 +160,6 @@ data UnOp = Unique
           | VecMinL
           | VecMax
           | VecMaxL
-          | IntegerToDoubleA
-          | IntegerToDoubleL
           | ReverseA -- (DBV, PropVector)
           | ReverseL -- (DBV, PropVector)
           | FalsePositions
@@ -172,7 +176,6 @@ data UnOp = Unique
           | SelectPos1L VecCompOp Nat
           | VecAggr [DBCol] [AggrFun]
     deriving (Eq, Ord, Generic, Show)
-
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | SortWith   -- (DBV, PropVector)
