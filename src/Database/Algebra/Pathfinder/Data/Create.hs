@@ -35,14 +35,13 @@ nat :: Integer -> AVal
 nat = VNat
 
 -- | Types of PFAlgebraic values
-intT, stringT, boolT, decT, doubleT, natT, surT :: ATy
+intT, stringT, boolT, decT, doubleT, natT :: ATy
 intT = AInt
 stringT = AStr
 boolT = ABool
 decT = ADec
 doubleT = ADouble
 natT = ANat
-surT = ASur
 
 -- * Graph construction combinators for table PFAlgebra
 
@@ -70,28 +69,10 @@ litTable v s t = insertNode $ NullaryOp $ LitTable [[v]] [(s, t)]
 litTable' :: [[AVal]] -> [(String, ATy)] -> GraphM a PFAlgebra AlgNode
 litTable' v s = insertNode $ NullaryOp $ LitTable v s
 
--- | Attach a column 'ResAttrName' of type `ATy' with value
--- `AVal' in all rows to table `AlgNode'
-attach :: ResAttrName -> ATy -> AVal -> AlgNode -> GraphM a PFAlgebra AlgNode
-attach n t v c = insertNode $ UnOp (Attach (n, (t, v))) c
-
--- | Cast column `AttrName' to type `ATy' and give it the name
---  `ResAttrName' afterwards.
-cast :: ResAttrName -> AttrName -> ATy -> AlgNode -> GraphM a PFAlgebra AlgNode
-cast r n t c = insertNode $ UnOp (Cast (r, n, t)) c
-
 -- | Join two plans where the columns n1 of table 1 and columns n2 of table
 --  2 are equal.
 eqJoin :: LeftAttrName -> RightAttrName -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
 eqJoin n1 n2 c1 c2 = insertNode $ BinOp (EqJoin (n1, n2)) c1 c2
-
--- | The same as eqJoin but with multiple columns.
-eqTJoin :: [(String, String)] -> ProjInf -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
-eqTJoin eqs projI q1 q2 = let (a, b) = head eqs
-                          in foldr filterEqs (eqJoin a b q1 q2) $ tail eqs
-        where resCol = "item99999002"
-              filterEqs :: (String, String) -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
-              filterEqs (l, r) res = proj projI =<< select resCol =<< oper (RelFun Eq) resCol l r =<< res
 
 thetaJoin :: SemInfJoin -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
 thetaJoin cond c1 c2 = insertNode $ BinOp (ThetaJoin cond) c1 c2
@@ -131,17 +112,13 @@ distinct c1 = insertNode $ UnOp (Distinct ()) c1
 cross :: AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
 cross c1 c2 = insertNode $ BinOp (Cross ()) c1 c2
 
--- | Negate the boolen value in column n and store it in column r
-notC :: AttrName -> AttrName -> AlgNode -> GraphM a PFAlgebra AlgNode
-notC r n c1 = insertNode $ UnOp (FunBoolNot (r, n)) c1
-
 -- | Union between two plans
 union :: AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
 union c1 c2 = insertNode $ BinOp (DisjUnion ()) c1 c2
 
 -- | Project/rename certain column out of a plan
-proj :: ProjInf -> AlgNode -> GraphM a PFAlgebra AlgNode
-proj cols c = insertNode $ UnOp (Proj cols) c
+proj :: [(AttrName, ProjExpr)] -> AlgNode -> GraphM a PFAlgebra AlgNode
+proj ps c = insertNode $ UnOp (Project ps) c
 
 -- | Apply aggregate functions to a plan
 aggr :: [(AggrType, ResAttrName)] -> Maybe PartAttrName -> AlgNode -> GraphM a PFAlgebra AlgNode
@@ -155,12 +132,6 @@ rownum res sort part c1 = insertNode $ UnOp (RowNum (res, zip sort $ repeat Asc,
 -- | Same as rownum but columns can be assigned an ordering direction
 rownum' :: AttrName -> [(AttrName, SortDir)] -> Maybe AttrName -> AlgNode -> GraphM a PFAlgebra AlgNode
 rownum' res sort part c1 = insertNode $ UnOp (RowNum (res, sort, part)) c1
-
--- | Apply an operator to the element in `LeftAttrName' and `RightAttrName',
--- store the result in `ResAttrName'
-oper :: Fun -> ResAttrName -> LeftAttrName -> RightAttrName -> AlgNode -> GraphM a PFAlgebra AlgNode
-oper o r la ra c = insertNode $ UnOp (FunBinOp (o, r, la, ra)) c
-
 
 initLoop :: PFAlgebra
 initLoop = NullaryOp $ LitTable [[nat 1]] [("iter", natT)]

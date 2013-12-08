@@ -67,8 +67,7 @@ instance Show SortDir where
 
 -- | PFAlgebraic types
 --  At this level we do not have any structural types anymore
---  those are represented by columns. ASur is used for surrogate
---  values that occur for nested lists.
+--  those are represented by columns. 
 data ATy where
     AInt :: ATy
     AStr :: ATy
@@ -76,7 +75,6 @@ data ATy where
     ADec :: ATy
     ADouble :: ATy
     ANat :: ATy
-    ASur :: ATy
     deriving (Eq, Ord, Generic)
 
 -- | Show the PFAlgebraic types in a way that is compatible with
@@ -88,7 +86,6 @@ instance Show ATy where
   show ADec     = "dec"
   show ADouble  = "dbl"
   show ANat     = "nat"
-  show ASur     = "nat"
 
 -- | Wrapper around values that can occur in an PFAlgebraic plan
 data AVal where
@@ -109,9 +106,6 @@ instance Show AVal where
   show (VDouble x)     =  show x
   show (VDec x)     = showFFloat (Just 2) x ""
   show (VNat x)     = show x
-
--- | Pair of a type and a value
-type ATyVal = (ATy, AVal)
 
 -- | Attribute name or column name
 type AttrName            = String
@@ -155,11 +149,67 @@ type KeyInfos            = [KeyInfo]
 -- | Sort information, a list (ordered in sorting priority), of pair of columns and their sort direction--
 type SortInf              = [(SortAttrName, SortDir)]
 
--- | New and old attribute name
-type ProjPair             = (NewAttrName, OldAttrName)
+-- | Binary functions and operators in expressions
+data BinFun = Gt
+            | Lt
+            | GtE
+            | LtE
+            | Eq
+            | And
+            | Or
+            | Plus
+            | Minus
+            | Times
+            | Div
+            | Modulo
+            | Contains
+            | SimilarTo
+            | Like
+            | Concat
+            deriving (Eq, Ord, Generic)
 
--- | Projection information, a list of new attribute names, and their old names.
-type ProjInf              = [ProjPair]
+instance Show BinFun where
+  show Minus     = "subtract"
+  show Plus      = "add"
+  show Times     = "multiply"
+  show Div       = "divide"
+  show Modulo    = "modulo"
+  show Contains  = "fn:contains"
+  show Concat    = "fn:concat"
+  show SimilarTo = "fn:similar_to"
+  show Like      = "fn:like"
+  show Gt        = "gt"
+  show Lt        = "lt"
+  show GtE       = "gte"
+  show LtE       = "lte"
+  show Eq        = "eq"
+  show And       = "and"
+  show Or        = "or"
+  
+-- | Unary functions/operators in expressions
+data UnFun = Not
+           | Cast ATy
+           deriving (Eq, Ord, Generic)
+
+instance Show UnFun where
+  show Not       = "not"
+  show (Cast ty) = "cast->" ++ show ty
+
+-- | Projection expressions
+data ProjExpr = BinAppE BinFun ProjExpr ProjExpr
+              | UnAppE UnFun ProjExpr
+              | ColE AttrName
+              | ConstE AVal
+              deriving (Eq, Ord, Generic)
+              
+instance Show ProjExpr where
+  show (BinAppE f e1 e2) = "(" ++ show e1 ++ ")" ++ show f ++ "(" ++ show e2 ++ ")"
+  show (UnAppE f e)      = show f ++ "(" ++ show e ++ ")"
+  show (ColE c)          = show c
+  show (ConstE v)        = show v
+
+-- | New column name and the expression that generates the new column
+type Proj                = (NewAttrName, ProjExpr)
 
 -- | A tuple is a list of values
 type Tuple = [AVal]
@@ -174,10 +224,6 @@ type SemInfRowNum  = (ResAttrName, SortInf, Maybe PartAttrName)
 --  element is the column where the output of the operation is inserted the
 --  second element represents the sorting criteria that determine the ranking.
 type SemInfRank    = (ResAttrName,  SortInf)
-
--- | Information that specifies a projection
-type SemInfProj    = ProjInf
-
 
 -- | Information that specifies which column contains the conditional
 type SemInfSel     = SelAttrName
@@ -220,60 +266,7 @@ type SemInfLitTable = [Tuple]
 -- | Information for accessing a database table
 type SemInfTableRef = (TableName, TableAttrInf, KeyInfos)
 
--- | Information what column, the first element, to attach to a table and what its content would be, the second element.
-type SemInfAttach   = (ResAttrName, ATyVal)
-
 type SemInfCast     = (ResAttrName, AttrName, ATy)
-
--- | Information on how to perform a binary operation
--- The first element is the function that is to be performed
--- The second element the column name for its result
--- The third element is the left argument for the operator
--- The fourth element is the right argument for the operator
-type SemBinOp = (Fun, ResAttrName, LeftAttrName, RightAttrName) -- FIXME
-     
--- | Binary functions, arithmetic and logical operators.
-data Fun1to1 = Plus
-             | Minus
-             | Times
-             | Div
-             | Modulo
-             | Contains
-             | SimilarTo
-             | Like
-             | Concat
-             deriving (Eq, Ord, Generic)
-     
-instance Show Fun1to1 where
-  show Minus     = "subtract"
-  show Plus      = "add"
-  show Times     = "multiply"
-  show Div       = "divide"
-  show Modulo    = "modulo"
-  show Contains  = "fn:contains"
-  show Concat    = "fn:concat"
-  show SimilarTo = "fn:similar_to"
-  show Like      = "fn:like"
-         
-data RelFun = Gt
-            | Lt
-            | Eq
-            | And
-            | Or
-            deriving (Eq, Ord, Generic)
-            
-instance Show RelFun where
-  show Gt  = "gt"
-  show Lt  = "lt"
-  show Eq  = "eq"
-  show And = "and"
-  show Or  = "or"
-            
-data Fun = Fun1to1 Fun1to1 | RelFun RelFun deriving (Eq, Ord, Generic)
-
-instance Show Fun where
-  show (Fun1to1 f) = show f
-  show (RelFun r)  = show r
 
 type SemUnOp = (ResAttrName, AttrName)
 
@@ -287,16 +280,12 @@ data NullOp = LitTable SemInfLitTable SchemaInfos
 data UnOp = RowNum SemInfRowNum
           | RowRank SemInfRank
           | Rank SemInfRank
-          | Proj SemInfProj
+          | Project [(AttrName, ProjExpr)]
           | Sel SemInfSel
+          -- What exactly is the semantics here?
           | PosSel SemInfPosSel
           | Distinct ()
-          | Attach SemInfAttach
-          | FunBinOp SemBinOp
-          | Cast SemInfCast
-          | FunBoolNot SemUnOp
           | Aggr SemInfAggr
-          | Dummy String
           deriving (Ord, Eq, Show, Generic)
 
 data BinOp = Cross ()

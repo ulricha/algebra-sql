@@ -18,28 +18,28 @@ instance ToJSON ATy where
 instance ToJSON AVal where
 instance ToJSON SortDir where
 instance ToJSON JoinRel where
-instance ToJSON Fun where
 instance ToJSON SortInf where
-instance ToJSON Fun1to1 where
-instance ToJSON RelFun where
 instance ToJSON AggrType where
 instance ToJSON NullOp where
 instance ToJSON UnOp where
 instance ToJSON BinOp where
+instance ToJSON ProjExpr where
+instance ToJSON UnFun where
+instance ToJSON BinFun where
 
 instance FromJSON Column where
 instance FromJSON ATy where
 instance FromJSON AVal where
 instance FromJSON SortDir where
 instance FromJSON JoinRel where
-instance FromJSON Fun where
 instance FromJSON SortInf where
-instance FromJSON Fun1to1 where
-instance FromJSON RelFun where
 instance FromJSON AggrType where
 instance FromJSON NullOp where
 instance FromJSON UnOp where
 instance FromJSON BinOp where
+instance FromJSON ProjExpr where
+instance FromJSON UnFun where
+instance FromJSON BinFun where
 
 instance ToJSON Plan where
 instance FromJSON Plan where

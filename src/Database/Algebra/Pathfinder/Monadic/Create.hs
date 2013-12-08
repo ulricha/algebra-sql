@@ -1,9 +1,6 @@
 -- | This module exports monadic combinators for creating graphs
 module Database.Algebra.Pathfinder.Monadic.Create 
-  ( attachM
-  , castM
-  , eqJoinM
-  , eqTJoinM
+  ( eqJoinM
   , rankM
   , differenceM
   , rowrankM
@@ -11,13 +8,11 @@ module Database.Algebra.Pathfinder.Monadic.Create
   , selectM
   , distinctM
   , crossM
-  , notM
   , unionM
   , projM
   , aggrM
   , rownumM
   , rownum'M
-  , operM
   , thetaJoinM
   , semiJoinM
   , antiJoinM
@@ -37,16 +32,6 @@ bind2 f a b = do
                 b' <- b
                 f a' b'
 
--- | Attach a column 'ResAttrName' of type `ATy' with value
--- `AVal' in all rows to table `AlgNode'
-attachM :: ResAttrName -> ATy -> AVal -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
-attachM n t v = bind1 (C.attach n t v)
-
--- | Cast column `AttrName' to type `ATy' and give it the name
---  `ResAttrName' afterwards.
-castM :: ResAttrName -> AttrName -> ATy -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
-castM r n t = bind1 (C.cast r n t)
-
 -- | Perform theta join on two plans
 thetaJoinM :: SemInfJoin -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 thetaJoinM cond = bind2 (C.thetaJoin cond)
@@ -63,10 +48,6 @@ antiJoinM cond = bind2 (C.antiJoin cond)
 --  2 are equal.
 eqJoinM :: String -> String -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 eqJoinM n1 n2 = bind2 (C.eqJoin n1 n2)
-
--- | The same as eqJoin but with multiple columns.
-eqTJoinM :: [(String, String)] -> ProjInf -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
-eqTJoinM eqs projI = bind2 (C.eqTJoin eqs projI)
 
 -- | Assign a number to each row in column 'ResAttrName' incrementing
 -- sorted by `SortInf'. The numbering is not dense!
@@ -97,16 +78,12 @@ distinctM = bind1 C.distinct
 crossM :: GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 crossM = bind2 C.cross
 
--- | Negate the boolen value in column n and store it in column r
-notM :: AttrName -> AttrName -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
-notM r n = bind1 (C.notC r n)
-
 -- | Union between two plans
 unionM :: GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 unionM = bind2 C.union
 
 -- | Project/rename certain column out of a plan
-projM :: ProjInf -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+projM :: [(AttrName, ProjExpr)] -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 projM cols = bind1 (C.proj cols)
 
 -- | Apply aggregate functions to a plan
@@ -121,8 +98,3 @@ rownumM res sort part = bind1 (C.rownum res sort part)
 -- | Same as rownum but columns can be assigned an ordering direction
 rownum'M :: AttrName -> [(AttrName, SortDir)] -> Maybe AttrName -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 rownum'M res sort part = bind1 (C.rownum' res sort part)
-
--- | Apply an operator to the element in `LeftAttrName' and `RightAttrName',
--- store the result in `ResAttrName'
-operM :: Fun -> ResAttrName -> LeftAttrName -> RightAttrName -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
-operM o r la ra = bind1 (C.oper o r la ra)

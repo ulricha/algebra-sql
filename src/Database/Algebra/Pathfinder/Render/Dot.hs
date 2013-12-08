@@ -27,19 +27,14 @@ lookupTags n m = Map.findWithDefault [] n m
 commas :: (a -> Doc) -> [a] -> Doc
 commas f = hsep . punctuate comma . map f
 
-renderProj :: ProjPair -> Doc
-renderProj (new, old) | new == old = text new
-renderProj (new, old) | otherwise  = text $ concat [new, ":", old]
+renderProj :: (AttrName, ProjExpr) -> Doc
+renderProj (new, ColE c) | new == c = text new
+renderProj (new, e)                 = text $ concat [new, ":", show e]
 
 -- | Rendering of the operations for opDotLabel
 renderPosSel :: SemInfPosSel -> Doc
 renderPosSel (i, sortInf, Just attr) = text $ show i ++ show sortInf ++ attr
 renderPosSel (i, sortInf, Nothing) = text $ show i ++ show sortInf
-
-renderFunBinOp :: SemBinOp -> Doc
-renderFunBinOp (fun, resAttr, leftAttr, rightAttr) = 
-    text $ resAttr ++ "  " ++ show fun 
-                   ++ ":" ++ leftAttr ++ "," ++ rightAttr
 
 renderAggr :: (AggrType, ResAttrName) -> Doc
 renderAggr (aggr, res) = text $ res ++ ":" ++ show aggr
@@ -96,27 +91,17 @@ opDotLabel tags i (RankL (res,sortInf))       = labelToDoc i
             <> commas renderSortInf sortInf
             <> text ">")                
     (lookupTags i tags)
-opDotLabel tags i (ProjL info)                = labelToDoc i 
-    "PROJ" (commas renderProj info) (lookupTags i tags)
+opDotLabel tags i (ProjectL info)                = labelToDoc i 
+    "PROJECT" (commas renderProj info) (lookupTags i tags)
 opDotLabel tags i (SelL info)                 = labelToDoc i
     "SELECT" (text info) (lookupTags i tags)
 opDotLabel tags i (PosSelL info)              = labelToDoc i
     "POSSEL" (renderPosSel info) (lookupTags i tags)
 opDotLabel tags i (DistinctL _)               = labelToDoc i
     "DISTINCT" empty (lookupTags i tags)
-opDotLabel tags i (AttachL (res, (aty,aval))) = labelToDoc i
-    "ATTACH" (text $ res ++ ", " ++ show aval ++ "::" ++ show aty)
-    (lookupTags i tags)
-opDotLabel tags i (FunBinOpL info)            = labelToDoc i
-    "BINOP" (renderFunBinOp info) (lookupTags i tags) 
-opDotLabel tags i (CastL (res,attr,aty))      = labelToDoc i
-    "CAST" (text $ res ++ "," ++ show aty ++ ":" ++ attr) (lookupTags i tags)
-opDotLabel tags i (FunBoolNotL (res,attr))    = labelToDoc i
-    "NOT" (text $ res ++ "," ++ attr) (lookupTags i tags)
 opDotLabel tags i (AggrL (aggrList, attr))    = labelToDoc i
     "AGGR" ((commas renderAggr aggrList) <> (renderOptCol attr))
     (lookupTags i tags)
-opDotLabel _ _ (DummyL tag)                   = text $ "dummy " ++ tag
 
 constructDotNode :: NodeMap [Tag] -> (AlgNode, PFLabel) -> DotNode
 constructDotNode tags (n, op) =
@@ -162,12 +147,7 @@ opDotColor (LitTableL _ _)   = Gray52
 opDotColor (TableRefL _)     = Gray52
 
 -- | Unops
-opDotColor (DummyL _)        = White
-opDotColor (AttachL _)       = Gray91
-opDotColor (CastL _)         = Gray91
-opDotColor (FunBoolNotL _)   = Gray52
-opDotColor (FunBinOpL _)     = Gray52
-opDotColor (ProjL _)         = Gray91
+opDotColor (ProjectL _)         = Gray91
 
 opDotColor (PosSelL _)       = Cyan4
 opDotColor (SelL _)          = Cyan
@@ -258,13 +238,8 @@ data PFLabel = EmptyTableL SchemaInfos
              | LitTableL SemInfLitTable SchemaInfos
              | TableRefL SemInfTableRef    -- nullops
              | AggrL SemInfAggr
-             | AttachL SemInfAttach
-             | CastL SemInfCast
              | DistinctL ()
-             | DummyL String
-             | FunBinOpL SemBinOp
-             | FunBoolNotL SemUnOp
-             | ProjL SemInfProj
+             | ProjectL [(AttrName, ProjExpr)]
              | RankL SemInfRank
              | RowNumL SemInfRowNum
              | RowRankL SemInfRank
@@ -294,19 +269,14 @@ labelOfBinOp (SemiJoin info)    = SemiJoinL info
 labelOfBinOp (AntiJoin info)    = AntiJoinL info
 
 labelOfUnOp :: UnOp -> PFLabel
-labelOfUnOp (Aggr info) 		   	= AggrL info
-labelOfUnOp (Attach info)	   	  = AttachL info
-labelOfUnOp (Cast info) 		   	= CastL info
-labelOfUnOp (Distinct info) 		= DistinctL  info
-labelOfUnOp (Dummy info) 	   	  = DummyL info
-labelOfUnOp (FunBinOp info) 		= FunBinOpL info
-labelOfUnOp (FunBoolNot info) 	= FunBoolNotL info
-labelOfUnOp (PosSel info)       = PosSelL info
-labelOfUnOp (Proj info) 			  = ProjL info
-labelOfUnOp (Rank info) 		   	= RankL info
-labelOfUnOp (RowNum info) 	  	= RowNumL info
-labelOfUnOp (RowRank info) 	  	= RowRankL info
-labelOfUnOp (Sel info)          = SelL info
+labelOfUnOp (Aggr info)     = AggrL info
+labelOfUnOp (Distinct info) = DistinctL  info
+labelOfUnOp (PosSel info)   = PosSelL info
+labelOfUnOp (Project info)  = ProjectL info
+labelOfUnOp (Rank info)     = RankL info
+labelOfUnOp (RowNum info)   = RowNumL info
+labelOfUnOp (RowRank info)  = RowRankL info
+labelOfUnOp (Sel info)      = SelL info
 
 labelOfNullaryOp :: NullOp -> PFLabel
 labelOfNullaryOp (EmptyTable  info)	      = EmptyTableL info

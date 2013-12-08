@@ -8,14 +8,14 @@ This module only provides a subset of the complete algebra.
 -}
 
 module Database.Algebra.Pathfinder (
-    union, attach, proj, rownum, rownum', eqJoin, rank, eqTJoin, distinct, rowrank, cast, difference, aggr,
-    select, posSelect, dbTable, notC, cross, oper, emptyTable, litTable, litTable', thetaJoin,
+    union, proj, rownum, rownum', eqJoin, rank, distinct, rowrank, difference, aggr,
+    select, posSelect, dbTable, cross, emptyTable, litTable, litTable', thetaJoin,
     nat, int, bool, double, string,
-    natT, intT, surT, boolT, doubleT, stringT,
+    natT, intT, boolT, doubleT, stringT,
     SortDir(..), AggrType(..),
     Column(..), Columns, 
     ATy(..), AVal(..),
-    SchemaInfos, KeyInfos, ProjInf, AttrName,
+    SchemaInfos, KeyInfos, AttrName,
     PFAlgebra,
     initLoop,
     module Database.Algebra.Pathfinder.Monadic.Create)where
