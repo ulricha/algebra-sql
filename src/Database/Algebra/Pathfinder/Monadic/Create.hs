@@ -67,7 +67,7 @@ posSelectM :: Int -> SortInf -> Maybe AttrName -> GraphM a PFAlgebra AlgNode -> 
 posSelectM n sort part = bind1 (C.posSelect n sort part)
 
 -- | Select rows where the column `SelAttrName' contains True.
-selectM :: SelAttrName -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+selectM :: Expr -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 selectM sel = bind1 (C.select sel)
 
 -- | Remove duplicate rows
@@ -83,7 +83,7 @@ unionM :: GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> GraphM a P
 unionM = bind2 C.union
 
 -- | Project/rename certain column out of a plan
-projM :: [(AttrName, ProjExpr)] -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+projM :: [Proj] -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 projM cols = bind1 (C.proj cols)
 
 -- | Apply aggregate functions to a plan

@@ -23,7 +23,7 @@ instance ToJSON AggrType where
 instance ToJSON NullOp where
 instance ToJSON UnOp where
 instance ToJSON BinOp where
-instance ToJSON ProjExpr where
+instance ToJSON Expr where
 instance ToJSON UnFun where
 instance ToJSON BinFun where
 
@@ -37,7 +37,7 @@ instance FromJSON AggrType where
 instance FromJSON NullOp where
 instance FromJSON UnOp where
 instance FromJSON BinOp where
-instance FromJSON ProjExpr where
+instance FromJSON Expr where
 instance FromJSON UnFun where
 instance FromJSON BinFun where
 

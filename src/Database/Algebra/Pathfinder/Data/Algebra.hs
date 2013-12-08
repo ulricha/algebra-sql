@@ -125,9 +125,6 @@ type NewAttrName         = AttrName
 -- | Old attribute name, used to represent the old column name when renaming columns
 type OldAttrName         = AttrName
 
--- | Selection attribute name, used to represent the column containing the selection boolean
-type SelAttrName         = AttrName
-
 -- | Left attribute name, used to represent the left argument when applying binary operators
 type LeftAttrName        = AttrName
 
@@ -196,20 +193,20 @@ instance Show UnFun where
   show (Cast ty) = "cast->" ++ show ty
 
 -- | Projection expressions
-data ProjExpr = BinAppE BinFun ProjExpr ProjExpr
-              | UnAppE UnFun ProjExpr
-              | ColE AttrName
-              | ConstE AVal
-              deriving (Eq, Ord, Generic)
+data Expr = BinAppE BinFun Expr Expr
+          | UnAppE UnFun Expr
+          | ColE AttrName
+          | ConstE AVal
+          deriving (Eq, Ord, Generic)
               
-instance Show ProjExpr where
+instance Show Expr where
   show (BinAppE f e1 e2) = "(" ++ show e1 ++ ")" ++ show f ++ "(" ++ show e2 ++ ")"
   show (UnAppE f e)      = show f ++ "(" ++ show e ++ ")"
   show (ColE c)          = c
   show (ConstE v)        = show v
 
 -- | New column name and the expression that generates the new column
-type Proj                = (NewAttrName, ProjExpr)
+type Proj                = (NewAttrName, Expr)
 
 -- | A tuple is a list of values
 type Tuple = [AVal]
@@ -225,12 +222,8 @@ type SemInfRowNum  = (ResAttrName, SortInf, Maybe PartAttrName)
 --  second element represents the sorting criteria that determine the ranking.
 type SemInfRank    = (ResAttrName,  SortInf)
 
--- | Information that specifies which column contains the conditional
-type SemInfSel     = SelAttrName
-
 -- | Information that specifies how to select element at a certain position
 type SemInfPosSel  = (Int, SortInf, Maybe PartAttrName)
-
 
 -- | Information on how to perform an eq-join. The first element represents the
 -- column from the first table that has to be equal to the column in the second
@@ -280,8 +273,8 @@ data NullOp = LitTable SemInfLitTable SchemaInfos
 data UnOp = RowNum SemInfRowNum
           | RowRank SemInfRank
           | Rank SemInfRank
-          | Project [(AttrName, ProjExpr)]
-          | Sel SemInfSel
+          | Project [(AttrName, Expr)]
+          | Select Expr
           -- What exactly is the semantics here?
           | PosSel SemInfPosSel
           | Distinct ()

@@ -94,7 +94,7 @@ opDotLabel tags i (RankL (res,sortInf))       = labelToDoc i
 opDotLabel tags i (ProjectL info)                = labelToDoc i 
     "PROJECT" (commas renderProj info) (lookupTags i tags)
 opDotLabel tags i (SelL info)                 = labelToDoc i
-    "SELECT" (text info) (lookupTags i tags)
+    "SELECT" (text $ show info) (lookupTags i tags)
 opDotLabel tags i (PosSelL info)              = labelToDoc i
     "POSSEL" (renderPosSel info) (lookupTags i tags)
 opDotLabel tags i (DistinctL _)               = labelToDoc i
@@ -239,11 +239,11 @@ data PFLabel = EmptyTableL SchemaInfos
              | TableRefL SemInfTableRef    -- nullops
              | AggrL SemInfAggr
              | DistinctL ()
-             | ProjectL [(AttrName, ProjExpr)]
+             | ProjectL [Proj]
              | RankL SemInfRank
              | RowNumL SemInfRowNum
              | RowRankL SemInfRank
-             | SelL SemInfSel
+             | SelL Expr
              | PosSelL SemInfPosSel        -- unops
              | CrossL ()
              | DifferenceL ()
@@ -276,7 +276,7 @@ labelOfUnOp (Project info)  = ProjectL info
 labelOfUnOp (Rank info)     = RankL info
 labelOfUnOp (RowNum info)   = RowNumL info
 labelOfUnOp (RowRank info)  = RowRankL info
-labelOfUnOp (Sel info)      = SelL info
+labelOfUnOp (Select info)   = SelL info
 
 labelOfNullaryOp :: NullOp -> PFLabel
 labelOfNullaryOp (EmptyTable  info)	      = EmptyTableL info

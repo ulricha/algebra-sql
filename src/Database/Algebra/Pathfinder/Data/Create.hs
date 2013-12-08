@@ -101,8 +101,8 @@ posSelect :: Int -> SortInf -> Maybe AttrName -> AlgNode -> GraphM a PFAlgebra A
 posSelect n sort part c1 = insertNode $ UnOp (PosSel (n, sort, part)) c1
 
 -- | Select rows where the column `SelAttrName' contains True.
-select :: SelAttrName -> AlgNode -> GraphM a PFAlgebra AlgNode
-select sel c1 = insertNode $ UnOp (Sel sel) c1
+select :: Expr -> AlgNode -> GraphM a PFAlgebra AlgNode
+select sel c1 = insertNode $ UnOp (Select sel) c1
 
 -- | Remove duplicate rows
 distinct :: AlgNode -> GraphM a PFAlgebra AlgNode
@@ -117,7 +117,7 @@ union :: AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
 union c1 c2 = insertNode $ BinOp (DisjUnion ()) c1 c2
 
 -- | Project/rename certain column out of a plan
-proj :: [(AttrName, ProjExpr)] -> AlgNode -> GraphM a PFAlgebra AlgNode
+proj :: [Proj] -> AlgNode -> GraphM a PFAlgebra AlgNode
 proj ps c = insertNode $ UnOp (Project ps) c
 
 -- | Apply aggregate functions to a plan
