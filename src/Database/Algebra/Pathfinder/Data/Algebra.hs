@@ -205,7 +205,7 @@ data ProjExpr = BinAppE BinFun ProjExpr ProjExpr
 instance Show ProjExpr where
   show (BinAppE f e1 e2) = "(" ++ show e1 ++ ")" ++ show f ++ "(" ++ show e2 ++ ")"
   show (UnAppE f e)      = show f ++ "(" ++ show e ++ ")"
-  show (ColE c)          = show c
+  show (ColE c)          = c
   show (ConstE v)        = show v
 
 -- | New column name and the expression that generates the new column

@@ -9,7 +9,7 @@ import           Text.PrettyPrint 					 		--as Pretty
 
 import qualified Database.Algebra.Dag                		as Dag
 import           Database.Algebra.Dag.Common		 		--as DagC
-import           Database.Algebra.Pathfinder.Data.Algebra   as Alg
+import           Database.Algebra.Pathfinder.Data.Algebra
 
 
 nodeToDoc :: AlgNode -> Doc
@@ -27,7 +27,7 @@ lookupTags n m = Map.findWithDefault [] n m
 commas :: (a -> Doc) -> [a] -> Doc
 commas f = hsep . punctuate comma . map f
 
-renderProj :: (AttrName, ProjExpr) -> Doc
+renderProj :: Proj -> Doc
 renderProj (new, ColE c) | new == c = text new
 renderProj (new, e)                 = text $ concat [new, ":", show e]
 
