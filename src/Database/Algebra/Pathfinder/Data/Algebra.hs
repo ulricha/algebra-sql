@@ -266,6 +266,7 @@ type SemUnOp = (ResAttrName, AttrName)
 type SemInfAggr  = ([(AggrType, ResAttrName)], Maybe PartAttrName)
 
 data NullOp = LitTable SemInfLitTable SchemaInfos
+            -- FIXME Separate EmptyTables are not necessary -> eliminate
             | EmptyTable SchemaInfos
             | TableRef SemInfTableRef
             deriving (Ord, Eq, Show, Generic)
@@ -276,6 +277,7 @@ data UnOp = RowNum SemInfRowNum
           | Project [(AttrName, Expr)]
           | Select Expr
           -- What exactly is the semantics here?
+          -- FIXME eliminate
           | PosSel SemInfPosSel
           | Distinct ()
           | Aggr SemInfAggr
