@@ -51,6 +51,20 @@ renderOptCol :: Maybe AttrName -> Doc
 renderOptCol Nothing  = empty
 renderOptCol (Just c) = text "/" <> text c
 
+renderKey :: Key -> Doc
+renderKey (Key k) = brackets $ commas text k
+
+renderColumn :: (AttrName, ATy) -> Doc
+renderColumn (c, t) = text c <> text "::" <> (text $ show t)
+
+renderTableInfo :: TableName -> [(AttrName, ATy)] -> [Key] -> Doc
+renderTableInfo tableName cols keys = 
+    (text tableName)
+    <> text "\\n"
+    <> (brackets $ commas renderColumn cols)
+    <> text "\\n"
+    <> (brackets $ commas renderKey keys)
+
 opDotLabel :: NodeMap [Tag] -> AlgNode -> PFLabel -> Doc
 -- | Nullary operations
 opDotLabel tags i (LitTableL _ _)             = labelToDoc i 
@@ -58,7 +72,7 @@ opDotLabel tags i (LitTableL _ _)             = labelToDoc i
 opDotLabel tags i (EmptyTableL _)             = labelToDoc i 
     "EMPTYTABLE" empty (lookupTags i tags)
 opDotLabel tags i (TableRefL (name, attrs, keys)) = labelToDoc i
-    "TABLE" (text name) (lookupTags i tags)
+    "TABLE" (renderTableInfo name attrs keys) (lookupTags i tags)
 -- |  Binary operations
 opDotLabel tags i (CrossL _)                  = labelToDoc i
     "CROSS" empty (lookupTags i tags)
