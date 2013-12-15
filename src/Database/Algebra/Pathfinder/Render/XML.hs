@@ -6,6 +6,7 @@ module Database.Algebra.Pathfinder.Render.XML (document, mkXMLDocument, mkPlanBu
 {-
 Transform a query plan DAG into an XML representation.
 -}
+
 import           Control.Monad.Writer hiding (All, Sum)
 import           Database.Algebra.Dag.Common
 import           Database.Algebra.Impossible
@@ -262,7 +263,7 @@ mkSelect :: XMLNode -> String -> XMLNode -> Element ()
 mkSelect xId n cxId = [[column n False] `childsOf` contentNode, mkEdge cxId] `childsOf` node xId "select"
 
 -- | Create an xml table binding node
-mkTable :: XMLNode -> String -> TableAttrInf -> KeyInfos -> Element ()
+mkTable :: XMLNode -> String -> TableAttrInf -> [Key] -> Element ()
 mkTable xId n descr keys = [[mkKeys keys] `childsOf` xmlElem "properties", [mkTableDescr n descr] `childsOf` contentNode] `childsOf` node xId "ref_tbl"
 
 -- | Create an xml table description node
@@ -273,12 +274,12 @@ mkTableDescr n descr = map (\d -> toTableCol d ) descr `childsOf` [attr "name" n
      toTableCol (cn, xn, t) = [attr "name" xn, attr "tname" cn, attr "type" $ show t] `attrsOf` xmlElem "column"
 
 -- | Create an xml table key node
-mkKey :: KeyInfo -> Element ()
-mkKey k = let bd = map (\(k', p) -> [attr "name" k', attr "position" $ show p] `attrsOf` xmlElem "column") $ zip k [1..]
+mkKey :: Key -> Element ()
+mkKey (Key k) = let bd = map (\(k', p) -> [attr "name" k', attr "position" $ show p] `attrsOf` xmlElem "column") $ zip k [1..]
            in bd `childsOf` xmlElem "key"
 
 -- | Create an xml node containing multiple table keys
-mkKeys :: KeyInfos -> Element ()
+mkKeys :: [Key] -> Element ()
 mkKeys ks = map mkKey ks `childsOf` xmlElem "keys"
 
 -- Create an xml rank element node.

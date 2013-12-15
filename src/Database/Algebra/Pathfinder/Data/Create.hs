@@ -55,7 +55,7 @@ emptyTable schema = insertNode $ NullaryOp (EmptyTable schema)
 -- table. The second describes the columns in alphabetical order.
 -- The third argument describes the database keys (one table key can
 -- span over multiple columns).
-dbTable :: String -> Columns -> KeyInfos -> GraphM a PFAlgebra AlgNode
+dbTable :: String -> Columns -> [Key] -> GraphM a PFAlgebra AlgNode
 dbTable n cs ks = insertNode $ NullaryOp $ TableRef (n, attr, ks)
   where
     attr = map (\c -> case c of

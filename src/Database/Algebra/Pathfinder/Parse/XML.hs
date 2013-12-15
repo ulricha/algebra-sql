@@ -779,7 +779,7 @@ deserializeTableRef node = do
     return $ NullaryOp $ A.TableRef (tableName, attrInfo, keyInfos)
 
 -- | Tries to deserialize the properties node into 'KeyInfos'.
-deserializeTableRefProperties :: Show i => Content i -> Failable A.KeyInfos
+deserializeTableRefProperties :: Show i => Content i -> Failable [A.Key]
 deserializeTableRefProperties propertiesNode = do
     -- there should only be one
     keysNode <- getSingletonChildByTag "keys" propertiesNode
@@ -788,14 +788,14 @@ deserializeTableRefProperties propertiesNode = do
     mapM deserializeKeyInfo $ childrenBy (tag "key") keysNode 
 
 -- | Tries to deserializes a key node into 'KeyInfo'.
-deserializeKeyInfo :: Show i => Content i -> Failable A.KeyInfo
+deserializeKeyInfo :: Show i => Content i -> Failable A.Key
 deserializeKeyInfo keyNode = do
     -- <key><column ..> .. </key>
     keyInfos <- mapM deserializeKeyInfoColumn
                      $ (childrenBy $ tag "column") keyNode
 
     -- restore ordering (based on first tuple element) and map to second
-    return $ map snd $ sortBy (on compare fst) keyInfos
+    return $ A.Key $ map snd $ sortBy (on compare fst) keyInfos
 
 
 -- | Tries to deserialize a column node below a key node into position and name.

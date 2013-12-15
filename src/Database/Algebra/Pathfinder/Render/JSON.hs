@@ -26,6 +26,7 @@ instance ToJSON AggrType where
 instance ToJSON NullOp where
 instance ToJSON UnOp where
 instance ToJSON BinOp where
+instance ToJSON Key where
 
 instance FromJSON Column where
 instance FromJSON ATy where
@@ -40,6 +41,7 @@ instance FromJSON AggrType where
 instance FromJSON NullOp where
 instance FromJSON UnOp where
 instance FromJSON BinOp where
+instance FromJSON Key where
 
 instance ToJSON Plan where
 instance FromJSON Plan where
