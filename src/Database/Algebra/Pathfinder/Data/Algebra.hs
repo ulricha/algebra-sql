@@ -22,19 +22,6 @@ import Database.Algebra.Dag.Common
 -- required for JSON
 import GHC.Generics (Generic)
 
--- | The column data type is used to represent the table structure while
---  compiling ferry core into an PFAlgebraic plan
---  The col column contains the column number and the type of its contents
---  The NCol column is used to group columns that together form an element of a record
--- , its string argument is used to represent the field name.
-data Column where
-    Col :: Int -> ATy -> Column
-    NCol :: String -> Columns -> Column
-  deriving (Show, Generic)
-
--- | One table can have multiple columns
-type Columns = [Column]
-
 -- | Sorting rows in a direction
 data SortDir = Asc
              | Desc
@@ -134,8 +121,8 @@ type RightAttrName       = AttrName
 -- | Name of a database table
 type TableName           = String
 
--- | List of table attribute information consisting of (column name, new column name, type of column)
-type TableAttrInf        = [(AttrName, AttrName, ATy)]
+-- | List of table attribute information consisting of (column name, type of column)
+type TableAttrInf        = [(AttrName, ATy)]
 
 -- | Key of a database table, a key consists of multiple column names
 newtype Key = Key [AttrName] deriving (Eq, Ord, Show, Generic)

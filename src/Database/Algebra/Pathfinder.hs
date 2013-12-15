@@ -13,7 +13,6 @@ module Database.Algebra.Pathfinder (
     nat, int, bool, double, string,
     natT, intT, boolT, doubleT, stringT,
     SortDir(..), AggrType(..),
-    Column(..), Columns, 
     ATy(..), AVal(..),
     SchemaInfos, Key, AttrName,
     PFAlgebra,

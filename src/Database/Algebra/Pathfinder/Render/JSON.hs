@@ -13,7 +13,6 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Aeson (FromJSON, ToJSON, decode, encode)
 
 
-instance ToJSON Column where
 instance ToJSON ATy where
 instance ToJSON AVal where
 instance ToJSON SortDir where
@@ -28,7 +27,6 @@ instance ToJSON UnFun where
 instance ToJSON BinFun where
 instance ToJSON Key where
 
-instance FromJSON Column where
 instance FromJSON ATy where
 instance FromJSON AVal where
 instance FromJSON SortDir where
