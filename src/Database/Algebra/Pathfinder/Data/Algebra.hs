@@ -12,12 +12,12 @@ provided by the module Database.Algebra.Pathfinder.Algebra.Create
 -}
 module Database.Algebra.Pathfinder.Data.Algebra where
 
-import           Numeric                     (showFFloat)
-import           Text.Printf                
+import Numeric                     (showFFloat)
+import Text.Printf
 
-import           Database.Algebra.Aux
-import           Database.Algebra.Dag        (Operator, opChildren, replaceOpChild)
-import           Database.Algebra.Dag.Common
+import Database.Algebra.Aux
+import Database.Algebra.Dag        (Operator, opChildren, replaceOpChild)
+import Database.Algebra.Dag.Common
 
 -- required for JSON
 import GHC.Generics (Generic)
@@ -138,10 +138,7 @@ type TableName           = String
 type TableAttrInf        = [(AttrName, AttrName, ATy)]
 
 -- | Key of a database table, a key consists of multiple column names
-type KeyInfo             = [AttrName]
-
--- | Multiple keys
-type KeyInfos            = [KeyInfo]
+newtype Key = Key [AttrName] deriving (Eq, Ord, Show, Generic)
 
 -- | Sort information, a list (ordered in sorting priority), of pair of columns and their sort direction--
 type SortInf              = [(SortAttrName, SortDir)]
@@ -257,7 +254,7 @@ instance Show JoinRel where
 type SemInfLitTable = [Tuple]
 
 -- | Information for accessing a database table
-type SemInfTableRef = (TableName, TableAttrInf, KeyInfos)
+type SemInfTableRef = (TableName, TableAttrInf, [Key])
 
 type SemInfCast     = (ResAttrName, AttrName, ATy)
 

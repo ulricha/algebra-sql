@@ -15,7 +15,7 @@ module Database.Algebra.Pathfinder (
     SortDir(..), AggrType(..),
     Column(..), Columns, 
     ATy(..), AVal(..),
-    SchemaInfos, KeyInfos, AttrName,
+    SchemaInfos, Key, AttrName,
     PFAlgebra,
     initLoop,
     module Database.Algebra.Pathfinder.Monadic.Create)where

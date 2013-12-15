@@ -26,6 +26,7 @@ instance ToJSON BinOp where
 instance ToJSON Expr where
 instance ToJSON UnFun where
 instance ToJSON BinFun where
+instance ToJSON Key where
 
 instance FromJSON Column where
 instance FromJSON ATy where
@@ -40,6 +41,7 @@ instance FromJSON BinOp where
 instance FromJSON Expr where
 instance FromJSON UnFun where
 instance FromJSON BinFun where
+instance FromJSON Key where
 
 instance ToJSON Plan where
 instance FromJSON Plan where
