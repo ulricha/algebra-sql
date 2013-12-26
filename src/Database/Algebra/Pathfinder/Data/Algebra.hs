@@ -121,8 +121,8 @@ type RightAttrName       = AttrName
 -- | Name of a database table
 type TableName           = String
 
--- | List of table attribute information consisting of (column name, type of column)
-type TableAttrInf        = [(AttrName, ATy)]
+-- | Typed columns
+type TypedAttr = (AttrName, ATy)
 
 -- | Key of a database table, a key consists of multiple column names
 newtype Key = Key [AttrName] deriving (Eq, Ord, Show, Generic)
@@ -241,7 +241,7 @@ instance Show JoinRel where
 type SemInfLitTable = [Tuple]
 
 -- | Information for accessing a database table
-type SemInfTableRef = (TableName, TableAttrInf, [Key])
+type SemInfTableRef = (TableName, [TypedAttr], [Key])
 
 type SemInfCast     = (ResAttrName, AttrName, ATy)
 
