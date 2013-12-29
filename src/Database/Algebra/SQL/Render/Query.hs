@@ -1,6 +1,9 @@
 -- This file determines the semantics of the 'Query' data structure and all of
 -- its sub structures.
-module Database.Algebra.SQL.Render.Query where
+module Database.Algebra.SQL.Render.Query
+    ( renderQuery
+    , renderSelectStmt
+    ) where
 
 import Text.PrettyPrint.ANSI.Leijen ( (<$>)
                                     , (<+>)

@@ -1,4 +1,6 @@
-module Database.Algebra.SQL.Render.Tile where
+module Database.Algebra.SQL.Render.Tile
+    ( renderTransformResult
+    ) where
 
 
 import Text.PrettyPrint.ANSI.Leijen ( (<$>)

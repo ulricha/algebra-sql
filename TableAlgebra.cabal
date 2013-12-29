@@ -38,7 +38,9 @@ library
                       aeson >= 0.6,
                       ghc-prim >= 0.2,
                       bytestring >= 0.9,
-                      errors >= 1.0.0
+                      errors >= 1.0.0,
+                      dlist,
+                      ansi-wl-pprint
 
     exposed-modules:  Database.Algebra.Dag
                       Database.Algebra.Dag.Builder
@@ -179,5 +181,7 @@ executable sqlcodegentest
                       ghc-prim >= 0.2,
                       bytestring >= 0.9,
                       dlist,
-                      ansi-wl-pprint
+                      ansi-wl-pprint,
+                      process,
+                      filepath
 

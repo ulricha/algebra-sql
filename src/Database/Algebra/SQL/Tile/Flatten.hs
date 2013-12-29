@@ -13,7 +13,6 @@ module Database.Algebra.SQL.Tile.Flatten
     , FlatTile
     ) where
 
-import Control.Arrow (second)
 import qualified Data.IntMap.Lazy as IntMap
     ( IntMap
     , empty
@@ -104,10 +103,10 @@ flattenTileNodeWith :: Ord a
                     -> FlatTile a
 flattenTileNodeWith materializer substituter mergeable body children =
     -- Merge the replacements into the body.
-    ( replaceReferencesSelectStmt lookup body
+    ( replaceReferencesSelectStmt lookupFun body
     , externalReferences
     )
-  where lookup v                              =
+  where lookupFun v                           =
             fromMaybe (error "missing reference while replacing")
                       $ IntMap.lookup v bodySubstitutes
         (bodySubstitutes, externalReferences) =

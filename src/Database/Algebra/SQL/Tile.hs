@@ -1,3 +1,4 @@
+{-# LANGUAGE DoAndIfThenElse #-}
 module Database.Algebra.SQL.Tile
     ( TileTree (TileNode, ReferenceLeaf)
     , TileChildren
