@@ -24,7 +24,7 @@ import System.IO
     )
 
 import qualified Database.Algebra.Dag as D
-import qualified Database.Algebra.Pathfinder.Parse.XML as XML
+--import qualified Database.Algebra.Pathfinder.Parse.XML as XML
 import qualified Database.Algebra.Pathfinder.Render.JSON as JSON
 import Database.Algebra.Pathfinder.Render.Dot (renderPFDot)
 
@@ -32,21 +32,21 @@ import qualified Database.Algebra.SQL.Tile as T
 
 readDagFromFile :: FilePath -> IO (Either String T.PFDag)
 readDagFromFile filename = case takeExtension filename of
-    ".xml"  -> do
-        s <- readFile filename
-        
-        case XML.deserializeQueryPlan filename s of
-
-            Left es   ->
-                return $ throwError $ "could not deserialize "
-                                      ++ filename
-                                      ++ ":\n"
-                                      ++ errorMessages
-                  where errorMessages  = concatMap errorLineFun es
-                        errorLineFun e = "    " ++ e ++ "\n"
-            Right dag ->
-                return $ return dag
-
+    -- ".xml"  -> do
+    --     s <- readFile filename
+    --     
+    --     case XML.deserializeQueryPlan filename s of
+    -- 
+    --         Left es   ->
+    --             return $ throwError $ "could not deserialize "
+    --                                   ++ filename
+    --                                   ++ ":\n"
+    --                                   ++ errorMessages
+    --               where errorMessages  = concatMap errorLineFun es
+    --                     errorLineFun e = "    " ++ e ++ "\n"
+    --         Right dag ->
+    --             return $ return dag
+    -- 
     ".plan" -> do
         -- FIXME This function is a mess, does an unchecked fromJust, which
         -- easily fails.
@@ -64,9 +64,9 @@ outputDot filename dag = do
   where result = renderPFDot IntMap.empty (D.rootNodes dag) (D.nodeMap dag)
 
 renderDot :: FilePath -> FilePath -> IO ()
-renderDot dotPath pdfPath = do
-    putStrLn $ "Rendering dot file to '" ++ pdfPath ++ "'"
-    _ <- rawSystem "dot" ["-Tpdf", "-o", pdfPath, dotPath]
+renderDot dotPath pngPath = do
+    putStrLn $ "Rendering dot file to '" ++ pngPath ++ "'"
+    _ <- rawSystem "dot" ["-Tpng", "-o", pngPath, dotPath]
     return ()
 
 -- Runs the Pathfinder optimizer on a XML file.
