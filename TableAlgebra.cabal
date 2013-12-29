@@ -58,6 +58,11 @@ library
                       Database.Algebra.Pathfinder.Render.JSON
                       Database.Algebra.Pathfinder.Data.Algebra
 
+                      Database.Algebra.SQL.Util
+                      Database.Algebra.SQL.Materialization.Combined
+                      Database.Algebra.SQL.Materialization.TemporaryTable
+                      Database.Algebra.SQL.Materialization.CTE
+
                       Database.Algebra.VL.Data
                       Database.Algebra.VL.Render.Dot
                       Database.Algebra.VL.Render.JSON
@@ -158,3 +163,21 @@ executable x100gen
                       fgl, 
                       ghc-prim >= 0.2,
                       bytestring >= 0.9
+
+executable sqlcodegentest
+    Main-is: Database/Algebra/SQL/Tools/Test.hs
+    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind
+    hs-source-dirs:   src
+    build-depends:    base >= 4.2 && < 5,
+                      aeson >= 0.6,
+                      mtl >= 2.0.1.0,
+                      containers >= 0.3.0.0,
+                      parsec,
+                      transformers,
+                      pretty >= 1.0.1.1, 
+                      fgl,
+                      ghc-prim >= 0.2,
+                      bytestring >= 0.9,
+                      dlist,
+                      ansi-wl-pprint
+
