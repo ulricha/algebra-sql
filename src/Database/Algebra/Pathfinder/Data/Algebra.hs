@@ -4,12 +4,11 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 --new, required for JSON
 {-# LANGUAGE DeriveGeneric #-}
-{-|
-The Algebra module provides the internal datatypes used for
-constructing algebaric plans. It is not recommended to use these
-datatypes directly instead it is adviced the to use the functions
-provided by the module Database.Algebra.Pathfinder.Algebra.Create
--}
+
+-- | The Algebra module provides the internal datatypes used for
+-- constructing algebaric plans. It is not recommended to use these
+-- datatypes directly instead it is adviced to use the functions
+-- provided by the module Database.Algebra.Pathfinder.Algebra.Create
 module Database.Algebra.Pathfinder.Data.Algebra where
 
 import Numeric                     (showFFloat)
@@ -121,8 +120,8 @@ type RightAttrName       = AttrName
 -- | Name of a database table
 type TableName           = String
 
--- | List of table attribute information consisting of (column name, type of column)
-type TableAttrInf        = [(AttrName, ATy)]
+-- | Typed columns
+type TypedAttr = (AttrName, ATy)
 
 -- | Key of a database table, a key consists of multiple column names
 newtype Key = Key [AttrName] deriving (Eq, Ord, Show, Generic)
@@ -150,22 +149,22 @@ data BinFun = Gt
             deriving (Eq, Ord, Generic)
 
 instance Show BinFun where
-  show Minus     = "subtract"
-  show Plus      = "add"
-  show Times     = "multiply"
-  show Div       = "divide"
-  show Modulo    = "modulo"
+  show Minus     = "-"
+  show Plus      = "+"
+  show Times     = "*"
+  show Div       = "/"
+  show Modulo    = "%"
   show Contains  = "fn:contains"
   show Concat    = "fn:concat"
   show SimilarTo = "fn:similar_to"
   show Like      = "fn:like"
-  show Gt        = "gt"
-  show Lt        = "lt"
-  show GtE       = "gte"
-  show LtE       = "lte"
-  show Eq        = "eq"
-  show And       = "and"
-  show Or        = "or"
+  show Gt        = ">"
+  show Lt        = "<"
+  show GtE       = ">="
+  show LtE       = "<="
+  show Eq        = "=="
+  show And       = "&&"
+  show Or        = "||"
   
 -- | Unary functions/operators in expressions
 data UnFun = Not
@@ -184,7 +183,7 @@ data Expr = BinAppE BinFun Expr Expr
           deriving (Eq, Ord, Generic)
               
 instance Show Expr where
-  show (BinAppE f e1 e2) = "(" ++ show e1 ++ ")" ++ show f ++ "(" ++ show e2 ++ ")"
+  show (BinAppE f e1 e2) = "(" ++ show e1 ++ ") " ++ show f ++ " (" ++ show e2 ++ ")"
   show (UnAppE f e)      = show f ++ "(" ++ show e ++ ")"
   show (ColE c)          = c
   show (ConstE v)        = show v
@@ -241,7 +240,7 @@ instance Show JoinRel where
 type SemInfLitTable = [Tuple]
 
 -- | Information for accessing a database table
-type SemInfTableRef = (TableName, TableAttrInf, [Key])
+type SemInfTableRef = (TableName, [TypedAttr], [Key])
 
 type SemInfCast     = (ResAttrName, AttrName, ATy)
 
