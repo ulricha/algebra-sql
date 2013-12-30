@@ -4,12 +4,11 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 --new, required for JSON
 {-# LANGUAGE DeriveGeneric #-}
-{-|
-The Algebra module provides the internal datatypes used for
-constructing algebaric plans. It is not recommended to use these
-datatypes directly instead it is adviced the to use the functions
-provided by the module Database.Algebra.Pathfinder.Algebra.Create
--}
+
+-- | The Algebra module provides the internal datatypes used for
+-- constructing algebaric plans. It is not recommended to use these
+-- datatypes directly instead it is adviced to use the functions
+-- provided by the module Database.Algebra.Pathfinder.Algebra.Create
 module Database.Algebra.Pathfinder.Data.Algebra where
 
 import Numeric                     (showFFloat)
