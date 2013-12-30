@@ -149,22 +149,22 @@ data BinFun = Gt
             deriving (Eq, Ord, Generic)
 
 instance Show BinFun where
-  show Minus     = "subtract"
-  show Plus      = "add"
-  show Times     = "multiply"
-  show Div       = "divide"
-  show Modulo    = "modulo"
+  show Minus     = "-"
+  show Plus      = "+"
+  show Times     = "*"
+  show Div       = "/"
+  show Modulo    = "%"
   show Contains  = "fn:contains"
   show Concat    = "fn:concat"
   show SimilarTo = "fn:similar_to"
   show Like      = "fn:like"
-  show Gt        = "gt"
-  show Lt        = "lt"
-  show GtE       = "gte"
-  show LtE       = "lte"
-  show Eq        = "eq"
-  show And       = "and"
-  show Or        = "or"
+  show Gt        = ">"
+  show Lt        = "<"
+  show GtE       = ">="
+  show LtE       = "<="
+  show Eq        = "=="
+  show And       = "&&"
+  show Or        = "||"
   
 -- | Unary functions/operators in expressions
 data UnFun = Not
@@ -183,7 +183,7 @@ data Expr = BinAppE BinFun Expr Expr
           deriving (Eq, Ord, Generic)
               
 instance Show Expr where
-  show (BinAppE f e1 e2) = "(" ++ show e1 ++ ")" ++ show f ++ "(" ++ show e2 ++ ")"
+  show (BinAppE f e1 e2) = "(" ++ show e1 ++ ") " ++ show f ++ " (" ++ show e2 ++ ")"
   show (UnAppE f e)      = show f ++ "(" ++ show e ++ ")"
   show (ColE c)          = c
   show (ConstE v)        = show v
