@@ -136,6 +136,7 @@ opDotLabel tm i (UnOp Singleton _) = labelToDoc i "Singleton" empty (lookupTags 
 opDotLabel tm i (UnOp (SelectPos1 o (N p)) _)  = labelToDoc i "SelectPos1" ((text $ show o) <+> int p) (lookupTags i tm)
 opDotLabel tm i (UnOp (SelectPos1S o (N p)) _) = labelToDoc i "SelectPos1S" ((text $ show o) <+> int p) (lookupTags i tm)
 opDotLabel tm i (UnOp (Aggr g as) _) = labelToDoc i "Aggr" (bracketList int g <+> bracketList renderAggrFun as) (lookupTags i tm)
+opDotLabel tm i (UnOp (SortSimple cols) _) = labelToDoc i "SortSimple" (bracketList renderExpr1 cols) (lookupTags i tm)
 opDotLabel tm i (BinOp GroupBy _ _) = labelToDoc i "GroupBy" empty (lookupTags i tm)
 opDotLabel tm i (BinOp Sort _ _) = labelToDoc i "Sort" empty (lookupTags i tm)
 opDotLabel tm i (BinOp LengthS _ _) = labelToDoc i "LengthS" empty (lookupTags i tm)

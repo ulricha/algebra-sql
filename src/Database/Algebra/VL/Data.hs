@@ -173,6 +173,7 @@ data UnOp = Unique
           | SelectPos1 VecCompOp Nat
           | SelectPos1S VecCompOp Nat
           | Aggr [DBCol] [AggrFun]
+          | SortSimple [Expr1]
     deriving (Eq, Ord, Generic, Show)
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
