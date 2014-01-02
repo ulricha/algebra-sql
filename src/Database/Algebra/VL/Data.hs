@@ -17,14 +17,14 @@ type VL = Algebra TerOp BinOp UnOp NullOp AlgNode
 data VLType = Nat | Int | Bool |  Double
             | String | Unit
             | Pair VLType VLType | VLList VLType
-            deriving (Eq, Ord, Generic, Show)
+            deriving (Eq, Ord, Generic, Show, Read)
 
 type DataColumn = String
 type TypedColumn = (DataColumn, VLType)
 type Key = [DataColumn]
 type DBCol = Int
 
-data AggrFun = AggrSum DBCol
+data AggrFun = AggrSum VLType DBCol
              | AggrMin DBCol
              | AggrMax DBCol
              | AggrAvg DBCol
@@ -149,16 +149,9 @@ data UnOp = Unique
           | UniqueS
           | Number
           | NumberS
-          | Length
           | DescToRename
           | Segment
           | Unsegment
-          | Sum VLType
-          | Avg
-          | Min
-          | MinS
-          | Max
-          | MaxS
           | Reverse -- (DBV, PropVector)
           | ReverseS -- (DBV, PropVector)
           | FalsePositions
@@ -172,13 +165,14 @@ data UnOp = Unique
           | Singleton
           | SelectPos1 VecCompOp Nat
           | SelectPos1S VecCompOp Nat
-          | Aggr [DBCol] [AggrFun]
+          | GroupAggr [DBCol] [AggrFun]
+          | Aggr AggrFun
           | SortSimple [Expr1]
     deriving (Eq, Ord, Generic, Show)
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | Sort        -- (DBV, PropVector)
-           | LengthS
+           | AggrS AggrFun
            | DistPrim   -- (DBV, PropVector)
            | DistDesc   -- (DBV, PropVector)
            | DistSeg   -- (DBV, PropVector)
@@ -188,8 +182,6 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | Append     -- (DBV, RenameVector, RenameVector)
            | Restrict -- VL (DBV, RenameVector)
            | BinExpr Expr2
-           | SumS
-           | AvgS
            | SelectPos VecCompOp -- (DBV, RenameVector)
            | SelectPosS VecCompOp -- (DBV, RenameVector)
            | Zip
