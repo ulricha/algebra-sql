@@ -168,6 +168,7 @@ data UnOp = Unique
           | GroupAggr [DBCol] [AggrFun]
           | Aggr AggrFun
           | SortSimple [Expr1]
+          | GroupSimple [Expr1]
     deriving (Eq, Ord, Generic, Show)
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)

@@ -246,7 +246,7 @@ type SemInfCast     = (ResAttrName, AttrName, ATy)
 
 type SemUnOp = (ResAttrName, AttrName)
 
-type SemInfAggr  = ([(AggrType, ResAttrName)], Maybe PartAttrName)
+type SemInfAggr  = ([(AggrType, ResAttrName)], [PartAttrName])
 
 data NullOp = LitTable SemInfLitTable SchemaInfos
             -- FIXME Separate EmptyTables are not necessary -> eliminate
