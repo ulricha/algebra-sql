@@ -175,6 +175,7 @@ opDotColor (BinOp (AntiJoin _ _) _ _)  = Green
 opDotColor (BinOp (AntiJoinS _ _) _ _) = Green
 opDotColor (BinOp Zip _ _)             = YellowGreen
 opDotColor (BinOp Sort _ _)            = Tomato
+opDotColor (UnOp (SortSimple _) _)     = Tomato
 opDotColor (BinOp GroupBy _ _)         = Tomato
 opDotColor (BinOp PropRename _ _)      = Tan
 opDotColor (BinOp DistSeg _ _)         = Tan
