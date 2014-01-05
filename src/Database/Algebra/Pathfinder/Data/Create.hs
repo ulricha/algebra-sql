@@ -117,7 +117,7 @@ proj :: [Proj] -> AlgNode -> GraphM a PFAlgebra AlgNode
 proj ps c = insertNode $ UnOp (Project ps) c
 
 -- | Apply aggregate functions to a plan
-aggr :: [(AggrType, ResAttrName)] -> [PartAttrName] -> AlgNode -> GraphM a PFAlgebra AlgNode
+aggr :: [(AggrType, ResAttrName)] -> [Expr] -> AlgNode -> GraphM a PFAlgebra AlgNode
 aggr aggrs part c1 = insertNode $ UnOp (Aggr (aggrs, part)) c1
 
 -- | Similar to rowrank but this will assign a \emph{unique} number to every row

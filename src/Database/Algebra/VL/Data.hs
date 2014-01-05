@@ -165,7 +165,7 @@ data UnOp = Unique
           | Singleton
           | SelectPos1 VecCompOp Nat
           | SelectPos1S VecCompOp Nat
-          | GroupAggr [DBCol] [AggrFun]
+          | GroupAggr [Expr1] [AggrFun]
           | Aggr AggrFun
           | SortSimple [Expr1]
           | GroupSimple [Expr1]

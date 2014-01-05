@@ -26,25 +26,25 @@ data SortDir = Asc
              | Desc
     deriving (Eq, Ord, Generic, Read)
 
-data AggrType = Avg AttrName
-              | Max AttrName
-              | Min AttrName
-              | Sum AttrName
+data AggrType = Avg Expr
+              | Max Expr
+              | Min Expr
+              | Sum Expr
               | Count
-              | All AttrName
-              | Prod AttrName
-              | Dist AttrName
+              | All Expr
+              | Prod Expr
+              | Dist Expr
     deriving (Eq, Ord, Generic)
 
 instance Show AggrType where
-    show (Avg c)  = printf "avg(%s)" c
-    show (Max c)  = printf "max(%s)" c
-    show (Min c)  = printf "min(%s)" c
-    show (Sum c)  = printf "sum(%s)" c
+    show (Avg c)  = printf "avg(%s)" (show c)
+    show (Max c)  = printf "max(%s)" (show c)
+    show (Min c)  = printf "min(%s)" (show c)
+    show (Sum c)  = printf "sum(%s)" (show c)
     show Count    = "count"
-    show (All c)  = printf "all(%s)" c
-    show (Prod c) = printf "prod(%s)" c
-    show (Dist c) = printf "dist(%s)" c
+    show (All c)  = printf "all(%s)" (show c)
+    show (Prod c) = printf "prod(%s)" (show c)
+    show (Dist c) = printf "dist(%s)" (show c)
 
 -- | The show instance results in values that are accepted in the xml plan.
 instance Show SortDir where
@@ -96,25 +96,32 @@ instance Show AVal where
 -- | Attribute name or column name
 type AttrName            = String
 
--- | Result attribute name, used as type synonym where the name for a result column of a computation is needed
+-- | Result attribute name, used as type synonym where the name for a
+-- result column of a computation is needed
 type ResAttrName         = AttrName
 
--- | Sort attribute name, used as type synonym where a column for sorting is needed
+-- | Sort attribute name, used as type synonym where a column for
+-- sorting is needed
 type SortAttrName        = AttrName
 
--- | Partition attribute name, used as a synonym where the name for the partitioning column is expected by the rownum operator
+-- | Partition attribute name, used as a synonym where the name for
+-- the partitioning column is expected by the rownum operator
 type PartAttrName        = AttrName
 
--- | New attribute name, used to represent the new column name when renaming columns
+-- | New attribute name, used to represent the new column name when
+-- renaming columns
 type NewAttrName         = AttrName
 
--- | Old attribute name, used to represent the old column name when renaming columns
+-- | Old attribute name, used to represent the old column name when
+-- renaming columns
 type OldAttrName         = AttrName
 
--- | Left attribute name, used to represent the left argument when applying binary operators
+-- | Left attribute name, used to represent the left argument when
+-- applying binary operators
 type LeftAttrName        = AttrName
 
--- | Right attribute name, used to represent the right argument when applying binary operators
+-- | Right attribute name, used to represent the right argument when
+-- applying binary operators
 type RightAttrName       = AttrName
 --
 -- | Name of a database table
@@ -246,7 +253,7 @@ type SemInfCast     = (ResAttrName, AttrName, ATy)
 
 type SemUnOp = (ResAttrName, AttrName)
 
-type SemInfAggr  = ([(AggrType, ResAttrName)], [PartAttrName])
+type SemInfAggr  = ([(AggrType, ResAttrName)], [Expr])
 
 data NullOp = LitTable SemInfLitTable SchemaInfos
             -- FIXME Separate EmptyTables are not necessary -> eliminate
