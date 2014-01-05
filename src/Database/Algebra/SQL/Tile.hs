@@ -397,7 +397,6 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
     (select, children) <- transformAsSelect c
 
     let sClause         = Q.selectClause select
-        inline          = inlineColumn sClause
         translateE      = translateExpr $ Just sClause
         maybeTranslateE = liftM translateE
         -- Inlining here is obligatory, since we could eliminate referenced
@@ -416,7 +415,7 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
              select
              { Q.selectClause =
                    map wrapSCAlias partExprMapping ++ map aggrToSE aggrs
-             , Q.groupByClause = map (inline . fst) partExprMapping
+             , Q.groupByClause = map (translateE . snd) partExprMapping
              }
              children
 
