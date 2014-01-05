@@ -398,7 +398,8 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
 
     let sClause         = Q.selectClause select
         inline          = inlineColumn sClause
-        maybeTranslateE = liftM (translateExpr $ Just sClause)
+        translateE      = translateExpr $ Just sClause
+        maybeTranslateE = liftM translateE
         -- Inlining here is obligatory, since we could eliminate referenced
         -- columns. (This is similar to projection.)
         aggrToSE (a, n) = Q.SCAlias ( let (fun, optExpr) = translateAggrType a
@@ -406,14 +407,15 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
                                                        fun
                                     )
                                     n
-        wrapSCAlias partitionColumn =
-            Q.SCAlias (Q.SEValueExpr $ inline partitionColumn) partitionColumn
+        wrapSCAlias (name, expr)
+                        =
+            Q.SCAlias (Q.SEValueExpr $ translateE expr) name
 
     return $ TileNode
              False
              select
              { Q.selectClause =
-                   map (wrapSCAlias . snd) partExprMapping ++ map aggrToSE aggrs
+                   map wrapSCAlias partExprMapping ++ map aggrToSE aggrs
              , Q.groupByClause = map (inline . fst) partExprMapping
              }
              children
