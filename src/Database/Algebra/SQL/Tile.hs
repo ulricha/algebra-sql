@@ -392,16 +392,18 @@ transformUnOp (A.Distinct ()) c = do
     -- Keep everything but set distinct.
     return $ TileNode False select { Q.distinct = True } children
 
-transformUnOp (A.Aggr (aggrs, partitionColumns)) c = do
+transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
     
     (select, children) <- transformAsSelect c
 
     let sClause         = Q.selectClause select
         inline          = inlineColumn sClause
+        maybeTranslateE = liftM (translateExpr $ Just sClause)
         -- Inlining here is obligatory, since we could eliminate referenced
         -- columns. (This is similar to projection.)
-        aggrToSE (a, n) = Q.SCAlias ( let (fun, optS) = translateAggrType a
-                                      in Q.SEAggregate (liftM inline optS) fun
+        aggrToSE (a, n) = Q.SCAlias ( let (fun, optExpr) = translateAggrType a
+                                      in Q.SEAggregate (maybeTranslateE optExpr)
+                                                       fun
                                     )
                                     n
         wrapSCAlias partitionColumn =
@@ -411,8 +413,8 @@ transformUnOp (A.Aggr (aggrs, partitionColumns)) c = do
              False
              select
              { Q.selectClause =
-                   map wrapSCAlias partitionColumns ++ map aggrToSE aggrs
-             , Q.groupByClause = map inline partitionColumns
+                   map (wrapSCAlias . snd) partExprMapping ++ map aggrToSE aggrs
+             , Q.groupByClause = map (inline . fst) partExprMapping
              }
              children
 
@@ -760,16 +762,16 @@ translateJoinRel rel = case rel of
     A.NeJ -> Q.BFNotEqual
 
 translateAggrType :: A.AggrType
-                  -> (Q.AggregateFunction, Maybe String)
+                  -> (Q.AggregateFunction, Maybe A.Expr)
 translateAggrType aggr = case aggr of
-    A.Avg n  -> (Q.AFAvg, Just n)
-    A.Max n  -> (Q.AFMax, Just n)
-    A.Min n  -> (Q.AFMin, Just n)
-    A.Sum n  -> (Q.AFSum, Just n)
+    A.Avg e  -> (Q.AFAvg, Just e)
+    A.Max e  -> (Q.AFMax, Just e)
+    A.Min e  -> (Q.AFMin, Just e)
+    A.Sum e  -> (Q.AFSum, Just e)
     A.Count  -> (Q.AFCount, Nothing)
-    A.All n  -> (Q.AFAll, Just n)
-    A.Prod n -> (Q.AFProd, Just n)
-    A.Dist n -> (Q.AFProd, Just n)
+    A.All e  -> (Q.AFAll, Just e)
+    A.Prod e -> (Q.AFProd, Just e)
+    A.Dist e -> (Q.AFProd, Just e)
 
 translateExpr :: Maybe [Q.SelectColumn] -> A.Expr -> Q.ValueExpr
 translateExpr optSelectClause expr = case expr of
