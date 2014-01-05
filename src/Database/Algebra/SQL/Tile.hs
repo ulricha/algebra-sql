@@ -392,7 +392,7 @@ transformUnOp (A.Distinct ()) c = do
     -- Keep everything but set distinct.
     return $ TileNode False select { Q.distinct = True } children
 
-transformUnOp (A.Aggr (aggrs, optPart)) c = do
+transformUnOp (A.Aggr (aggrs, partitionColumns)) c = do
     
     (select, children) <- transformAsSelect c
 
@@ -404,16 +404,15 @@ transformUnOp (A.Aggr (aggrs, optPart)) c = do
                                       in Q.SEAggregate (liftM inline optS) fun
                                     )
                                     n
-        optColTuple     = case optPart of
-            Nothing  -> ([], [])
-            Just col ->
-                ([inline col], [Q.SCAlias (Q.SEValueExpr $ inline col) col])
+        wrapSCAlias partitionColumn =
+            Q.SCAlias (Q.SEValueExpr $ inline partitionColumn) partitionColumn
 
     return $ TileNode
              False
              select
-             { Q.selectClause = snd optColTuple ++ map aggrToSE aggrs
-             , Q.groupByClause = fst optColTuple
+             { Q.selectClause =
+                   map wrapSCAlias partitionColumns ++ map aggrToSE aggrs
+             , Q.groupByClause = map inline partitionColumns
              }
              children
 
