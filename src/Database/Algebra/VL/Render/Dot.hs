@@ -25,11 +25,12 @@ renderFun :: Doc -> [Doc] -> Doc
 renderFun name args = name <> parens (hsep $ punctuate comma args)
 
 renderAggrFun :: AggrFun -> Doc
-renderAggrFun (AggrSum t c)   = renderFun (text "sum" <> char '_' <> renderColumnType t) [int c]
-renderAggrFun (AggrMin c)   = renderFun (text "min") [int c]
-renderAggrFun (AggrMax c)   = renderFun (text "max") [int c]
-renderAggrFun (AggrAvg c)   = renderFun (text "avg") [int c]
-renderAggrFun AggrCount = renderFun (text "count") []
+renderAggrFun (AggrSum t c) = renderFun (text "sum" <> char '_' <> renderColumnType t) 
+                                        [renderExpr1 c]
+renderAggrFun (AggrMin c)   = renderFun (text "min") [renderExpr1 c]
+renderAggrFun (AggrMax c)   = renderFun (text "max") [renderExpr1 c]
+renderAggrFun (AggrAvg c)   = renderFun (text "avg") [renderExpr1 c]
+renderAggrFun AggrCount     = renderFun (text "count") []
 
 renderColumnType :: VLType -> Doc
 renderColumnType = text . show

@@ -24,10 +24,10 @@ type TypedColumn = (DataColumn, VLType)
 type Key = [DataColumn]
 type DBCol = Int
 
-data AggrFun = AggrSum VLType DBCol
-             | AggrMin DBCol
-             | AggrMax DBCol
-             | AggrAvg DBCol
+data AggrFun = AggrSum VLType Expr1
+             | AggrMin Expr1
+             | AggrMax Expr1
+             | AggrAvg Expr1
              | AggrCount
                deriving (Eq, Ord, Show, Read, Generic)
 
@@ -36,37 +36,37 @@ data VecCompOp = Eq
                | GtE
                | Lt
                | LtE
-               deriving (Eq, Ord, Generic)
+               deriving (Eq, Ord, Generic, Read)
 
 data VecNumOp = Add
               | Sub
               | Div
               | Mul
               | Mod
-              deriving (Eq, Ord, Generic)
+              deriving (Eq, Ord, Generic, Read)
 
 data VecBoolOp = Conj
                | Disj
-               deriving (Eq, Ord, Generic)
+               deriving (Eq, Ord, Generic, Read)
                
 data VecCastOp = CastDouble
-               deriving (Eq, Ord, Generic)
+               deriving (Eq, Ord, Generic, Read)
 
 data VecOp = COp VecCompOp
            | NOp VecNumOp
            | BOp VecBoolOp
            | Like
-           deriving (Eq, Ord, Generic)
+           deriving (Eq, Ord, Generic, Read)
            
 data VecUnOp = Not 
              | CastOp VecCastOp
-             deriving (Eq, Ord, Generic)
+             deriving (Eq, Ord, Generic, Read)
 
 data Expr1 = BinApp1 VecOp Expr1 Expr1
            | UnApp1 VecUnOp Expr1
            | Column1 DBCol
            | Constant1 VLVal
-           deriving (Eq, Ord, Show, Generic)
+           deriving (Eq, Ord, Show, Generic, Read)
 
 newtype LeftCol = L DBCol deriving (Eq, Ord, Show, Generic)
 newtype RightCol = R DBCol deriving (Eq, Ord, Show, Generic)
@@ -105,7 +105,7 @@ data ISTransProj = STDescrCol
                  | STNumber
                  deriving (Eq, Ord, Generic, Show)
 
-newtype Nat = N Int deriving (Eq, Ord, Generic, Show)
+newtype Nat = N Int deriving (Eq, Ord, Generic, Show, Read)
 
 instance Integral Nat where
   quot (N i1) (N i2)    = N $ quot i1 i2
@@ -138,7 +138,7 @@ data VLVal = VLInt Int
            | VLString String
            | VLDouble Double
            | VLUnit
-           deriving (Eq, Ord, Generic, Show)
+           deriving (Eq, Ord, Generic, Show, Read)
 
 data NullOp = SingletonDescr
             | Lit [VLType] [[VLVal]]
