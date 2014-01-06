@@ -114,7 +114,7 @@ opDotLabel tags i (PosSelL info)              = labelToDoc i
 opDotLabel tags i (DistinctL _)               = labelToDoc i
     "DISTINCT" empty (lookupTags i tags)
 opDotLabel tags i (AggrL (aggrList, attr))    = labelToDoc i
-    "AGGR" ((commas renderAggr aggrList) <+> (brackets $ commas (text . show) attr))
+    "AGGR" ((commas renderAggr aggrList) <+> (brackets $ commas renderProj attr))
     (lookupTags i tags)
 
 constructDotNode :: NodeMap [Tag] -> (AlgNode, PFLabel) -> DotNode
