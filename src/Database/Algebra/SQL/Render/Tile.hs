@@ -54,10 +54,18 @@ renderTileTreeNode body children =
 
 
 renderTileTree :: TileTree -> Doc
-renderTileTree (ReferenceLeaf n _)            = type_ "references"
-                                                <+> extRef n
-renderTileTree (TileNode True body children)  = renderTileTreeNode body children
-renderTileTree (TileNode False body children) = renderTileTreeNode body children
+renderTileTree (ReferenceLeaf n _)                     = type_ "references"
+                                                         <+> extRef n
+renderTileTree (TileNode mergeable cost body children) =
+    type_ ( case mergeable of
+                True  -> "open"
+                False -> "closed"
+          )
+    <+> type_ ( case cost of
+                    Cheap     -> "cheap"
+                    Expensive -> "expensive"
+              )
+    <+> renderTileTreeNode body children
 
 renderTransformResult :: ([TileTree], DependencyList) -> Doc
 renderTransformResult (ts, dl) =

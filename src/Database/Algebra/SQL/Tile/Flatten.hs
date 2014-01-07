@@ -78,8 +78,8 @@ flattenTileTreeWith :: Ord a
                     -> (a -> Q.FromExpr)
                     -> TileTree
                     -> FlatTile a
-flattenTileTreeWith materializer substituter (TileNode m body children) =
-    flattenTileNodeWith materializer substituter m body children
+flattenTileTreeWith materializer substituter (TileNode m cost body children) =
+    flattenTileNodeWith materializer substituter m cost body children
 
 -- This case should never happen, but is provided for completeness.
 flattenTileTreeWith materializer substituter (ReferenceLeaf tableId s)  =
@@ -98,10 +98,11 @@ flattenTileNodeWith :: Ord a
                     => (ExternalReference -> a)
                     -> (a -> Q.FromExpr)
                     -> Bool
+                    -> Cost
                     -> Q.SelectStmt
                     -> TileChildren
                     -> FlatTile a
-flattenTileNodeWith materializer substituter mergeable body children =
+flattenTileNodeWith materializer substituter mergeable cost body children =
     -- Merge the replacements into the body.
     ( replaceReferencesSelectStmt lookupFun body
     , externalReferences
@@ -116,9 +117,9 @@ flattenTileNodeWith materializer substituter mergeable body children =
             -- There is probably no better way to merge here, because we have no
             -- information about where the references are located. (TODO lookup
             -- is possible, but expensive)
-            TileNode m b c           ->
+            TileNode m cost b c      ->
                 let (b', externalRefs) =
-                        flattenTileNodeWith materializer substituter m b c
+                        flattenTileNodeWith materializer substituter m cost b c
                 in
                 ( IntMap.insert ref (Q.FESubQuery $ Q.VQSelect b') substitutes
                 , Set.union externalRefs refs

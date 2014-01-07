@@ -1,6 +1,7 @@
 {-# LANGUAGE DoAndIfThenElse #-}
 module Database.Algebra.SQL.Tile
-    ( TileTree (TileNode, ReferenceLeaf)
+    ( Cost (..)
+    , TileTree (TileNode, ReferenceLeaf)
     , TileChildren
     , ExternalReference
     , InternalReference
@@ -49,15 +50,31 @@ type ExternalReference = Int
 -- 'Q.SelectStmt'.
 type TileChildren = [(InternalReference, TileTree)]
 
+data Cost = Cheap
+          | Expensive
+          deriving Eq
+
 -- | Defines the tile tree structure.
 data TileTree = -- | A tile: The first argument determines whether the
                 -- 'Q.SelectStmt' has nothing else but the select, from or
                 -- where clause/ set and is thus mergeable.
-                TileNode Bool Q.SelectStmt TileChildren
+                TileNode Bool Cost Q.SelectStmt TileChildren
                 -- | A reference pointing to another TileTree: The second
                 -- argument specifies the columns of the referenced table
                 -- expression.
               | ReferenceLeaf ExternalReference [String]
+
+-- | Determine the cost of a tile tree.
+getCost :: TileTree -> Cost
+getCost t = case t of
+    (TileNode _ c _ _)  -> c
+    (ReferenceLeaf _ _) -> Cheap
+
+addCost :: Cost -> Cost -> Cost
+addCost a b = case (a, b) of
+    (Expensive, _) -> Expensive
+    (_, Expensive) -> Expensive
+    _              -> Cheap
 
 -- | The type of DAG used by Pathfinder.
 type PFDag = D.AlgebraDag A.PFAlgebra
@@ -150,8 +167,8 @@ runTransformMonad m env = evalState readerResult
 
 -- | Check if node has more than one parent.
 isMultiReferenced :: C.AlgNode
-           -> PFDag
-           -> Bool
+                  -> PFDag
+                  -> Bool
 isMultiReferenced n dag = case D.parents n dag of
     -- Has at least 2 parents.
     _:(_:_) -> True
@@ -160,7 +177,7 @@ isMultiReferenced n dag = case D.parents n dag of
 -- | Get the column schema of a 'TileNode'.
 getSchemaTileTree :: TileTree -> [String]
 getSchemaTileTree (ReferenceLeaf _ s) = s
-getSchemaTileTree (TileNode _ body _) = getSchemaSelectStmt body
+getSchemaTileTree (TileNode _ _ body _) = getSchemaSelectStmt body
 
 -- | Get the column schema of a 'Q.SelectStmt'.
 getSchemaSelectStmt :: Q.SelectStmt -> [String]
@@ -183,24 +200,13 @@ transform dag = runTransformMonad result dag sInitial
 transformNode :: C.AlgNode -> TransformMonad TileTree 
 transformNode n = do
 
-    op <- asks $ D.operator n
+    let mTile = transformOp n
 
-    -- allowBranch indicates whether multi reference nodes shall be split
-    -- for this operator, resulting in multiple equal branches. (Treeify)
-    let (allowBranch, transformOp) = case op of
-                                   -- Ignore branching for nullary operators.
-            (C.NullaryOp nop)   -> (False, transformNullaryOp nop)
-            (C.UnOp uop c)      -> (True, transformUnOp uop c)
-            (C.BinOp bop c0 c1) -> (True, transformBinOp bop c0 c1)
-            (C.TerOp () _ _ _)  ->
-                ( True
-                , fail "transformOperator: invalid operator type TerOp found"
-                )
-
+    resultingTile <- mTile
 
     multiRef <- asks $ isMultiReferenced n
 
-    if allowBranch && multiRef
+    if getCost resultingTile == Expensive  && multiRef
     then do
         -- Lookup whether there exists a binding for the node in the current
         -- state.
@@ -211,8 +217,6 @@ transformNode n = do
             Just (b, s) -> return $ ReferenceLeaf b s
             -- Otherwise add it.
             Nothing     -> do
-
-                resultingTile <- transformOp
 
                 -- Generate a name for the sub tree.
                 tableId <- generateTableId
@@ -226,7 +230,19 @@ transformNode n = do
                 modify $ sAddBinding n (tableId, schema)
 
                 return $ ReferenceLeaf tableId schema
-    else transformOp
+    else mTile
+
+transformOp :: C.AlgNode -> TransformMonad TileTree
+transformOp n = do
+    op <- asks $ D.operator n
+
+    case op of
+        C.NullaryOp nop   -> transformNullaryOp nop
+        C.UnOp uop c      -> transformUnOp uop c
+        C.BinOp bop c0 c1 -> transformBinOp bop c0 c1
+        C.TerOp () _ _ _  ->
+            fail "transformOperator: invalid operator type TerOp found"
+
 
 transformNullaryOp :: A.NullOp -> TransformMonad TileTree
 transformNullaryOp (A.LitTable tuples schema) = do
@@ -240,6 +256,7 @@ transformNullaryOp (A.LitTable tuples schema) = do
 
     return $ TileNode
              True
+             Cheap
              emptySelectStmt
              { Q.selectClause = sClause
              , Q.fromClause = [fLiteral]
@@ -259,7 +276,7 @@ transformNullaryOp (A.EmptyTable schema) = do
                , Q.fromClause = [fLiteral]
                }
 
-    return $ TileNode True body []
+    return $ TileNode True Cheap body []
         -- A row of null values
   where values = [map (const $ Q.VEValue Q.VNull) schema]
         
@@ -281,7 +298,7 @@ transformNullaryOp (A.TableRef (name, info, _))   = do
                     ] 
             }
 
-    return $ TileNode True body []
+    return $ TileNode True Cheap body []
 
 
 -- | Abstraktion for rank operators.
@@ -297,12 +314,12 @@ transformUnOpRank rankConstructor (name, sortList) =
                                              sortList
                          )
                          name
-    in attachColFunUnOp colFun (TileNode False)
+    in attachColFunUnOp colFun (TileNode False) Expensive
 
 
 transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
-    attachColFunUnOp colFun (TileNode False) c
+    attachColFunUnOp colFun (TileNode False) Expensive c
   where colFun sClause = Q.SCAlias rowNumExpr name
           where rowNumExpr = Q.SERowNum
                              (liftM (inlineColumn sClause) optPart)
@@ -312,7 +329,7 @@ transformUnOp (A.RowRank inf) c = transformUnOpRank Q.SEDenseRank inf c
 transformUnOp (A.Rank inf) c = transformUnOpRank Q.SERank inf c
 transformUnOp (A.Project projList) c = do
     
-    (select, children) <- transformAsSelect c
+    (cost, select, children) <- transformAsSelect c
 
     let sClause  = Q.selectClause select
         -- Inlining is obligatory here, since we possibly eliminate referenced
@@ -322,6 +339,7 @@ transformUnOp (A.Project projList) c = do
 
     return $ TileNode
              True
+             cost
              -- Replace the select clause with the projection list.
              select { Q.selectClause = map f projList }
              -- But use the old children.
@@ -330,10 +348,11 @@ transformUnOp (A.Project projList) c = do
 
 transformUnOp (A.Select expr) c = do
 
-    (select, children) <- transformAsSelect c
+    (cost, select, children) <- transformAsSelect c
     
     return $ TileNode
              True
+             cost
              ( appendToWhere ( translateExpr
                                (Just $ Q.selectClause select)
                                expr
@@ -347,7 +366,7 @@ transformUnOp (A.Select expr) c = do
 -- mergable.
 transformUnOp (A.PosSel (pos, sortList, optPart)) c = do
  
-    (select, children) <- transformAsSelect c
+    (_, select, children) <- transformAsSelect c
 
     alias <- generateAliasName
 
@@ -362,6 +381,7 @@ transformUnOp (A.PosSel (pos, sortList, optPart)) c = do
 
     return $ TileNode
              False
+             Expensive
              emptySelectStmt
              -- Remove the temporary column.
              { -- Map prefix to inner column prefixes.
@@ -382,14 +402,14 @@ transformUnOp (A.PosSel (pos, sortList, optPart)) c = do
 
 transformUnOp (A.Distinct ()) c = do
 
-    (select, children) <- transformAsSelect c
+    (_, select, children) <- transformAsSelect c
 
     -- Keep everything but set distinct.
-    return $ TileNode False select { Q.distinct = True } children
+    return $ TileNode False Expensive select { Q.distinct = True } children
 
 transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
     
-    (select, children) <- transformAsSelect c
+    (_, select, children) <- transformAsSelect c
 
     let sClause         = Q.selectClause select
         translateE      = translateExpr $ Just sClause
@@ -407,6 +427,7 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
 
     return $ TileNode
              False
+             Expensive
              select
              { Q.selectClause =
                    map wrapSCAlias partExprMapping ++ map aggrToSE aggrs
@@ -417,15 +438,17 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
 -- | Generates a new 'TileTree' by attaching a column, generated by a function
 -- taking the select clause.
 attachColFunUnOp :: ([Q.SelectColumn] -> Q.SelectColumn)
-                 -> (Q.SelectStmt -> TileChildren -> TileTree)
+                 -> (Cost -> Q.SelectStmt -> TileChildren -> TileTree)
+                 -> Cost
                  -> C.AlgNode
                  -> TransformMonad TileTree
-attachColFunUnOp colFun ctor child = do
+attachColFunUnOp colFun ctor parentCost child = do
 
-    (select, children) <- transformAsSelect child
+    (cost, select, children) <- transformAsSelect child
 
     let sClause = Q.selectClause select
     return $ ctor
+             (addCost cost parentCost)
              -- Attach a column to the select clause generated by the given
              -- function.
              select { Q.selectClause = colFun sClause : sClause }
@@ -439,8 +462,8 @@ transformBinSetOp :: Q.SetOperation
 transformBinSetOp setOp c0 c1 = do
 
     -- Use one tile to get the schema information.
-    (select0, children0) <- transformAsSelect c0
-    (select1, children1) <- transformAsSelect c1
+    (_, select0, children0) <- transformAsSelect c0
+    (_, select1, children1) <- transformAsSelect c1
 
     alias <- generateAliasName
 
@@ -449,6 +472,7 @@ transformBinSetOp setOp c0 c1 = do
     let schema = getSchemaSelectStmt select0
 
     return $ TileNode True
+                      Expensive
                       emptySelectStmt
                       { Q.selectClause =
                             columnsFromSchema alias schema
@@ -470,12 +494,13 @@ transformBinCrossJoin :: C.AlgNode
                       -> C.AlgNode
                       -> TransformMonad TileTree
 transformBinCrossJoin c0 c1 = do
-    (select0, children0) <- transformAsSelect c0
-    (select1, children1) <- transformAsSelect c1
+    (_, select0, children0) <- transformAsSelect c0
+    (_, select1, children1) <- transformAsSelect c1
 
     -- We can simply concatenate everything, because all things are prefixed and
     -- cross join is associative.
     return $ TileNode True
+                      Expensive
                       -- Mergeable tiles are guaranteed to have at most a
                       -- select, from and where clause. (And since
                       -- 'selectFromTile' does this, we always get at most that
@@ -498,7 +523,7 @@ transformBinCrossJoin c0 c1 = do
 -- result.
 transformCJToSelect :: C.AlgNode
                     -> C.AlgNode
-                    -> TransformMonad (Q.SelectStmt, TileChildren)
+                    -> TransformMonad (Cost, Q.SelectStmt, TileChildren)
 transformCJToSelect c0 c1 = do
     cTile <- transformBinCrossJoin c0 c1
     selectFromTile cTile
@@ -511,22 +536,22 @@ transformBinOp (A.Cross ()) c0 c1 = transformBinCrossJoin c0 c1
 
 transformBinOp (A.EqJoin (lName, rName)) c0 c1 = do
 
-    (select, children) <- transformCJToSelect c0 c1
+    (_, select, children) <- transformCJToSelect c0 c1
 
     let sClause = Q.selectClause select
         cond    = mkEqual (inlineColumn sClause lName)
                           $ inlineColumn sClause rName
 
-    return $ TileNode True (appendToWhere cond select) children
+    return $ TileNode True Expensive (appendToWhere cond select) children
 
 
 transformBinOp (A.ThetaJoin conditions) c0 c1  = do
 
-    (select, children) <- transformCJToSelect c0 c1
+    (_, select, children) <- transformCJToSelect c0 c1
 
     -- Is there at least one join conditon?
     if null conditions
-    then return $ TileNode True select children
+    then return $ TileNode True Expensive select children
     else do
 
         let sClause = Q.selectClause select
@@ -534,7 +559,7 @@ transformBinOp (A.ThetaJoin conditions) c0 c1  = do
             conds   = map f conditions
             f       = translateInlinedJoinCond sClause sClause
 
-        return $ TileNode True (appendToWhere cond select) children
+        return $ TileNode True Expensive (appendToWhere cond select) children
 
 transformBinOp (A.SemiJoin cs) c0 c1          =
     transformExistsJoin cs c0 c1 id
@@ -557,8 +582,8 @@ transformExistsJoin conditions c0 c1 existsWrapF = case result of
         if null conditions
         then return tile0
         else do
-            (select0, children0) <- selectFromTile tile0
-            (select1, children1) <- transformAsSelect c1
+            (_, select0, children0) <- selectFromTile tile0
+            (_, select1, children1) <- transformAsSelect c1
 
             let outerCond   = existsWrapF . Q.VEExists $ Q.VQSelect innerSelect
                 innerSelect = foldr appendToWhere select1 innerConds
@@ -567,11 +592,12 @@ transformExistsJoin conditions c0 c1 existsWrapF = case result of
                                                     $ Q.selectClause select1
 
             return $ TileNode True
-                            (appendToWhere outerCond select0)
-                            $ children0 ++ children1
+                              Expensive
+                              (appendToWhere outerCond select0)
+                              $ children0 ++ children1
     (Just (l, r), cs) -> do
-        (select0, children0) <- transformAsSelect c0
-        (select1, children1) <- transformAsSelect c1
+        (_, select0, children0) <- transformAsSelect c0
+        (_, select1, children1) <- transformAsSelect c1
        
         let -- Embedd the right query into the where clause of the left one.
             leftCond    = existsWrapF $ Q.VEIn (inlineColumn lSClause l)
@@ -585,6 +611,7 @@ transformExistsJoin conditions c0 c1 existsWrapF = case result of
             rSClause    = Q.selectClause select1
 
         return $ TileNode True
+                          Expensive
                           (appendToWhere leftCond select0)
                           $ children0 ++ children1
   where
@@ -597,7 +624,7 @@ transformExistsJoin conditions c0 c1 existsWrapF = case result of
 
 -- | Combines transformation and convertion into 'SelectStmt'.
 transformAsSelect :: C.AlgNode
-                  -> TransformMonad (Q.SelectStmt, TileChildren) 
+                  -> TransformMonad (Cost, Q.SelectStmt, TileChildren) 
 transformAsSelect n = do
     tile <- transformNode n
     selectFromTile tile
@@ -609,17 +636,18 @@ transformAsSelect n = do
 selectFromTile :: TileTree
                -- The resulting 'SelectStmt' and used children (if the
                -- 'TileTree' could not be inlined or had children itself).
-               -> TransformMonad (Q.SelectStmt, TileChildren)
+               -> TransformMonad (Cost, Q.SelectStmt, TileChildren)
 selectFromTile t = case t of
     -- The only thing we are able to merge.
-    TileNode True body children  -> return (body, children)
+    TileNode True cost body children  -> return (cost, body, children)
     -- Embed as sub query.
-    TileNode False body children -> do
+    TileNode False cost body children -> do
         alias <- generateAliasName
 
         let schema = getSchemaSelectStmt body
 
-        return ( emptySelectStmt
+        return ( cost
+               , emptySelectStmt
                  { Q.selectClause =
                        columnsFromSchema alias schema
                  , Q.fromClause =
@@ -633,7 +661,8 @@ selectFromTile t = case t of
         alias <- generateAliasName
         varId <- generateVariableId
 
-        return ( emptySelectStmt
+        return ( Cheap
+               , emptySelectStmt
                    -- Use the schema to construct the select clause.
                  { Q.selectClause =
                        columnsFromSchema alias s
