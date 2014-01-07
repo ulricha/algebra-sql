@@ -197,40 +197,35 @@ transformNode n = do
                 , fail "transformOperator: invalid operator type TerOp found"
                 )
 
-    if allowBranch
+
+    multiRef <- asks $ isMultiReferenced n
+
+    if allowBranch && multiRef
     then do
-       
-        multiRef <- asks $ isMultiReferenced n
+        -- Lookup whether there exists a binding for the node in the current
+        -- state.
+        possibleBinding <- gets $ sLookupBinding n
 
-        if multiRef
-        then do
-            -- Lookup whether there exists a binding for the node in the current
-            -- state.
-            possibleBinding <- gets $ sLookupBinding n
+        case possibleBinding of
+            -- If so, just return it.
+            Just (b, s) -> return $ ReferenceLeaf b s
+            -- Otherwise add it.
+            Nothing     -> do
 
-            case possibleBinding of
-                -- If so, just return it.
-                Just (b, s) -> return $ ReferenceLeaf b s
-                -- Otherwise add it.
-                Nothing     -> do
+                resultingTile <- transformOp
 
-                    result <- transformOp
+                -- Generate a name for the sub tree.
+                tableId <- generateTableId
 
-                    -- Generate a name for the sub tree.
-                    tableId <- generateTableId
+                -- Add the tree to the writer.
+                tell $ DL.singleton (tableId, resultingTile)
 
-                    -- Add the tree to the writer.
-                    tell $ DL.singleton (tableId, result)
+                let schema = getSchemaTileTree resultingTile
 
-                    let schema = getSchemaTileTree result
+                -- Add binding for this node (to prevent recalculation).
+                modify $ sAddBinding n (tableId, schema)
 
-                    -- Add binding for this node (to prevent recalculation).
-                    modify $ sAddBinding n (tableId, schema)
-
-                    return $ ReferenceLeaf tableId schema
-        else transformOp
-
-    -- Transform the operator into a TileTree.
+                return $ ReferenceLeaf tableId schema
     else transformOp
 
 transformNullaryOp :: A.NullOp -> TransformMonad TileTree
