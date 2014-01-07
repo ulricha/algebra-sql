@@ -52,7 +52,6 @@ type TileChildren = [(InternalReference, TileTree)]
 
 data Cost = Cheap
           | Expensive
-          deriving Eq
 
 -- | Defines the tile tree structure.
 data TileTree = -- | A tile: The first argument determines whether the
@@ -202,11 +201,10 @@ transformNode n = do
 
     let mTile = transformOp n
 
-    resultingTile <- mTile
 
     multiRef <- asks $ isMultiReferenced n
 
-    if getCost resultingTile == Expensive  && multiRef
+    if multiRef
     then do
         -- Lookup whether there exists a binding for the node in the current
         -- state.
@@ -218,18 +216,27 @@ transformNode n = do
             -- Otherwise add it.
             Nothing     -> do
 
-                -- Generate a name for the sub tree.
-                tableId <- generateTableId
+                -- TODO prevent recalculation (maybe through map lookup)
+                resultingTile <- mTile
 
-                -- Add the tree to the writer.
-                tell $ DL.singleton (tableId, resultingTile)
+                case getCost resultingTile of
+                    -- Tile computation is cheap, save a materialisation and
+                    -- inline.
+                    Cheap     -> mTile
+                    -- Tile computation is expensive, probably materialize.
+                    Expensive -> do
+                        -- Generate a name for the sub tree.
+                        tableId <- generateTableId
 
-                let schema = getSchemaTileTree resultingTile
+                        -- Add the tree to the writer.
+                        tell $ DL.singleton (tableId, resultingTile)
 
-                -- Add binding for this node (to prevent recalculation).
-                modify $ sAddBinding n (tableId, schema)
+                        let schema = getSchemaTileTree resultingTile
 
-                return $ ReferenceLeaf tableId schema
+                        -- Add binding for this node (to prevent recalculation).
+                        modify $ sAddBinding n (tableId, schema)
+
+                        return $ ReferenceLeaf tableId schema
     else mTile
 
 transformOp :: C.AlgNode -> TransformMonad TileTree
