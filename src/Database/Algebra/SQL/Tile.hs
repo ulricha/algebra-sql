@@ -27,7 +27,6 @@ module Database.Algebra.SQL.Tile
 import Control.Monad.Reader
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
-import qualified Data.Map.Lazy as Map
 import qualified Data.IntMap as IntMap
 import Data.Maybe
 import qualified Data.DList as DL
@@ -93,7 +92,7 @@ type DependencyList = DL.DList (ExternalReference, TileTree)
 --
 --     * The current state of the variable id generator.
 type TransformState =
-    ( Map.Map C.AlgNode (ExternalReference, [String])
+    ( IntMap.IntMap (ExternalReference, [String])
     , IntMap.IntMap TileTree
     , ExternalReference
     , InternalReference
@@ -101,7 +100,7 @@ type TransformState =
 
 -- | The initial state.
 sInitial :: TransformState
-sInitial = (Map.empty, IntMap.empty, 0, 0)
+sInitial = (IntMap.empty, IntMap.empty, 0, 0)
 
 -- | Adds a new binding to the state.
 sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
@@ -111,13 +110,13 @@ sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
             -> TransformState
             -> TransformState
 sAddBinding node t (mpnMap, ctMap, g, v) =
-    (Map.insert node t mpnMap, ctMap, g, v)
+    (IntMap.insert node t mpnMap, ctMap, g, v)
 
 -- | Tries to look up a binding for a node.
 sLookupBinding :: C.AlgNode
                -> TransformState
                -> Maybe (ExternalReference, [String])
-sLookupBinding n (m, _,  _, _) = Map.lookup n m
+sLookupBinding n (m, _,  _, _) = IntMap.lookup n m
 
 -- | Tries to get the content of an already calculated tile node.
 sGetCheapTileTree :: C.AlgNode
