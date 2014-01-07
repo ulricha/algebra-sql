@@ -28,6 +28,7 @@ import Control.Monad.Reader
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
 import qualified Data.Map.Lazy as Map
+import qualified Data.IntMap as IntMap
 import Data.Maybe
 import qualified Data.DList as DL
     ( DList
@@ -86,18 +87,21 @@ type DependencyList = DL.DList (ExternalReference, TileTree)
 -- transforming:
 --     * The processed nodes with multiple parents.
 --
+--     * The processed tile trees, which are cheap enough for inlining.
+--
 --     * The current state of the table id generator.      
 --
 --     * The current state of the variable id generator.
 type TransformState =
     ( Map.Map C.AlgNode (ExternalReference, [String])
+    , IntMap.IntMap TileTree
     , ExternalReference
     , InternalReference
     )
 
 -- | The initial state.
 sInitial :: TransformState
-sInitial = (Map.empty, 0, 0)
+sInitial = (Map.empty, IntMap.empty, 0, 0)
 
 -- | Adds a new binding to the state.
 sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
@@ -106,13 +110,27 @@ sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
                )                  -- ^ Name of the reference and its columns.
             -> TransformState
             -> TransformState
-sAddBinding n t (m, g, v) = (Map.insert n t m, g, v)
+sAddBinding node t (mpnMap, ctMap, g, v) =
+    (Map.insert node t mpnMap, ctMap, g, v)
 
 -- | Tries to look up a binding for a node.
 sLookupBinding :: C.AlgNode
                -> TransformState
                -> Maybe (ExternalReference, [String])
-sLookupBinding n (m, _, _) = Map.lookup n m
+sLookupBinding n (m, _,  _, _) = Map.lookup n m
+
+-- | Tries to get the content of an already calculated tile node.
+sGetCheapTileTree :: C.AlgNode
+                  -> TransformState
+                  -> Maybe TileTree
+sGetCheapTileTree n (_, m, _, _) = IntMap.lookup n m
+
+sAddCheapTileTree :: C.AlgNode
+                  -> TileTree
+                  -> TransformState
+                  -> TransformState
+sAddCheapTileTree n t (mpnMap, ctMap, g, v) =
+    (mpnMap, IntMap.insert n t ctMap, g, v)
 
 -- | The transform monad is used for transforming from DAGs into the tile plan. It
 -- contains:
@@ -129,31 +147,31 @@ type TransformMonad = WriterT DependencyList
 -- 'TransformMonad'.
 generateTableId :: TransformMonad ExternalReference
 generateTableId = do
-    (_, i, _) <- get
+    (_, _, i, _) <- get
 
     modify nextState
 
     return i
-  where nextState (m, g, i) = (m, g + 1, i)
+  where nextState (m, c, g, i) = (m, c, g + 1, i)
 
 generateAliasName :: TransformMonad String
 generateAliasName = do
-    (_, i, _) <- get
+    (_, _, i, _) <- get
 
     modify nextState
 
     return $ 'a' : show i
-  where nextState (m, g, i) = (m, g + 1, i)
+  where nextState (m, c, g, i) = (m, c, g + 1, i)
 
 -- | A variable identifier generator.
 generateVariableId :: TransformMonad Int
 generateVariableId = do
-    (_, _, i) <- get
+    (_, _,  _, i) <- get
 
     modify nextState
 
     return i
-  where nextState (m, g, i) = (m, g, i + 1)
+  where nextState (m, c, g, i) = (m, c, g, i + 1)
 
 -- | Unpack values (or run computation).
 runTransformMonad :: TransformMonad a
@@ -216,27 +234,37 @@ transformNode n = do
             -- Otherwise add it.
             Nothing     -> do
 
-                -- TODO prevent recalculation (maybe through map lookup)
-                resultingTile <- mTile
+                possibleTileTree <- gets $ sGetCheapTileTree n
 
-                case getCost resultingTile of
-                    -- Tile computation is cheap, save a materialisation and
-                    -- inline.
-                    Cheap     -> mTile
-                    -- Tile computation is expensive, probably materialize.
-                    Expensive -> do
-                        -- Generate a name for the sub tree.
-                        tableId <- generateTableId
+                case possibleTileTree of
+                    Just tileTree -> return tileTree
+                    Nothing       -> do
+                        resultingTile <- mTile
 
-                        -- Add the tree to the writer.
-                        tell $ DL.singleton (tableId, resultingTile)
+                        case getCost resultingTile of
+                            -- Tile computation is cheap, save a materialisation
+                            -- and inline.
+                            Cheap     -> do
 
-                        let schema = getSchemaTileTree resultingTile
+                                -- Add to prevent recalculation.
+                                modify $ sAddCheapTileTree n resultingTile
+                                mTile
+                            -- Tile computation is expensive, probably
+                            -- materialize.
+                            Expensive -> do
+                                -- Generate a name for the sub tree.
+                                tableId <- generateTableId
 
-                        -- Add binding for this node (to prevent recalculation).
-                        modify $ sAddBinding n (tableId, schema)
+                                -- Add the tree to the writer.
+                                tell $ DL.singleton (tableId, resultingTile)
 
-                        return $ ReferenceLeaf tableId schema
+                                let schema = getSchemaTileTree resultingTile
+
+                                -- Add binding for this node (to prevent
+                                -- recalculation).
+                                modify $ sAddBinding n (tableId, schema)
+
+                                return $ ReferenceLeaf tableId schema
     else mTile
 
 transformOp :: C.AlgNode -> TransformMonad TileTree
