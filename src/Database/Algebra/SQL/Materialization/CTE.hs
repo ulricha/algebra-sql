@@ -9,11 +9,13 @@ import Database.Algebra.SQL.Tile.Flatten
 -- | Create a CTE for every root tile and add a binding for every dependency.
 materialize:: MatFun
 materialize transformResult =
-    if null bindings
-    then map (QValueQuery . VQSelect . fst) selects
-    else map
-         (QValueQuery . flip VQCommonTableExpression bindings . VQSelect . fst)
-         selects
+    ( []
+    , if null bindings
+      then map (QValueQuery . VQSelect . fst) selects
+      else map
+           (QValueQuery . flip VQCommonTableExpression bindings . VQSelect . fst)
+           selects
+    )
   where bindings            = map f deps
         f (name, (body, _)) = (name, Nothing, VQSelect body)
 

@@ -16,11 +16,11 @@ import qualified Database.Algebra.Dag as D
 import qualified Database.Algebra.Dag.Common as C
 
 import Database.Algebra.SQL.File
+import Database.Algebra.SQL.Materialization
 import Database.Algebra.SQL.Materialization.CTE as CTE
 import Database.Algebra.SQL.Materialization.TemporaryTable as TemporaryTable
 import qualified Database.Algebra.SQL.Materialization.Combined as Combined
 import Database.Algebra.SQL.Util (renderDebugOutput, renderOutput, putShowSLn)
-import Database.Algebra.SQL.Query
 import qualified Database.Algebra.SQL.Tile as T
 
 
@@ -332,7 +332,7 @@ data Options = Options
             , optRenderDot :: Bool
             , optDebug     :: Bool
             , optHelp      :: Bool
-            , optMatFun    :: ([T.TileTree], T.DependencyList) -> [Query]
+            , optMatFun    :: MatFun
             , optFast      :: Bool
             }
 defaultOptions :: Options

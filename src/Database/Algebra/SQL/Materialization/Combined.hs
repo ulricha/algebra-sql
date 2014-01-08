@@ -249,9 +249,9 @@ queriesFromSPA :: Graph                    -- ^ Labeled graph.
                -> [G.Vertex]               -- ^ Root vertices.
                -> [G.Vertex]               -- ^ Temporary vertices.
                -> IntMap.IntMap [G.Vertex] -- ^ Out adjacency list.
-               -> [Q.Query]
+               -> ([Q.Query], [Q.Query])
 queriesFromSPA graph rootVertices tmpVertices reversedSpaMap =
-    tmpQueries ++ rootQueries
+    (tmpQueries, rootQueries)
   where tmpQueries  = map tmpFun tmpVertices
         tmpFun v    = Q.QDefinitionQuery . Q.DQTemporaryTable (build v)
                                                               $ mat v
