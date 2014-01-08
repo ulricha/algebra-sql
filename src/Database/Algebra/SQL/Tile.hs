@@ -76,12 +76,13 @@ type DependencyList = DL.DList (ExternalReference, TileTree)
 type TransformState =
     ( Map.Map C.AlgNode (ExternalReference, [String])
     , ExternalReference
+    , Int
     , InternalReference
     )
 
 -- | The initial state.
 sInitial :: TransformState
-sInitial = (Map.empty, 0, 0)
+sInitial = (Map.empty, 0,  0, 0)
 
 -- | Adds a new binding to the state.
 sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
@@ -90,13 +91,13 @@ sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
                )                  -- ^ Name of the reference and its columns.
             -> TransformState
             -> TransformState
-sAddBinding n t (m, g, v) = (Map.insert n t m, g, v)
+sAddBinding n t (m, g, a, v) = (Map.insert n t m, g, a, v)
 
 -- | Tries to look up a binding for a node.
 sLookupBinding :: C.AlgNode
                -> TransformState
                -> Maybe (ExternalReference, [String])
-sLookupBinding n (m, _, _) = Map.lookup n m
+sLookupBinding n (m, _, _, _) = Map.lookup n m
 
 -- | The transform monad is used for transforming from DAGs into the tile plan. It
 -- contains:
@@ -113,31 +114,31 @@ type TransformMonad = WriterT DependencyList
 -- 'TransformMonad'.
 generateTableId :: TransformMonad ExternalReference
 generateTableId = do
-    (_, i, _) <- get
+    (_, i, _,  _) <- get
 
     modify nextState
 
     return i
-  where nextState (m, g, i) = (m, g + 1, i)
+  where nextState (m, g, a, i) = (m, g + 1, a,  i)
 
 generateAliasName :: TransformMonad String
 generateAliasName = do
-    (_, i, _) <- get
+    (_, _, i, _) <- get
 
     modify nextState
 
     return $ 'a' : show i
-  where nextState (m, g, i) = (m, g + 1, i)
+  where nextState (m, g, a,  i) = (m, g, a + 1, i)
 
 -- | A variable identifier generator.
 generateVariableId :: TransformMonad Int
 generateVariableId = do
-    (_, _, i) <- get
+    (_, _, _,  i) <- get
 
     modify nextState
 
     return i
-  where nextState (m, g, i) = (m, g, i + 1)
+  where nextState (m, g, a, i) = (m, g, a, i + 1)
 
 -- | Unpack values (or run computation).
 runTransformMonad :: TransformMonad a
