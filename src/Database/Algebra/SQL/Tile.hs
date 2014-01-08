@@ -9,11 +9,6 @@ module Database.Algebra.SQL.Tile
     , TransformResult
     , transform
     , PFDag
-    , -- TODO should not export / maybe put in another module which is not
-      -- available in public
-      emptySelectStmt
-    , mkPCol
-    , mkFromPartRef
     ) where
 
 -- TODO maybe split this file into the tile definition
@@ -37,6 +32,11 @@ import qualified Database.Algebra.Dag.Common as C
 import qualified Database.Algebra.Pathfinder.Data.Algebra as A
 
 import qualified Database.Algebra.SQL.Query as Q
+import Database.Algebra.SQL.Query.Util
+    ( emptySelectStmt
+    , mkPCol
+    , mkSubQuery
+    )
 
 -- | A tile internal reference type.
 type InternalReference = Q.ReferenceType
@@ -82,17 +82,23 @@ type DependencyList = DL.DList (ExternalReference, TileTree)
 
 -- | A combination of types which need to be modified state wise while
 -- transforming:
---     * The processed nodes with multiple parents.
+--     * The already processed nodes with multiple parents.
 --
 --     * The processed tile trees, which are cheap enough for inlining (with
 --     monadic context to get fresh alias names).
 --
 --     * The current state of the table id generator.      
 --
+--     * The current state of the alias id generator.
+--
 --     * The current state of the variable id generator.
+--
 data TransformState = TS
-                    { multiParentNodes :: IntMap.IntMap (ExternalReference, [String])
-                    , mCheapTileNodes  :: IntMap.IntMap (TransformMonad TileTree)
+                    { multiParentNodes :: IntMap.IntMap ( ExternalReference
+                                                        , [String]
+                                                        )
+                    , mCheapTileNodes  :: IntMap.IntMap
+                                          (TransformMonad TileTree)
                     , tableIdGen       :: ExternalReference
                     , aliasIdGen       :: Int
                     , varIdGen         :: InternalReference
@@ -133,6 +139,7 @@ sAddCheapTM n t st =
 
 -- | The transform monad is used for transforming from DAGs into the tile plan. It
 -- contains:
+--
 --     * A reader for the DAG (since we only read from it)
 --
 --     * A writer for outputting the dependencies
@@ -147,32 +154,32 @@ generateTableId :: TransformMonad ExternalReference
 generateTableId = do
     st <- get
 
-    let id = tableIdGen st
+    let tid = tableIdGen st
 
-    put $ st { tableIdGen = succ id }
+    put $ st { tableIdGen = succ tid }
 
-    return id
+    return tid
 
 generateAliasName :: TransformMonad String
 generateAliasName = do
     st <- get
 
-    let id = aliasIdGen st
+    let aid = aliasIdGen st
 
-    put $ st { aliasIdGen = succ id }
+    put $ st { aliasIdGen = succ aid }
 
-    return $ 'a' : show id
+    return $ 'a' : show aid
 
 -- | A variable identifier generator.
 generateVariableId :: TransformMonad InternalReference
 generateVariableId = do
     st <- get
 
-    let id = varIdGen st
+    let vid = varIdGen st
 
-    put $ st { varIdGen = succ id }
+    put $ st { varIdGen = succ vid }
 
-    return id
+    return vid
 
 -- | Unpack values (or run computation).
 runTransformMonad :: TransformMonad a
@@ -233,10 +240,13 @@ transformNode n = do
             -- Otherwise add it.
             Nothing     -> do
 
-                possibleTileTree <- gets $ sLookupCheapTM n
+                -- Check whether the node was inlined previously.
+                possibleCheapTM <- gets $ sLookupCheapTM n
 
-                case possibleTileTree of
+                case possibleCheapTM of
+                    -- Yes, then just return the monadic value.
                     Just mT -> mT
+                    -- No, do first computation.
                     Nothing -> do
                         resultingTile <- mTile
 
@@ -751,11 +761,6 @@ extractFromAlias alias =
                                                             else r
         f _                               r = r
 
--- | Shorthand to make a prefixed column value expression.
-mkPCol :: String
-       -> String
-       -> Q.ValueExpr
-mkPCol p c = Q.VEColumn c $ Just p
 
 -- | Shorthand to make an unprefixed column value expression.
 mkCol :: String
@@ -790,24 +795,11 @@ appendToWhere cond select = select
                                       Just e  -> Just $ mkAnd cond e
                             }
 
--- | Embeds a query into a from part as sub query.
-mkSubQuery :: Q.SelectStmt
-           -> String
-           -> Maybe [String]
-           -> Q.FromPart
-mkSubQuery sel = Q.FPAlias (Q.FESubQuery $ Q.VQSelect sel)
-
 mkFromPartVar :: Int
               -> String
               -> Maybe [String]
               -> Q.FromPart
 mkFromPartVar identifier = Q.FPAlias (Q.FEVariable identifier)
-
--- | Generate a table reference which can be used within a from clause.
-mkFromPartRef :: String          -- ^ The name of the table.
-              -> Maybe [String]  -- ^ The optional columns.
-              -> Q.FromPart
-mkFromPartRef name = Q.FPAlias (Q.FETableReference name) name
 
 -- | Translate 'A.JoinRel' into 'Q.BinaryFunction'.
 translateJoinRel :: A.JoinRel
@@ -906,8 +898,4 @@ translateATy t = case t of
     A.ADec    -> Q.DTDecimal
     A.ADouble -> Q.DTDoublePrecision
     A.ANat    -> Q.DTInteger
-
--- | Helper value to construct select statements.
-emptySelectStmt :: Q.SelectStmt
-emptySelectStmt = Q.SelectStmt [] False [] Nothing [] []
 

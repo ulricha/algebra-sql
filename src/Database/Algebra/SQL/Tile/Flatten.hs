@@ -32,6 +32,7 @@ import qualified Data.DList as DL
 import Data.Maybe (fromMaybe)
 
 import qualified Database.Algebra.SQL.Query as Q
+import Database.Algebra.SQL.Query.Util
 import Database.Algebra.SQL.Query.Substitution
 import Database.Algebra.SQL.Tile
 
