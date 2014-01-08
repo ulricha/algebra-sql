@@ -86,22 +86,23 @@ type DependencyList = DL.DList (ExternalReference, TileTree)
 -- transforming:
 --     * The processed nodes with multiple parents.
 --
---     * The processed tile trees, which are cheap enough for inlining.
+--     * The processed tile trees, which are cheap enough for inlining (with
+--     monadic context to get fresh alias names).
 --
 --     * The current state of the table id generator.      
 --
 --     * The current state of the variable id generator.
-type TransformState =
-    ( IntMap.IntMap (ExternalReference, [String])
-    , IntMap.IntMap TileTree
-    , ExternalReference
-    , Int
-    , InternalReference
-    )
+data TransformState = TS
+                    { multiParentNodes :: IntMap.IntMap (ExternalReference, [String])
+                    , mCheapTileNodes  :: IntMap.IntMap (TransformMonad TileTree)
+                    , tableIdGen       :: ExternalReference
+                    , aliasIdGen       :: Int
+                    , varIdGen         :: InternalReference
+                    }
 
 -- | The initial state.
 sInitial :: TransformState
-sInitial = (IntMap.empty, IntMap.empty, 0, 0, 0)
+sInitial = TS IntMap.empty IntMap.empty 0 0 0
 
 -- | Adds a new binding to the state.
 sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
@@ -110,27 +111,27 @@ sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
                )                  -- ^ Name of the reference and its columns.
             -> TransformState
             -> TransformState
-sAddBinding node t (mpnMap, ctMap, g, a, v) =
-    (IntMap.insert node t mpnMap, ctMap, g, a, v)
+sAddBinding node t state =
+    state { multiParentNodes = IntMap.insert node t $ multiParentNodes state}
 
 -- | Tries to look up a binding for a node.
 sLookupBinding :: C.AlgNode
                -> TransformState
                -> Maybe (ExternalReference, [String])
-sLookupBinding n (m, _, _, _, _) = IntMap.lookup n m
+sLookupBinding n = IntMap.lookup n . multiParentNodes
 
 -- | Tries to get the content of an already calculated tile node.
-sGetCheapTileTree :: C.AlgNode
-                  -> TransformState
-                  -> Maybe TileTree
-sGetCheapTileTree n (_, m, _, _, _) = IntMap.lookup n m
+sLookupCheapTM :: C.AlgNode
+               -> TransformState
+               -> Maybe (TransformMonad TileTree)
+sLookupCheapTM n = IntMap.lookup n . mCheapTileNodes
 
-sAddCheapTileTree :: C.AlgNode
-                  -> TileTree
+sAddCheapTM :: C.AlgNode
+                  -> TransformMonad TileTree
                   -> TransformState
                   -> TransformState
-sAddCheapTileTree n t (mpnMap, ctMap, g, a, v) =
-    (mpnMap, IntMap.insert n t ctMap, g, a, v)
+sAddCheapTM n t state =
+    state { mCheapTileNodes = IntMap.insert n t $ mCheapTileNodes state }
 
 -- | The transform monad is used for transforming from DAGs into the tile plan. It
 -- contains:
@@ -147,31 +148,34 @@ type TransformMonad = WriterT DependencyList
 -- 'TransformMonad'.
 generateTableId :: TransformMonad ExternalReference
 generateTableId = do
-    (_, _, i, _, _) <- get
+    state <- get
 
-    modify nextState
+    let id = tableIdGen state
 
-    return i
-  where nextState (m, c, g, a, i) = (m, c, g + 1, a,  i)
+    put $ state { tableIdGen = id + 1}
+
+    return id
 
 generateAliasName :: TransformMonad String
 generateAliasName = do
-    (_, _, _, i, _) <- get
+    state <- get
 
-    modify nextState
+    let id = aliasIdGen state
 
-    return $ 'a' : show i
-  where nextState (m, c, g, a, i) = (m, c, g, a + 1, i)
+    put $ state { aliasIdGen = id + 1 }
+
+    return $ 'a' : show id
 
 -- | A variable identifier generator.
-generateVariableId :: TransformMonad Int
+generateVariableId :: TransformMonad InternalReference
 generateVariableId = do
-    (_, _, _, _, i) <- get
+    state <- get
 
-    modify nextState
+    let id = varIdGen state
 
-    return i
-  where nextState (m, c, g, a, i) = (m, c, g, a, i + 1)
+    put $ state { varIdGen = id + 1 }
+
+    return id
 
 -- | Unpack values (or run computation).
 runTransformMonad :: TransformMonad a
@@ -234,11 +238,11 @@ transformNode n = do
             -- Otherwise add it.
             Nothing     -> do
 
-                possibleTileTree <- gets $ sGetCheapTileTree n
+                possibleTileTree <- gets $ sLookupCheapTM n
 
                 case possibleTileTree of
-                    Just tileTree -> return tileTree
-                    Nothing       -> do
+                    Just mT -> mT
+                    Nothing -> do
                         resultingTile <- mTile
 
                         case getCost resultingTile of
@@ -247,7 +251,7 @@ transformNode n = do
                             Cheap     -> do
 
                                 -- Add to prevent recalculation.
-                                modify $ sAddCheapTileTree n resultingTile
+                                modify $ sAddCheapTM n mTile
                                 mTile
                             -- Tile computation is expensive, probably
                             -- materialize. (The back-end decides.)
