@@ -95,12 +95,13 @@ type TransformState =
     ( IntMap.IntMap (ExternalReference, [String])
     , IntMap.IntMap TileTree
     , ExternalReference
+    , Int
     , InternalReference
     )
 
 -- | The initial state.
 sInitial :: TransformState
-sInitial = (IntMap.empty, IntMap.empty, 0, 0)
+sInitial = (IntMap.empty, IntMap.empty, 0, 0, 0)
 
 -- | Adds a new binding to the state.
 sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
@@ -109,27 +110,27 @@ sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
                )                  -- ^ Name of the reference and its columns.
             -> TransformState
             -> TransformState
-sAddBinding node t (mpnMap, ctMap, g, v) =
-    (IntMap.insert node t mpnMap, ctMap, g, v)
+sAddBinding node t (mpnMap, ctMap, g, a, v) =
+    (IntMap.insert node t mpnMap, ctMap, g, a, v)
 
 -- | Tries to look up a binding for a node.
 sLookupBinding :: C.AlgNode
                -> TransformState
                -> Maybe (ExternalReference, [String])
-sLookupBinding n (m, _,  _, _) = IntMap.lookup n m
+sLookupBinding n (m, _, _, _, _) = IntMap.lookup n m
 
 -- | Tries to get the content of an already calculated tile node.
 sGetCheapTileTree :: C.AlgNode
                   -> TransformState
                   -> Maybe TileTree
-sGetCheapTileTree n (_, m, _, _) = IntMap.lookup n m
+sGetCheapTileTree n (_, m, _, _, _) = IntMap.lookup n m
 
 sAddCheapTileTree :: C.AlgNode
                   -> TileTree
                   -> TransformState
                   -> TransformState
-sAddCheapTileTree n t (mpnMap, ctMap, g, v) =
-    (mpnMap, IntMap.insert n t ctMap, g, v)
+sAddCheapTileTree n t (mpnMap, ctMap, g, a, v) =
+    (mpnMap, IntMap.insert n t ctMap, g, a, v)
 
 -- | The transform monad is used for transforming from DAGs into the tile plan. It
 -- contains:
@@ -146,31 +147,31 @@ type TransformMonad = WriterT DependencyList
 -- 'TransformMonad'.
 generateTableId :: TransformMonad ExternalReference
 generateTableId = do
-    (_, _, i, _) <- get
+    (_, _, i, _, _) <- get
 
     modify nextState
 
     return i
-  where nextState (m, c, g, i) = (m, c, g + 1, i)
+  where nextState (m, c, g, a, i) = (m, c, g + 1, a,  i)
 
 generateAliasName :: TransformMonad String
 generateAliasName = do
-    (_, _, i, _) <- get
+    (_, _, _, i, _) <- get
 
     modify nextState
 
     return $ 'a' : show i
-  where nextState (m, c, g, i) = (m, c, g + 1, i)
+  where nextState (m, c, g, a, i) = (m, c, g, a + 1, i)
 
 -- | A variable identifier generator.
 generateVariableId :: TransformMonad Int
 generateVariableId = do
-    (_, _,  _, i) <- get
+    (_, _, _, _, i) <- get
 
     modify nextState
 
     return i
-  where nextState (m, c, g, i) = (m, c, g, i + 1)
+  where nextState (m, c, g, a, i) = (m, c, g, a, i + 1)
 
 -- | Unpack values (or run computation).
 runTransformMonad :: TransformMonad a
