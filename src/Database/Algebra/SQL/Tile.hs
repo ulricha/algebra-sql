@@ -56,7 +56,7 @@ data Cost = Cheap
 -- | Defines the tile tree structure.
 data TileTree = -- | A tile: The first argument determines whether the
                 -- 'Q.SelectStmt' has nothing else but the select, from or
-                -- where clause/ set and is thus mergeable.
+                -- where clause set and is thus mergeable.
                 TileNode Bool Cost Q.SelectStmt TileChildren
                 -- | A reference pointing to another TileTree: The second
                 -- argument specifies the columns of the referenced table
@@ -249,7 +249,7 @@ transformNode n = do
                                 modify $ sAddCheapTileTree n resultingTile
                                 mTile
                             -- Tile computation is expensive, probably
-                            -- materialize.
+                            -- materialize. (The back-end decides.)
                             Expensive -> do
                                 -- Generate a name for the sub tree.
                                 tableId <- generateTableId
