@@ -21,12 +21,10 @@ module Database.Algebra.SQL.Tile
 -- TODO embed closing tiles as subqueries (are there any sub queries which are
 -- correlated?)? (reader?)
 -- TODO RowRank <-> DenseRank ?
--- TODO isMultiReferenced special case: check for same parent !! (implement
--- embedding with LATERAL ?
+-- TODO isMultiReferenced special case: check for same parent !!
 
-import Control.Monad.Reader
-import Control.Monad.State.Lazy
-import Control.Monad.Writer.Lazy
+import Control.Monad (liftM)
+import Control.Monad.Trans.RWS.Strict
 import qualified Data.IntMap as IntMap
 import Data.Maybe
 import qualified Data.DList as DL
@@ -111,8 +109,8 @@ sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
                )                  -- ^ Name of the reference and its columns.
             -> TransformState
             -> TransformState
-sAddBinding node t state =
-    state { multiParentNodes = IntMap.insert node t $ multiParentNodes state}
+sAddBinding node t st =
+    st { multiParentNodes = IntMap.insert node t $ multiParentNodes st}
 
 -- | Tries to look up a binding for a node.
 sLookupBinding :: C.AlgNode
@@ -130,50 +128,49 @@ sAddCheapTM :: C.AlgNode
                   -> TransformMonad TileTree
                   -> TransformState
                   -> TransformState
-sAddCheapTM n t state =
-    state { mCheapTileNodes = IntMap.insert n t $ mCheapTileNodes state }
+sAddCheapTM n t st =
+    st { mCheapTileNodes = IntMap.insert n t $ mCheapTileNodes st }
 
 -- | The transform monad is used for transforming from DAGs into the tile plan. It
 -- contains:
---     * A writer for outputting the dependencies
---
 --     * A reader for the DAG (since we only read from it)
 --
+--     * A writer for outputting the dependencies
+--
 --     * A state for generating fresh names and maintain the mapping of nodes
-type TransformMonad = WriterT DependencyList
-                              (ReaderT PFDag
-                                       (State TransformState))
+--
+type TransformMonad = RWS PFDag DependencyList TransformState
 
 -- | A table expression id generator using the state within the
 -- 'TransformMonad'.
 generateTableId :: TransformMonad ExternalReference
 generateTableId = do
-    state <- get
+    st <- get
 
-    let id = tableIdGen state
+    let id = tableIdGen st
 
-    put $ state { tableIdGen = id + 1}
+    put $ st { tableIdGen = succ id }
 
     return id
 
 generateAliasName :: TransformMonad String
 generateAliasName = do
-    state <- get
+    st <- get
 
-    let id = aliasIdGen state
+    let id = aliasIdGen st
 
-    put $ state { aliasIdGen = id + 1 }
+    put $ st { aliasIdGen = succ id }
 
     return $ 'a' : show id
 
 -- | A variable identifier generator.
 generateVariableId :: TransformMonad InternalReference
 generateVariableId = do
-    state <- get
+    st <- get
 
-    let id = varIdGen state
+    let id = varIdGen st
 
-    put $ state { varIdGen = id + 1 }
+    put $ st { varIdGen = succ id }
 
     return id
 
@@ -182,9 +179,7 @@ runTransformMonad :: TransformMonad a
                   -> PFDag                      -- ^ The used DAG.
                   -> TransformState             -- ^ The inital state.
                   -> (a, DependencyList)
-runTransformMonad m env = evalState readerResult
-  where writerResult = runWriterT m
-        readerResult = runReaderT writerResult env
+runTransformMonad = evalRWS 
 
 -- | Check if node has more than one parent.
 isMultiReferenced :: C.AlgNode
