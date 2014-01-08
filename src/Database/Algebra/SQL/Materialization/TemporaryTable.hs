@@ -11,7 +11,9 @@ import Database.Algebra.SQL.Tile.Flatten
 -- value queries.
 materialize :: MatFun
 materialize transformResult =
-    map tmpTable deps ++ map (QValueQuery . VQSelect . fst) selects
+    ( map tmpTable deps
+    , map (QValueQuery . VQSelect . fst) selects
+    )
   where
         tmpTable (name, (body, _)) =
             QDefinitionQuery $ DQTemporaryTable (VQSelect body) name

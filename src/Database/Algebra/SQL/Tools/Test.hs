@@ -16,11 +16,11 @@ import qualified Database.Algebra.Dag as D
 import qualified Database.Algebra.Dag.Common as C
 
 import Database.Algebra.SQL.File
+import Database.Algebra.SQL.Materialization
 import Database.Algebra.SQL.Materialization.CTE as CTE
 import Database.Algebra.SQL.Materialization.TemporaryTable as TemporaryTable
 import qualified Database.Algebra.SQL.Materialization.Combined as Combined
 import Database.Algebra.SQL.Util (renderDebugOutput, renderOutput, putShowSLn)
-import Database.Algebra.SQL.Query
 import qualified Database.Algebra.SQL.Tile as T
 
 
@@ -250,15 +250,89 @@ g10 = D.mkDag ( IntMap.fromList [ (0, C.BinOp eq 1 1)
         pc c = A.Project [(c, A.ColE "c")]
         eq   = A.EqJoin ("c", "d")
 
+
 testGraphs :: [T.PFDag]
-testGraphs = [test, g1, g2, g6, g7, g8, g9, g10] -- g3, g4, g5]
+testGraphs = singleTests ++ [test, g1, g2, g6, g7, g8, g9, g10] -- g3, g4, g5]
+
+-- Test for single operator translation.
+singleTests :: [T.PFDag]
+singleTests = [ tLitTable
+              , tEmptyTable
+              , tTableRef
+              , tRowNum
+              , tRowRank
+              , tRank
+              , tProject
+              , tSelect
+              , tDistinct
+              , tAggr
+              , tCross
+              , tEqJoin
+              , tThetaJoin
+              , tSemiJoin
+              , tAntiJoin
+              , tDisjUnion
+              , tDifference
+              ]
+  where
+    joinInfo          = [("a", "c", A.EqJ), ("b", "d", A.LeJ)]
+    sortInfo          = [("a", A.Asc)]
+    colTypes          = [("a", A.AInt), ("b", A.AStr)]
+    colTypes2         = [("c", A.AInt), ("d", A.AInt)]
+    mapping op        = [ (0, C.NullaryOp (A.EmptyTable colTypes))
+                        , (1, C.NullaryOp (A.EmptyTable colTypes2))
+                        , (2, op)
+                        ]
+    singletonGraph :: A.PFAlgebra -> T.PFDag
+    singletonGraph op = D.mkDag ( IntMap.fromList $ mapping op
+                                )
+                                [2]
+    -- nullary operators
+    singletonN    = singletonGraph . C.NullaryOp
+    tLitTable     =
+        singletonN $ A.LitTable [[A.VInt 0, A.VStr "test"]] colTypes
+    tEmptyTable   = singletonN $ A.EmptyTable colTypes
+    tTableRef     = singletonN $ A.TableRef ("foo", colTypes, [])
+    
+    -- unary operators
+    singletonU op = singletonGraph $ C.UnOp op 0
+
+    tRowNum       = singletonU (A.RowNum ("c", sortInfo, Just "b"))
+    tRowRank      = singletonU (A.RowRank ("c", sortInfo))
+    tRank         = singletonU (A.Rank ("c", sortInfo))
+    tProject      =
+        singletonU
+        $ A.Project [ ("x", A.ConstE $ A.VInt 0)
+                    , ("y", A.ColE "a")
+                    , ("z", A.UnAppE A.Not
+                                     $ A.ConstE $ A.VBool False
+                      )
+                    ]
+          -- TODO
+    tSelect       =
+        singletonU $ A.Select $ A.ConstE $ A.VBool True
+    tDistinct     = singletonU $ A.Distinct ()
+    tAggr         =
+        singletonU
+        $ A.Aggr ([(A.Count, "count")], [("a", A.ColE "a")])
+
+    -- binary operators
+    singletonB op = singletonGraph $ C.BinOp op 0 1
+
+    tCross        = singletonB $ A.Cross ()
+    tEqJoin       = singletonB $ A.EqJoin ("a", "c")
+    tThetaJoin    = singletonB $ A.ThetaJoin joinInfo
+    tSemiJoin     = singletonB $ A.SemiJoin joinInfo
+    tAntiJoin     = singletonB $ A.AntiJoin joinInfo
+    tDisjUnion    = singletonB $ A.DisjUnion ()
+    tDifference   = singletonB $ A.Difference ()
 
 data Options = Options
             { optDot       :: Bool
             , optRenderDot :: Bool
             , optDebug     :: Bool
             , optHelp      :: Bool
-            , optMatFun    :: ([T.TileTree], T.DependencyList) -> [Query]
+            , optMatFun    :: MatFun
             , optFast      :: Bool
             }
 defaultOptions :: Options
