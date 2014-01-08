@@ -61,9 +61,6 @@ library
                       Database.Algebra.Pathfinder.Data.Algebra
 
                       Database.Algebra.SQL.Util
-                      Database.Algebra.SQL.Materialization.Combined
-                      Database.Algebra.SQL.Materialization.TemporaryTable
-                      Database.Algebra.SQL.Materialization.CTE
 
                       Database.Algebra.VL.Data
                       Database.Algebra.VL.Render.Dot

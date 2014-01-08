@@ -10,7 +10,6 @@ import Text.PrettyPrint.ANSI.Leijen ( (<$>)
                                     , align 
                                     , black
                                     , bold
-                                    , dullblue
                                     , empty
                                     , indent
                                     , int
@@ -39,9 +38,6 @@ extRef = onwhite . black . bold . int
 type_ :: String -> Doc
 type_ = bold . text
 
-childId :: Int -> Doc
-childId = dullblue . int
-
 renderTileTreeNode :: Q.SelectStmt ->  [(Int, TileTree)] -> Doc
 renderTileTreeNode body children =
     type_ "tile"
@@ -50,7 +46,7 @@ renderTileTreeNode body children =
        then empty
        else linebreak <> bold (text "children") <+> align (vsep rC)
   where rC         = map f children
-        f (vId, t) = childId vId <+> align (renderTileTree t)
+        f (vId, t) = intRef vId <+> align (renderTileTree t)
 
 
 renderTileTree :: TileTree -> Doc
