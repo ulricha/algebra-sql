@@ -6,7 +6,7 @@ import System.Console.GetOpt
     ( getOpt
     , ArgOrder(RequireOrder)
     , usageInfo
-    , ArgDescr(NoArg, ReqArg)
+    , ArgDescr(NoArg, ReqArg, OptArg)
     , OptDescr(Option)
     )
 import System.Environment (getArgs)
@@ -20,7 +20,12 @@ import Database.Algebra.SQL.Materialization
 import Database.Algebra.SQL.Materialization.CTE as CTE
 import Database.Algebra.SQL.Materialization.TemporaryTable as TemporaryTable
 import qualified Database.Algebra.SQL.Materialization.Combined as Combined
-import Database.Algebra.SQL.Util (renderDebugOutput, renderOutput, putShowSLn)
+import Database.Algebra.SQL.Util
+    ( renderDebugOutput
+    , renderOutput
+    , putShowSLn
+    , renderAdvancedDebugOutput
+    )
 import qualified Database.Algebra.SQL.Tile as T
 
 
@@ -327,6 +332,7 @@ singleTests = [ tLitTable
     tDisjUnion    = singletonB $ A.DisjUnion ()
     tDifference   = singletonB $ A.Difference ()
 
+
 data Options = Options
             { optDot       :: Bool
             , optRenderDot :: Bool
@@ -334,9 +340,10 @@ data Options = Options
             , optHelp      :: Bool
             , optMatFun    :: MatFun
             , optFast      :: Bool
+            , optDebugFun  :: Maybe (T.PFDag -> MatFun -> String)
             }
 defaultOptions :: Options
-defaultOptions = Options False False False False CTE.materialize False
+defaultOptions = Options False False False False CTE.materialize False Nothing
 
 -- idea from VLToX100.hs from DSH
 options :: [OptDescr (Options -> Options)]
@@ -353,8 +360,10 @@ options = [ Option
           , Option
             "d"
             ["debug"]
-            (NoArg (\opt -> opt { optDebug = True }))
-            "Show debug output"
+            (OptArg handleDebug "<flags>")
+            "Show debug output, where optional arguments can be\n\
+            \composed of (trigger analyze and/or explain):\n\
+            \    a | e"
           , Option
             "h"
             ["help"]
@@ -363,7 +372,7 @@ options = [ Option
           , Option
             "m"
             ["mat-strategy"]
-            (ReqArg (\s opt -> opt { optMatFun = parseMatFun s }) "s")
+            (ReqArg (\s opt -> opt { optMatFun = parseMatFun s }) "<strategy>")
             "Specify the type of materialization (defaults to cte):\n\
             \    cte | tmp | com | coml | comh"
           , Option
@@ -383,6 +392,18 @@ options = [ Option
                   -- TODO stupid library is not able to parse sub args
                   _     -> CTE.materialize
 
+              handleDebug optArg opts =
+                  ( case optArg of
+                       Nothing -> opts
+                       Just os ->
+                           opts { optDebugFun = Just $ parseDebugStr os }
+                  )
+                  { optDebug = True }
+
+              parseDebugStr os = renderAdvancedDebugOutput ('e' `elem` os)
+                                                           $ 'a' `elem` os
+
+
 main :: IO ()
 main = do
     args <- getArgs
@@ -395,7 +416,11 @@ main = do
         (False, False)     ->  do
             let debug    = optDebug usedOptions
                 matFun   = optMatFun usedOptions
-                output d = putShowSLn $ renderDebugOutput d matFun debug
+                output d = case optDebugFun usedOptions of
+                    Just f ->
+                        putStrLn $ f d matFun
+                    Nothing ->
+                        putShowSLn $ renderDebugOutput d matFun debug
 
             case realArgs of
                 filenames@(_:_) ->

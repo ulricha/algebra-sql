@@ -2,6 +2,7 @@
 module Database.Algebra.SQL.Util
     ( renderOutput
     , renderDebugOutput
+    , renderAdvancedDebugOutput
     , renderOutputDSH
     , putShowSLn
     ) where
@@ -57,3 +58,16 @@ renderOutputDSH dag =
     (_, (tqs, rqs)) = resultFromDAG dag C.materialize
     renderedRQs     = R.render rqs
     renderedTQs     = R.render tqs
+
+-- | Produces output which allows further inspection with the psql command line
+-- utility (and possibly others too).
+renderAdvancedDebugOutput :: Bool -> Bool -> T.PFDag -> MatFun -> String
+renderAdvancedDebugOutput explain analyze dag matFun =
+    foldr ((.) . (prefixes .)) id (renderedTQs ++ renderedRQs) ""
+  where
+    (_, (tqs, rqs)) = resultFromDAG dag matFun
+    renderedRQs     = R.render rqs
+    renderedTQs     = R.render tqs
+    prefixes        = showString $ ap ++ ep
+    ep              = if explain then "EXPLAIN " else ""
+    ap              = if analyze then "ANALYZE " else ""
