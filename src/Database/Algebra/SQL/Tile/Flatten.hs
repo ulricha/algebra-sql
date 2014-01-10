@@ -33,7 +33,12 @@ import Data.Maybe (fromMaybe)
 
 import qualified Database.Algebra.SQL.Query as Q
 import Database.Algebra.SQL.Query.Substitution
+import Database.Algebra.SQL.Query.Util
+    ( emptySelectStmt
+    , mkPCol
+    )
 import Database.Algebra.SQL.Tile
+
 
 -- TODO error used in lookup
 

@@ -15,7 +15,6 @@ import Text.PrettyPrint.ANSI.Leijen ( (<$>)
                                     , char
                                     , comma
                                     , double
-                                    , dullblue
                                     , empty
                                     , fillSep
                                     , float
@@ -26,6 +25,7 @@ import Text.PrettyPrint.ANSI.Leijen ( (<$>)
                                     , integer
                                     , linebreak
                                     , lparen
+                                    , ondullblue
                                     , parens
                                     , punctuate
                                     , red
@@ -170,7 +170,7 @@ renderSubQuery q = lparen <+> align (renderValueQuery q) <$> rparen
 
 renderFromExpr :: FromExpr -> Doc
 renderFromExpr (FESubQuery q)       = renderSubQuery q
-renderFromExpr (FEVariable v)       = dullblue $ int v
+renderFromExpr (FEVariable v)       = ondullblue $ int v
 renderFromExpr (FETableReference n) = text n
 
 -- | Renders an optional prefix.

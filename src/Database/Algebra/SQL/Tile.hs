@@ -8,11 +8,6 @@ module Database.Algebra.SQL.Tile
     , TransformResult
     , transform
     , PFDag
-    , -- TODO should not export / maybe put in another module which is not
-      -- available in public
-      emptySelectStmt
-    , mkPCol
-    , mkFromPartRef
     ) where
 
 -- TODO maybe split this file into the tile definition
@@ -20,13 +15,11 @@ module Database.Algebra.SQL.Tile
 -- TODO embed closing tiles as subqueries (are there any sub queries which are
 -- correlated?)? (reader?)
 -- TODO RowRank <-> DenseRank ?
--- TODO isMultiReferenced special case: check for same parent !! (implement
--- embedding with LATERAL ?
+-- TODO isMultiReferenced special case: check for same parent !!
 
-import Control.Monad.Reader
-import Control.Monad.State.Lazy
-import Control.Monad.Writer.Lazy
-import qualified Data.Map.Lazy as Map
+import Control.Monad (liftM)
+import Control.Monad.Trans.RWS.Strict
+import qualified Data.IntMap as IntMap
 import Data.Maybe
 import qualified Data.DList as DL
     ( DList
@@ -38,6 +31,11 @@ import qualified Database.Algebra.Dag.Common as C
 import qualified Database.Algebra.Pathfinder.Data.Algebra as A
 
 import qualified Database.Algebra.SQL.Query as Q
+import Database.Algebra.SQL.Query.Util
+    ( emptySelectStmt
+    , mkSubQuery
+    , mkPCol
+    )
 
 -- | A tile internal reference type.
 type InternalReference = Q.ReferenceType
@@ -52,7 +50,7 @@ type TileChildren = [(InternalReference, TileTree)]
 -- | Defines the tile tree structure.
 data TileTree = -- | A tile: The first argument determines whether the
                 -- 'Q.SelectStmt' has nothing else but the select, from or
-                -- where clause/ set and is thus mergeable.
+                -- where clause set and is thus mergeable.
                 TileNode Bool Q.SelectStmt TileChildren
                 -- | A reference pointing to another TileTree: The second
                 -- argument specifies the columns of the referenced table
@@ -73,16 +71,19 @@ type DependencyList = DL.DList (ExternalReference, TileTree)
 --     * The current state of the table id generator.      
 --
 --     * The current state of the variable id generator.
-type TransformState =
-    ( Map.Map C.AlgNode (ExternalReference, [String])
-    , ExternalReference
-    , Int
-    , InternalReference
-    )
+--
+data TransformState = TS
+                    { multiParentNodes :: IntMap.IntMap ( ExternalReference
+                                                        , [String]
+                                                        )
+                    , tableIdGen       :: ExternalReference
+                    , aliasIdGen       :: Int
+                    , varIdGen         :: InternalReference
+                    }
 
 -- | The initial state.
 sInitial :: TransformState
-sInitial = (Map.empty, 0,  0, 0)
+sInitial = TS IntMap.empty 0 0 0
 
 -- | Adds a new binding to the state.
 sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
@@ -91,68 +92,70 @@ sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
                )                  -- ^ Name of the reference and its columns.
             -> TransformState
             -> TransformState
-sAddBinding n t (m, g, a, v) = (Map.insert n t m, g, a, v)
+sAddBinding node t st =
+    st { multiParentNodes = IntMap.insert node t $ multiParentNodes st}
 
 -- | Tries to look up a binding for a node.
 sLookupBinding :: C.AlgNode
                -> TransformState
                -> Maybe (ExternalReference, [String])
-sLookupBinding n (m, _, _, _) = Map.lookup n m
+sLookupBinding n = IntMap.lookup n . multiParentNodes
 
 -- | The transform monad is used for transforming from DAGs into the tile plan. It
 -- contains:
---     * A writer for outputting the dependencies
 --
 --     * A reader for the DAG (since we only read from it)
 --
+--     * A writer for outputting the dependencies
+--
 --     * A state for generating fresh names and maintain the mapping of nodes
-type TransformMonad = WriterT DependencyList
-                              (ReaderT PFDag
-                                       (State TransformState))
+--
+type TransformMonad = RWS PFDag DependencyList TransformState
 
 -- | A table expression id generator using the state within the
 -- 'TransformMonad'.
 generateTableId :: TransformMonad ExternalReference
 generateTableId = do
-    (_, i, _,  _) <- get
+    st <- get
 
-    modify nextState
+    let tid = tableIdGen st
 
-    return i
-  where nextState (m, g, a, i) = (m, g + 1, a,  i)
+    put $ st { tableIdGen = succ tid }
+
+    return tid
 
 generateAliasName :: TransformMonad String
 generateAliasName = do
-    (_, _, i, _) <- get
+    st <- get
 
-    modify nextState
+    let aid = aliasIdGen st
 
-    return $ 'a' : show i
-  where nextState (m, g, a,  i) = (m, g, a + 1, i)
+    put $ st { aliasIdGen = succ aid }
+
+    return $ 'a' : show aid
 
 -- | A variable identifier generator.
-generateVariableId :: TransformMonad Int
+generateVariableId :: TransformMonad InternalReference
 generateVariableId = do
-    (_, _, _,  i) <- get
+    st <- get
 
-    modify nextState
+    let vid = varIdGen st
 
-    return i
-  where nextState (m, g, a, i) = (m, g, a, i + 1)
+    put $ st { varIdGen = succ vid }
+
+    return vid
 
 -- | Unpack values (or run computation).
 runTransformMonad :: TransformMonad a
                   -> PFDag                      -- ^ The used DAG.
                   -> TransformState             -- ^ The inital state.
                   -> (a, DependencyList)
-runTransformMonad m env = evalState readerResult
-  where writerResult = runWriterT m
-        readerResult = runReaderT writerResult env
+runTransformMonad = evalRWS 
 
 -- | Check if node has more than one parent.
 isMultiReferenced :: C.AlgNode
-           -> PFDag
-           -> Bool
+                  -> PFDag
+                  -> Bool
 isMultiReferenced n dag = case D.parents n dag of
     -- Has at least 2 parents.
     _:(_:_) -> True
@@ -689,11 +692,6 @@ extractFromAlias alias =
                                                             else r
         f _                               r = r
 
--- | Shorthand to make a prefixed column value expression.
-mkPCol :: String
-       -> String
-       -> Q.ValueExpr
-mkPCol p c = Q.VEColumn c $ Just p
 
 -- | Shorthand to make an unprefixed column value expression.
 mkCol :: String
@@ -728,24 +726,11 @@ appendToWhere cond select = select
                                       Just e  -> Just $ mkAnd cond e
                             }
 
--- | Embeds a query into a from part as sub query.
-mkSubQuery :: Q.SelectStmt
-           -> String
-           -> Maybe [String]
-           -> Q.FromPart
-mkSubQuery sel = Q.FPAlias (Q.FESubQuery $ Q.VQSelect sel)
-
 mkFromPartVar :: Int
               -> String
               -> Maybe [String]
               -> Q.FromPart
 mkFromPartVar identifier = Q.FPAlias (Q.FEVariable identifier)
-
--- | Generate a table reference which can be used within a from clause.
-mkFromPartRef :: String          -- ^ The name of the table.
-              -> Maybe [String]  -- ^ The optional columns.
-              -> Q.FromPart
-mkFromPartRef name = Q.FPAlias (Q.FETableReference name) name
 
 -- | Translate 'A.JoinRel' into 'Q.BinaryFunction'.
 translateJoinRel :: A.JoinRel
@@ -844,8 +829,4 @@ translateATy t = case t of
     A.ADec    -> Q.DTDecimal
     A.ADouble -> Q.DTDoublePrecision
     A.ANat    -> Q.DTInteger
-
--- | Helper value to construct select statements.
-emptySelectStmt :: Q.SelectStmt
-emptySelectStmt = Q.SelectStmt [] False [] Nothing [] []
 
