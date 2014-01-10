@@ -68,6 +68,6 @@ renderAdvancedDebugOutput explain analyze dag matFun =
     (_, (tqs, rqs)) = resultFromDAG dag matFun
     renderedRQs     = R.render rqs
     renderedTQs     = R.render tqs
-    prefixes        = showString $ ap ++ ep
+    prefixes        = showString $ ep ++ ap
     ep              = if explain then "EXPLAIN " else ""
     ap              = if analyze then "ANALYZE " else ""
