@@ -291,7 +291,7 @@ transformNullaryOp (A.TableRef (name, info, _))   = do
 -- | Abstraktion for rank operators.
 transformUnOpRank :: -- SelectExpr constructor.
                      ([Q.OrderExpr] -> Q.SelectExpr)
-                  -> (String, A.SortInf)
+                  -> (String, [A.SortAttr])
                   -> C.AlgNode
                   -> TransformMonad TileTree
 transformUnOpRank rankConstructor (name, sortList) =
@@ -667,9 +667,9 @@ translateInlinedJoinCond lSClause rSClause j =
     translateJoinCond j (inlineColumn lSClause) (inlineColumn rSClause)
 
 
--- | Translate a 'A.SortInf' with inlining of value expressions.
+-- | Translate a '[A.SortAttr]' with inlining of value expressions.
 translateInlinedSortInf :: [Q.SelectColumn]
-                        -> A.SortInf
+                        -> [A.SortAttr]
                         -> [Q.OrderExpr]
 translateInlinedSortInf sClause si = translateSortInf si (inlineColumn sClause)
 
@@ -792,7 +792,7 @@ translateBinFun f = case f of
 
 -- | Translate sort information into '[Q.OrderExpr]', using the column
 -- function, which takes a 'String'.
-translateSortInf :: A.SortInf
+translateSortInf :: [A.SortAttr]
                  -> (String -> Q.ValueExpr)
                  -> [Q.OrderExpr]
 translateSortInf si colFun = map f si
