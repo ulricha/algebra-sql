@@ -79,9 +79,9 @@ semiJoin cond c1 c2 = insertNode $ BinOp (SemiJoin cond) c1 c2
 antiJoin :: SemInfJoin -> AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
 antiJoin cond c1 c2 = insertNode $ BinOp (AntiJoin cond) c1 c2
 
--- | Assign a number to each row in column 'ResAttrName' incrementing
--- sorted by `SortInf'. The numbering is not dense!
-rank :: ResAttrName -> SortInf -> AlgNode -> GraphM a PFAlgebra AlgNode
+-- | Assign a number to each row in column 'ResAttrName' incrementally
+-- sorted by `sort'. The numbering is not dense!
+rank :: ResAttrName -> [SortAttr] -> AlgNode -> GraphM a PFAlgebra AlgNode
 rank res sort c1 = insertNode $ UnOp (Rank (res, sort)) c1
 
 -- | Compute the difference between two plans.
@@ -89,11 +89,11 @@ difference :: AlgNode -> AlgNode -> GraphM a PFAlgebra AlgNode
 difference q1 q2 = insertNode $ BinOp (Difference ()) q1 q2
 
 -- | Same as rank but provides a dense numbering.
-rowrank :: ResAttrName -> SortInf -> AlgNode -> GraphM a PFAlgebra AlgNode
+rowrank :: ResAttrName -> [SortAttr] -> AlgNode -> GraphM a PFAlgebra AlgNode
 rowrank res sort c1 = insertNode $ UnOp (RowRank (res, sort)) c1
 
 -- | Get's the nth element(s) of a (partitioned) table.
-posSelect :: Int -> SortInf -> Maybe AttrName -> AlgNode -> GraphM a PFAlgebra AlgNode
+posSelect :: Int -> [SortAttr] -> Maybe AttrName -> AlgNode -> GraphM a PFAlgebra AlgNode
 posSelect n sort part c1 = insertNode $ UnOp (PosSel (n, sort, part)) c1
 
 -- | Select rows where the column `SelAttrName' contains True.

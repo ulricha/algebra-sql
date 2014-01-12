@@ -17,7 +17,7 @@ instance ToJSON ATy where
 instance ToJSON AVal where
 instance ToJSON SortDir where
 instance ToJSON JoinRel where
-instance ToJSON SortInf where
+instance ToJSON SortAttr where
 instance ToJSON AggrType where
 instance ToJSON NullOp where
 instance ToJSON UnOp where
@@ -31,7 +31,7 @@ instance FromJSON ATy where
 instance FromJSON AVal where
 instance FromJSON SortDir where
 instance FromJSON JoinRel where
-instance FromJSON SortInf where
+instance FromJSON SortAttr where
 instance FromJSON AggrType where
 instance FromJSON NullOp where
 instance FromJSON UnOp where

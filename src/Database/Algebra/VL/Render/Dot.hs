@@ -181,6 +181,7 @@ opDotColor (UnOp (SortSimple _) _)     = Tomato
 opDotColor (BinOp GroupBy _ _)         = Tomato
 opDotColor (UnOp (GroupSimple _) _)    = Tomato
 opDotColor (BinOp PropRename _ _)      = Tan
+opDotColor (BinOp PropReorder _ _)     = Tan
 opDotColor (BinOp DistSeg _ _)         = Tan
 opDotColor (BinOp Restrict _ _)        = DodgerBlue
 opDotColor (TerOp Combine _ _ _)       = DodgerBlue

@@ -134,7 +134,7 @@ type TypedAttr = (AttrName, ATy)
 newtype Key = Key [AttrName] deriving (Eq, Ord, Show, Generic)
 
 -- | Sort information, a list (ordered in sorting priority), of pair of columns and their sort direction--
-type SortInf              = [(SortAttrName, SortDir)]
+type SortAttr              = (AttrName, SortDir)
 
 -- | Binary functions and operators in expressions
 data BinFun = Gt
@@ -205,15 +205,15 @@ type Tuple = [AVal]
 -- tuple is the column name the second its type.
 type SchemaInfos = [(AttrName, ATy)]
 
-type SemInfRowNum  = (ResAttrName, SortInf, Maybe PartAttrName)
+type SemInfRowNum  = (ResAttrName, [SortAttr], Maybe PartAttrName)
 
 -- | Information that specifies how to perform the rank operation.  its first
 --  element is the column where the output of the operation is inserted the
 --  second element represents the sorting criteria that determine the ranking.
-type SemInfRank    = (ResAttrName,  SortInf)
+type SemInfRank    = (ResAttrName,  [SortAttr])
 
 -- | Information that specifies how to select element at a certain position
-type SemInfPosSel  = (Int, SortInf, Maybe PartAttrName)
+type SemInfPosSel  = (Int, [SortAttr], Maybe PartAttrName)
 
 -- | Information on how to perform an eq-join. The first element represents the
 -- column from the first table that has to be equal to the column in the second
