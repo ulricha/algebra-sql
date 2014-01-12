@@ -50,8 +50,8 @@ eqJoinM :: String -> String -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra 
 eqJoinM n1 n2 = bind2 (C.eqJoin n1 n2)
 
 -- | Assign a number to each row in column 'ResAttrName' incrementing
--- sorted by `SortInf'. The numbering is not dense!
-rankM :: ResAttrName -> SortInf -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+-- sorted by `sort'. The numbering is not dense!
+rankM :: ResAttrName -> [SortAttr] -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 rankM res sort = bind1 (C.rank res sort)
 
 -- | Compute the difference between two plans.
@@ -59,11 +59,11 @@ differenceM :: GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode -> Graph
 differenceM = bind2 C.difference
 
 -- | Same as rank but provides a dense numbering.
-rowrankM :: ResAttrName -> SortInf -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+rowrankM :: ResAttrName -> [SortAttr] -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 rowrankM res sort = bind1 (C.rowrank res sort)
 
 -- | Get's the nth element(s) of a (partitioned) table.
-posSelectM :: Int -> SortInf -> Maybe AttrName -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
+posSelectM :: Int -> [SortAttr] -> Maybe AttrName -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 posSelectM n sort part = bind1 (C.posSelect n sort part)
 
 -- | Select rows where the column `SelAttrName' contains True.
