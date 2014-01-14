@@ -40,10 +40,9 @@ test = D.mkDag ( IntMap.fromList [ (0, C.BinOp (A.Cross ()) 1 2)
                                    )
                                  , (3, C.UnOp (A.Project [("z", A.ColE "y")]) 4)
                                  , (5, C.UnOp (A.Project [("x", A.ColE "y")]) 4)
-                                 , (6, C.UnOp (A.PosSel (1, [], Nothing)) 5)
                                  ]
                )
-               [0, 5, 6]
+               [0, 5]
 
 -- TODO when using mutiple root nodes the result gets computed multiple times,
 -- maybe save every computed tile in the state part of the transform monad for a node.
@@ -227,9 +226,7 @@ g9 = D.mkDag ( IntMap.fromList [ (0, C.UnOp p 2)
                                , (6, C.UnOp (pc "a") 8)
                                , (7, C.UnOp p 8)
                                , (8, C.UnOp p 9)
-                               , (9, C.NullaryOp ( A.EmptyTable
-                                                   [("c", A.AInt), ("d", A.AInt)]
-                                                 )
+                               , (9, C.NullaryOp ( A.LitTable [] [("c", A.AInt), ("d", A.AInt)] )
                                  )
                                ]
              )
@@ -244,10 +241,7 @@ g10 :: T.PFDag
 g10 = D.mkDag ( IntMap.fromList [ (0, C.BinOp eq 1 1)
                                 , (1, C.BinOp eq 2 2)
                                 , (2, C.UnOp p 3)
-                                , (3, C.NullaryOp ( A.EmptyTable
-                                                    [("c", A.AInt), ("d", A.AInt)]
-                                                  )
-                                  )
+                                , (3, C.NullaryOp ( A.LitTable [] [("c", A.AInt), ("d", A.AInt)] ))
                                 ]
               )
               [0]
@@ -284,8 +278,8 @@ singleTests = [ tLitTable
     sortInfo          = [("a", A.Asc)]
     colTypes          = [("a", A.AInt), ("b", A.AStr)]
     colTypes2         = [("c", A.AInt), ("d", A.AInt)]
-    mapping op        = [ (0, C.NullaryOp (A.EmptyTable colTypes))
-                        , (1, C.NullaryOp (A.EmptyTable colTypes2))
+    mapping op        = [ (0, C.NullaryOp (A.LitTable [] colTypes))
+                        , (1, C.NullaryOp (A.LitTable [] colTypes2))
                         , (2, op)
                         ]
     singletonGraph :: A.PFAlgebra -> T.PFDag
@@ -296,7 +290,7 @@ singleTests = [ tLitTable
     singletonN    = singletonGraph . C.NullaryOp
     tLitTable     =
         singletonN $ A.LitTable [[A.VInt 0, A.VStr "test"]] colTypes
-    tEmptyTable   = singletonN $ A.EmptyTable colTypes
+    tEmptyTable   = singletonN $ A.LitTable [] colTypes
     tTableRef     = singletonN $ A.TableRef ("foo", colTypes, [])
     
     -- unary operators

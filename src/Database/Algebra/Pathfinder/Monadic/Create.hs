@@ -4,7 +4,6 @@ module Database.Algebra.Pathfinder.Monadic.Create
   , rankM
   , differenceM
   , rowrankM
-  , posSelectM
   , selectM
   , distinctM
   , crossM
@@ -61,10 +60,6 @@ differenceM = bind2 C.difference
 -- | Same as rank but provides a dense numbering.
 rowrankM :: ResAttrName -> [SortAttr] -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
 rowrankM res sort = bind1 (C.rowrank res sort)
-
--- | Get's the nth element(s) of a (partitioned) table.
-posSelectM :: Int -> [SortAttr] -> Maybe AttrName -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode
-posSelectM n sort part = bind1 (C.posSelect n sort part)
 
 -- | Select rows where the column `SelAttrName' contains True.
 selectM :: Expr -> GraphM a PFAlgebra AlgNode -> GraphM a PFAlgebra AlgNode

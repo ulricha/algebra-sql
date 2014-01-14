@@ -249,7 +249,7 @@ renderDot ns es = text "digraph" <> (braces $ preamble $$ nodeSection $$ edgeSec
 
 -- | Labels (to collect all operations (nullary, unary,binary))
 data PFLabel = EmptyTableL SchemaInfos
-             | LitTableL SemInfLitTable SchemaInfos
+             | LitTableL [Tuple] SchemaInfos
              | TableRefL SemInfTableRef    -- nullops
              | AggrL SemInfAggr
              | DistinctL ()
@@ -285,7 +285,6 @@ labelOfBinOp (AntiJoin info)    = AntiJoinL info
 labelOfUnOp :: UnOp -> PFLabel
 labelOfUnOp (Aggr info)     = AggrL info
 labelOfUnOp (Distinct info) = DistinctL  info
-labelOfUnOp (PosSel info)   = PosSelL info
 labelOfUnOp (Project info)  = ProjectL info
 labelOfUnOp (Rank info)     = RankL info
 labelOfUnOp (RowNum info)   = RowNumL info
@@ -293,9 +292,8 @@ labelOfUnOp (RowRank info)  = RowRankL info
 labelOfUnOp (Select info)   = SelL info
 
 labelOfNullaryOp :: NullOp -> PFLabel
-labelOfNullaryOp (EmptyTable  info)	      = EmptyTableL info
-labelOfNullaryOp (LitTable  info1 info2)	= LitTableL info1 info2
-labelOfNullaryOp (TableRef  info)      	  = TableRefL info
+labelOfNullaryOp (LitTable  info1 info2) = LitTableL info1 info2
+labelOfNullaryOp (TableRef  info)      	 = TableRefL info
 
 -- | extract the operator descriptions and list of edges from a DAG
 

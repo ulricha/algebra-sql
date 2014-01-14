@@ -45,10 +45,6 @@ natT = ANat
 
 -- * Graph construction combinators for table PFAlgebra
 
--- | Construct an empty table node with
-emptyTable :: SchemaInfos -> GraphM a PFAlgebra AlgNode
-emptyTable schema = insertNode $ NullaryOp (EmptyTable schema)
-
 -- | Construct a database table node
 -- The first argument is the \emph{qualified} name of the database
 -- table. The second describes the columns in alphabetical order.
@@ -91,10 +87,6 @@ difference q1 q2 = insertNode $ BinOp (Difference ()) q1 q2
 -- | Same as rank but provides a dense numbering.
 rowrank :: ResAttrName -> [SortAttr] -> AlgNode -> GraphM a PFAlgebra AlgNode
 rowrank res sort c1 = insertNode $ UnOp (RowRank (res, sort)) c1
-
--- | Get's the nth element(s) of a (partitioned) table.
-posSelect :: Int -> [SortAttr] -> Maybe AttrName -> AlgNode -> GraphM a PFAlgebra AlgNode
-posSelect n sort part c1 = insertNode $ UnOp (PosSel (n, sort, part)) c1
 
 -- | Select rows where the column `SelAttrName' contains True.
 select :: Expr -> AlgNode -> GraphM a PFAlgebra AlgNode

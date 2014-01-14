@@ -243,9 +243,6 @@ instance Show JoinRel where
   show LeJ = "le"
   show NeJ = "ne"
 
--- | Information what to put in a literate table
-type SemInfLitTable = [Tuple]
-
 -- | Information for accessing a database table
 type SemInfTableRef = (TableName, [TypedAttr], [Key])
 
@@ -255,9 +252,7 @@ type SemUnOp = (ResAttrName, AttrName)
 
 type SemInfAggr = ([(AggrType, ResAttrName)], [(AttrName, Expr)])
 
-data NullOp = LitTable SemInfLitTable SchemaInfos
-            -- FIXME Separate EmptyTables are not necessary -> eliminate
-            | EmptyTable SchemaInfos
+data NullOp = LitTable [Tuple] SchemaInfos
             | TableRef SemInfTableRef
             deriving (Ord, Eq, Show, Generic)
 
@@ -266,9 +261,6 @@ data UnOp = RowNum SemInfRowNum
           | Rank SemInfRank
           | Project [(AttrName, Expr)]
           | Select Expr
-          -- What exactly is the semantics here?
-          -- FIXME eliminate
-          | PosSel SemInfPosSel
           | Distinct ()
           | Aggr SemInfAggr
           deriving (Ord, Eq, Show, Generic)
