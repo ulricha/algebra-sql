@@ -26,6 +26,9 @@ instance ToJSON Expr where
 instance ToJSON UnFun where
 instance ToJSON BinFun where
 instance ToJSON Key where
+instance ToJSON DescrCol where
+instance ToJSON PosCol where
+instance ToJSON PayloadCol where
 
 instance FromJSON ATy where
 instance FromJSON AVal where
@@ -40,6 +43,9 @@ instance FromJSON Expr where
 instance FromJSON UnFun where
 instance FromJSON BinFun where
 instance FromJSON Key where
+instance FromJSON DescrCol where
+instance FromJSON PosCol where
+instance FromJSON PayloadCol where
 
 instance ToJSON Plan where
 instance FromJSON Plan where

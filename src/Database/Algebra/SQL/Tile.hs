@@ -288,6 +288,7 @@ transformUnOpRank rankConstructor (name, sortList) =
 
 
 transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
+transformUnOp (A.SerializeRel (mDescr, mPos, payloadCols)) c = undefined
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
     attachColFunUnOp colFun (TileNode False) c
   where colFun sClause = Q.SCAlias rowNumExpr name

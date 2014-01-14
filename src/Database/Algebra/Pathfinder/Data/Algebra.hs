@@ -256,6 +256,13 @@ data NullOp = LitTable [Tuple] SchemaInfos
             | TableRef SemInfTableRef
             deriving (Ord, Eq, Show, Generic)
 
+newtype DescrCol   = DescrCol AttrName deriving (Show, Ord, Eq, Generic)
+newtype PosCol     = PosCol AttrName deriving (Show, Ord, Eq, Generic)
+newtype PayloadCol = PayloadCol AttrName deriving (Ord, Eq, Generic)
+
+instance Show PayloadCol where
+    show (PayloadCol c) = c
+
 data UnOp = RowNum SemInfRowNum
           | RowRank SemInfRank
           | Rank SemInfRank
@@ -263,6 +270,13 @@ data UnOp = RowNum SemInfRowNum
           | Select Expr
           | Distinct ()
           | Aggr SemInfAggr
+
+          -- SerializeRel must only occur as the root node of a
+          -- query. It defines physical order of the query result:
+          -- Vertically, the result is ordered by descr and pos
+          -- columns. Columns must occur in the order defined by the
+          -- list of payload column names.
+          | SerializeRel (Maybe DescrCol, Maybe PosCol, [PayloadCol])
           deriving (Ord, Eq, Show, Generic)
 
 data BinOp = Cross ()
