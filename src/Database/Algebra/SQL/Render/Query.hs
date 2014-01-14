@@ -153,11 +153,18 @@ renderOptColDefs = maybe empty colDoc
   where colDoc = parens . enlistOnLine . map text
 
 renderFromPart :: FromPart -> Doc
-renderFromPart (FPAlias expr name optCols)   = renderFromExpr expr
-                                               <+> kw "AS"
-                                               <+> text name
-                                               <> renderOptColDefs optCols
+renderFromPart (FPAlias (FETableReference n) alias _) =
+    -- Don't use positional mapping on table references, since they are mapped
+    -- by their name.
+    text n
+    <+> kw "AS"
+    <+> text alias
 
+renderFromPart (FPAlias expr alias optCols)           =
+    renderFromExpr expr
+    <+> kw "AS"
+    <+> text alias
+    <> renderOptColDefs optCols
 
 renderFromPart (FPInnerJoin left right cond) = renderFromPart left
                                                </> kw "INNER JOIN"
