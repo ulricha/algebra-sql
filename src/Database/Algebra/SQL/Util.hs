@@ -48,14 +48,23 @@ renderOutput dag matFun = foldr (.) id $ intersperse (showChar '\n') renderedQs
         renderedQs      = R.render $ tqs ++ rqs
 
 -- | Render output directly for DSH. The order from the root nodes in the
+-- directed acyclic graph is preserved. (This function uses the combined
+-- materialization strategy.)
+renderOutputDSH :: T.PFDag -> (Maybe String, [String])
+renderOutputDSH = renderOutputDSHWith C.materialize
+
+-- | Render output directly for DSH. The order from the root nodes in the
 -- directed acyclic graph is preserved.
-renderOutputDSH :: T.PFDag -> (String, [String])
-renderOutputDSH dag =
-    ( foldr (.) id renderedTQs ""
+renderOutputDSHWith :: MatFun -> T.PFDag -> (Maybe String, [String])
+renderOutputDSHWith matFun dag =
+    ( if null preludeString
+      then Nothing
+      else Just preludeString
     , map ($ "") renderedRQs
     )
   where
-    (_, (tqs, rqs)) = resultFromDAG dag C.materialize
+    preludeString   = foldr (.) id renderedTQs ""
+    (_, (tqs, rqs)) = resultFromDAG dag matFun
     renderedRQs     = R.render rqs
     renderedTQs     = R.render tqs
 
