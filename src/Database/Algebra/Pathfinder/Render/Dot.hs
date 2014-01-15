@@ -69,8 +69,6 @@ opDotLabel :: NodeMap [Tag] -> AlgNode -> PFLabel -> Doc
 -- | Nullary operations
 opDotLabel tags i (LitTableL _ _)             = labelToDoc i 
     "LITTABLE" empty (lookupTags i tags)
-opDotLabel tags i (EmptyTableL _)             = labelToDoc i 
-    "EMPTYTABLE" empty (lookupTags i tags)
 opDotLabel tags i (TableRefL (name, attrs, keys)) = labelToDoc i
     "TABLE" (renderTableInfo name attrs keys) (lookupTags i tags)
 -- |  Binary operations
@@ -116,6 +114,15 @@ opDotLabel tags i (DistinctL _)               = labelToDoc i
 opDotLabel tags i (AggrL (aggrList, attr))    = labelToDoc i
     "AGGR" ((commas renderAggr aggrList) <+> (brackets $ commas renderProj attr))
     (lookupTags i tags)
+opDotLabel tags i (SerializeL (mDescr, mPos, cols)) = labelToDoc i
+    "SERIALIZE" (renderSerCol mDescr
+                 <+> renderSerCol mPos
+                 <+> (brackets $ commas (text . show) cols))
+    (lookupTags i tags)
+
+renderSerCol :: Show c => Maybe c -> Doc
+renderSerCol Nothing  = empty
+renderSerCol (Just c) = (text $ show c) <> comma
 
 constructDotNode :: NodeMap [Tag] -> (AlgNode, PFLabel) -> DotNode
 constructDotNode tags (n, op) =
@@ -156,12 +163,12 @@ renderColor Cyan4        = text "cyan4"
 opDotColor :: PFLabel -> DotColor
 
 -- | Nullaryops
-opDotColor (EmptyTableL _)   = Gray52
 opDotColor (LitTableL _ _)   = Gray52
 opDotColor (TableRefL _)     = Gray52
 
 -- | Unops
-opDotColor (ProjectL _)         = Gray91
+opDotColor (ProjectL _)      = Gray91
+opDotColor (SerializeL _)    = Gray91
 
 opDotColor (PosSelL _)       = Cyan4
 opDotColor (SelL _)          = Cyan
@@ -248,8 +255,7 @@ renderDot ns es = text "digraph" <> (braces $ preamble $$ nodeSection $$ edgeSec
           edgeSection = vcat $ map renderDotEdge es
 
 -- | Labels (to collect all operations (nullary, unary,binary))
-data PFLabel = EmptyTableL SchemaInfos
-             | LitTableL SemInfLitTable SchemaInfos
+data PFLabel = LitTableL [Tuple] SchemaInfos
              | TableRefL SemInfTableRef    -- nullops
              | AggrL SemInfAggr
              | DistinctL ()
@@ -266,12 +272,13 @@ data PFLabel = EmptyTableL SchemaInfos
              | ThetaJoinL SemInfJoin  -- binops
              | SemiJoinL SemInfJoin
              | AntiJoinL SemInfJoin
+             | SerializeL (Maybe DescrCol, Maybe PosCol, [PayloadCol])
 
 labelOfOp :: PFAlgebra -> PFLabel
-labelOfOp (TerOp _ _ _ _)   = error "no tertiary operations"
-labelOfOp (Database.Algebra.Dag.Common.BinOp op _ _)	= labelOfBinOp op
-labelOfOp (Database.Algebra.Dag.Common.UnOp op _)		= labelOfUnOp op
-labelOfOp (Database.Algebra.Dag.Common.NullaryOp op)	= labelOfNullaryOp op
+labelOfOp (Database.Algebra.Dag.Common.BinOp op _ _) = labelOfBinOp op
+labelOfOp (Database.Algebra.Dag.Common.UnOp op _)    = labelOfUnOp op
+labelOfOp (Database.Algebra.Dag.Common.NullaryOp op) = labelOfNullaryOp op
+labelOfOp (TerOp _ _ _ _)                            = error "no tertiary operations"
 
 labelOfBinOp :: BinOp -> PFLabel
 labelOfBinOp (Cross info)     	= CrossL info
@@ -283,19 +290,18 @@ labelOfBinOp (SemiJoin info)    = SemiJoinL info
 labelOfBinOp (AntiJoin info)    = AntiJoinL info
 
 labelOfUnOp :: UnOp -> PFLabel
-labelOfUnOp (Aggr info)     = AggrL info
-labelOfUnOp (Distinct info) = DistinctL  info
-labelOfUnOp (PosSel info)   = PosSelL info
-labelOfUnOp (Project info)  = ProjectL info
-labelOfUnOp (Rank info)     = RankL info
-labelOfUnOp (RowNum info)   = RowNumL info
-labelOfUnOp (RowRank info)  = RowRankL info
-labelOfUnOp (Select info)   = SelL info
+labelOfUnOp (Aggr info)      = AggrL info
+labelOfUnOp (Distinct info)  = DistinctL  info
+labelOfUnOp (Project info)   = ProjectL info
+labelOfUnOp (Rank info)      = RankL info
+labelOfUnOp (RowNum info)    = RowNumL info
+labelOfUnOp (RowRank info)   = RowRankL info
+labelOfUnOp (Select info)    = SelL info
+labelOfUnOp (Serialize info) = SerializeL info
 
 labelOfNullaryOp :: NullOp -> PFLabel
-labelOfNullaryOp (EmptyTable  info)	      = EmptyTableL info
-labelOfNullaryOp (LitTable  info1 info2)	= LitTableL info1 info2
-labelOfNullaryOp (TableRef  info)      	  = TableRefL info
+labelOfNullaryOp (LitTable  info1 info2) = LitTableL info1 info2
+labelOfNullaryOp (TableRef  info)      	 = TableRefL info
 
 -- | extract the operator descriptions and list of edges from a DAG
 

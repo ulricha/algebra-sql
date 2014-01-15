@@ -243,9 +243,6 @@ instance Show JoinRel where
   show LeJ = "le"
   show NeJ = "ne"
 
--- | Information what to put in a literate table
-type SemInfLitTable = [Tuple]
-
 -- | Information for accessing a database table
 type SemInfTableRef = (TableName, [TypedAttr], [Key])
 
@@ -255,22 +252,31 @@ type SemUnOp = (ResAttrName, AttrName)
 
 type SemInfAggr = ([(AggrType, ResAttrName)], [(AttrName, Expr)])
 
-data NullOp = LitTable SemInfLitTable SchemaInfos
-            -- FIXME Separate EmptyTables are not necessary -> eliminate
-            | EmptyTable SchemaInfos
+data NullOp = LitTable [Tuple] SchemaInfos
             | TableRef SemInfTableRef
             deriving (Ord, Eq, Show, Generic)
+
+newtype DescrCol   = DescrCol AttrName deriving (Show, Ord, Eq, Generic)
+newtype PosCol     = PosCol AttrName deriving (Show, Ord, Eq, Generic)
+newtype PayloadCol = PayloadCol AttrName deriving (Ord, Eq, Generic)
+
+instance Show PayloadCol where
+    show (PayloadCol c) = c
 
 data UnOp = RowNum SemInfRowNum
           | RowRank SemInfRank
           | Rank SemInfRank
           | Project [(AttrName, Expr)]
           | Select Expr
-          -- What exactly is the semantics here?
-          -- FIXME eliminate
-          | PosSel SemInfPosSel
           | Distinct ()
           | Aggr SemInfAggr
+
+          -- Serialize must only occur as the root node of a
+          -- query. It defines physical order of the query result:
+          -- Vertically, the result is ordered by descr and pos
+          -- columns. Columns must occur in the order defined by the
+          -- list of payload column names.
+          | Serialize (Maybe DescrCol, Maybe PosCol, [PayloadCol])
           deriving (Ord, Eq, Show, Generic)
 
 data BinOp = Cross ()

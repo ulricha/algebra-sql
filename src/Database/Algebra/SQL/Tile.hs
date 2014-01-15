@@ -251,23 +251,6 @@ transformNullaryOp (A.LitTable tuples schema) = do
              []
   where tMap = map $ Q.VEValue . translateAVal 
 
--- | An empty table. (Currently implemented with a row of null values.)
-transformNullaryOp (A.EmptyTable schema) = do
-    alias <- generateAliasName
-
-    let fLiteral = Q.FPAlias (Q.FESubQuery $ Q.VQLiteral values)
-                             alias
-                             $ Just $ map fst schema
-        body = emptySelectStmt
-               { Q.selectClause = map (asSelectColumn alias . fst) schema
-               , Q.fromClause = [fLiteral]
-               }
-
-    return $ TileNode True body []
-        -- A row of null values
-  where values = [map (const $ Q.VEValue Q.VNull) schema]
-        
-
 transformNullaryOp (A.TableRef (name, info, _))   = do
     alias <- generateAliasName
     
@@ -305,6 +288,7 @@ transformUnOpRank rankConstructor (name, sortList) =
 
 
 transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
+transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = undefined
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
     attachColFunUnOp colFun (TileNode False) c
   where colFun sClause = Q.SCAlias rowNumExpr name
@@ -345,44 +329,6 @@ transformUnOp (A.Select expr) c = do
                select
              )
              children
-
--- | Since WHERE is executed before the window functions we have to wrap the
--- window function in a sub query. This makes the outer select statement
--- mergable.
-transformUnOp (A.PosSel (pos, sortList, optPart)) c = do
- 
-    (select, children) <- transformAsSelect c
-
-    alias <- generateAliasName
-
-    let sClause = Q.selectClause select
-        inner   = select { Q.selectClause = col : sClause }
-        oes     = translateInlinedSortInf sClause sortList
-        col     = Q.SCAlias ( Q.SERowNum
-                              (liftM (inlineColumn sClause) optPart)
-                              oes
-                            )
-                            colName
-
-    return $ TileNode
-             False
-             emptySelectStmt
-             -- Remove the temporary column.
-             { -- Map prefix to inner column prefixes.
-               Q.selectClause = columnsFromSchema alias
-                                $ getSchemaSelectStmt select
-             , Q.fromClause =
-                   [mkSubQuery inner alias $ Just $ getSchemaSelectStmt inner]
-             , Q.whereClause = Just
-                               $ mkEqual 
-                                 (mkPCol alias colName)
-                                 (Q.VEValue $ Q.VInteger
-                                              $ fromIntegral pos)
-             }
-             children
-        -- Since the value is encapsulated it should work. (Tested in
-        -- postgresql.)
-  where colName = "tmpPos"
 
 transformUnOp (A.Distinct ()) c = do
 
