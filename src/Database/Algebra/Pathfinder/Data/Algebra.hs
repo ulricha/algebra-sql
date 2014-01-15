@@ -256,8 +256,16 @@ data NullOp = LitTable [Tuple] SchemaInfos
             | TableRef SemInfTableRef
             deriving (Ord, Eq, Show, Generic)
 
-newtype DescrCol   = DescrCol AttrName deriving (Show, Ord, Eq, Generic)
-newtype PosCol     = PosCol AttrName deriving (Show, Ord, Eq, Generic)
+newtype DescrCol   = DescrCol AttrName deriving (Ord, Eq, Generic)
+
+instance Show DescrCol where
+    show (DescrCol c) = "Descr " ++ c
+
+newtype PosCol     = PosCol AttrName deriving (Ord, Eq, Generic)
+
+instance Show PosCol where
+    show (PosCol c) = "Order " ++ c
+
 newtype PayloadCol = PayloadCol AttrName deriving (Ord, Eq, Generic)
 
 instance Show PayloadCol where
