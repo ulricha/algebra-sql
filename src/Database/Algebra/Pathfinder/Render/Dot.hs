@@ -114,7 +114,7 @@ opDotLabel tags i (DistinctL _)               = labelToDoc i
 opDotLabel tags i (AggrL (aggrList, attr))    = labelToDoc i
     "AGGR" ((commas renderAggr aggrList) <+> (brackets $ commas renderProj attr))
     (lookupTags i tags)
-opDotLabel tags i (SerializeRelL (mDescr, mPos, cols)) = labelToDoc i
+opDotLabel tags i (SerializeL (mDescr, mPos, cols)) = labelToDoc i
     "SERIALIZE" (renderSerCol mDescr
                  <+> renderSerCol mPos
                  <+> (brackets $ commas (text . show) cols))
@@ -168,7 +168,7 @@ opDotColor (TableRefL _)     = Gray52
 
 -- | Unops
 opDotColor (ProjectL _)      = Gray91
-opDotColor (SerializeRelL _) = Gray91
+opDotColor (SerializeL _)    = Gray91
 
 opDotColor (PosSelL _)       = Cyan4
 opDotColor (SelL _)          = Cyan
@@ -272,7 +272,7 @@ data PFLabel = LitTableL [Tuple] SchemaInfos
              | ThetaJoinL SemInfJoin  -- binops
              | SemiJoinL SemInfJoin
              | AntiJoinL SemInfJoin
-             | SerializeRelL (Maybe DescrCol, Maybe PosCol, [PayloadCol])
+             | SerializeL (Maybe DescrCol, Maybe PosCol, [PayloadCol])
 
 labelOfOp :: PFAlgebra -> PFLabel
 labelOfOp (Database.Algebra.Dag.Common.BinOp op _ _) = labelOfBinOp op
@@ -290,14 +290,14 @@ labelOfBinOp (SemiJoin info)    = SemiJoinL info
 labelOfBinOp (AntiJoin info)    = AntiJoinL info
 
 labelOfUnOp :: UnOp -> PFLabel
-labelOfUnOp (Aggr info)         = AggrL info
-labelOfUnOp (Distinct info)     = DistinctL  info
-labelOfUnOp (Project info)      = ProjectL info
-labelOfUnOp (Rank info)         = RankL info
-labelOfUnOp (RowNum info)       = RowNumL info
-labelOfUnOp (RowRank info)      = RowRankL info
-labelOfUnOp (Select info)       = SelL info
-labelOfUnOp (SerializeRel info) = SerializeRelL info
+labelOfUnOp (Aggr info)      = AggrL info
+labelOfUnOp (Distinct info)  = DistinctL  info
+labelOfUnOp (Project info)   = ProjectL info
+labelOfUnOp (Rank info)      = RankL info
+labelOfUnOp (RowNum info)    = RowNumL info
+labelOfUnOp (RowRank info)   = RowRankL info
+labelOfUnOp (Select info)    = SelL info
+labelOfUnOp (Serialize info) = SerializeL info
 
 labelOfNullaryOp :: NullOp -> PFLabel
 labelOfNullaryOp (LitTable  info1 info2) = LitTableL info1 info2

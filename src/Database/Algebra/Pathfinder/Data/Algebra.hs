@@ -271,12 +271,12 @@ data UnOp = RowNum SemInfRowNum
           | Distinct ()
           | Aggr SemInfAggr
 
-          -- SerializeRel must only occur as the root node of a
+          -- Serialize must only occur as the root node of a
           -- query. It defines physical order of the query result:
           -- Vertically, the result is ordered by descr and pos
           -- columns. Columns must occur in the order defined by the
           -- list of payload column names.
-          | SerializeRel (Maybe DescrCol, Maybe PosCol, [PayloadCol])
+          | Serialize (Maybe DescrCol, Maybe PosCol, [PayloadCol])
           deriving (Ord, Eq, Show, Generic)
 
 data BinOp = Cross ()
