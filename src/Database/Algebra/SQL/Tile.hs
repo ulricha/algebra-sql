@@ -288,7 +288,33 @@ transformUnOpRank rankConstructor (name, sortList) =
 
 
 transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
-transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = undefined
+transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
+
+    (select, children) <- transformAsSelect c
+
+    let inline                   =
+            inlineColumn (Q.selectClause select)
+        project (A.PayloadCol c) = Q.SCAlias (Q.SEValueExpr $ inline c) c
+
+    return $ TileNode
+             False
+             select
+             { Q.selectClause = map project payloadCols
+             , -- Order by optional columns.
+               Q.orderByClause =
+                   map (flip Q.OE Q.Ascending . inline)
+                       $ descrList ++ posList
+             }
+             children
+  where
+    descrList = case mDescr of
+        Nothing             -> []
+        Just (A.DescrCol c) -> [c]
+    posList   = case mPos of
+        Nothing           -> []
+        Just (A.PosCol c) -> [c]
+
+
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
     attachColFunUnOp colFun (TileNode False) c
   where colFun sClause = Q.SCAlias rowNumExpr name

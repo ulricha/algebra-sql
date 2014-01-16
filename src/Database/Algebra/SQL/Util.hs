@@ -4,6 +4,7 @@ module Database.Algebra.SQL.Util
     , renderDebugOutput
     , renderAdvancedDebugOutput
     , renderOutputDSH
+    , renderOutputDSHWith
     , putShowSLn
     ) where
 
