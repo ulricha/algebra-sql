@@ -244,8 +244,7 @@ data DataType = -- | @INTEGER@
               | DTDecimal
                 -- | @DOUBLE PRECISION@
               | DTDoublePrecision
-                -- | @CHAR VARYING@
-              | DTCharVarying
+              | DTText
                 -- | @BOOLEAN@
               | DTBoolean
               deriving Show

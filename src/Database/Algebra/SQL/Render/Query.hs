@@ -73,6 +73,7 @@ renderDefinitionQuery (DQTemporaryTable query name) =
     <+> text name
     <+> kw "AS"
     <$> indent 4 (renderValueQuery query)
+    <+> kw "WITH DATA"
 
 renderValueQuery :: ValueQuery -> Doc
 renderValueQuery (VQSelect stmt)                         = renderSelectStmt stmt
@@ -272,8 +273,7 @@ renderDataType :: DataType -> Doc
 renderDataType DTInteger         = kw "INTEGER"
 renderDataType DTDecimal         = kw "DECIMAL"
 renderDataType DTDoublePrecision = kw "DOUBLE PRECISION"
--- Length argument needed, therefore the same approach as in Pathfinder.
-renderDataType DTCharVarying     = kw "CHAR VARYING(100)"
+renderDataType DTText            = kw "TEXT"
 renderDataType DTBoolean         = kw "BOOLEAN" 
 
 literal :: Doc -> Doc

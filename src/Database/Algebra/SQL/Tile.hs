@@ -812,7 +812,7 @@ translateAVal v = case v of
 translateATy :: A.ATy -> Q.DataType
 translateATy t = case t of
     A.AInt    -> Q.DTInteger
-    A.AStr    -> Q.DTCharVarying
+    A.AStr    -> Q.DTText
     A.ABool   -> Q.DTBoolean
     A.ADec    -> Q.DTDecimal
     A.ADouble -> Q.DTDoublePrecision
