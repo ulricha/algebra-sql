@@ -22,7 +22,8 @@ data DefinitionQuery = -- CREATE MATERIALIZED VIEW foo AS ...
                      { sourceQuery :: ValueQuery
                      , viewName    :: String
                      }
-                       -- CREATE TEMPORARY TABLE foo AS ...
+                     -- A temporary table which is only existent in the current
+                     -- session.
                      | DQTemporaryTable
                      { sourceQuery :: ValueQuery
                      , tTableName  :: String

@@ -68,12 +68,13 @@ renderDefinitionQuery (DQMatView query name)        =
     <+> kw "AS"
     </> renderValueQuery query
 
-renderDefinitionQuery (DQTemporaryTable query name) =
-    kw "CREATE TEMPORARY TABLE"
+renderDefinitionQuery (DQTemporaryTable query name)
+                                                    =
+    kw "CREATE LOCAL TEMPORARY TABLE"
     <+> text name
     <+> kw "AS"
     <$> indent 4 (renderValueQuery query)
-    <+> kw "WITH DATA"
+    <$> kw "WITH DATA ON COMMIT DROP"
 
 renderValueQuery :: ValueQuery -> Doc
 renderValueQuery (VQSelect stmt)                         = renderSelectStmt stmt
