@@ -281,7 +281,7 @@ transformUnOpRank :: -- SelectExpr constructor.
                   -> TransformMonad TileTree
 transformUnOpRank rankConstructor (name, sortList) =
     let colFun sClause = Q.SCAlias
-                         ( rankConstructor $ translateInlinedSortInf
+                         ( rankConstructor $ asOrderExprList
                                              sClause
                                              sortList
                          )
@@ -296,25 +296,27 @@ transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
 
     let inline                   =
             inlineColumn (Q.selectClause select)
-        project (A.PayloadCol c) = Q.SCAlias (Q.SEValueExpr $ inline c) c
+        project (A.PayloadCol col) = Q.SCAlias (Q.SEValueExpr $ inline col) col
 
     return $ TileNode
              False
              select
              { Q.selectClause = map project payloadCols
-             , -- Order by optional columns.
+             , -- Order by optional columns. Remove constant column expressions,
+               -- since SQL99 defines different semantics.
                Q.orderByClause =
-                   map (flip Q.OE Q.Ascending . inline)
-                       $ descrList ++ posList
+                   map (flip Q.OE Q.Ascending)
+                       $ discardConstValueExprs
+                         $ map inline $ descrList ++ posList
              }
              children
   where
     descrList = case mDescr of
-        Nothing             -> []
-        Just (A.DescrCol c) -> [c]
+        Nothing               -> []
+        Just (A.DescrCol col) -> [col]
     posList   = case mPos of
-        Nothing           -> []
-        Just (A.PosCol c) -> [c]
+        Nothing             -> []
+        Just (A.PosCol col) -> [col]
 
 
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
@@ -322,7 +324,7 @@ transformUnOp (A.RowNum (name, sortList, optPart)) c =
   where colFun sClause = Q.SCAlias rowNumExpr name
           where rowNumExpr = Q.SERowNum
                              (liftM (inlineColumn sClause) optPart)
-                             $ translateInlinedSortInf sClause sortList
+                             $ asOrderExprList sClause sortList
 
 transformUnOp (A.RowRank inf) c = transformUnOpRank Q.SEDenseRank inf c
 transformUnOp (A.Rank inf) c = transformUnOpRank Q.SERank inf c
@@ -394,8 +396,7 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
              , -- Since SQL treats numbers in the group by clause as column
                -- indices, filter them out. (They do not change the semantics
                -- anyway.)
-               Q.groupByClause = filter (not . isConstValueExpr)
-                                        $ map snd partValueExprs
+               Q.groupByClause = discardConstValueExprs $ map snd partValueExprs
              }
              children
 
@@ -647,12 +648,18 @@ translateInlinedJoinCond :: [Q.SelectColumn] -- ^ Left select clause.
 translateInlinedJoinCond lSClause rSClause j =
     translateJoinCond j (inlineColumn lSClause) (inlineColumn rSClause)
 
+-- Remove all 'Q.ValueExpr's which are constant in their column value.
+discardConstValueExprs :: [Q.ValueExpr] -> [Q.ValueExpr]
+discardConstValueExprs = filter $ not . isConstValueExpr
 
--- | Translate a '[A.SortAttr]' with inlining of value expressions.
-translateInlinedSortInf :: [Q.SelectColumn]
-                        -> [A.SortAttr]
-                        -> [Q.OrderExpr]
-translateInlinedSortInf sClause si = translateSortInf si (inlineColumn sClause)
+-- Translates a '[A.SortAttr]' with inlining of value expressions and filtering
+-- of constant 'Q.ValueExpr' (they are of no use).
+asOrderExprList :: [Q.SelectColumn]
+                -> [A.SortAttr]
+                -> [Q.OrderExpr]
+asOrderExprList sClause si =
+    filter (not . isConstValueExpr . Q.oExpr)
+           $ translateSortInf si (inlineColumn sClause)
 
 -- | Uses the select clause to try to inline an aliased value. 
 inlineColumn :: [Q.SelectColumn]

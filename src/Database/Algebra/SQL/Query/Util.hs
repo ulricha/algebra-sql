@@ -30,9 +30,9 @@ isConstValueExpr :: Q.ValueExpr -> Bool
 isConstValueExpr e = case e of
     Q.VEValue _        -> True
     Q.VEColumn _ _     -> False
-    Q.VECast e _       -> isConstValueExpr e
+    Q.VECast e1 _      -> isConstValueExpr e1
     Q.VEBinApp _ e1 e2 -> isConstValueExpr e1 && isConstValueExpr e2
-    Q.VENot e          -> isConstValueExpr e
+    Q.VENot e1         -> isConstValueExpr e1
     Q.VEExists _       -> True
-    Q.VEIn e _         -> isConstValueExpr e
+    Q.VEIn e1 _        -> isConstValueExpr e1
 
