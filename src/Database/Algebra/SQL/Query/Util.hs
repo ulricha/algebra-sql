@@ -3,6 +3,7 @@ module Database.Algebra.SQL.Query.Util
     ( emptySelectStmt
     , mkPCol
     , mkSubQuery
+    , isConstValueExpr
     ) where
 
 import Database.Algebra.SQL.Query as Q
@@ -23,4 +24,15 @@ mkSubQuery :: Q.SelectStmt
            -> Maybe [String]
            -> Q.FromPart
 mkSubQuery sel = Q.FPAlias (Q.FESubQuery $ Q.VQSelect sel)
+
+-- Check whether a value expression is constant as a column expression.
+isConstValueExpr :: Q.ValueExpr -> Bool
+isConstValueExpr e = case e of
+    Q.VEValue _        -> True
+    Q.VEColumn _ _     -> False
+    Q.VECast e _       -> isConstValueExpr e
+    Q.VEBinApp _ e1 e2 -> isConstValueExpr e1 && isConstValueExpr e2
+    Q.VENot e          -> isConstValueExpr e
+    Q.VEExists _       -> True
+    Q.VEIn e _         -> isConstValueExpr e
 

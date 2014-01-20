@@ -17,6 +17,7 @@ module Database.Algebra.SQL.Tile
 -- TODO RowRank <-> DenseRank ?
 -- TODO isMultiReferenced special case: check for same parent !!
 
+import Control.Arrow (second)
 import Control.Monad (liftM)
 import Control.Monad.Trans.RWS.Strict
 import qualified Data.IntMap as IntMap
@@ -35,6 +36,7 @@ import Database.Algebra.SQL.Query.Util
     ( emptySelectStmt
     , mkSubQuery
     , mkPCol
+    , isConstValueExpr
     )
 
 -- | A tile internal reference type.
@@ -377,16 +379,23 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
                                                        fun
                                     )
                                     n
-        wrapSCAlias (name, expr)
+
+        partValueExprs  = map (second translateE) partExprMapping
+
+        wrapSCAlias (name, valueExpr)
                         =
-            Q.SCAlias (Q.SEValueExpr $ translateE expr) name
+            Q.SCAlias (Q.SEValueExpr valueExpr) name
 
     return $ TileNode
              False
              select
              { Q.selectClause =
-                   map wrapSCAlias partExprMapping ++ map aggrToSE aggrs
-             , Q.groupByClause = map (translateE . snd) partExprMapping
+                   map wrapSCAlias partValueExprs ++ map aggrToSE aggrs
+             , -- Since SQL treats numbers in the group by clause as column
+               -- indices, filter them out. (They do not change the semantics
+               -- anyway.)
+               Q.groupByClause = filter (not . isConstValueExpr)
+                                        $ map snd partValueExprs
              }
              children
 
