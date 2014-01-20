@@ -256,7 +256,7 @@ data Value = -- | @42@
              -- | A double precision floating point number. 
            | VDoublePrecision Double
              -- | e.g. @'foo'@
-           | VCharVarying String
+           | VText String
              -- | e.g. @TRUE@, @FALSE@ (but not UNKOWN in this variant)
            | VBoolean Bool
              -- | Representation of a null value. (While this can basically be

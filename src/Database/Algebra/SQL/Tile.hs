@@ -803,7 +803,7 @@ translateSortDir d = case d of
 translateAVal :: A.AVal -> Q.Value
 translateAVal v = case v of
     A.VInt i    -> Q.VInteger i
-    A.VStr s    -> Q.VCharVarying s 
+    A.VStr s    -> Q.VText s 
     A.VBool b   -> Q.VBoolean b
     A.VDouble d -> Q.VDoublePrecision d
     A.VDec d    -> Q.VDecimal d

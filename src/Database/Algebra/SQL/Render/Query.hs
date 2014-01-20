@@ -284,7 +284,7 @@ renderValue v = case v of
     VInteger i         -> literal $ integer i
     VDecimal d         -> literal $ float d
     VDoublePrecision d -> literal $ double d
-    VCharVarying str   -> literal $ squotes $ text str
+    VText str          -> literal $ squotes $ text str
     VBoolean b         -> kw $ if b then "TRUE" else "FALSE"
     VNull              -> literal $ text "null"
 
