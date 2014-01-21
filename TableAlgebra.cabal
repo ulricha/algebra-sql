@@ -83,6 +83,7 @@ library
                       Database.Algebra.Pathfinder.Data.Create
                       Database.Algebra.SQL.Query
                       Database.Algebra.SQL.Query.Substitution
+                      Database.Algebra.SQL.Query.Util
                       Database.Algebra.SQL.Tile
                       Database.Algebra.SQL.Tile.Flatten
                       Database.Algebra.SQL.Render
