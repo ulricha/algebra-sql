@@ -35,7 +35,7 @@ affectsSortOrder e = case e of
     Q.VEValue _        -> False
     Q.VEColumn _ _     -> True
     Q.VECast e1 _      -> affectsSortOrder e1
-    Q.VEBinApp _ e1 e2 -> affectsSortOrder e1 && affectsSortOrder e2
+    Q.VEBinApp _ e1 e2 -> affectsSortOrder e1 || affectsSortOrder e2
     Q.VENot e1         -> affectsSortOrder e1
     -- We have no correlated queries (in open tiles), but in case we get some,
     -- this is the most flexible solution.
