@@ -36,7 +36,7 @@ import Database.Algebra.SQL.Query.Util
     ( emptySelectStmt
     , mkSubQuery
     , mkPCol
-    , isConstValueExpr
+    , affectsSortOrder
     )
 
 -- | A tile internal reference type.
@@ -650,7 +650,7 @@ translateInlinedJoinCond lSClause rSClause j =
 
 -- Remove all 'Q.ValueExpr's which are constant in their column value.
 discardConstValueExprs :: [Q.ValueExpr] -> [Q.ValueExpr]
-discardConstValueExprs = filter $ not . isConstValueExpr
+discardConstValueExprs = filter $ affectsSortOrder
 
 -- Translates a '[A.SortAttr]' with inlining of value expressions and filtering
 -- of constant 'Q.ValueExpr' (they are of no use).
@@ -658,7 +658,7 @@ asOrderExprList :: [Q.SelectColumn]
                 -> [A.SortAttr]
                 -> [Q.OrderExpr]
 asOrderExprList sClause si =
-    filter (not . isConstValueExpr . Q.oExpr)
+    filter (affectsSortOrder . Q.oExpr)
            $ translateSortInf si (inlineColumn sClause)
 
 -- | Uses the select clause to try to inline an aliased value. 
