@@ -119,8 +119,8 @@ renderSerCol (Just c) = (text $ show c) <> comma
 
 renderPosCol :: SerializeOrder -> Doc
 renderPosCol NoPos      = empty
-renderPosCol (AbsPos c) = (text $ show c) <> comma 
-renderPosCol (RelPos c) = (text $ show c) <> comma 
+renderPosCol (AbsPos c) = text c <> comma 
+renderPosCol (RelPos c) = text c <> comma 
 
 
 constructDotNode :: NodeMap [Tag] -> (AlgNode, PFLabel) -> DotNode
