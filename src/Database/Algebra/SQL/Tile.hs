@@ -292,7 +292,12 @@ transformUnOpRank rankConstructor (name, sortList) =
 transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
 transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
 
-    (select, children) <- transformAsSelect c
+    childTile <- transformNode c
+
+    (select, children) <- case childTile of
+        -- Force merging of the ORDER BY clause into closed tiles too.
+        TileNode _ s c    -> return (s, c)
+        ReferenceLeaf r s -> embedExternalReference r s
 
     let inline                   =
             inlineColumn (Q.selectClause select)
@@ -616,7 +621,14 @@ selectFromTile t = case t of
                )
     -- Asign name and produce a 'SelectStmt' which uses it. (Let the
     -- materialization strategy handle it.)
-    ReferenceLeaf _ s            -> do
+    ReferenceLeaf r s            -> embedExternalReference r s
+
+-- | Embeds an external reference into a 'Q.SelectStmt'.
+embedExternalReference :: ExternalReference
+                       -> [String]
+                       -> TransformMonad (Q.SelectStmt, TileChildren)
+embedExternalReference extRef schema = do
+
         alias <- generateAliasName
         varId <- generateVariableId
 
@@ -627,9 +639,8 @@ selectFromTile t = case t of
                  , Q.fromClause =
                        [mkFromPartVar varId alias $ Just s]
                  }
-               , [(varId, t)]
+               , [(varId, ReferenceLeaf extRef schema)]
                )
-        -- Converts a column name into a select clause entry.
 
 -- | Get the column names from a list of column names.
 columnsFromSchema :: String -> [String] -> [Q.SelectColumn]
