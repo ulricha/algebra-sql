@@ -109,13 +109,19 @@ opDotLabel tags i (AggrL (aggrList, attr))    = labelToDoc i
     (lookupTags i tags)
 opDotLabel tags i (SerializeL (mDescr, mPos, cols)) = labelToDoc i
     "SERIALIZE" (renderSerCol mDescr
-                 <+> renderSerCol mPos
+                 <+> renderPosCol mPos
                  <+> (brackets $ commas (text . show) cols))
     (lookupTags i tags)
 
 renderSerCol :: Show c => Maybe c -> Doc
 renderSerCol Nothing  = empty
 renderSerCol (Just c) = (text $ show c) <> comma
+
+renderPosCol :: SerializeOrder -> Doc
+renderPosCol NoPos      = empty
+renderPosCol (AbsPos c) = (text $ show c) <> comma 
+renderPosCol (RelPos c) = (text $ show c) <> comma 
+
 
 constructDotNode :: NodeMap [Tag] -> (AlgNode, PFLabel) -> DotNode
 constructDotNode tags (n, op) =
@@ -265,7 +271,7 @@ data PFLabel = LitTableL [Tuple] SchemaInfos
              | ThetaJoinL SemInfJoin  -- binops
              | SemiJoinL SemInfJoin
              | AntiJoinL SemInfJoin
-             | SerializeL (Maybe DescrCol, Maybe PosCol, [PayloadCol])
+             | SerializeL (Maybe DescrCol, SerializeOrder, [PayloadCol])
 
 labelOfOp :: PFAlgebra -> PFLabel
 labelOfOp (Database.Algebra.Dag.Common.BinOp op _ _) = labelOfBinOp op
