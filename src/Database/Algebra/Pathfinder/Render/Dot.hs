@@ -31,11 +31,6 @@ renderProj :: Proj -> Doc
 renderProj (new, ColE c) | new == c = text new
 renderProj (new, e)                 = text $ concat [new, ":", show e]
 
--- | Rendering of the operations for opDotLabel
-renderPosSel :: SemInfPosSel -> Doc
-renderPosSel (i, sortInf, Just attr) = text $ show i ++ show sortInf ++ attr
-renderPosSel (i, sortInf, Nothing) = text $ show i ++ show sortInf
-
 renderAggr :: (AggrType, ResAttrName) -> Doc
 renderAggr (aggr, res) = text $ res ++ ":" ++ show aggr
 
@@ -107,8 +102,6 @@ opDotLabel tags i (ProjectL info)                = labelToDoc i
     "PROJECT" (commas renderProj info) (lookupTags i tags)
 opDotLabel tags i (SelL info)                 = labelToDoc i
     "SELECT" (text $ show info) (lookupTags i tags)
-opDotLabel tags i (PosSelL info)              = labelToDoc i
-    "POSSEL" (renderPosSel info) (lookupTags i tags)
 opDotLabel tags i (DistinctL _)               = labelToDoc i
     "DISTINCT" empty (lookupTags i tags)
 opDotLabel tags i (AggrL (aggrList, attr))    = labelToDoc i
@@ -116,13 +109,19 @@ opDotLabel tags i (AggrL (aggrList, attr))    = labelToDoc i
     (lookupTags i tags)
 opDotLabel tags i (SerializeL (mDescr, mPos, cols)) = labelToDoc i
     "SERIALIZE" (renderSerCol mDescr
-                 <+> renderSerCol mPos
+                 <+> renderPosCol mPos
                  <+> (brackets $ commas (text . show) cols))
     (lookupTags i tags)
 
 renderSerCol :: Show c => Maybe c -> Doc
 renderSerCol Nothing  = empty
 renderSerCol (Just c) = (text $ show c) <> comma
+
+renderPosCol :: SerializeOrder -> Doc
+renderPosCol NoPos      = empty
+renderPosCol (AbsPos c) = text c <> comma 
+renderPosCol (RelPos c) = text c <> comma 
+
 
 constructDotNode :: NodeMap [Tag] -> (AlgNode, PFLabel) -> DotNode
 constructDotNode tags (n, op) =
@@ -159,6 +158,7 @@ renderColor Orange       = text "orange"
 renderColor White        = text "white"
 renderColor Cyan         = text "cyan"
 renderColor Cyan4        = text "cyan4"
+renderColor HotPink      = text "hotpink"
 
 opDotColor :: PFLabel -> DotColor
 
@@ -168,9 +168,8 @@ opDotColor (TableRefL _)     = Gray52
 
 -- | Unops
 opDotColor (ProjectL _)      = Gray91
-opDotColor (SerializeL _)    = Gray91
+opDotColor (SerializeL _)    = HotPink
 
-opDotColor (PosSelL _)       = Cyan4
 opDotColor (SelL _)          = Cyan
 
 opDotColor (DistinctL _)     = Tan
@@ -232,6 +231,7 @@ data DotColor = Tomato
               | Cyan
               | Cyan4
               | White
+              | HotPink
 
 -- Type of Dot style options
 data DotStyle = Solid
@@ -264,7 +264,6 @@ data PFLabel = LitTableL [Tuple] SchemaInfos
              | RowNumL SemInfRowNum
              | RowRankL SemInfRank
              | SelL Expr
-             | PosSelL SemInfPosSel        -- unops
              | CrossL ()
              | DifferenceL ()
              | DisjUnionL ()
@@ -272,7 +271,7 @@ data PFLabel = LitTableL [Tuple] SchemaInfos
              | ThetaJoinL SemInfJoin  -- binops
              | SemiJoinL SemInfJoin
              | AntiJoinL SemInfJoin
-             | SerializeL (Maybe DescrCol, Maybe PosCol, [PayloadCol])
+             | SerializeL (Maybe DescrCol, SerializeOrder, [PayloadCol])
 
 labelOfOp :: PFAlgebra -> PFLabel
 labelOfOp (Database.Algebra.Dag.Common.BinOp op _ _) = labelOfBinOp op

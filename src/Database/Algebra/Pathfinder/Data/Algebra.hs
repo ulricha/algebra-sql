@@ -256,8 +256,26 @@ data NullOp = LitTable [Tuple] SchemaInfos
             | TableRef SemInfTableRef
             deriving (Ord, Eq, Show, Generic)
 
-newtype DescrCol   = DescrCol AttrName deriving (Show, Ord, Eq, Generic)
-newtype PosCol     = PosCol AttrName deriving (Show, Ord, Eq, Generic)
+newtype DescrCol   = DescrCol AttrName deriving (Ord, Eq, Generic)
+
+instance Show DescrCol where
+    show (DescrCol c) = "Descr " ++ c
+
+-- | Declare need for position columns in the query result. The
+-- distinction between AbsPos and RelPos is only relevant for the
+-- optimizer: AbsPos signals that the actual pos values are
+-- required. RelPos signals that only the order induced by the pos
+-- column is relevant.
+data SerializeOrder = AbsPos AttrName
+                    | RelPos AttrName
+                    | NoPos
+                    deriving (Ord, Eq, Generic)
+
+instance Show SerializeOrder where
+    show (AbsPos c) = "AbsPos " ++ c
+    show (RelPos c) = "RelPos " ++ c
+    show NoPos      = "NoPos"
+
 newtype PayloadCol = PayloadCol AttrName deriving (Ord, Eq, Generic)
 
 instance Show PayloadCol where
@@ -276,7 +294,7 @@ data UnOp = RowNum SemInfRowNum
           -- Vertically, the result is ordered by descr and pos
           -- columns. Columns must occur in the order defined by the
           -- list of payload column names.
-          | Serialize (Maybe DescrCol, Maybe PosCol, [PayloadCol])
+          | Serialize (Maybe DescrCol, SerializeOrder, [PayloadCol])
           deriving (Ord, Eq, Show, Generic)
 
 data BinOp = Cross ()
