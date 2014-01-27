@@ -296,7 +296,7 @@ transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
 
     (select, children) <- case childTile of
         -- Force merging of the ORDER BY clause into closed tiles too.
-        TileNode _ s c    -> return (s, c)
+        TileNode _ s cs   -> return (s, cs)
         ReferenceLeaf r s -> embedExternalReference r s
 
     let inline                   =
@@ -635,9 +635,9 @@ embedExternalReference extRef schema = do
         return ( emptySelectStmt
                    -- Use the schema to construct the select clause.
                  { Q.selectClause =
-                       columnsFromSchema alias s
+                       columnsFromSchema alias schema
                  , Q.fromClause =
-                       [mkFromPartVar varId alias $ Just s]
+                       [mkFromPartVar varId alias $ Just schema]
                  }
                , [(varId, ReferenceLeaf extRef schema)]
                )
