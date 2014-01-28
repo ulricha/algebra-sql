@@ -109,19 +109,13 @@ opDotLabel tags i (AggrL (aggrList, attr))    = labelToDoc i
     (lookupTags i tags)
 opDotLabel tags i (SerializeL (mDescr, mPos, cols)) = labelToDoc i
     "SERIALIZE" (renderSerCol mDescr
-                 <+> renderPosCol mPos
+                 <+> (text $ show mPos)
                  <+> (brackets $ commas (text . show) cols))
     (lookupTags i tags)
 
 renderSerCol :: Show c => Maybe c -> Doc
 renderSerCol Nothing  = empty
 renderSerCol (Just c) = (text $ show c) <> comma
-
-renderPosCol :: SerializeOrder -> Doc
-renderPosCol NoPos      = empty
-renderPosCol (AbsPos c) = text c <> comma 
-renderPosCol (RelPos c) = text c <> comma 
-
 
 constructDotNode :: NodeMap [Tag] -> (AlgNode, PFLabel) -> DotNode
 constructDotNode tags (n, op) =
