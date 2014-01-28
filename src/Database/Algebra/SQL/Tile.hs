@@ -39,8 +39,6 @@ import Database.Algebra.SQL.Query.Util
     , affectsSortOrder
     )
 
-import Debug.Trace
-
 -- | A tile internal reference type.
 type InternalReference = Q.ReferenceType
 
@@ -301,16 +299,10 @@ transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
         TileNode _ s cs   -> return (s, cs)
         ReferenceLeaf r s -> embedExternalReference r s
 
-
     let sClause                    = Q.selectClause select
         inline                     = inlineColumn sClause
         project (A.PayloadCol col) =
             Q.SCAlias (inlineSE sClause col) col
-
-    trace (show $ Q.selectClause select) $ return ()
-
-    trace (show $ payloadCols) $ return ()
-    trace (show $ map project payloadCols) $ return ()
 
     return $ TileNode
              False
