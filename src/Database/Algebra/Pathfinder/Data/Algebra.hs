@@ -13,6 +13,7 @@ module Database.Algebra.Pathfinder.Data.Algebra where
 
 import Numeric                     (showFFloat)
 import Text.Printf
+import Data.List
 
 import Database.Algebra.Aux
 import Database.Algebra.Dag        (Operator, opChildren, replaceOpChild)
@@ -267,14 +268,14 @@ instance Show DescrCol where
 -- required. RelPos signals that only the order induced by the pos
 -- column is relevant.
 data SerializeOrder = AbsPos AttrName
-                    | RelPos AttrName
+                    | RelPos [AttrName]
                     | NoPos
                     deriving (Ord, Eq, Generic)
 
 instance Show SerializeOrder where
-    show (AbsPos c) = "AbsPos " ++ c
-    show (RelPos c) = "RelPos " ++ c
-    show NoPos      = "NoPos"
+    show (AbsPos c)  = "AbsPos " ++ c
+    show (RelPos cs) = "RelPos " ++ (intercalate ", " cs)
+    show NoPos       = "NoPos"
 
 newtype PayloadCol = PayloadCol AttrName deriving (Ord, Eq, Generic)
 
