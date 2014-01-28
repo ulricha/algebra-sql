@@ -321,8 +321,8 @@ transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
         Just (A.DescrCol col) -> [col]
     posList   = case mPos of
         A.NoPos      -> []
-        A.AbsPos col -> [col]
-        A.RelPos col -> [col]
+        A.AbsPos c -> [c]
+        A.RelPos c -> [c]
 
 
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
