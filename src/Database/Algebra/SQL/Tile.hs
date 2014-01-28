@@ -39,6 +39,8 @@ import Database.Algebra.SQL.Query.Util
     , affectsSortOrder
     )
 
+import Debug.Trace
+
 -- | A tile internal reference type.
 type InternalReference = Q.ReferenceType
 
@@ -299,9 +301,16 @@ transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
         TileNode _ s cs   -> return (s, cs)
         ReferenceLeaf r s -> embedExternalReference r s
 
-    let inline                   =
-            inlineColumn (Q.selectClause select)
-        project (A.PayloadCol col) = Q.SCAlias (Q.SEValueExpr $ inline col) col
+
+    let sClause                    = Q.selectClause select
+        inline                     = inlineColumn sClause
+        project (A.PayloadCol col) =
+            Q.SCAlias (inlineSE sClause col) col
+
+    trace (show $ Q.selectClause select) $ return ()
+
+    trace (show $ payloadCols) $ return ()
+    trace (show $ map project payloadCols) $ return ()
 
     return $ TileNode
              False
@@ -692,6 +701,15 @@ extractFromAlias alias =
                                                             else r
         f _                               r = r
 
+-- | Uses th select clause to try to inline an aliased select expression.
+inlineSE :: [Q.SelectColumn]
+         -> String
+         -> Q.SelectExpr
+inlineSE selectClause col =
+    fromMaybe (Q.SEValueExpr $ mkCol col) $ foldr f Nothing selectClause
+  where
+    f (Q.SCAlias se a) r = if col == a then return se
+                                       else r
 
 -- | Shorthand to make an unprefixed column value expression.
 mkCol :: String
