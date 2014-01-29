@@ -169,6 +169,7 @@ data UnOp = Unique
           | Aggr AggrFun
           | SortSimple [Expr1]
           | GroupSimple [Expr1]
+          | Reshape Integer Integer
     deriving (Eq, Ord, Generic, Show)
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
@@ -195,9 +196,12 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | SemiJoinS Expr1 Expr1
            | AntiJoin Expr1 Expr1
            | AntiJoinS Expr1 Expr1
+           | ReshapeS Integer Integer
+           | Transpose
     deriving (Eq, Ord, Generic, Show)
 
 data TerOp = Combine  -- (DBV, RenameVector, RenameVector)
+           | TransposeS
     deriving (Eq, Ord, Generic, Show)
 
 instance Operator VL where
