@@ -27,7 +27,7 @@ import Database.Algebra.SQL.Util
     , renderAdvancedDebugOutput
     )
 import qualified Database.Algebra.SQL.Tile as T
-
+import Database.Algebra.SQL.Compatibility
 
 
 test :: T.PFDag
@@ -328,16 +328,24 @@ singleTests = [ tLitTable
 
 
 data Options = Options
-            { optDot       :: Bool
-            , optRenderDot :: Bool
-            , optDebug     :: Bool
-            , optHelp      :: Bool
-            , optMatFun    :: MatFun
-            , optFast      :: Bool
-            , optDebugFun  :: Maybe (T.PFDag -> MatFun -> String)
+            { optDot        :: Bool
+            , optRenderDot  :: Bool
+            , optDebug      :: Bool
+            , optHelp       :: Bool
+            , optMatFun     :: MatFun
+            , optFast       :: Bool
+            , optDebugFun   :: Maybe (CompatMode -> T.PFDag -> MatFun -> String)
+            , optCompatMode :: CompatMode
             }
 defaultOptions :: Options
-defaultOptions = Options False False False False CTE.materialize False Nothing
+defaultOptions = Options False
+                         False
+                         False
+                         False
+                         CTE.materialize
+                         False
+                         Nothing
+                         SQL99
 
 -- idea from VLToX100.hs from DSH
 options :: [OptDescr (Options -> Options)]
@@ -374,6 +382,14 @@ options = [ Option
             ["fast"]
             (NoArg (\opt -> opt { optFast = True }))
             "Render a fast but ugly sql representation"
+          , Option
+            "c"
+            ["compat"]
+            ( ReqArg (\s opt -> opt { optCompatMode = parseCompatMode s })
+                     "<mode>"
+            )
+            "Specify the compatibility mode (defaults to sql99):\n\
+            \   sql99 | postgresql"
           ]
         where parseMatFun s = case s of
                   "cte"  -> CTE.materialize
@@ -383,8 +399,16 @@ options = [ Option
                       Combined.materializeByBindingStrategy Combined.Lowest
                   "comh" ->
                       Combined.materializeByBindingStrategy Combined.Highest
-                  -- TODO stupid library is not able to parse sub args
-                  _     -> CTE.materialize
+                  _      -> error $ "invalid materialization function '"
+                                    ++ s
+                                    ++ "'"
+
+              parseCompatMode s = case s of
+                  "sql99"      -> SQL99
+                  "postgresql" -> PostgreSQL
+                  _            -> error $ "invalid compatibility mode '"
+                                          ++ s
+                                          ++ "'"
 
               handleDebug optArg opts =
                   ( case optArg of
@@ -394,8 +418,8 @@ options = [ Option
                   )
                   { optDebug = True }
 
-              parseDebugStr os = renderAdvancedDebugOutput ('e' `elem` os)
-                                                           $ 'a' `elem` os
+              parseDebugStr os c = renderAdvancedDebugOutput c ('e' `elem` os)
+                                                               $ 'a' `elem` os
 
 
 main :: IO ()
@@ -408,13 +432,14 @@ main = do
     case (optHelp usedOptions, not $ null errs) of
         -- not used the help option and no parse errors
         (False, False)     ->  do
-            let debug    = optDebug usedOptions
-                matFun   = optMatFun usedOptions
-                output d = case optDebugFun usedOptions of
+            let debug      = optDebug usedOptions
+                matFun     = optMatFun usedOptions
+                compatMode = optCompatMode usedOptions
+                output d   = case optDebugFun usedOptions of
                     Just f ->
-                        putStrLn $ f d matFun
+                        putStrLn $ f compatMode d matFun
                     Nothing ->
-                        putShowSLn $ renderDebugOutput d matFun debug
+                        putShowSLn $ renderDebugOutput compatMode d matFun debug
 
             case realArgs of
                 filenames@(_:_) ->
@@ -437,7 +462,10 @@ main = do
                                         when (optRenderDot usedOptions)
                                             $ renderDot dotPath pdfPath
                                     else if optFast usedOptions
-                                         then putShowSLn $ renderOutput dag matFun
+                                         then putShowSLn
+                                              $ renderOutput compatMode
+                                                             dag
+                                                             matFun
                                          else output dag
                 []              ->
                     -- Run tests 

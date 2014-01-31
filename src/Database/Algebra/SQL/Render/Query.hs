@@ -36,6 +36,7 @@ import Text.PrettyPrint.ANSI.Leijen ( (<$>)
                                     )
 
 import Database.Algebra.SQL.Query
+import Database.Algebra.SQL.Compatibility
 
 enlist :: [Doc] -> Doc
 enlist = fillSep . punctuate comma
@@ -56,25 +57,38 @@ op = red . char
 terminate :: Doc -> Doc
 terminate = (<> op ';')
 
-renderQuery :: Query -> Doc
-renderQuery query = terminate $ case query of
+renderQuery :: CompatMode -> Query -> Doc
+renderQuery c query = terminate $ case query of
     QValueQuery q      -> renderValueQuery q
-    QDefinitionQuery q -> renderDefinitionQuery q
+    QDefinitionQuery q -> renderDefinitionQuery c q
 
-renderDefinitionQuery :: DefinitionQuery -> Doc
-renderDefinitionQuery (DQMatView query name)        =
+renderDefinitionQuery :: CompatMode -> DefinitionQuery -> Doc
+renderDefinitionQuery _ (DQMatView query name)      =
     kw "CREATE MATERIALIZED VIEW"
     <+> text name
     <+> kw "AS"
     </> renderValueQuery query
 
-renderDefinitionQuery (DQTemporaryTable query name)
+renderDefinitionQuery c (DQTemporaryTable query name)
                                                     =
-    kw "CREATE LOCAL TEMPORARY TABLE"
-    <+> text name
-    <+> kw "AS"
-    <$> indent 4 (renderValueQuery query)
-    <$> kw "WITH DATA ON COMMIT DROP"
+    createStmt
+    <+>
+    case c of
+        SQL99      ->
+            as
+            <$> indentedQ
+            -- Create the table with the result of the given value query.
+            <$> kw "WITH DATA ON COMMIT DROP"
+        PostgreSQL ->
+            -- PostgreSQL does not accept the default syntax. In order to
+            -- achieve the same behaviour, the SQL code is rendered different.
+            kw "ON COMMIT DROP"
+            <+> as
+            <$> indentedQ
+  where
+    createStmt = kw "CREATE LOCAL TEMPORARY TABLE" <+> text name
+    as         = kw "AS"
+    indentedQ  = indent 4 $ renderValueQuery query
 
 renderValueQuery :: ValueQuery -> Doc
 renderValueQuery (VQSelect stmt)                         = renderSelectStmt stmt
