@@ -451,7 +451,6 @@ main = do
                                 Left err  ->
                                     putStrLn err
                                 Right dag ->
-
                                     if optDot usedOptions
                                     then do
                                         let dotPath = filename ++ ".dot"

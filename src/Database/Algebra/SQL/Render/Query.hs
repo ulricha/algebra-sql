@@ -63,32 +63,31 @@ renderQuery c query = terminate $ case query of
     QDefinitionQuery q -> renderDefinitionQuery c q
 
 renderDefinitionQuery :: CompatMode -> DefinitionQuery -> Doc
-renderDefinitionQuery _ (DQMatView query name)      =
+renderDefinitionQuery _ (DQMatView query name)        =
     kw "CREATE MATERIALIZED VIEW"
     <+> text name
     <+> kw "AS"
     </> renderValueQuery query
 
-renderDefinitionQuery c (DQTemporaryTable query name)
-                                                    =
+renderDefinitionQuery c (DQTemporaryTable query name) =
     createStmt
     <+>
     case c of
         SQL99      ->
             as
-            <$> indentedQ
+            <$> indentedQuery
             -- Create the table with the result of the given value query.
             <$> kw "WITH DATA ON COMMIT DROP"
         PostgreSQL ->
             -- PostgreSQL does not accept the default syntax. In order to
-            -- achieve the same behaviour, the SQL code is rendered different.
+            -- achieve the same behaviour, the SQL code is rendered differently.
             kw "ON COMMIT DROP"
             <+> as
-            <$> indentedQ
+            <$> indentedQuery
   where
-    createStmt = kw "CREATE LOCAL TEMPORARY TABLE" <+> text name
-    as         = kw "AS"
-    indentedQ  = indent 4 $ renderValueQuery query
+    createStmt    = kw "CREATE LOCAL TEMPORARY TABLE" <+> text name
+    as            = kw "AS"
+    indentedQuery = indent 4 $ renderValueQuery query
 
 renderValueQuery :: ValueQuery -> Doc
 renderValueQuery (VQSelect stmt)                         = renderSelectStmt stmt
