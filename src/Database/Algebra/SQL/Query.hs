@@ -38,14 +38,13 @@ data ValueQuery = VQSelect
                 | VQLiteral
                 { rows       :: [[ValueExpr]]  -- ^ The values contained.
                 }
-                  -- The with clause to bind value queries to names.
-                | VQCommonTableExpression
-                { cBody      :: ValueQuery
-
-                  -- | The bindings of the CTE as a list of tuples, each
+                  -- The with query to bind value queries to names.
+                | VQWith
+                { -- | The bindings of the with query as a list of tuples, each
                   -- containing the table alias, the optional column names and
                   -- the used query.
-                , cBindings  :: [(String, Maybe [String], ValueQuery)]
+                  cBindings  :: [(String, Maybe [String], ValueQuery)]
+                , cBody      :: ValueQuery
                 }
                   -- A binary set operation
                   -- (e.g. "TABLE foo UNION ALL TABLE bar").

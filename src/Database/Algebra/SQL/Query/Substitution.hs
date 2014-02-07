@@ -87,9 +87,8 @@ replaceReferencesValueQuery r (Q.VQSelect s) =
     Q.VQSelect $ replaceReferencesSelectStmt r s
 
 replaceReferencesValueQuery r
-    (Q.VQCommonTableExpression body bindings) =
-    Q.VQCommonTableExpression (replaceReferencesValueQuery r body)
-                              (map f bindings)
+    (Q.VQWith bindings body) =
+    Q.VQWith (map f bindings) $ replaceReferencesValueQuery r body
   where f (n, oC, q) = (n, oC, replaceReferencesValueQuery r q)
 
 replaceReferencesValueQuery r

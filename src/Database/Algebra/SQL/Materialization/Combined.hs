@@ -43,7 +43,7 @@ import qualified Database.Algebra.SQL.Query as Q
     , FromExpr(FEVariable, FETableReference)
     , Query(QValueQuery, QDefinitionQuery)
     , SelectStmt
-    , ValueQuery(VQSelect, VQCommonTableExpression)
+    , ValueQuery(VQSelect, VQWith)
     )
 import Database.Algebra.SQL.Query.Substitution
 import Database.Algebra.SQL.Tile.Flatten
@@ -262,7 +262,7 @@ buildValueQuery :: Graph                    -- ^ The corresponding graph.
 buildValueQuery graph reversedSpaMap mat v =
     if null bindings
     then body
-    else Q.VQCommonTableExpression body bindings
+    else Q.VQWith bindings body
   where childVertices = fromMaybe [] $ IntMap.lookup v reversedSpaMap
         childQueries  = map (buildValueQuery graph reversedSpaMap mat)
                             childVertices

@@ -95,7 +95,7 @@ renderValueQuery (VQLiteral vals)                        =
     kw "VALUES" <+> align (sep . punctuate comma $ map renderRow vals)
   where renderRow row = parens . enlistOnLine $ map renderValueExpr row
 
-renderValueQuery (VQCommonTableExpression body bindings) =
+renderValueQuery (VQWith bindings body) =
     hang 4 (kw "WITH" </> enlist (map renderBinding bindings))
     <$> renderValueQuery body
   where renderBinding :: (String, Maybe [String], ValueQuery) -> Doc

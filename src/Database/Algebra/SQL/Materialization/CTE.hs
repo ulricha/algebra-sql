@@ -26,7 +26,7 @@ legacyMaterialize transformResult =
     , if null bindings
       then map (QValueQuery . VQSelect . fst) selects
       else map
-           (QValueQuery . flip VQCommonTableExpression bindings . VQSelect . fst)
+           (QValueQuery . VQWith bindings . VQSelect . fst)
            selects
     )
   where bindings            = map f deps
@@ -55,13 +55,13 @@ materialize transformResult =
     rootVertices           = map fst enumRootTiles
 
 
-    -- Create a CTE for a root vertex.
+    -- Create a WITH query for a root vertex.
     gather :: G.Vertex -> ValueQuery
     gather v = case mSelect of
         Just (_, s) ->
             if IntMap.null bindings
             then VQSelect s
-            else VQCommonTableExpression (VQSelect s) withQueryBindings
+            else VQWith withQueryBindings $ VQSelect s
                                          
         Nothing -> error "gather: v is not a root vertex"
       where
