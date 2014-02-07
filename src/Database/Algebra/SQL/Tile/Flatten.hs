@@ -19,8 +19,8 @@ import qualified Data.IntMap.Lazy as IntMap
     , insert
     , lookup
     )
-import qualified Data.Set as Set
-    ( Set
+import qualified Data.MultiSet as MultiSet
+    ( MultiSet
     , empty
     , insert
     , union
@@ -46,9 +46,9 @@ import Database.Algebra.SQL.Tile
 --
 --     * the body of the tile
 --
---     * a set of a type which identifies a referenceable flat tile
+--     * a multiset of a type which identifies a referenceable flat tile
 --
-type FlatTile a = (Q.SelectStmt, Set.Set a)
+type FlatTile a = (Q.SelectStmt, MultiSet.MultiSet a)
 
 -- | Flatten a transform result using SQL identifiers directly.
 flattenTransformResult :: ([TileTree], DependencyList)
@@ -93,7 +93,7 @@ flattenTileTreeWith materializer substituter (ReferenceLeaf tableId s)  =
       , Q.fromClause = 
             [Q.FPAlias (substituter alias) aliasName $ Just s]
       }
-    , Set.singleton alias
+    , MultiSet.singleton alias
     )
   where f col         = Q.SCAlias (Q.SEValueExpr $ mkPCol aliasName col) col
         aliasName     = "tmpAlias"
@@ -115,7 +115,7 @@ flattenTileNodeWith materializer substituter mergeable body children =
             fromMaybe (error "missing reference while replacing")
                       $ IntMap.lookup v bodySubstitutes
         (bodySubstitutes, externalReferences) =
-            foldr f (IntMap.empty, Set.empty) children
+            foldr f (IntMap.empty, MultiSet.empty) children
 
         f (ref, tile) (substitutes, refs) = case tile of
             -- There is probably no better way to merge here, because we have no
@@ -126,13 +126,13 @@ flattenTileNodeWith materializer substituter mergeable body children =
                         flattenTileNodeWith materializer substituter m b c
                 in
                 ( IntMap.insert ref (Q.FESubQuery $ Q.VQSelect b') substitutes
-                , Set.union externalRefs refs
+                , MultiSet.union externalRefs refs
                 )
 
             -- Most of the time this case should be taken.
             ReferenceLeaf tableId _  ->
                 ( IntMap.insert ref (substituter alias) substitutes
-                , Set.insert alias refs
+                , MultiSet.insert alias refs
                 )
               where alias = materializer tableId
 

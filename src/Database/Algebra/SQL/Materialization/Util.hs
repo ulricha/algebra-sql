@@ -4,7 +4,7 @@ module Database.Algebra.SQL.Materialization.Util
     , graphFromFlatResult
     ) where
 
-import qualified Data.Set as S
+import qualified Data.MultiSet as MS
 
 import Database.Algebra.SQL.Tile.Flatten
 import qualified Database.Algebra.SQL.Query as Q
@@ -18,6 +18,6 @@ graphFromFlatResult :: [(Int, FlatTile Int)]
                     -> Graph
 graphFromFlatResult enumTiles =
     G.mkGraph $ map f enumTiles
-  where f (identifier, (t, ds)) = (t, identifier, S.toList ds)
+  where f (identifier, (t, ds)) = (t, identifier, MS.toList ds)
 
 

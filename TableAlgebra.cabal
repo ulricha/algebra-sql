@@ -40,7 +40,8 @@ library
                       bytestring >= 0.9,
                       errors >= 1.0.0,
                       dlist,
-                      ansi-wl-pprint
+                      ansi-wl-pprint,
+                      multiset
 
     exposed-modules:  Database.Algebra.Dag
                       Database.Algebra.Dag.Builder
@@ -189,5 +190,6 @@ executable sqlcodegentest
                       dlist,
                       ansi-wl-pprint,
                       process,
-                      filepath
+                      filepath,
+                      multiset
 
