@@ -47,6 +47,7 @@ import qualified Database.Algebra.SQL.Query as Q
     )
 import Database.Algebra.SQL.Query.Substitution
 import Database.Algebra.SQL.Tile.Flatten
+import Database.Algebra.SQL.Materialization.Util
 
 -- TODO maybe replace lists with sets? because difference should be faster
 -- TODO since all root tiles are enumerated with negative numbers, the root
@@ -147,15 +148,6 @@ materializeByFunction chooseSingleSPA transformResult =
         -- Enumerated root tiles.
         enumRootTiles          = zip [-1, -2 ..] rootTiles
         rootVertices           = map fst enumRootTiles
-
--- | The used graph.
-type Graph = G.Graph Q.SelectStmt
-
-graphFromFlatResult :: [(Int, FlatTile Int)]
-                    -> Graph
-graphFromFlatResult enumTiles =
-    G.mkGraph $ map f enumTiles
-  where f (identifier, (t, ds)) = (t, identifier, S.toList ds)
 
 -- | The lowest single parent ancestor state contains:
 --     * A map of vertices mapping to their single parent ancestors.

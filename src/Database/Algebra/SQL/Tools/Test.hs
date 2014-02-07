@@ -376,7 +376,7 @@ options = [ Option
             ["mat-strategy"]
             (ReqArg (\s opt -> opt { optMatFun = parseMatFun s }) "<strategy>")
             "Specify the type of materialization (defaults to cte):\n\
-            \    cte | tmp | com | coml | comh"
+            \    lcte | cte | tmp | com | coml | comh"
           , Option
             "f"
             ["fast"]
@@ -392,6 +392,7 @@ options = [ Option
             \   sql99 | postgresql"
           ]
         where parseMatFun s = case s of
+                  "lcte" -> CTE.legacyMaterialize
                   "cte"  -> CTE.materialize
                   "tmp"  -> TemporaryTable.materialize
                   "com"  -> Combined.materialize
