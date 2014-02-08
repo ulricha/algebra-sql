@@ -25,10 +25,10 @@ mkSubQuery :: Q.SelectStmt
            -> Q.FromPart
 mkSubQuery sel = Q.FPAlias (Q.FESubQuery $ Q.VQSelect sel)
 
--- Check whether we need an expression within an ORDER BY / GROUP BY / PARTITION
--- BY clause, based on a simple heuristic. The main purpose is to eliminate
--- single values, everything else is optional. This means that some expressions
--- have no effect on the sort order but will still return 'True'.
+-- | Check whether we need an expression within an ORDER BY / GROUP BY /
+-- PARTITION BY clause, based on a simple heuristic. The main purpose is to
+-- eliminate single values, everything else is optional. This means that some
+-- expressions have no effect on the sort order but will still return 'True'.
 affectsSortOrder :: Q.ValueExpr -> Bool
 affectsSortOrder e = case e of
     -- A constant value won't affect the sort order.
@@ -42,3 +42,19 @@ affectsSortOrder e = case e of
     Q.VEExists _       -> True
     Q.VEIn _ _         -> True
 
+
+-- | Checks manually whether a 'Q.SelectStmt' is mergeable. Since the ORDER BY
+-- clause is only used on top we can ignore it.
+isMergeable :: Q.SelectStmt -> Bool
+isMergeable (Q.SelectStmt sClause d _ _ [] _) =
+    not $ d || (any (isComplexSelectExpr . sExpr) sClause)
+  where
+    isComplexSelectExpr e = case e of
+        SEValueExpr _ -> False
+        _             -> True
+isMergeable _                                 = False
+
+-- | Search for references and try to merge a select stmt at that position.
+--deepMergeSelectStmt :: (Int -> (Bool, Q.SelectStmt)) -> Q.SelectStmt -> Q.SelectStmt
+--deepMergeSelectStmt lookupFun select =
+    

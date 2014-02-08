@@ -545,23 +545,20 @@ transformExistsJoin :: A.SemInfJoin
                     -> TransformMonad TileTree
 transformExistsJoin conditions c0 c1 existsWrapF = case result of
     (Nothing, _)      -> do
-        tile0 <- transformNode c0
+        -- TODO in case we do not have merge conditions we can simply use the
+        -- unmergeable but less nested select stmt on the right side
+        (select0, children0) <- transformAsSelect c0
+        (select1, children1) <- transformAsSelect c1
 
-        if null conditions
-        then return tile0
-        else do
-            (select0, children0) <- selectFromTile tile0
-            (select1, children1) <- transformAsSelect c1
+        let outerCond   = existsWrapF . Q.VEExists $ Q.VQSelect innerSelect
+            innerSelect = foldr appendToWhere select1 innerConds
+            innerConds  = map f conditions
+            f           = translateInlinedJoinCond (Q.selectClause select0)
+                                                $ Q.selectClause select1
 
-            let outerCond   = existsWrapF . Q.VEExists $ Q.VQSelect innerSelect
-                innerSelect = foldr appendToWhere select1 innerConds
-                innerConds  = map f conditions
-                f           = translateInlinedJoinCond (Q.selectClause select0)
-                                                    $ Q.selectClause select1
-
-            return $ TileNode True
-                            (appendToWhere outerCond select0)
-                            $ children0 ++ children1
+        return $ TileNode True
+                        (appendToWhere outerCond select0)
+                        $ children0 ++ children1
     (Just (l, r), cs) -> do
         (select0, children0) <- transformAsSelect c0
         (select1, children1) <- transformAsSelect c1

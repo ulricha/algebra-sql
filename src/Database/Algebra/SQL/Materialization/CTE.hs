@@ -37,7 +37,9 @@ legacyMaterialize transformResult =
         (selects, deps)     =
             flattenTransformResult transformResult
 
-
+-- | 'Gather' provides a state for the current bindings which are gathered and a
+-- reader to have access to the set which contains all vertices reachable by the
+-- current root vertex.
 type Gather = StateT (IntMap.IntMap SelectStmt) (Reader IntSet.IntSet)
 
 materialize :: MatFun
