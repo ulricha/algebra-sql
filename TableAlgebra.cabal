@@ -92,6 +92,7 @@ library
                       Database.Algebra.SQL.Render.Query
                       Database.Algebra.SQL.Materialization.Graph
                       Database.Algebra.SQL.Materialization.Combined
+                      Database.Algebra.SQL.Materialization.Util
                       Database.Algebra.X100.Render.Sharing
                       Database.Algebra.X100.Properties.Schema
                       Database.Algebra.X100.Properties.Card1
