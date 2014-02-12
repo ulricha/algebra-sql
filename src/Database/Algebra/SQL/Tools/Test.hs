@@ -22,9 +22,10 @@ import Database.Algebra.SQL.Materialization.TemporaryTable as TemporaryTable
 import qualified Database.Algebra.SQL.Materialization.Combined as Combined
 import Database.Algebra.SQL.Util
     ( renderDebugOutput
-    , renderOutput
     , putShowSLn
     , renderAdvancedDebugOutput
+    , renderOutputCompact
+    , renderOutputPlain
     )
 import qualified Database.Algebra.SQL.Tile as T
 import Database.Algebra.SQL.Compatibility
@@ -333,7 +334,7 @@ data Options = Options
             , optDebug      :: Bool
             , optHelp       :: Bool
             , optMatFun     :: MatFun
-            , optFast       :: Bool
+            , optFast       :: Maybe (CompatMode -> T.PFDag -> MatFun -> ShowS)
             , optDebugFun   :: Maybe (CompatMode -> T.PFDag -> MatFun -> String)
             , optCompatMode :: CompatMode
             }
@@ -343,7 +344,7 @@ defaultOptions = Options False
                          False
                          False
                          CTE.materialize
-                         False
+                         Nothing
                          Nothing
                          SQL99
 
@@ -380,8 +381,9 @@ options = [ Option
           , Option
             "f"
             ["fast"]
-            (NoArg (\opt -> opt { optFast = True }))
-            "Render a fast but ugly sql representation"
+            (OptArg handleFast "<optformat>")
+            "Render a fast but ugly sql representation optional with formatting:\
+            \   '' | 'f'"
           , Option
             "c"
             ["compat"]
@@ -410,6 +412,13 @@ options = [ Option
                   _            -> error $ "invalid compatibility mode '"
                                           ++ s
                                           ++ "'"
+
+              handleFast optArg opts =
+                  opts
+                  { optFast = Just $ case optArg of
+                        Nothing -> renderOutputCompact
+                        Just _  -> renderOutputPlain
+                  }
 
               handleDebug optArg opts =
                   ( case optArg of
@@ -461,12 +470,10 @@ main = do
                                         
                                         when (optRenderDot usedOptions)
                                             $ renderDot dotPath pdfPath
-                                    else if optFast usedOptions
-                                         then putShowSLn
-                                              $ renderOutput compatMode
-                                                             dag
-                                                             matFun
-                                         else output dag
+                                    else case optFast usedOptions of
+                                        Just r  ->
+                                            putShowSLn $ r compatMode dag matFun
+                                        Nothing -> output dag
                 []              ->
                     -- Run tests 
                     forM_ testGraphs $ \d -> output d

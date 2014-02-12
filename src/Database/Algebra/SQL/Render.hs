@@ -3,12 +3,14 @@ module Database.Algebra.SQL.Render
     ( debugTransformResult
     , renderCompact
     , renderPretty
+    , renderPlain
     ) where
 
 import Data.List (intercalate)
 import qualified Text.PrettyPrint.ANSI.Leijen as L
     ( Doc
     , SimpleDoc
+    , plain
     , displayS
     , renderPretty
     , renderCompact
@@ -41,4 +43,8 @@ renderCompact c = map $ renderWith L.renderCompact c
 -- | Renders a list of queries in a beautiful way.
 renderPretty :: CompatMode -> [Query] -> [ShowS]
 renderPretty c = map $ renderWith renderPrettySimpleDoc c
+
+-- | Renders a list of queries without colors but formatted.
+renderPlain :: CompatMode -> [Query] -> [ShowS]
+renderPlain c = map $ renderWith (renderPrettySimpleDoc . L.plain) c
 

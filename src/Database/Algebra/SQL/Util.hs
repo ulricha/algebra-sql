@@ -1,6 +1,7 @@
 -- | This module abstracts over commonly used functions.
 module Database.Algebra.SQL.Util
-    ( renderOutput
+    ( renderOutputCompact
+    , renderOutputPlain
     , renderDebugOutput
     , renderAdvancedDebugOutput
     , renderOutputDSH
@@ -45,11 +46,22 @@ renderDebugOutput c dag matFun debug =
 putShowSLn :: ShowS -> IO ()
 putShowSLn s = putStrLn $ s ""
 
--- | Renders a DAG in an ugly but fast way, feasible for direct SQL input.
-renderOutput :: CompatMode -> T.PFDag -> MatFun -> ShowS
-renderOutput c dag matFun = foldr (.) id $ intersperse (showChar '\n') renderedQs
+-- | Renders a DAG with the given renderer.
+renderOutputWith :: (CompatMode -> [Query] -> [ShowS])
+                 -> CompatMode
+                 -> T.PFDag
+                 -> MatFun
+                 -> ShowS
+renderOutputWith renderer c dag matFun =
+    foldr (.) id $ intersperse (showChar '\n') renderedQs
   where (_, (tqs, rqs)) = resultFromDAG dag matFun
-        renderedQs      = R.renderCompact c $ tqs ++ rqs
+        renderedQs      = renderer c $ tqs ++ rqs
+
+renderOutputCompact :: CompatMode -> T.PFDag -> MatFun -> ShowS
+renderOutputCompact = renderOutputWith R.renderCompact
+
+renderOutputPlain :: CompatMode -> T.PFDag -> MatFun -> ShowS
+renderOutputPlain = renderOutputWith R.renderPlain
 
 -- | Render output directly for DSH. The order from the root nodes in the
 -- directed acyclic graph is preserved. (This function uses the combined
@@ -79,8 +91,8 @@ renderAdvancedDebugOutput c explain analyze dag matFun =
     foldr ((.) . (prefixes .)) id (renderedTQs ++ renderedRQs) ""
   where
     (_, (tqs, rqs)) = resultFromDAG dag matFun
-    renderedRQs     = R.renderCompact c rqs
-    renderedTQs     = R.renderCompact c tqs
+    renderedRQs     = R.renderPlain c rqs
+    renderedTQs     = R.renderPlain c tqs
     prefixes        = showString $ ep ++ ap
     ep              = if explain then "EXPLAIN " else ""
     ap              = if analyze then "ANALYZE " else ""
