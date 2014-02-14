@@ -64,9 +64,9 @@ outputDot filename dag = do
   where result = renderPFDot IntMap.empty (D.rootNodes dag) (D.nodeMap dag)
 
 renderDot :: FilePath -> FilePath -> IO ()
-renderDot dotPath pngPath = do
-    putStrLn $ "Rendering dot file to '" ++ pngPath ++ "'"
-    _ <- rawSystem "dot" ["-Tpng", "-o", pngPath, dotPath]
+renderDot dotPath pdfPath = do
+    putStrLn $ "Rendering dot file to '" ++ pdfPath ++ "'"
+    _ <- rawSystem "dot" ["-Tpdf", "-o", pdfPath, dotPath]
     return ()
 
 -- Runs the Pathfinder optimizer on a XML file.
