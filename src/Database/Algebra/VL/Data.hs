@@ -145,8 +145,7 @@ data NullOp = SingletonDescr
             | TableRef String [TypedColumn] [Key]
             deriving (Eq, Ord, Generic, Show)
 
-data UnOp = Unique
-          | UniqueS
+data UnOp = UniqueS
           | Number
           | NumberS
           | DescToRename
