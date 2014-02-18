@@ -103,7 +103,6 @@ opDotLabel tm i (NullaryOp (Lit tys vals)) = labelToDoc i "LIT"
 opDotLabel tm i (NullaryOp (TableRef n tys ks)) = labelToDoc i "TableRef"
         (quotes (text n) <> comma <+> bracketList (\t -> renderTableType t <> text "\n") tys <> comma $$ renderTableKeys ks)
         (lookupTags i tm)
-opDotLabel tm i (UnOp Unique _) = labelToDoc i "Unique" empty (lookupTags i tm)
 opDotLabel tm i (UnOp UniqueS _) = labelToDoc i "UniqueS" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Number _) = labelToDoc i "Number" empty (lookupTags i tm)
 opDotLabel tm i (UnOp NumberS _) = labelToDoc i "NumberS" empty (lookupTags i tm)
@@ -153,10 +152,13 @@ opDotLabel tm i (BinOp Zip _ _) = labelToDoc i "Zip" empty (lookupTags i tm)
 opDotLabel tm i (BinOp ZipS _ _) = labelToDoc i "ZipS" empty (lookupTags i tm)
 opDotLabel tm i (BinOp CartProduct _ _) = labelToDoc i "CartProduct" empty (lookupTags i tm)
 opDotLabel tm i (BinOp CartProductS _ _) = labelToDoc i "CartProductS" empty (lookupTags i tm)
+opDotLabel tm i (BinOp NestProductS _ _) = labelToDoc i "NestProductS" empty (lookupTags i tm)
 opDotLabel tm i (BinOp (EquiJoin e1 e2) _ _) =
   labelToDoc i "EquiJoin" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (BinOp (EquiJoinS e1 e2) _ _) =
   labelToDoc i "EquiJoinS" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
+opDotLabel tm i (BinOp (NestJoinS e1 e2) _ _) =
+  labelToDoc i "NestJoinS" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (BinOp (SemiJoin e1 e2) _ _) =
   labelToDoc i "SemiJoin" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (BinOp (SemiJoinS e1 e2) _ _) =

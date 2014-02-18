@@ -145,8 +145,7 @@ data NullOp = SingletonDescr
             | TableRef String [TypedColumn] [Key]
             deriving (Eq, Ord, Generic, Show)
 
-data UnOp = Unique
-          | UniqueS
+data UnOp = UniqueS
           | Number
           | NumberS
           | DescToRename
@@ -198,6 +197,8 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | AntiJoinS Expr1 Expr1
            | ReshapeS Integer Integer
            | Transpose
+           | NestJoinS Expr1 Expr1
+           | NestProductS
     deriving (Eq, Ord, Generic, Show)
 
 data TerOp = Combine  -- (DBV, RenameVector, RenameVector)
