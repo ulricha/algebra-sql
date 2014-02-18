@@ -177,8 +177,10 @@ opDotColor :: VL -> DotColor
 opDotColor (BinOp DistDesc _ _)        = Red
 opDotColor (BinOp CartProduct _ _)     = Red
 opDotColor (BinOp CartProductS _ _)    = Red
+opDotColor (BinOp NestProductS _ _)    = Red
 opDotColor (BinOp (EquiJoin _ _) _ _)  = Green
 opDotColor (BinOp (EquiJoinS _ _) _ _) = Green
+opDotColor (BinOp (NestJoinS _ _) _ _) = Green
 opDotColor (BinOp (SemiJoin _ _) _ _)  = Green
 opDotColor (BinOp (SemiJoinS _ _) _ _) = Green
 opDotColor (BinOp (AntiJoin _ _) _ _)  = Green
@@ -197,6 +199,8 @@ opDotColor (UnOp (Select _) _)         = LightSkyBlue
 opDotColor (UnOp (Aggr _) _)           = Crimson
 opDotColor (BinOp (AggrS _) _ _)       = Crimson
 opDotColor (UnOp (GroupAggr _ _) _)    = Tomato
+opDotColor (UnOp (Project _) _)        = LightSkyBlue
+opDotColor (BinOp (BinExpr _) _ _)     = DodgerBlue
 opDotColor _ = Gray
 
 -- Dot colors
@@ -215,6 +219,7 @@ data DotColor = Tomato
               | Beige
               | DodgerBlue
               | LightSkyBlue
+              | HotPink
 
 renderColor :: DotColor -> Doc
 renderColor Tomato = text "tomato"
@@ -232,6 +237,7 @@ renderColor Sienna = text "sienna"
 renderColor Beige = text "beige"
 renderColor DodgerBlue = text "dodgerblue"
 renderColor LightSkyBlue = text "lightskyblue"
+renderColor HotPink      = text "hotpink"
 
 escapeLabel :: String -> String
 escapeLabel s = concatMap escapeChar s
