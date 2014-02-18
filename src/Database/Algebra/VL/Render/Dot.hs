@@ -201,6 +201,10 @@ opDotColor (BinOp (AggrS _) _ _)       = Crimson
 opDotColor (UnOp (GroupAggr _ _) _)    = Tomato
 opDotColor (UnOp (Project _) _)        = LightSkyBlue
 opDotColor (BinOp (BinExpr _) _ _)     = DodgerBlue
+opDotColor (BinOp Transpose _ _)       = HotPink
+opDotColor (TerOp TransposeS _ _ _)    = HotPink
+opDotColor (BinOp (ReshapeS _ _) _ _)  = HotPink
+opDotColor (UnOp (Reshape _ _) _)      = HotPink
 opDotColor _ = Gray
 
 -- Dot colors
