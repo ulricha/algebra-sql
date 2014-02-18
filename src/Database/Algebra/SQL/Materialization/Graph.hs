@@ -8,6 +8,7 @@ module Database.Algebra.SQL.Materialization.Graph
     , node
     , topSort
     , vertices
+    , reachable
     ) where
 
 import qualified Data.Graph.Inductive.Graph as G
@@ -51,3 +52,5 @@ topSort = D.topsort . graph
 vertices :: Graph label -> [Vertex]
 vertices = G.nodes . graph
 
+reachable :: Vertex -> Graph label -> [Vertex]
+reachable v = D.reachable v . graph

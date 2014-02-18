@@ -40,7 +40,8 @@ library
                       bytestring >= 0.9,
                       errors >= 1.0.0,
                       dlist,
-                      ansi-wl-pprint
+                      ansi-wl-pprint,
+                      multiset
 
     exposed-modules:  Database.Algebra.Dag
                       Database.Algebra.Dag.Builder
@@ -83,6 +84,7 @@ library
                       Database.Algebra.Pathfinder.Data.Create
                       Database.Algebra.SQL.Query
                       Database.Algebra.SQL.Query.Substitution
+                      Database.Algebra.SQL.Query.Util
                       Database.Algebra.SQL.Tile
                       Database.Algebra.SQL.Tile.Flatten
                       Database.Algebra.SQL.Render
@@ -90,6 +92,7 @@ library
                       Database.Algebra.SQL.Render.Query
                       Database.Algebra.SQL.Materialization.Graph
                       Database.Algebra.SQL.Materialization.Combined
+                      Database.Algebra.SQL.Materialization.Util
                       Database.Algebra.X100.Render.Sharing
                       Database.Algebra.X100.Properties.Schema
                       Database.Algebra.X100.Properties.Card1
@@ -188,5 +191,6 @@ executable sqlcodegentest
                       dlist,
                       ansi-wl-pprint,
                       process,
-                      filepath
+                      filepath,
+                      multiset
 

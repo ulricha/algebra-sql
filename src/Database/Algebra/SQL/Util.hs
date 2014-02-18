@@ -1,6 +1,7 @@
 -- | This module abstracts over commonly used functions.
 module Database.Algebra.SQL.Util
-    ( renderOutput
+    ( renderOutputCompact
+    , renderOutputPlain
     , renderDebugOutput
     , renderAdvancedDebugOutput
     , renderOutputDSH
@@ -15,20 +16,23 @@ import qualified Database.Algebra.SQL.Tile as T
 import Database.Algebra.SQL.Materialization
 import Database.Algebra.SQL.Materialization.Combined as C
 import Database.Algebra.SQL.Query (Query)
+import Database.Algebra.SQL.Compatibility
+
+-- TODO include materialization strategy depending on compat mode
 
 resultFromDAG :: T.PFDag -> MatFun -> (T.TransformResult, ([Query], [Query]))
 resultFromDAG dag matFun = (transformResult, matFun transformResult)
   where transformResult = T.transform dag
 
 -- | Produces pretty output, optionally with debug information.
-renderDebugOutput :: T.PFDag -> MatFun -> Bool -> ShowS
-renderDebugOutput dag matFun debug =
+renderDebugOutput :: CompatMode -> T.PFDag -> MatFun -> Bool -> ShowS
+renderDebugOutput c dag matFun debug =
     ( if debug
       then dBegin . R.debugTransformResult r . showChar '\n'
       else id
     )
     . begin
-    . foldr (.) id (intersperse mid $ R.renderPretty $ tqs ++ rqs)
+    . foldr (.) id (intersperse mid $ R.renderPretty c $ tqs ++ rqs)
     . end
 
   where -- SQL compliant separators. (comments)
@@ -42,22 +46,33 @@ renderDebugOutput dag matFun debug =
 putShowSLn :: ShowS -> IO ()
 putShowSLn s = putStrLn $ s ""
 
--- | Renders a DAG in an ugly but fast way, feasible for direct SQL input.
-renderOutput :: T.PFDag -> MatFun -> ShowS
-renderOutput dag matFun = foldr (.) id $ intersperse (showChar '\n') renderedQs
+-- | Renders a DAG with the given renderer.
+renderOutputWith :: (CompatMode -> [Query] -> [ShowS])
+                 -> CompatMode
+                 -> T.PFDag
+                 -> MatFun
+                 -> ShowS
+renderOutputWith renderer c dag matFun =
+    foldr (.) id $ intersperse (showChar '\n') renderedQs
   where (_, (tqs, rqs)) = resultFromDAG dag matFun
-        renderedQs      = R.render $ tqs ++ rqs
+        renderedQs      = renderer c $ tqs ++ rqs
+
+renderOutputCompact :: CompatMode -> T.PFDag -> MatFun -> ShowS
+renderOutputCompact = renderOutputWith R.renderCompact
+
+renderOutputPlain :: CompatMode -> T.PFDag -> MatFun -> ShowS
+renderOutputPlain = renderOutputWith R.renderPlain
 
 -- | Render output directly for DSH. The order from the root nodes in the
 -- directed acyclic graph is preserved. (This function uses the combined
 -- materialization strategy.)
-renderOutputDSH :: T.PFDag -> (Maybe String, [String])
-renderOutputDSH = renderOutputDSHWith C.materialize
+renderOutputDSH :: CompatMode -> T.PFDag -> (Maybe String, [String])
+renderOutputDSH = flip renderOutputDSHWith C.materialize
 
 -- | Render output directly for DSH. The order from the root nodes in the
 -- directed acyclic graph is preserved.
-renderOutputDSHWith :: MatFun -> T.PFDag -> (Maybe String, [String])
-renderOutputDSHWith matFun dag =
+renderOutputDSHWith :: CompatMode -> MatFun -> T.PFDag -> (Maybe String, [String])
+renderOutputDSHWith c matFun dag =
     ( if null preludeString
       then Nothing
       else Just preludeString
@@ -66,18 +81,18 @@ renderOutputDSHWith matFun dag =
   where
     preludeString   = foldr (.) id renderedTQs ""
     (_, (tqs, rqs)) = resultFromDAG dag matFun
-    renderedRQs     = R.render rqs
-    renderedTQs     = R.render tqs
+    renderedRQs     = R.renderCompact c rqs
+    renderedTQs     = R.renderCompact c tqs
 
 -- | Produces output which allows further inspection with the psql command line
 -- utility (and possibly others too).
-renderAdvancedDebugOutput :: Bool -> Bool -> T.PFDag -> MatFun -> String
-renderAdvancedDebugOutput explain analyze dag matFun =
+renderAdvancedDebugOutput :: CompatMode -> Bool -> Bool -> T.PFDag -> MatFun -> String
+renderAdvancedDebugOutput c explain analyze dag matFun =
     foldr ((.) . (prefixes .)) id (renderedTQs ++ renderedRQs) ""
   where
     (_, (tqs, rqs)) = resultFromDAG dag matFun
-    renderedRQs     = R.render rqs
-    renderedTQs     = R.render tqs
+    renderedRQs     = R.renderPlain c rqs
+    renderedTQs     = R.renderPlain c tqs
     prefixes        = showString $ ep ++ ap
     ep              = if explain then "EXPLAIN " else ""
     ap              = if analyze then "ANALYZE " else ""

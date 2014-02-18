@@ -36,6 +36,7 @@ import Text.PrettyPrint.ANSI.Leijen ( (<$>)
                                     )
 
 import Database.Algebra.SQL.Query
+import Database.Algebra.SQL.Compatibility
 
 enlist :: [Doc] -> Doc
 enlist = fillSep . punctuate comma
@@ -56,23 +57,37 @@ op = red . char
 terminate :: Doc -> Doc
 terminate = (<> op ';')
 
-renderQuery :: Query -> Doc
-renderQuery query = terminate $ case query of
+renderQuery :: CompatMode -> Query -> Doc
+renderQuery c query = terminate $ case query of
     QValueQuery q      -> renderValueQuery q
-    QDefinitionQuery q -> renderDefinitionQuery q
+    QDefinitionQuery q -> renderDefinitionQuery c q
 
-renderDefinitionQuery :: DefinitionQuery -> Doc
-renderDefinitionQuery (DQMatView query name)        =
+renderDefinitionQuery :: CompatMode -> DefinitionQuery -> Doc
+renderDefinitionQuery _ (DQMatView query name)        =
     kw "CREATE MATERIALIZED VIEW"
     <+> text name
     <+> kw "AS"
     </> renderValueQuery query
 
-renderDefinitionQuery (DQTemporaryTable query name) =
-    kw "CREATE TEMPORARY TABLE"
-    <+> text name
-    <+> kw "AS"
-    <$> indent 4 (renderValueQuery query)
+renderDefinitionQuery c (DQTemporaryTable query name) =
+    createStmt
+    <+>
+    case c of
+        SQL99      ->
+            as
+            <$> indentedQuery
+            -- Create the table with the result of the given value query.
+            <$> kw "WITH DATA ON COMMIT DROP"
+        PostgreSQL ->
+            -- PostgreSQL does not accept the default syntax. In order to
+            -- achieve the same behaviour, the SQL code is rendered differently.
+            kw "ON COMMIT DROP"
+            <+> as
+            <$> indentedQuery
+  where
+    createStmt    = kw "CREATE LOCAL TEMPORARY TABLE" <+> text name
+    as            = kw "AS"
+    indentedQuery = indent 4 $ renderValueQuery query
 
 renderValueQuery :: ValueQuery -> Doc
 renderValueQuery (VQSelect stmt)                         = renderSelectStmt stmt
@@ -80,7 +95,7 @@ renderValueQuery (VQLiteral vals)                        =
     kw "VALUES" <+> align (sep . punctuate comma $ map renderRow vals)
   where renderRow row = parens . enlistOnLine $ map renderValueExpr row
 
-renderValueQuery (VQCommonTableExpression body bindings) =
+renderValueQuery (VQWith bindings body)                 =
     hang 4 (kw "WITH" </> enlist (map renderBinding bindings))
     <$> renderValueQuery body
   where renderBinding :: (String, Maybe [String], ValueQuery) -> Doc
@@ -272,8 +287,7 @@ renderDataType :: DataType -> Doc
 renderDataType DTInteger         = kw "INTEGER"
 renderDataType DTDecimal         = kw "DECIMAL"
 renderDataType DTDoublePrecision = kw "DOUBLE PRECISION"
--- Length argument needed, therefore the same approach as in Pathfinder.
-renderDataType DTCharVarying     = kw "CHAR VARYING(100)"
+renderDataType DTText            = kw "TEXT"
 renderDataType DTBoolean         = kw "BOOLEAN" 
 
 literal :: Doc -> Doc
@@ -284,7 +298,7 @@ renderValue v = case v of
     VInteger i         -> literal $ integer i
     VDecimal d         -> literal $ float d
     VDoublePrecision d -> literal $ double d
-    VCharVarying str   -> literal $ squotes $ text str
+    VText str          -> literal $ squotes $ text str
     VBoolean b         -> kw $ if b then "TRUE" else "FALSE"
     VNull              -> literal $ text "null"
 

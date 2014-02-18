@@ -17,6 +17,7 @@ module Database.Algebra.SQL.Tile
 -- TODO RowRank <-> DenseRank ?
 -- TODO isMultiReferenced special case: check for same parent !!
 
+import Control.Arrow (second)
 import Control.Monad (liftM)
 import Control.Monad.Trans.RWS.Strict
 import qualified Data.IntMap as IntMap
@@ -35,6 +36,7 @@ import Database.Algebra.SQL.Query.Util
     ( emptySelectStmt
     , mkSubQuery
     , mkPCol
+    , affectsSortOrder
     )
 
 -- | A tile internal reference type.
@@ -279,7 +281,7 @@ transformUnOpRank :: -- SelectExpr constructor.
                   -> TransformMonad TileTree
 transformUnOpRank rankConstructor (name, sortList) =
     let colFun sClause = Q.SCAlias
-                         ( rankConstructor $ translateInlinedSortInf
+                         ( rankConstructor $ asOrderExprList
                                              sClause
                                              sortList
                          )
@@ -290,30 +292,38 @@ transformUnOpRank rankConstructor (name, sortList) =
 transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
 transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
 
-    (select, children) <- transformAsSelect c
+    childTile <- transformNode c
 
-    let inline                   =
-            inlineColumn (Q.selectClause select)
-        project (A.PayloadCol c) = Q.SCAlias (Q.SEValueExpr $ inline c) c
+    (select, children) <- case childTile of
+        -- Force merging of the ORDER BY clause into closed tiles too.
+        TileNode _ s cs   -> return (s, cs)
+        ReferenceLeaf r s -> embedExternalReference r s
+
+    let sClause                    = Q.selectClause select
+        inline                     = inlineColumn sClause
+        project (A.PayloadCol col) =
+            Q.SCAlias (inlineSE sClause col) col
 
     return $ TileNode
              False
              select
              { Q.selectClause = map project payloadCols
-             , -- Order by optional columns.
+             , -- Order by optional columns. Remove constant column expressions,
+               -- since SQL99 defines different semantics.
                Q.orderByClause =
-                   map (flip Q.OE Q.Ascending . inline)
-                       $ descrList ++ posList
+                   map (flip Q.OE Q.Ascending)
+                       $ discardConstValueExprs
+                         $ map inline $ descrList ++ posList
              }
              children
   where
     descrList = case mDescr of
-        Nothing             -> []
-        Just (A.DescrCol c) -> [c]
+        Nothing               -> []
+        Just (A.DescrCol col) -> [col]
     posList   = case mPos of
-        A.NoPos     -> []
-        A.AbsPos c  -> [c]
-        A.RelPos cs -> cs
+        A.NoPos       -> []
+        A.AbsPos col  -> [col]
+        A.RelPos cols -> cols
 
 
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
@@ -321,7 +331,7 @@ transformUnOp (A.RowNum (name, sortList, optPart)) c =
   where colFun sClause = Q.SCAlias rowNumExpr name
           where rowNumExpr = Q.SERowNum
                              (liftM (inlineColumn sClause) optPart)
-                             $ translateInlinedSortInf sClause sortList
+                             $ asOrderExprList sClause sortList
 
 transformUnOp (A.RowRank inf) c = transformUnOpRank Q.SEDenseRank inf c
 transformUnOp (A.Rank inf) c = transformUnOpRank Q.SERank inf c
@@ -378,16 +388,22 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
                                                        fun
                                     )
                                     n
-        wrapSCAlias (name, expr)
+
+        partValueExprs  = map (second translateE) partExprMapping
+
+        wrapSCAlias (name, valueExpr)
                         =
-            Q.SCAlias (Q.SEValueExpr $ translateE expr) name
+            Q.SCAlias (Q.SEValueExpr valueExpr) name
 
     return $ TileNode
              False
              select
              { Q.selectClause =
-                   map wrapSCAlias partExprMapping ++ map aggrToSE aggrs
-             , Q.groupByClause = map (translateE . snd) partExprMapping
+                   map wrapSCAlias partValueExprs ++ map aggrToSE aggrs
+             , -- Since SQL treats numbers in the group by clause as column
+               -- indices, filter them out. (They do not change the semantics
+               -- anyway.)
+               Q.groupByClause = discardConstValueExprs $ map snd partValueExprs
              }
              children
 
@@ -529,23 +545,20 @@ transformExistsJoin :: A.SemInfJoin
                     -> TransformMonad TileTree
 transformExistsJoin conditions c0 c1 existsWrapF = case result of
     (Nothing, _)      -> do
-        tile0 <- transformNode c0
+        -- TODO in case we do not have merge conditions we can simply use the
+        -- unmergeable but less nested select stmt on the right side
+        (select0, children0) <- transformAsSelect c0
+        (select1, children1) <- transformAsSelect c1
 
-        if null conditions
-        then return tile0
-        else do
-            (select0, children0) <- selectFromTile tile0
-            (select1, children1) <- transformAsSelect c1
+        let outerCond   = existsWrapF . Q.VEExists $ Q.VQSelect innerSelect
+            innerSelect = foldr appendToWhere select1 innerConds
+            innerConds  = map f conditions
+            f           = translateInlinedJoinCond (Q.selectClause select0)
+                                                $ Q.selectClause select1
 
-            let outerCond   = existsWrapF . Q.VEExists $ Q.VQSelect innerSelect
-                innerSelect = foldr appendToWhere select1 innerConds
-                innerConds  = map f conditions
-                f           = translateInlinedJoinCond (Q.selectClause select0)
-                                                    $ Q.selectClause select1
-
-            return $ TileNode True
-                            (appendToWhere outerCond select0)
-                            $ children0 ++ children1
+        return $ TileNode True
+                        (appendToWhere outerCond select0)
+                        $ children0 ++ children1
     (Just (l, r), cs) -> do
         (select0, children0) <- transformAsSelect c0
         (select1, children1) <- transformAsSelect c1
@@ -606,20 +619,26 @@ selectFromTile t = case t of
                )
     -- Asign name and produce a 'SelectStmt' which uses it. (Let the
     -- materialization strategy handle it.)
-    ReferenceLeaf _ s            -> do
+    ReferenceLeaf r s            -> embedExternalReference r s
+
+-- | Embeds an external reference into a 'Q.SelectStmt'.
+embedExternalReference :: ExternalReference
+                       -> [String]
+                       -> TransformMonad (Q.SelectStmt, TileChildren)
+embedExternalReference extRef schema = do
+
         alias <- generateAliasName
         varId <- generateVariableId
 
         return ( emptySelectStmt
                    -- Use the schema to construct the select clause.
                  { Q.selectClause =
-                       columnsFromSchema alias s
+                       columnsFromSchema alias schema
                  , Q.fromClause =
-                       [mkFromPartVar varId alias $ Just s]
+                       [mkFromPartVar varId alias $ Just schema]
                  }
-               , [(varId, t)]
+               , [(varId, ReferenceLeaf extRef schema)]
                )
-        -- Converts a column name into a select clause entry.
 
 -- | Get the column names from a list of column names.
 columnsFromSchema :: String -> [String] -> [Q.SelectColumn]
@@ -639,12 +658,18 @@ translateInlinedJoinCond :: [Q.SelectColumn] -- ^ Left select clause.
 translateInlinedJoinCond lSClause rSClause j =
     translateJoinCond j (inlineColumn lSClause) (inlineColumn rSClause)
 
+-- Remove all 'Q.ValueExpr's which are constant in their column value.
+discardConstValueExprs :: [Q.ValueExpr] -> [Q.ValueExpr]
+discardConstValueExprs = filter $ affectsSortOrder
 
--- | Translate a '[A.SortAttr]' with inlining of value expressions.
-translateInlinedSortInf :: [Q.SelectColumn]
-                        -> [A.SortAttr]
-                        -> [Q.OrderExpr]
-translateInlinedSortInf sClause si = translateSortInf si (inlineColumn sClause)
+-- Translates a '[A.SortAttr]' with inlining of value expressions and filtering
+-- of constant 'Q.ValueExpr' (they are of no use).
+asOrderExprList :: [Q.SelectColumn]
+                -> [A.SortAttr]
+                -> [Q.OrderExpr]
+asOrderExprList sClause si =
+    filter (affectsSortOrder . Q.oExpr)
+           $ translateSortInf si (inlineColumn sClause)
 
 -- | Uses the select clause to try to inline an aliased value. 
 inlineColumn :: [Q.SelectColumn]
@@ -665,6 +690,15 @@ extractFromAlias alias =
                                                             else r
         f _                               r = r
 
+-- | Uses th select clause to try to inline an aliased select expression.
+inlineSE :: [Q.SelectColumn]
+         -> String
+         -> Q.SelectExpr
+inlineSE selectClause col =
+    fromMaybe (Q.SEValueExpr $ mkCol col) $ foldr f Nothing selectClause
+  where
+    f (Q.SCAlias se a) r = if col == a then return se
+                                       else r
 
 -- | Shorthand to make an unprefixed column value expression.
 mkCol :: String
@@ -788,7 +822,7 @@ translateSortDir d = case d of
 translateAVal :: A.AVal -> Q.Value
 translateAVal v = case v of
     A.VInt i    -> Q.VInteger i
-    A.VStr s    -> Q.VCharVarying s 
+    A.VStr s    -> Q.VText s 
     A.VBool b   -> Q.VBoolean b
     A.VDouble d -> Q.VDoublePrecision d
     A.VDec d    -> Q.VDecimal d
@@ -797,7 +831,7 @@ translateAVal v = case v of
 translateATy :: A.ATy -> Q.DataType
 translateATy t = case t of
     A.AInt    -> Q.DTInteger
-    A.AStr    -> Q.DTCharVarying
+    A.AStr    -> Q.DTText
     A.ABool   -> Q.DTBoolean
     A.ADec    -> Q.DTDecimal
     A.ADouble -> Q.DTDoublePrecision
