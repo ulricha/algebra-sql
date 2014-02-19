@@ -170,6 +170,7 @@ data UnOp = UniqueS
           | GroupSimple [Expr1]
           | Reshape Integer
           | ReshapeS Integer
+          | Transpose
     deriving (Eq, Ord, Generic, Show)
 
 data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
@@ -196,7 +197,6 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | SemiJoinS Expr1 Expr1
            | AntiJoin Expr1 Expr1
            | AntiJoinS Expr1 Expr1
-           | Transpose
            | NestJoinS Expr1 Expr1
            | NestProductS
     deriving (Eq, Ord, Generic, Show)
