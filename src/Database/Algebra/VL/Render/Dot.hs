@@ -130,8 +130,8 @@ opDotLabel tm i (UnOp (SelectPos1 o (N p)) _)  = labelToDoc i "SelectPos1" ((tex
 opDotLabel tm i (UnOp (SelectPos1S o (N p)) _) = labelToDoc i "SelectPos1S" ((text $ show o) <+> int p) (lookupTags i tm)
 opDotLabel tm i (UnOp (GroupAggr g as) _) = labelToDoc i "GroupAggr" (bracketList renderExpr1 g <+> bracketList renderAggrFun as) (lookupTags i tm)
 opDotLabel tm i (UnOp (Aggr a) _) = labelToDoc i "Aggr" (renderAggrFun a) (lookupTags i tm)
-opDotLabel tm i (UnOp (Reshape m n) _) = 
-  labelToDoc i "Reshape" (integer m <> comma <+> integer n) (lookupTags i tm)
+opDotLabel tm i (UnOp (Reshape n) _) = 
+  labelToDoc i "Reshape" (integer n) (lookupTags i tm)
 opDotLabel tm i (BinOp (AggrS a) _ _) = labelToDoc i "AggrS" (renderAggrFun a) (lookupTags i tm)
 opDotLabel tm i (UnOp (SortSimple cols) _) = labelToDoc i "SortSimple" (bracketList renderExpr1 cols) (lookupTags i tm)
 opDotLabel tm i (UnOp (GroupSimple cols) _) = labelToDoc i "GroupSimple" (bracketList renderExpr1 cols) (lookupTags i tm)
@@ -167,8 +167,8 @@ opDotLabel tm i (BinOp (AntiJoin e1 e2) _ _) =
   labelToDoc i "AntiJoin" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (BinOp (AntiJoinS e1 e2) _ _) =
   labelToDoc i "AntiJoinS" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
-opDotLabel tm i (BinOp (ReshapeS m n) _ _) = 
-  labelToDoc i "ReshapeS" (integer m <> comma <+> integer n) (lookupTags i tm)
+opDotLabel tm i (BinOp (ReshapeS n) _ _) = 
+  labelToDoc i "ReshapeS" (integer n) (lookupTags i tm)
 opDotLabel tm i (BinOp Transpose _ _) = labelToDoc i "Transpose" empty (lookupTags i tm)
 opDotLabel tm i (TerOp Combine _ _ _) = labelToDoc i "Combine" empty (lookupTags i tm)
 opDotLabel tm i (TerOp TransposeS _ _ _) = labelToDoc i "TransposeS" empty (lookupTags i tm)
@@ -203,8 +203,8 @@ opDotColor (UnOp (Project _) _)        = LightSkyBlue
 opDotColor (BinOp (BinExpr _) _ _)     = DodgerBlue
 opDotColor (BinOp Transpose _ _)       = HotPink
 opDotColor (TerOp TransposeS _ _ _)    = HotPink
-opDotColor (BinOp (ReshapeS _ _) _ _)  = HotPink
-opDotColor (UnOp (Reshape _ _) _)      = HotPink
+opDotColor (BinOp (ReshapeS _) _ _)    = HotPink
+opDotColor (UnOp (Reshape _) _)        = HotPink
 opDotColor _ = Gray
 
 -- Dot colors
