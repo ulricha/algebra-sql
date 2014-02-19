@@ -167,7 +167,7 @@ opDotLabel tm i (BinOp (AntiJoin e1 e2) _ _) =
   labelToDoc i "AntiJoin" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (BinOp (AntiJoinS e1 e2) _ _) =
   labelToDoc i "AntiJoinS" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
-opDotLabel tm i (BinOp (ReshapeS n) _ _) = 
+opDotLabel tm i (UnOp (ReshapeS n) _) = 
   labelToDoc i "ReshapeS" (integer n) (lookupTags i tm)
 opDotLabel tm i (BinOp Transpose _ _) = labelToDoc i "Transpose" empty (lookupTags i tm)
 opDotLabel tm i (TerOp Combine _ _ _) = labelToDoc i "Combine" empty (lookupTags i tm)
@@ -203,7 +203,7 @@ opDotColor (UnOp (Project _) _)        = LightSkyBlue
 opDotColor (BinOp (BinExpr _) _ _)     = DodgerBlue
 opDotColor (BinOp Transpose _ _)       = HotPink
 opDotColor (TerOp TransposeS _ _ _)    = HotPink
-opDotColor (BinOp (ReshapeS _) _ _)    = HotPink
+opDotColor (UnOp (ReshapeS _) _)       = HotPink
 opDotColor (UnOp (Reshape _) _)        = HotPink
 opDotColor _ = Gray
 
