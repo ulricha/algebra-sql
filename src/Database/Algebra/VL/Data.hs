@@ -199,10 +199,10 @@ data BinOp = GroupBy    -- (DescrVector, DBV, PropVector)
            | AntiJoinS Expr1 Expr1
            | NestJoinS Expr1 Expr1
            | NestProductS
+           | TransposeS
     deriving (Eq, Ord, Generic, Show)
 
 data TerOp = Combine  -- (DBV, RenameVector, RenameVector)
-           | TransposeS
     deriving (Eq, Ord, Generic, Show)
 
 instance Operator VL where

@@ -171,7 +171,7 @@ opDotLabel tm i (UnOp (ReshapeS n) _) =
   labelToDoc i "ReshapeS" (integer n) (lookupTags i tm)
 opDotLabel tm i (UnOp Transpose _) = labelToDoc i "Transpose" empty (lookupTags i tm)
 opDotLabel tm i (TerOp Combine _ _ _) = labelToDoc i "Combine" empty (lookupTags i tm)
-opDotLabel tm i (TerOp TransposeS _ _ _) = labelToDoc i "TransposeS" empty (lookupTags i tm)
+opDotLabel tm i (BinOp TransposeS _ _) = labelToDoc i "TransposeS" empty (lookupTags i tm)
 
 opDotColor :: VL -> DotColor
 opDotColor (BinOp DistDesc _ _)        = Red
@@ -202,7 +202,7 @@ opDotColor (UnOp (GroupAggr _ _) _)    = Tomato
 opDotColor (UnOp (Project _) _)        = LightSkyBlue
 opDotColor (BinOp (BinExpr _) _ _)     = DodgerBlue
 opDotColor (UnOp Transpose _)          = HotPink
-opDotColor (TerOp TransposeS _ _ _)    = HotPink
+opDotColor (BinOp TransposeS _ _)      = HotPink
 opDotColor (UnOp (ReshapeS _) _)       = HotPink
 opDotColor (UnOp (Reshape _) _)        = HotPink
 opDotColor _ = Gray
