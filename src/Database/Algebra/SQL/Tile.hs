@@ -299,31 +299,36 @@ transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
         TileNode _ s cs   -> return (s, cs)
         ReferenceLeaf r s -> embedExternalReference r s
 
-    let sClause                    = Q.selectClause select
-        inline                     = inlineColumn sClause
-        project (A.PayloadCol col) =
-            Q.SCAlias (inlineSE sClause col) col
+    let sClause     = Q.selectClause select
+        inline      = inlineColumn sClause
+        unpackPayloadCol (A.PayloadCol col)
+                    = col
+        project col = Q.SCAlias (inlineSE sClause col) col
 
     return $ TileNode
              False
              select
-             { Q.selectClause = map project payloadCols
+             { Q.selectClause = map project
+                                    $ descrList
+                                      ++ posProjList
+                                      ++ map unpackPayloadCol payloadCols
              , -- Order by optional columns. Remove constant column expressions,
                -- since SQL99 defines different semantics.
                Q.orderByClause =
                    map (flip Q.OE Q.Ascending)
                        $ discardConstValueExprs
-                         $ map inline $ descrList ++ posList
+                         $ map inline $ descrList ++ posOrderList
              }
              children
   where
-    descrList = case mDescr of
+    descrList                   = case mDescr of
         Nothing               -> []
         Just (A.DescrCol col) -> [col]
-    posList   = case mPos of
-        A.NoPos       -> []
-        A.AbsPos col  -> [col]
-        A.RelPos cols -> cols
+
+    (posOrderList, posProjList) = case mPos of
+        A.NoPos       -> ([], [])
+        A.AbsPos col  -> ([col], [col])
+        A.RelPos cols -> (cols, [])
 
 
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
