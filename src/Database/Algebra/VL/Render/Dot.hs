@@ -130,6 +130,8 @@ opDotLabel tm i (UnOp (SelectPos1 o (N p)) _)  = labelToDoc i "SelectPos1" ((tex
 opDotLabel tm i (UnOp (SelectPos1S o (N p)) _) = labelToDoc i "SelectPos1S" ((text $ show o) <+> int p) (lookupTags i tm)
 opDotLabel tm i (UnOp (GroupAggr g as) _) = labelToDoc i "GroupAggr" (bracketList renderExpr1 g <+> bracketList renderAggrFun as) (lookupTags i tm)
 opDotLabel tm i (UnOp (Aggr a) _) = labelToDoc i "Aggr" (renderAggrFun a) (lookupTags i tm)
+opDotLabel tm i (UnOp (Reshape n) _) = 
+  labelToDoc i "Reshape" (integer n) (lookupTags i tm)
 opDotLabel tm i (BinOp (AggrS a) _ _) = labelToDoc i "AggrS" (renderAggrFun a) (lookupTags i tm)
 opDotLabel tm i (UnOp (SortSimple cols) _) = labelToDoc i "SortSimple" (bracketList renderExpr1 cols) (lookupTags i tm)
 opDotLabel tm i (UnOp (GroupSimple cols) _) = labelToDoc i "GroupSimple" (bracketList renderExpr1 cols) (lookupTags i tm)
@@ -150,10 +152,13 @@ opDotLabel tm i (BinOp Zip _ _) = labelToDoc i "Zip" empty (lookupTags i tm)
 opDotLabel tm i (BinOp ZipS _ _) = labelToDoc i "ZipS" empty (lookupTags i tm)
 opDotLabel tm i (BinOp CartProduct _ _) = labelToDoc i "CartProduct" empty (lookupTags i tm)
 opDotLabel tm i (BinOp CartProductS _ _) = labelToDoc i "CartProductS" empty (lookupTags i tm)
+opDotLabel tm i (BinOp NestProductS _ _) = labelToDoc i "NestProductS" empty (lookupTags i tm)
 opDotLabel tm i (BinOp (EquiJoin e1 e2) _ _) =
   labelToDoc i "EquiJoin" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (BinOp (EquiJoinS e1 e2) _ _) =
   labelToDoc i "EquiJoinS" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
+opDotLabel tm i (BinOp (NestJoinS e1 e2) _ _) =
+  labelToDoc i "NestJoinS" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (BinOp (SemiJoin e1 e2) _ _) =
   labelToDoc i "SemiJoin" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (BinOp (SemiJoinS e1 e2) _ _) =
@@ -162,14 +167,20 @@ opDotLabel tm i (BinOp (AntiJoin e1 e2) _ _) =
   labelToDoc i "AntiJoin" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
 opDotLabel tm i (BinOp (AntiJoinS e1 e2) _ _) =
   labelToDoc i "AntiJoinS" ((renderExpr1 e1) <+> (renderExpr1 e2)) (lookupTags i tm)
+opDotLabel tm i (UnOp (ReshapeS n) _) = 
+  labelToDoc i "ReshapeS" (integer n) (lookupTags i tm)
+opDotLabel tm i (UnOp Transpose _) = labelToDoc i "Transpose" empty (lookupTags i tm)
 opDotLabel tm i (TerOp Combine _ _ _) = labelToDoc i "Combine" empty (lookupTags i tm)
+opDotLabel tm i (BinOp TransposeS _ _) = labelToDoc i "TransposeS" empty (lookupTags i tm)
 
 opDotColor :: VL -> DotColor
 opDotColor (BinOp DistDesc _ _)        = Red
 opDotColor (BinOp CartProduct _ _)     = Red
 opDotColor (BinOp CartProductS _ _)    = Red
+opDotColor (BinOp NestProductS _ _)    = Red
 opDotColor (BinOp (EquiJoin _ _) _ _)  = Green
 opDotColor (BinOp (EquiJoinS _ _) _ _) = Green
+opDotColor (BinOp (NestJoinS _ _) _ _) = Green
 opDotColor (BinOp (SemiJoin _ _) _ _)  = Green
 opDotColor (BinOp (SemiJoinS _ _) _ _) = Green
 opDotColor (BinOp (AntiJoin _ _) _ _)  = Green
@@ -188,6 +199,12 @@ opDotColor (UnOp (Select _) _)         = LightSkyBlue
 opDotColor (UnOp (Aggr _) _)           = Crimson
 opDotColor (BinOp (AggrS _) _ _)       = Crimson
 opDotColor (UnOp (GroupAggr _ _) _)    = Tomato
+opDotColor (UnOp (Project _) _)        = LightSkyBlue
+opDotColor (BinOp (BinExpr _) _ _)     = DodgerBlue
+opDotColor (UnOp Transpose _)          = HotPink
+opDotColor (BinOp TransposeS _ _)      = HotPink
+opDotColor (UnOp (ReshapeS _) _)       = HotPink
+opDotColor (UnOp (Reshape _) _)        = HotPink
 opDotColor _ = Gray
 
 -- Dot colors
@@ -206,6 +223,7 @@ data DotColor = Tomato
               | Beige
               | DodgerBlue
               | LightSkyBlue
+              | HotPink
 
 renderColor :: DotColor -> Doc
 renderColor Tomato = text "tomato"
@@ -223,6 +241,7 @@ renderColor Sienna = text "sienna"
 renderColor Beige = text "beige"
 renderColor DodgerBlue = text "dodgerblue"
 renderColor LightSkyBlue = text "lightskyblue"
+renderColor HotPink      = text "hotpink"
 
 escapeLabel :: String -> String
 escapeLabel s = concatMap escapeChar s
