@@ -103,7 +103,6 @@ opDotLabel tm i (NullaryOp (Lit tys vals)) = labelToDoc i "LIT"
 opDotLabel tm i (NullaryOp (TableRef n tys ks)) = labelToDoc i "TableRef"
         (quotes (text n) <> comma <+> bracketList (\t -> renderTableType t <> text "\n") tys <> comma $$ renderTableKeys ks)
         (lookupTags i tm)
-opDotLabel tm i (UnOp Unique _) = labelToDoc i "Unique" empty (lookupTags i tm)
 opDotLabel tm i (UnOp UniqueS _) = labelToDoc i "UniqueS" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Number _) = labelToDoc i "Number" empty (lookupTags i tm)
 opDotLabel tm i (UnOp NumberS _) = labelToDoc i "NumberS" empty (lookupTags i tm)
