@@ -301,17 +301,17 @@ transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
 
     let sClause     = Q.selectClause select
         inline      = inlineColumn sClause
-        unpackPayloadCol (A.PayloadCol col)
-                    = col
         project col = Q.SCAlias (inlineSE sClause col) col
+        itemi i     = "item" ++ (show i)
+        payloadProjs = zipWith (\(A.PayloadCol col) i -> Q.SCAlias (inlineSE sClause col) (itemi i))
+                               payloadCols
+                               [1..]
 
     return $ TileNode
              False
              select
-             { Q.selectClause = map project
-                                    $ descrList
-                                      ++ posProjList
-                                      ++ map unpackPayloadCol payloadCols
+             { Q.selectClause = map project (descrList ++ posProjList)
+                                ++ payloadProjs
              , -- Order by optional columns. Remove constant column expressions,
                -- since SQL99 defines different semantics.
                Q.orderByClause =
@@ -695,7 +695,8 @@ extractFromAlias alias =
                                                             else r
         f _                               r = r
 
--- | Uses th select clause to try to inline an aliased select expression.
+-- | Uses the select clause to try to inline an aliased select
+-- expression.
 inlineSE :: [Q.SelectColumn]
          -> String
          -> Q.SelectExpr
