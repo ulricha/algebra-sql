@@ -62,6 +62,10 @@ library
                       Database.Algebra.Pathfinder.Data.Algebra
 
                       Database.Algebra.SQL.Util
+                      Database.Algebra.SQL.Compatibility
+                      Database.Algebra.SQL.Materialization
+                      Database.Algebra.SQL.Materialization.CTE
+                      Database.Algebra.SQL.Materialization.Combined
 
                       Database.Algebra.VL.Data
                       Database.Algebra.VL.Render.Dot
@@ -91,8 +95,8 @@ library
                       Database.Algebra.SQL.Render.Tile
                       Database.Algebra.SQL.Render.Query
                       Database.Algebra.SQL.Materialization.Graph
-                      Database.Algebra.SQL.Materialization.Combined
                       Database.Algebra.SQL.Materialization.Util
+                      Database.Algebra.SQL.Materialization.TemporaryTable
                       Database.Algebra.X100.Render.Sharing
                       Database.Algebra.X100.Properties.Schema
                       Database.Algebra.X100.Properties.Card1

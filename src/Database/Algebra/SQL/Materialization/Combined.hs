@@ -34,7 +34,6 @@ import Data.Maybe
     ( fromMaybe
     , isJust
     )
-import qualified Data.Set as S (toList)
 
 import Database.Algebra.SQL.Materialization
 import qualified Database.Algebra.SQL.Materialization.Graph as G
@@ -42,7 +41,6 @@ import qualified Database.Algebra.SQL.Query as Q
     ( DefinitionQuery(DQTemporaryTable)
     , FromExpr(FEVariable, FETableReference)
     , Query(QValueQuery, QDefinitionQuery)
-    , SelectStmt
     , ValueQuery(VQSelect, VQWith)
     )
 import Database.Algebra.SQL.Query.Substitution
