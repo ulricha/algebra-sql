@@ -22,7 +22,7 @@ module Database.Algebra.Dag
        , replaceRoot
        , collect
        ) where
-       
+
 import           Control.Exception.Base
 import qualified Data.Graph.Inductive.Graph        as G
 import           Data.Graph.Inductive.PatriciaTree
@@ -180,12 +180,10 @@ insert op d =
           g'     = G.insEdges (map (\c -> (n, c, ())) cs) $ G.insNode (n, ()) $ graph d
           m'     = IM.insert n op $ nodeMap d
           rc'    = IM.insert n 0 $ refCountMap d
-          -- Increase the refcount for the new operator's children
-          rc''   = foldl (\rcMap c -> IM.adjust (+1) c rcMap) rc' cs
           opMap' = M.insert op n $ opMap d
           d'     = d { nodeMap = m'
                      , graph = g'
-                     , refCountMap = rc''
+                     , refCountMap = rc'
                      , opMap = opMap'
                      , nextNodeID = n + 1
                      }
@@ -199,12 +197,10 @@ insertNoShare op d =
       g'     = G.insEdges (map (\c -> (n, c, ())) cs) $ G.insNode (n, ()) $ graph d
       m'     = IM.insert n op $ nodeMap d
       rc'    = IM.insert n 0 $ refCountMap d
-      -- Increase the refcount for the new operator's children
-      rc''   = foldl (\rcMap c -> IM.adjust (+1) c rcMap) rc' cs
       opMap' = M.insert op n $ opMap d
       d'     = d { nodeMap = m'
                  , graph = g'
-                 , refCountMap = rc''
+                 , refCountMap = rc'
                  , opMap = opMap'
                  , nextNodeID = n + 1
                  }
@@ -241,7 +237,7 @@ operator :: Operator a => AlgNode -> AlgebraDag a -> a
 operator n d =
     case IM.lookup n $ nodeMap d of
         Just op -> op
-        Nothing -> error $ "AlgebraDag.operator: lookup failed for " ++ (show n) ++ "\n" ++ (show $ nodeMap d)
+        Nothing -> error $ "AlgebraDag.operator: lookup failed for " ++ (show n) ++ "\n" ++ (show $ map fst $ IM.toList $ nodeMap d)
 
 -- | Return a topological ordering of all nodes which are reachable from the root nodes.
 topsort :: Operator a => AlgebraDag a -> [AlgNode]
