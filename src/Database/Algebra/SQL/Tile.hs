@@ -318,7 +318,7 @@ transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
 
     let sClause     = Q.selectClause select
         inline      = inlineColumn sClause
-        project col = Q.SCAlias (inlineSE sClause col) col
+        project (col, alias) = Q.SCAlias (inlineSE sClause col) alias
         itemi i     = "item" ++ (show i)
         payloadProjs = zipWith (\(A.PayloadCol col) i -> Q.SCAlias (inlineSE sClause col) (itemi i))
                                payloadCols
@@ -334,17 +334,17 @@ transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
                Q.orderByClause =
                    map (flip Q.OE Q.Ascending)
                        $ discardConstValueExprs
-                         $ map inline $ descrList ++ posOrderList
+                         $ map inline $ (map fst descrList) ++ posOrderList
              }
              children
   where
     descrList                   = case mDescr of
         Nothing               -> []
-        Just (A.DescrCol col) -> [col]
+        Just (A.DescrCol col) -> [(col, "descr")]
 
     (posOrderList, posProjList) = case mPos of
         A.NoPos       -> ([], [])
-        A.AbsPos col  -> ([col], [col])
+        A.AbsPos col  -> ([col], [(col, "pos")])
         A.RelPos cols -> (cols, [])
 
 
