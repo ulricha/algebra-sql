@@ -128,7 +128,7 @@ collect collectNodes d = S.foldl' tryCollectNode d collectNodes
           case refCountSafe n di of
             Just rc -> if rc == 0
                        then -- node is unreferenced -> collect it
-                            let cs = opChildren $ operator n di
+                            let cs = L.nub $ opChildren $ operator n di
                                 d' = delete' n di
                             in L.foldl' cutEdge d' cs
 
@@ -144,7 +144,7 @@ cutEdge d edgeTarget =
   let d'          = decrRefCount d edgeTarget
       newRefCount = lookupRefCount edgeTarget d'
   in if newRefCount == 0
-     then let cs  = opChildren $ operator edgeTarget d'
+     then let cs  = L.nub $ opChildren $ operator edgeTarget d'
               d'' = delete' edgeTarget d'
           in L.foldl' cutEdge d'' cs
      else d'
@@ -175,7 +175,7 @@ insert op d =
     Just n  -> (n, d)
     Nothing ->
       -- no operator can be reused, insert a new one
-      let cs     = opChildren op
+      let cs     = L.nub $ opChildren op
           n      = nextNodeID d
           g'     = G.insEdges (map (\c -> (n, c, ())) cs) $ G.insNode (n, ()) $ graph d
           m'     = IM.insert n op $ nodeMap d
@@ -192,7 +192,7 @@ insert op d =
 insertNoShare :: Operator a => a -> AlgebraDag a -> (AlgNode, AlgebraDag a)
 insertNoShare op d =
   -- check if an equivalent operator is already present
-  let cs     = opChildren op
+  let cs     = L.nub $ opChildren op
       n      = nextNodeID d
       g'     = G.insEdges (map (\c -> (n, c, ())) cs) $ G.insNode (n, ()) $ graph d
       m'     = IM.insert n op $ nodeMap d
@@ -213,9 +213,9 @@ insertNoShare op d =
 replaceEdgesRef :: Operator a => [AlgNode] -> [AlgNode] -> AlgebraDag a -> AlgebraDag a
 replaceEdgesRef oldChildren newChildren d =
   let -- First, decrement refcounters for the old children
-      d'  = L.foldl' decrRefCount d oldChildren
+      d'  = L.foldl' decrRefCount d (L.nub oldChildren)
       -- Then, increment refcounters for the new children
-  in L.foldl' addRefTo d' newChildren
+  in L.foldl' addRefTo d' (L.nub newChildren)
 
 -- | Return the list of parents of a node.
 parents :: AlgNode -> AlgebraDag a -> [AlgNode]
