@@ -172,6 +172,7 @@ opDotLabel tm i (UnOp (ReshapeS n) _) =
 opDotLabel tm i (UnOp Transpose _) = labelToDoc i "Transpose" empty (lookupTags i tm)
 opDotLabel tm i (TerOp Combine _ _ _) = labelToDoc i "Combine" empty (lookupTags i tm)
 opDotLabel tm i (BinOp TransposeS _ _) = labelToDoc i "TransposeS" empty (lookupTags i tm)
+opDotLabel tm i (NullaryOp (Empty w)) = labelToDoc i "Empty" (int w) (lookupTags i tm)
 
 opDotColor :: VL -> DotColor
 opDotColor (BinOp DistDesc _ _)        = Red

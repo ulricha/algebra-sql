@@ -142,6 +142,9 @@ data VLVal = VLInt Int
 
 data NullOp = SingletonDescr
             | Lit [VLType] [[VLVal]]
+            -- FIXME this is a rather hackish solution to avoid doing
+            -- type inference in VectorType.
+            | Empty Int
             | TableRef String [TypedColumn] [Key]
             deriving (Eq, Ord, Generic, Show)
 
