@@ -36,7 +36,6 @@ import qualified Data.IntMap                 as IM
 import qualified Data.Sequence               as Seq
 import qualified Data.Set                    as S
 import           Debug.Trace
-import Text.Printf
 
 import qualified Database.Algebra.Dag        as Dag
 import           Database.Algebra.Dag.Common
@@ -202,11 +201,6 @@ replaceChild n old new =
 -- | replace old new replaces _all_ links to old with links to new
 replace :: Dag.Operator o => AlgNode -> AlgNode -> Rewrite o e ()
 replace old new = do
-  trace (printf "replace %d %d" old new) $ return ()
-  d  <- exposeDag
-  when (old == 22) $ trace (show $ Dag.nodeMap d) $ return ()
-  when (old == 22) $ trace (show $ Dag.refCountMap d) $ return ()
-
   ps <- parents old
   forM_ ps $ (\p -> replaceChild p old new)
   addCollectNode old
@@ -218,9 +212,6 @@ replace old new = do
 replaceWithNew :: (Dag.Operator o, Show o) => AlgNode -> o -> Rewrite o e AlgNode
 replaceWithNew oldNode newOp = do
   newNode <- insert newOp
-  trace (printf "%d -> %d(%s)" oldNode newNode (show newOp)) $ return ()                     
-  d <- Dag.refCountMap <$> exposeDag
-  trace (show d) $ return ()
   replace oldNode newNode
   return newNode
 
