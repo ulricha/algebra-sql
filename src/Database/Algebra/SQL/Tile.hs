@@ -235,6 +235,23 @@ transformNode n = do
     else transformOp
 
 transformNullaryOp :: A.NullOp -> TransformMonad TileTree
+transformNullaryOp (A.LitTable [] schema) = do
+    alias <- generateAliasName
+
+    let sFun n   = Q.SCAlias (Q.SEValueExpr $ mkPCol alias n) n
+        sClause  = map (sFun . fst) schema
+        fLiteral = Q.FPAlias (Q.FESubQuery $ Q.VQLiteral $ [map (const $ Q.VEValue Q.VNull) schema])
+                             alias
+                             $ Just $ map fst schema
+
+    return $ TileNode
+             True
+             emptySelectStmt
+             { Q.selectClause = sClause
+             , Q.fromClause = [fLiteral]
+             , Q.whereClause = Just (Q.VEValue $ Q.VBoolean False)
+             }
+             []
 transformNullaryOp (A.LitTable tuples schema) = do
     alias <- generateAliasName
 
