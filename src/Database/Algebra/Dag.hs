@@ -52,14 +52,15 @@ class (Ord a, Show a) => Operator a where
 -- once.  We insert one virtual edge for every root node, to make sure that root
 -- nodes are not pruned if they don't have any incoming edges.
 initRefCount :: Operator o => [AlgNode] -> NodeMap o -> NodeMap Int
-initRefCount rs nm = L.foldl' incParents (IM.foldr' insertEdge IM.empty nm) rs
+initRefCount rs nm = L.foldl' incParents (IM.foldr' insertEdge IM.empty nm) (L.nub rs)
   where insertEdge op rm = L.foldl' incParents rm (L.nub $ opChildren op)
         incParents rm n  = IM.insert n ((IM.findWithDefault 0 n rm) + 1) rm
 
 initOpMap :: Ord o => NodeMap o -> M.Map o AlgNode
 initOpMap nm = IM.foldrWithKey (\n o om -> M.insert o n om) M.empty nm
 
--- | Create a DAG from a map of NodeIDs and algebra operators and a list of root nodes.
+-- | Create a DAG from a map of NodeIDs and algebra operators and a
+-- list of root nodes.
 mkDag :: Operator a => NodeMap a -> [AlgNode] -> AlgebraDag a
 mkDag m rs = AlgebraDag { nodeMap = mNormalized
                         , graph = g
