@@ -36,7 +36,7 @@ renderColumnType :: VLType -> Doc
 renderColumnType = text . show
 
 renderData :: [[VLVal]] -> Doc
-renderData [] = empty
+renderData [] = brackets empty
 renderData xs = (flip (<>) semi . sep . punctuate semi . map renderRow) xs
 
 renderRow :: [VLVal] -> Doc
@@ -83,9 +83,9 @@ renderISTransProj (d, STNumber)   = d <> colon <> text "#"
 
 renderExpr1 :: Expr1 -> Doc
 renderExpr1 (BinApp1 op e1 e2) = (parens $ renderExpr1 e1) <+> (text $ show op) <+> (parens $ renderExpr1 e2)
-renderExpr1 (UnApp1 op e) = (text $ show op) <+> (parens $ renderExpr1 e)
-renderExpr1 (Constant1 val) = renderTblVal val
-renderExpr1 (Column1 c)     = text "col" <> int c
+renderExpr1 (UnApp1 op e)      = (text $ show op) <+> (parens $ renderExpr1 e)
+renderExpr1 (Constant1 val)    = renderTblVal val
+renderExpr1 (Column1 c)        = text "col" <> int c
 
 renderExpr2 :: Expr2 -> Doc
 renderExpr2 (BinApp2 op e1 e2)   = (parens $ renderExpr2 e1) <+> (text $ show op) <+> (parens $ renderExpr2 e2)
