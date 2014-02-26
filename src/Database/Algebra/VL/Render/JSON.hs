@@ -20,7 +20,6 @@ instance ToJSON Nat where
 instance ToJSON VLVal where
 instance ToJSON VLType where
 instance ToJSON VecOp where
-instance ToJSON ISTransProj where
 instance ToJSON Expr2 where
 instance ToJSON Expr1 where
 instance ToJSON LeftCol where
@@ -40,7 +39,6 @@ instance FromJSON Nat where
 instance FromJSON VLVal where
 instance FromJSON VLType where
 instance FromJSON VecOp where
-instance FromJSON ISTransProj where
 instance FromJSON Expr2 where
 instance FromJSON Expr1 where
 instance FromJSON LeftCol where

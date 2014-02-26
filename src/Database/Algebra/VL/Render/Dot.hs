@@ -76,11 +76,6 @@ renderTableKey [] = text "NOKEY"
 renderProj :: Doc -> Expr1 -> Doc
 renderProj d e = d <> colon <> renderExpr1 e
 
-renderISTransProj :: (Doc, ISTransProj) -> Doc
-renderISTransProj (d, STDescrCol) = d <> colon <> text "descr"
-renderISTransProj (d, STPosCol)   = d <> colon <> text "pos"
-renderISTransProj (d, STNumber)   = d <> colon <> text "#"
-
 renderExpr1 :: Expr1 -> Doc
 renderExpr1 (BinApp1 op e1 e2) = (parens $ renderExpr1 e1) <+> (text $ show op) <+> (parens $ renderExpr1 e2)
 renderExpr1 (UnApp1 op e)      = (text $ show op) <+> (parens $ renderExpr1 e)
@@ -111,13 +106,9 @@ opDotLabel tm i (UnOp Segment _) = labelToDoc i "Segment" empty (lookupTags i tm
 opDotLabel tm i (UnOp Unsegment _) = labelToDoc i "Unsegment" empty (lookupTags i tm)
 opDotLabel tm i (UnOp Reverse _) = labelToDoc i "Reverse" empty (lookupTags i tm)
 opDotLabel tm i (UnOp ReverseS _) = labelToDoc i "ReverseS" empty (lookupTags i tm)
-opDotLabel tm i (UnOp FalsePositions _) = labelToDoc i "FalsePositions" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R1 _) = labelToDoc i "R1" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R2 _) = labelToDoc i "R2" empty (lookupTags i tm)
 opDotLabel tm i (UnOp R3 _) = labelToDoc i "R3" empty (lookupTags i tm)
-opDotLabel tm i (UnOp (ProjectRename (p1, p2)) _) =
-  labelToDoc i "ProjectRename" pLabel (lookupTags i tm)
-  where pLabel = parens $ (renderISTransProj (text "posnew", p1)) <> comma <+> (renderISTransProj (text "posold", p2))
 opDotLabel tm i (UnOp (Project pCols) _) =
   labelToDoc i "Project" pLabel (lookupTags i tm)
   where pLabel = valCols

@@ -100,11 +100,6 @@ instance Show VecUnOp where
     show Not = "not"
     show (CastOp CastDouble) = "double"
 
-data ISTransProj = STDescrCol
-                 | STPosCol
-                 | STNumber
-                 deriving (Eq, Ord, Generic, Show)
-
 newtype Nat = N Int deriving (Eq, Ord, Generic, Show, Read)
 
 instance Integral Nat where
@@ -153,11 +148,9 @@ data UnOp = UniqueS
           | Unsegment
           | Reverse -- (DBV, PropVector)
           | ReverseS -- (DBV, PropVector)
-          | FalsePositions
           | R1
           | R2
           | R3
-          | ProjectRename (ISTransProj, ISTransProj) -- (source, target)?
           | Project [Expr1]
           | Select Expr1
           | Only
