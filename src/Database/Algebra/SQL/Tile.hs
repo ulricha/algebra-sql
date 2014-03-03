@@ -240,7 +240,8 @@ transformNullaryOp (A.LitTable [] schema) = do
 
     let sFun n   = Q.SCAlias (Q.SEValueExpr $ mkPCol alias n) n
         sClause  = map (sFun . fst) schema
-        fLiteral = Q.FPAlias (Q.FESubQuery $ Q.VQLiteral $ [map (const $ Q.VEValue Q.VNull) schema])
+        castedNull ty = Q.VECast (Q.VEValue Q.VNull) (translateATy ty)
+        fLiteral = Q.FPAlias (Q.FESubQuery $ Q.VQLiteral $ [map (castedNull . snd) schema])
                              alias
                              $ Just $ map fst schema
 
@@ -327,24 +328,24 @@ transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
     return $ TileNode
              False
              select
-             { Q.selectClause = map project (descrList ++ posProjList)
+             { Q.selectClause = map project (descrProjList ++ posProjList)
                                 ++ payloadProjs
              , -- Order by optional columns. Remove constant column expressions,
                -- since SQL99 defines different semantics.
                Q.orderByClause =
                    map (flip Q.OE Q.Ascending)
                        $ discardConstValueExprs
-                         $ map inline $ (map fst descrList) ++ posOrderList
+                         $ map (\c -> Q.VEColumn c Nothing) $ descrOrderList ++ posOrderList
              }
              children
   where
-    descrList                   = case mDescr of
-        Nothing               -> []
-        Just (A.DescrCol col) -> [(col, "descr")]
+    (descrOrderList, descrProjList)                   = case mDescr of
+        Nothing               -> ([], [])
+        Just (A.DescrCol col) -> (["descr"], [(col, "descr")])
 
     (posOrderList, posProjList) = case mPos of
         A.NoPos       -> ([], [])
-        A.AbsPos col  -> ([col], [(col, "pos")])
+        A.AbsPos col  -> (["pos"], [(col, "pos")])
         A.RelPos cols -> (cols, [])
 
 
