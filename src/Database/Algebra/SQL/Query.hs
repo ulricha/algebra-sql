@@ -179,6 +179,7 @@ data AggregateFunction = AFAvg
                        deriving Show
 
 -- | Represents a value expression which can occur within several SQL parts.
+-- FIXME merge VECast and VENot into UnaryFunction
 data ValueExpr = -- | Encapsulates a representation of a SQL value.
                  VEValue
                { value        :: Value          -- ^ The value contained.
@@ -198,9 +199,13 @@ data ValueExpr = -- | Encapsulates a representation of a SQL value.
                }
                  -- | Application of a binary function.
                | VEBinApp
-               { function     :: BinaryFunction -- ^ The applied function.
+               { binFun       :: BinaryFunction -- ^ The applied function.
                , firstExpr    :: ValueExpr      -- ^ The first operand.
                , secondExpr   :: ValueExpr      -- ^ The second operand.
+               }
+               | VEUnApp
+               { unFun        :: UnaryFunction  -- ^ The applied function
+               , arg          :: ValueExpr      -- ^ The operand
                }
                  -- | Application of the not function.
                | VENot
@@ -235,6 +240,18 @@ data BinaryFunction = BFPlus
                     | BFAnd
                     | BFOr
                     deriving Show
+
+-- | Types of unary functions
+data UnaryFunction = UFSin
+                   | UFCos
+                   | UFTan
+                   | UFASin
+                   | UFACos
+                   | UFATan
+                   | UFSqrt
+                   | UFExp
+                   | UFLog
+                   deriving (Show)
 
 -- | Types of valid SQL 99 datatypes (most likely a small subset) as stated in
 -- 'SQL 1999: Understanding Relational Language Components' (Melton, Simon)

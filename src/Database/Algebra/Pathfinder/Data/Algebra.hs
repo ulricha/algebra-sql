@@ -177,11 +177,29 @@ instance Show BinFun where
 -- | Unary functions/operators in expressions
 data UnFun = Not
            | Cast ATy
+           | Sin
+           | Cos
+           | Tan
+           | ASin
+           | ACos
+           | ATan
+           | Sqrt
+           | Log
+           | Exp
            deriving (Eq, Ord, Generic)
 
 instance Show UnFun where
   show Not       = "not"
   show (Cast ty) = "cast->" ++ show ty
+  show Sin       = "sin"
+  show Cos       = "cos"
+  show Tan       = "tan"
+  show Sqrt      = "sqrt"
+  show Exp       = "exp"
+  show Log       = "log"
+  show ASin      = "asin"
+  show ACos      = "acos"
+  show ATan      = "atan"
 
 -- | Projection expressions
 data Expr = BinAppE BinFun Expr Expr

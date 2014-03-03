@@ -255,6 +255,9 @@ renderValueExpr (VEBinApp f a b)       =
              <+> renderBinaryFunction f
              <+> renderValueExpr b
 
+renderValueExpr (VEUnApp f a)          =
+    parens $ renderUnaryFunction f <> parens (renderValueExpr a)
+
 renderValueExpr (VENot a)              =
     parens $ kw "NOT" <+> renderValueExpr a
 renderValueExpr (VEExists q)           = kw "EXISTS" <+> renderSubQuery q
@@ -282,6 +285,9 @@ renderBinaryFunction BFEqual        = op '='
 renderBinaryFunction BFNotEqual     = kw "<>"
 renderBinaryFunction BFAnd          = kw "AND"
 renderBinaryFunction BFOr           = kw "OR"
+
+renderUnaryFunction :: UnaryFunction -> Doc
+renderUnaryFunction f = text $ show f
 
 renderDataType :: DataType -> Doc
 renderDataType DTInteger         = kw "INTEGER"

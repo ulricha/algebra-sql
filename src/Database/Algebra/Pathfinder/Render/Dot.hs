@@ -131,59 +131,59 @@ renderDotEdge :: DotEdge -> Doc
 renderDotEdge (DotEdge u v) = int u <+> text "->" <+> int v <> semi
 
 renderColor :: DotColor -> Doc
-renderColor Tomato       = text "tomato"
-renderColor Red          = text "red"
-renderColor OrangeRed    = text "orangered"
-renderColor Salmon       = text "salmon"
-renderColor Gray         = text "gray"
-renderColor DimGray      = text "dimgray"
-renderColor Gold         = text "gold"
-renderColor Tan          = text "tan"
-renderColor Crimson      = text "crimson"
-renderColor Green        = text "green"
-renderColor Sienna       = text "sienna"
-renderColor Beige        = text "beige"
-renderColor DodgerBlue   = text "dodgerblue"
-renderColor LightSkyBlue = text "lightskyblue"
-renderColor Gray52       = text "gray52"
-renderColor Gray91       = text "gray91"
-renderColor DarkOrange   = text "darkorange"
-renderColor Orange       = text "orange"
-renderColor White        = text "white"
-renderColor Cyan         = text "cyan"
-renderColor Cyan4        = text "cyan4"
-renderColor HotPink      = text "hotpink"
+renderColor DCTomato       = text "tomato"
+renderColor DCRed          = text "red"
+renderColor DCOrangeDCRed    = text "orangered"
+renderColor DCSalmon       = text "salmon"
+renderColor DCGray         = text "gray"
+renderColor DCDimDCGray      = text "dimgray"
+renderColor DCGold         = text "gold"
+renderColor DCTan          = text "tan"
+renderColor DCCrimson      = text "crimson"
+renderColor DCGreen        = text "green"
+renderColor DCSienna       = text "sienna"
+renderColor DCBeige        = text "beige"
+renderColor DCDodgerBlue   = text "dodgerblue"
+renderColor DCLightSkyBlue = text "lightskyblue"
+renderColor DCGray52       = text "gray52"
+renderColor DCGray91       = text "gray91"
+renderColor DCDarkDCOrange   = text "darkorange"
+renderColor DCOrange       = text "orange"
+renderColor DCWhite        = text "white"
+renderColor DCCyan         = text "cyan"
+renderColor DCCyan4        = text "cyan4"
+renderColor DCHotPink      = text "hotpink"
 
 opDotColor :: PFLabel -> DotColor
 
 -- | Nullaryops
-opDotColor (LitTableL _ _)   = Gray52
-opDotColor (TableRefL _)     = Gray52
+opDotColor (LitTableL _ _)   = DCGray52
+opDotColor (TableRefL _)     = DCGray52
 
 -- | Unops
-opDotColor (ProjectL _)      = Gray91
-opDotColor (SerializeL _)    = HotPink
+opDotColor (ProjectL _)      = DCGray91
+opDotColor (SerializeL _)    = DCHotPink
 
-opDotColor (SelL _)          = Cyan
+opDotColor (SelL _)          = DCCyan
 
-opDotColor (DistinctL _)     = Tan
-opDotColor (AggrL _)         = Gold
+opDotColor (DistinctL _)     = DCTan
+opDotColor (AggrL _)         = DCGold
 
-opDotColor (RankL _)         = Tomato
-opDotColor (RowNumL _)       = Red
-opDotColor (RowRankL _)      = Red
+opDotColor (RankL _)         = DCTomato
+opDotColor (RowNumL _)       = DCRed
+opDotColor (RowRankL _)      = DCRed
 
 -- | Binops
-opDotColor (CrossL     _)    = OrangeRed
+opDotColor (CrossL     _)    = DCOrangeDCRed
 
-opDotColor (DifferenceL _)   = DarkOrange
-opDotColor (DisjUnionL _)    = Orange
+opDotColor (DifferenceL _)   = DCDarkDCOrange
+opDotColor (DisjUnionL _)    = DCOrange
 
-opDotColor (EqJoinL    _)    = Green
+opDotColor (EqJoinL    _)    = DCGreen
 
-opDotColor (ThetaJoinL _)    = DodgerBlue
-opDotColor (SemiJoinL _)     = LightSkyBlue
-opDotColor (AntiJoinL _)     = LightSkyBlue
+opDotColor (ThetaJoinL _)    = DCDodgerBlue
+opDotColor (SemiJoinL _)     = DCLightSkyBlue
+opDotColor (AntiJoinL _)     = DCLightSkyBlue
 
 renderDotNode :: DotNode -> Doc
 renderDotNode (DotNode n l c s) =
@@ -204,28 +204,28 @@ preamble = graphAttributes $$ nodeAttributes
           graphAttributes = text "ordering=out;"
 
 -- | Dot colors
-data DotColor = Tomato
-              | Salmon
-              | Gray
-              | DimGray
-              | Gold
-              | Tan
-              | Red
-              | OrangeRed
-              | Crimson
-              | Green
-              | Sienna
-              | Beige
-              | DodgerBlue
-              | LightSkyBlue
-              | Gray91
-              | Gray52
-              | DarkOrange
-              | Orange
-              | Cyan
-              | Cyan4
-              | White
-              | HotPink
+data DotColor = DCTomato
+              | DCSalmon
+              | DCGray
+              | DCDimDCGray
+              | DCGold
+              | DCTan
+              | DCRed
+              | DCOrangeDCRed
+              | DCCrimson
+              | DCGreen
+              | DCSienna
+              | DCBeige
+              | DCDodgerBlue
+              | DCLightSkyBlue
+              | DCGray91
+              | DCGray52
+              | DCDarkDCOrange
+              | DCOrange
+              | DCCyan
+              | DCCyan4
+              | DCWhite
+              | DCHotPink
 
 -- Type of Dot style options
 data DotStyle = Solid

@@ -796,6 +796,16 @@ translateExpr optSelectClause expr = case expr of
         case f of
             A.Not    -> Q.VENot tE
             A.Cast t -> Q.VECast tE $ translateATy t
+            A.Sin    -> Q.VEUnApp Q.UFSin tE
+            A.Cos    -> Q.VEUnApp Q.UFCos tE
+            A.Tan    -> Q.VEUnApp Q.UFTan tE
+            A.ASin   -> Q.VEUnApp Q.UFASin tE
+            A.ACos   -> Q.VEUnApp Q.UFACos tE
+            A.ATan   -> Q.VEUnApp Q.UFATan tE
+            A.Sqrt   -> Q.VEUnApp Q.UFSqrt tE
+            A.Log    -> Q.VEUnApp Q.UFLog tE
+            A.Exp    -> Q.VEUnApp Q.UFExp tE
+
       where tE = translateExpr optSelectClause e
     A.ColE n          -> case optSelectClause of
         Just s  -> inlineColumn s n
