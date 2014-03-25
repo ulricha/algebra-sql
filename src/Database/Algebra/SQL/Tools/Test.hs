@@ -259,6 +259,7 @@ singleTests :: [T.PFDag]
 singleTests = [ tLitTable
               , tEmptyTable
               , tTableRef
+              , tSerialize
               , tRowNum
               , tRowRank
               , tRank
@@ -297,6 +298,7 @@ singleTests = [ tLitTable
     -- unary operators
     singletonU op = singletonGraph $ C.UnOp op 0
 
+    tSerialize    = singletonU (A.Serialize (Just $ A.DescrCol "a", A.NoPos, [A.PayloadCol "a"]))
     tRowNum       = singletonU (A.RowNum ("c", sortInfo, Just "b"))
     tRowRank      = singletonU (A.RowRank ("c", sortInfo))
     tRank         = singletonU (A.Rank ("c", sortInfo))
