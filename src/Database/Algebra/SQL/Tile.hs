@@ -310,15 +310,9 @@ transformUnOpRank rankConstructor (name, sortList) =
 transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
 transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
 
-    childTile <- transformNode c
-
-    (select, children) <- case childTile of
-        -- Force merging of the ORDER BY clause into closed tiles too.
-        TileNode _ s cs   -> return (s, cs)
-        ReferenceLeaf r s -> embedExternalReference r s
+    (select, children) <- transformAsSelectStmt c
 
     let sClause     = Q.selectClause select
-        inline      = inlineColumn sClause
         project (col, alias) = Q.SCAlias (inlineSE sClause col) alias
         itemi i     = "item" ++ (show i)
         payloadProjs = zipWith (\(A.PayloadCol col) i -> Q.SCAlias (inlineSE sClause col) (itemi i))
@@ -360,7 +354,7 @@ transformUnOp (A.RowRank inf) c = transformUnOpRank Q.SEDenseRank inf c
 transformUnOp (A.Rank inf) c = transformUnOpRank Q.SERank inf c
 transformUnOp (A.Project projList) c = do
     
-    (select, children) <- transformAsSelect c
+    (select, children) <- transformAsOpenSelectStmt c
 
     let sClause  = Q.selectClause select
         -- Inlining is obligatory here, since we possibly eliminate referenced
@@ -378,7 +372,7 @@ transformUnOp (A.Project projList) c = do
 
 transformUnOp (A.Select expr) c = do
 
-    (select, children) <- transformAsSelect c
+    (select, children) <- transformAsOpenSelectStmt c
     
     return $ TileNode
              True
@@ -392,14 +386,14 @@ transformUnOp (A.Select expr) c = do
 
 transformUnOp (A.Distinct ()) c = do
 
-    (select, children) <- transformAsSelect c
+    (select, children) <- transformAsOpenSelectStmt c
 
     -- Keep everything but set distinct.
     return $ TileNode False select { Q.distinct = True } children
 
 transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
     
-    (select, children) <- transformAsSelect c
+    (select, children) <- transformAsOpenSelectStmt c
 
     let sClause         = Q.selectClause select
         translateE      = translateExpr $ Just sClause
@@ -438,7 +432,7 @@ attachColFunUnOp :: ([Q.SelectColumn] -> Q.SelectColumn)
                  -> TransformMonad TileTree
 attachColFunUnOp colFun ctor child = do
 
-    (select, children) <- transformAsSelect child
+    (select, children) <- transformAsOpenSelectStmt child
 
     let sClause = Q.selectClause select
     return $ ctor
@@ -455,8 +449,8 @@ transformBinSetOp :: Q.SetOperation
 transformBinSetOp setOp c0 c1 = do
 
     -- Use one tile to get the schema information.
-    (select0, children0) <- transformAsSelect c0
-    (select1, children1) <- transformAsSelect c1
+    (select0, children0) <- transformAsSelectStmt c0
+    (select1, children1) <- transformAsSelectStmt c1
 
     alias <- generateAliasName
 
@@ -486,15 +480,15 @@ transformBinCrossJoin :: C.AlgNode
                       -> C.AlgNode
                       -> TransformMonad TileTree
 transformBinCrossJoin c0 c1 = do
-    (select0, children0) <- transformAsSelect c0
-    (select1, children1) <- transformAsSelect c1
+    (select0, children0) <- transformAsOpenSelectStmt c0
+    (select1, children1) <- transformAsOpenSelectStmt c1
 
     -- We can simply concatenate everything, because all things are prefixed and
     -- cross join is associative.
     return $ TileNode True
                       -- Mergeable tiles are guaranteed to have at most a
                       -- select, from and where clause. (And since
-                      -- 'selectFromTile' does this, we always get at most that
+                      -- 'tileToOpenSelectStmt' does this, we always get at most that
                       -- structure.)
                       emptySelectStmt
                       { Q.selectClause =
@@ -517,7 +511,7 @@ transformCJToSelect :: C.AlgNode
                     -> TransformMonad (Q.SelectStmt, TileChildren)
 transformCJToSelect c0 c1 = do
     cTile <- transformBinCrossJoin c0 c1
-    selectFromTile cTile
+    tileToOpenSelectStmt cTile
 
 transformBinOp :: A.BinOp
                -> C.AlgNode
@@ -570,8 +564,8 @@ transformExistsJoin conditions c0 c1 existsWrapF = case result of
     (Nothing, _)      -> do
         -- TODO in case we do not have merge conditions we can simply use the
         -- unmergeable but less nested select stmt on the right side
-        (select0, children0) <- transformAsSelect c0
-        (select1, children1) <- transformAsSelect c1
+        (select0, children0) <- transformAsOpenSelectStmt c0
+        (select1, children1) <- transformAsOpenSelectStmt c1
 
         let outerCond   = existsWrapF . Q.VEExists $ Q.VQSelect innerSelect
             innerSelect = foldr appendToWhere select1 innerConds
@@ -583,8 +577,8 @@ transformExistsJoin conditions c0 c1 existsWrapF = case result of
                         (appendToWhere outerCond select0)
                         $ children0 ++ children1
     (Just (l, r), cs) -> do
-        (select0, children0) <- transformAsSelect c0
-        (select1, children1) <- transformAsSelect c1
+        (select0, children0) <- transformAsOpenSelectStmt c0
+        (select1, children1) <- transformAsOpenSelectStmt c1
        
         let -- Embedd the right query into the where clause of the left one.
             leftCond    = existsWrapF $ Q.VEIn (inlineColumn lSClause l)
@@ -608,22 +602,30 @@ transformExistsJoin conditions c0 c1 existsWrapF = case result of
         A.EqJ -> (Just (left, right), r)
         _     -> (Nothing, c:r)
 
--- | Combines transformation and convertion into 'SelectStmt'.
-transformAsSelect :: C.AlgNode
-                  -> TransformMonad (Q.SelectStmt, TileChildren) 
-transformAsSelect n = do
+-- | Transform a vertex and return it as a mergeable select statement.
+transformAsOpenSelectStmt :: C.AlgNode
+                          -> TransformMonad (Q.SelectStmt, TileChildren) 
+transformAsOpenSelectStmt n = do
     tile <- transformNode n
-    selectFromTile tile
+    tileToOpenSelectStmt tile
+
+-- | Transform a vertex and return it as a select statement, without regard to
+-- mergability.
+transformAsSelectStmt :: C.AlgNode
+                      -> TransformMonad (Q.SelectStmt, TileChildren)
+transformAsSelectStmt n = do
+    tile <- transformNode n
+    tileToSelectStmt tile
 
 -- | Converts a 'TileTree' into a select statement, inlines if possible.
 -- Select statements produced by this function are mergeable, which means they
 -- contain at most a select, from and where clause and have distinct set to
 -- tile.
-selectFromTile :: TileTree
-               -- The resulting 'SelectStmt' and used children (if the
-               -- 'TileTree' could not be inlined or had children itself).
-               -> TransformMonad (Q.SelectStmt, TileChildren)
-selectFromTile t = case t of
+tileToOpenSelectStmt :: TileTree
+                     -- The resulting 'SelectStmt' and used children (if the
+                     -- 'TileTree' could not be inlined or had children itself).
+                     -> TransformMonad (Q.SelectStmt, TileChildren)
+tileToOpenSelectStmt t = case t of
     -- The only thing we are able to merge.
     TileNode True body children  -> return (body, children)
     -- Embed as sub query.
@@ -643,6 +645,12 @@ selectFromTile t = case t of
     -- Asign name and produce a 'SelectStmt' which uses it. (Let the
     -- materialization strategy handle it.)
     ReferenceLeaf r s            -> embedExternalReference r s
+
+tileToSelectStmt :: TileTree
+                 -> TransformMonad (Q.SelectStmt, TileChildren)
+tileToSelectStmt t = case t of
+    TileNode _ body children -> return (body, children)
+    ReferenceLeaf r s        -> embedExternalReference r s
 
 -- | Embeds an external reference into a 'Q.SelectStmt'.
 embedExternalReference :: ExternalReference
