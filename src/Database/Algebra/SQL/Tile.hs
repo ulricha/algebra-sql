@@ -312,12 +312,14 @@ transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
 
     (select, children) <- transformAsSelectStmt c
 
-    let sClause     = Q.selectClause select
+    let sClause              = Q.selectClause select
+        inline               = inlineColumn sClause
         project (col, alias) = Q.SCAlias (inlineSE sClause col) alias
-        itemi i     = "item" ++ (show i)
-        payloadProjs = zipWith (\(A.PayloadCol col) i -> Q.SCAlias (inlineSE sClause col) (itemi i))
-                               payloadCols
-                               [1..]
+        itemi i              = "item" ++ show i
+        payloadProjs         =
+            zipWith (\(A.PayloadCol col) i -> Q.SCAlias (inlineSE sClause col) (itemi i))
+                    payloadCols
+                    [1..]
 
     return $ TileNode
              False
@@ -328,18 +330,25 @@ transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
                -- since SQL99 defines different semantics.
                Q.orderByClause =
                    map (flip Q.OE Q.Ascending)
-                       $ discardConstValueExprs
-                         $ map (\c -> Q.VEColumn c Nothing) $ descrOrderList ++ posOrderList
+                       $ descrColAdder . discardConstValueExprs
+                         $ map inline posOrderList
+                         -- $ map (\c -> Q.VEColumn c Nothing) $ descrOrderList ++ posOrderList
              }
              children
   where
-    (descrOrderList, descrProjList)                   = case mDescr of
-        Nothing               -> ([], [])
-        Just (A.DescrCol col) -> (["descr"], [(col, "descr")])
+    (descrColAdder, descrProjList) = case mDescr of
+        Nothing               -> (id, [])
+        -- Project and sort. Since descr gets added as new alias we can use it
+        -- in the ORDER BY clause.
+        Just (A.DescrCol col) -> ( (:) $ Q.VEColumn "descr" Nothing
+                                 , [(col, "descr")]
+                                 )
 
-    (posOrderList, posProjList) = case mPos of
+    (posOrderList, posProjList)     = case mPos of
         A.NoPos       -> ([], [])
+        -- Sort and project.
         A.AbsPos col  -> (["pos"], [(col, "pos")])
+        -- Sort but do not project.
         A.RelPos cols -> (cols, [])
 
 
