@@ -310,7 +310,13 @@ transformUnOpRank rankConstructor (name, sortList) =
 transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
 transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
-    (select, children) <- transformAsSelectStmt c
+    (select, children) <- case pos of
+        -- Workarround, since we can't use advanced expressions (like
+        -- aggregates) in the ORDER BY clause yet, and RelPos forces them to
+        -- only appear there.
+        (A.RelPos _) -> transformAsOpenSelectStmt c
+        _            -> transformAsSelectStmt c
+
 
     let sClause              = Q.selectClause select
         inline               = inlineColumn sClause
