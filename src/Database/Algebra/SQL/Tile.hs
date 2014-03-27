@@ -308,7 +308,7 @@ transformUnOpRank rankConstructor (name, sortList) =
 
 
 transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
-transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
+transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
     (select, children) <- transformAsSelectStmt c
 
@@ -344,7 +344,7 @@ transformUnOp (A.Serialize (mDescr, mPos, payloadCols)) c = do
                                  , [(col, "descr")]
                                  )
 
-    (posOrderList, posProjList)     = case mPos of
+    (posOrderList, posProjList)     = case pos of
         A.NoPos       -> ([], [])
         -- Sort and project.
         A.AbsPos col  -> (["pos"], [(col, "pos")])
