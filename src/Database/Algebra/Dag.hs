@@ -4,8 +4,6 @@ module Database.Algebra.Dag
          AlgebraDag
        , Operator(..)
        , nodeMap
-       -- FIXME refCountMap is only exposed for debugging -> remove
-       , refCountMap
        , rootNodes
        , mkDag
          -- * Query functions for topological and operator information
@@ -44,7 +42,7 @@ data AlgebraDag a = AlgebraDag
   }
 
 class (Ord a, Show a) => Operator a where
-    opChildren :: a -> [AlgNode]
+    opChildren     :: a -> [AlgNode]
     replaceOpChild :: a -> AlgNode -> AlgNode -> a
 
 -- For every node, count the number of parents (or list of edges to the node).
@@ -66,8 +64,8 @@ mkDag m rs = AlgebraDag { nodeMap = mNormalized
                         , graph = g
                         , rootNodes = rs
                         , refCountMap = initRefCount rs mNormalized
-                        , opMap = initOpMap m
-                        , nextNodeID = 1 + (fst $ IM.findMax m)
+                        , opMap = initOpMap mNormalized
+                        , nextNodeID = 1 + (fst $ IM.findMax mNormalized)
                         }
     where mNormalized = normalizeMap rs m
           g =  uncurry G.mkUGraph $ IM.foldrWithKey aux ([], []) mNormalized
