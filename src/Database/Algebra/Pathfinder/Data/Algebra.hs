@@ -2,7 +2,6 @@
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE TypeSynonymInstances #-}
---new, required for JSON
 {-# LANGUAGE DeriveGeneric #-}
 
 -- | The Algebra module provides the internal datatypes used for

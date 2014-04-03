@@ -4,8 +4,6 @@ module Database.Algebra.Dag
          AlgebraDag
        , Operator(..)
        , nodeMap
-       -- FIXME refCountMap is only exposed for debugging -> remove
-       , refCountMap
        , rootNodes
        , mkDag
          -- * Query functions for topological and operator information
@@ -22,7 +20,7 @@ module Database.Algebra.Dag
        , replaceRoot
        , collect
        ) where
-
+       
 import           Control.Exception.Base
 import qualified Data.Graph.Inductive.Graph        as G
 import           Data.Graph.Inductive.PatriciaTree
@@ -44,7 +42,7 @@ data AlgebraDag a = AlgebraDag
   }
 
 class (Ord a, Show a) => Operator a where
-    opChildren :: a -> [AlgNode]
+    opChildren     :: a -> [AlgNode]
     replaceOpChild :: a -> AlgNode -> AlgNode -> a
 
 -- For every node, count the number of parents (or list of edges to the node).
@@ -66,8 +64,8 @@ mkDag m rs = AlgebraDag { nodeMap = mNormalized
                         , graph = g
                         , rootNodes = rs
                         , refCountMap = initRefCount rs mNormalized
-                        , opMap = initOpMap m
-                        , nextNodeID = 1 + (fst $ IM.findMax m)
+                        , opMap = initOpMap mNormalized
+                        , nextNodeID = 1 + (fst $ IM.findMax mNormalized)
                         }
     where mNormalized = normalizeMap rs m
           g =  uncurry G.mkUGraph $ IM.foldrWithKey aux ([], []) mNormalized
@@ -227,9 +225,11 @@ replaceChild :: Operator a => AlgNode -> AlgNode -> AlgNode -> AlgebraDag a -> A
 replaceChild n old new d =
   let op = operator n d
   in if old `elem` opChildren op && old /= new
-     then let m' = IM.insert n (replaceOpChild op old new) $ nodeMap d
-              g' = G.insEdge (n, new, ()) $ G.delEdge (n, old) $ graph d
-              d' = d { nodeMap = m', graph = g' }
+     then let op' = replaceOpChild op old new
+              m'  = IM.insert n op' $ nodeMap d
+              om' = M.insert op' n $ M.delete op $ opMap d
+              g'  = G.insEdge (n, new, ()) $ G.delEdge (n, old) $ graph d
+              d'  = d { nodeMap = m', graph = g', opMap = om' }
           in replaceEdgesRef [old] [new] d'
      else d
 
