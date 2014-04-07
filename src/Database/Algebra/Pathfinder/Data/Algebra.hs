@@ -32,8 +32,7 @@ data AggrType = Avg Expr
               | Sum Expr
               | Count
               | All Expr
-              | Prod Expr
-              | Dist Expr
+              | Any Expr
     deriving (Eq, Ord, Generic)
 
 instance Show AggrType where
@@ -43,8 +42,7 @@ instance Show AggrType where
     show (Sum c)  = printf "sum(%s)" (show c)
     show Count    = "count"
     show (All c)  = printf "all(%s)" (show c)
-    show (Prod c) = printf "prod(%s)" (show c)
-    show (Dist c) = printf "dist(%s)" (show c)
+    show (Any c)  = printf "all(%s)" (show c)
 
 -- | The show instance results in values that are accepted in the xml plan.
 instance Show SortDir where
