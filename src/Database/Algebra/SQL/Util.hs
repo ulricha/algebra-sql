@@ -28,7 +28,7 @@ resultFromDAG dag matFun = (transformResult, matFun transformResult)
 renderDebugOutput :: CompatMode -> T.PFDag -> MatFun -> Bool -> ShowS
 renderDebugOutput c dag matFun debug =
     ( if debug
-      then dBegin . R.debugTransformResult r . showChar '\n'
+      then dBegin . R.debugTransformResult c r . showChar '\n'
       else id
     )
     . begin

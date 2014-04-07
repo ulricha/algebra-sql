@@ -6,7 +6,6 @@ module Database.Algebra.SQL.Render
     , renderPlain
     ) where
 
-import Data.List (intercalate)
 import qualified Text.PrettyPrint.ANSI.Leijen as L
     ( Doc
     , SimpleDoc
@@ -31,9 +30,9 @@ renderWith f c = L.displayS . f . renderQuery c
 
 
 -- | Returns a 'ShowS' containing debug information for a transform result.
-debugTransformResult :: TransformResult -> ShowS
-debugTransformResult =
-    L.displayS . renderPrettySimpleDoc . renderTransformResult
+debugTransformResult :: CompatMode -> TransformResult -> ShowS
+debugTransformResult compat =
+    L.displayS . renderPrettySimpleDoc . (renderTransformResult compat)
 
 -- | Renders a list of queries in an ugly but fast way, feasible as direct SQL
 -- input.

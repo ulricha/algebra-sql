@@ -59,21 +59,26 @@ terminate = (<> op ';')
 
 renderQuery :: CompatMode -> Query -> Doc
 renderQuery c query = terminate $ case query of
-    QValueQuery q      -> renderValueQuery q
+    QValueQuery q      -> renderValueQuery c q
     QDefinitionQuery q -> renderDefinitionQuery c q
 
 renderDefinitionQuery :: CompatMode -> DefinitionQuery -> Doc
-renderDefinitionQuery _ (DQMatView query name)        =
+renderDefinitionQuery compat (DQMatView query name)        =
     kw "CREATE MATERIALIZED VIEW"
     <+> text name
     <+> kw "AS"
-    </> renderValueQuery query
+    </> renderValueQuery compat query
 
-renderDefinitionQuery c (DQTemporaryTable query name) =
+renderDefinitionQuery compat (DQTemporaryTable query name) =
     createStmt
     <+>
-    case c of
+    case compat of
         SQL99      ->
+            as
+            <$> indentedQuery
+            -- Create the table with the result of the given value query.
+            <$> kw "WITH DATA ON COMMIT DROP"
+        MonetDB -> 
             as
             <$> indentedQuery
             -- Create the table with the result of the given value query.
@@ -87,41 +92,41 @@ renderDefinitionQuery c (DQTemporaryTable query name) =
   where
     createStmt    = kw "CREATE LOCAL TEMPORARY TABLE" <+> text name
     as            = kw "AS"
-    indentedQuery = indent 4 $ renderValueQuery query
+    indentedQuery = indent 4 $ renderValueQuery compat query
 
-renderValueQuery :: ValueQuery -> Doc
-renderValueQuery (VQSelect stmt)                         = renderSelectStmt stmt
-renderValueQuery (VQLiteral vals)                        =
+renderValueQuery :: CompatMode -> ValueQuery -> Doc
+renderValueQuery compat (VQSelect stmt)    = renderSelectStmt compat stmt
+renderValueQuery compat (VQLiteral vals)   =
     kw "VALUES" <+> align (sep . punctuate comma $ map renderRow vals)
-  where renderRow row = parens . enlistOnLine $ map renderValueExpr row
+  where renderRow row = parens . enlistOnLine $ map (renderValueExpr compat) row
 
-renderValueQuery (VQWith bindings body)                 =
+renderValueQuery compat (VQWith bindings body)                 =
     hang 4 (kw "WITH" </> enlist (map renderBinding bindings))
-    <$> renderValueQuery body
+    <$> renderValueQuery compat body
   where renderBinding :: (String, Maybe [String], ValueQuery) -> Doc
         renderBinding (name, optCols, query) =
             text name
             <> renderOptColDefs optCols
             <+> kw "AS"
             <+> lparen
-            <$> indent 4 (renderValueQuery query)
+            <$> indent 4 (renderValueQuery compat query)
             <$> rparen
 
-renderValueQuery (VQBinarySetOperation left right o)    =
-    renderValueQuery left
+renderValueQuery compat (VQBinarySetOperation left right o)    =
+    renderValueQuery compat left
     <> linebreak
     <$> renderSetOperation o
     <> linebreak
-    <$> renderValueQuery right
+    <$> renderValueQuery compat right
 
 renderSetOperation :: SetOperation -> Doc
 renderSetOperation SOUnionAll  = kw "UNION ALL"
 renderSetOperation SOExceptAll = kw "EXCEPT ALL"
 
-renderSelectStmt :: SelectStmt -> Doc
-renderSelectStmt stmt =
+renderSelectStmt :: CompatMode -> SelectStmt -> Doc
+renderSelectStmt compat stmt =
     kw "SELECT"
-    <+> align ( let sC = enlist $ map renderSelectColumn $ selectClause stmt
+    <+> align ( let sC = enlist $ map (renderSelectColumn compat) $ selectClause stmt
                 in if distinct stmt
                    then kw "DISTINCT" <+> sC
                    else sC
@@ -132,30 +137,30 @@ renderSelectStmt stmt =
            fromParts ->
                linebreak
                <> kw "FROM"
-               <+> align (enlist $ map renderFromPart fromParts)
+               <+> align (enlist $ map (renderFromPart compat) fromParts)
     <> case whereClause stmt of
            Just valExpr -> linebreak
                            <> kw "WHERE"
-                           <+> align (renderValueExpr valExpr)
+                           <+> align ((renderValueExpr compat) valExpr)
            Nothing      -> empty
     <> case groupByClause stmt of
            []      -> empty
            valExpr -> linebreak
                       <> kw "GROUP BY"
-                      <+> align (enlist $ map renderValueExpr valExpr)
+                      <+> align (enlist $ map (renderValueExpr compat) valExpr)
     <> case orderByClause stmt of
            []    -> empty
            order -> linebreak
                     <> kw "ORDER BY"
-                    <+> align (renderOrderExprList order)
+                    <+> align (renderOrderExprList compat order)
 
 
-renderOrderExpr :: OrderExpr -> Doc
-renderOrderExpr (OE expr dir) = renderValueExpr expr <+> renderSortDirection dir
+renderOrderExpr :: CompatMode -> OrderExpr -> Doc
+renderOrderExpr compat (OE expr dir) = renderValueExpr compat expr <+> renderSortDirection dir
 
 -- | Render a list of order expressions.
-renderOrderExprList :: [OrderExpr] -> Doc
-renderOrderExprList = enlistOnLine . map renderOrderExpr
+renderOrderExprList :: CompatMode -> [OrderExpr] -> Doc
+renderOrderExprList compat = enlistOnLine . map (renderOrderExpr compat)
 
 renderSortDirection :: SortDirection -> Doc
 renderSortDirection Ascending  = kw "ASC"
@@ -167,105 +172,108 @@ renderOptColDefs :: Maybe [String] -> Doc
 renderOptColDefs = maybe empty colDoc
   where colDoc = parens . enlistOnLine . map text
 
-renderFromPart :: FromPart -> Doc
-renderFromPart (FPAlias (FETableReference n) alias _) =
+renderFromPart :: CompatMode -> FromPart -> Doc
+renderFromPart _ (FPAlias (FETableReference n) alias _) =
     -- Don't use positional mapping on table references, since they are mapped
     -- by their name.
     text n
     <+> kw "AS"
     <+> text alias
 
-renderFromPart (FPAlias expr alias optCols)           =
-    renderFromExpr expr
+renderFromPart compat (FPAlias expr alias optCols)           =
+    renderFromExpr compat expr
     <+> kw "AS"
     <+> text alias
     <> renderOptColDefs optCols
 
-renderFromPart (FPInnerJoin left right cond) = renderFromPart left
-                                               </> kw "INNER JOIN"
-                                               </> renderFromPart right
-                                               </> kw "ON"
-                                               </> renderValueExpr cond
+renderFromPart compat (FPInnerJoin left right cond) = renderFromPart compat left
+                                                      </> kw "INNER JOIN"
+                                                      </> renderFromPart compat right
+                                                      </> kw "ON"
+                                                      </> renderValueExpr compat cond
 
-renderSubQuery :: ValueQuery -> Doc
-renderSubQuery q = lparen <+> align (renderValueQuery q) <$> rparen
+renderSubQuery :: CompatMode -> ValueQuery -> Doc
+renderSubQuery compat q = lparen <+> align (renderValueQuery compat q) <$> rparen
 
-renderFromExpr :: FromExpr -> Doc
-renderFromExpr (FESubQuery q)       = renderSubQuery q
-renderFromExpr (FEVariable v)       = ondullblue $ int v
-renderFromExpr (FETableReference n) = text n
+renderFromExpr :: CompatMode -> FromExpr -> Doc
+renderFromExpr compat (FESubQuery q)       = renderSubQuery compat q
+renderFromExpr _      (FEVariable v)       = ondullblue $ int v
+renderFromExpr _      (FETableReference n) = text n
 
 -- | Renders an optional prefix.
 renderOptPrefix :: Maybe String -> Doc
 renderOptPrefix = maybe empty $ (<> char '.') . text
 
 
-renderSelectColumn :: SelectColumn -> Doc
-renderSelectColumn (SCAlias expr name)      = renderSelectExpr expr
-                                              <+> kw "AS"
-                                              <+> text name
+renderSelectColumn :: CompatMode -> SelectColumn -> Doc
+renderSelectColumn compat (SCAlias expr name) = renderSelectExpr compat expr
+                                                <+> kw "AS"
+                                                <+> text name
 
-renderSelectExpr :: SelectExpr -> Doc
-renderSelectExpr (SEValueExpr v)             = renderValueExpr v
-renderSelectExpr (SERowNum partColumn order) =
+renderSelectExpr :: CompatMode -> SelectExpr -> Doc
+renderSelectExpr compat (SEValueExpr v)             = renderValueExpr compat v
+renderSelectExpr compat (SERowNum partColumn order) =
     kw "ROW_NUMBER() OVER"
     <+> parens (partitionByDoc 
                 <>
                 case order of
                     [] -> empty
-                    _  -> kw "ORDER BY" <+> renderOrderExprList order)
+                    _  -> kw "ORDER BY" <+> renderOrderExprList compat order)
   where partitionByDoc = maybe empty
                                (\c -> kw "PARTITION BY"
-                                      </> renderValueExpr c
+                                      </> renderValueExpr compat c
                                       <> linebreak)
                                partColumn
 
-renderSelectExpr (SEDenseRank order)         = renderRank "DENSE_RANK() OVER"
+renderSelectExpr compat (SEDenseRank order)         = renderRank compat "DENSE_RANK() OVER"
                                                           order
-renderSelectExpr (SERank order)              = renderRank "RANK() OVER" order
+renderSelectExpr compat (SERank order)              = renderRank compat "RANK() OVER" order
 
-renderSelectExpr (SEAggregate optVE aggr)    =
-    renderAggregateFunction aggr
-    <> parens (maybe (char '*') renderValueExpr optVE)
+renderSelectExpr compat (SEAggregate optVE aggr)    =
+    renderAggregateFunction compat aggr
+    <> parens (maybe (char '*') (renderValueExpr compat) optVE)
 
 -- | Render the postfix part of a rank operator.
-renderRank :: String -> [OrderExpr] -> Doc
-renderRank prefix order =
-    kw prefix <+> parens (kw "ORDER BY" <+> renderOrderExprList order)
+renderRank :: CompatMode -> String -> [OrderExpr] -> Doc
+renderRank compat prefix order =
+    kw prefix <+> parens (kw "ORDER BY" <+> renderOrderExprList compat order)
 
-renderAggregateFunction :: AggregateFunction -> Doc
-renderAggregateFunction AFAvg   = kw "AVG"
-renderAggregateFunction AFMax   = kw "MAX"
-renderAggregateFunction AFMin   = kw "MIN"
-renderAggregateFunction AFSum   = kw "SUM"
-renderAggregateFunction AFCount = kw "COUNT"
-renderAggregateFunction AFAll   = kw "ALL" -- TODO
-renderAggregateFunction AFProd  = kw "PROD" -- TODO does not exist in postgres
-renderAggregateFunction AFDist  = kw "DIST" -- TODO - " -
+renderAggregateFunction :: CompatMode -> AggregateFunction -> Doc
+renderAggregateFunction _          AFAvg   = kw "AVG"
+renderAggregateFunction _          AFMax   = kw "MAX"
+renderAggregateFunction _          AFMin   = kw "MIN"
+renderAggregateFunction _          AFSum   = kw "SUM"
+renderAggregateFunction _          AFCount = kw "COUNT"
+renderAggregateFunction PostgreSQL AFAll   = kw "BOOL_AND"
+renderAggregateFunction SQL99      AFAll   = kw "EVERY"
+renderAggregateFunction MonetDB    AFAll   = kw "MIN"
+renderAggregateFunction PostgreSQL AFAny   = kw "BOOL_OR"
+renderAggregateFunction SQL99      AFAny   = kw "SOME"
+renderAggregateFunction MonetDB    AFAny   = kw "MAX"
 
-renderValueExpr :: ValueExpr -> Doc
-renderValueExpr (VEValue v)            = renderValue v
-renderValueExpr (VEColumn n optPrefix) = renderOptPrefix optPrefix
-                                         <> text n
-renderValueExpr (VECast v ty)          = kw "CAST" <> parens castExpr
-  where castExpr = renderValueExpr v <+> kw "AS" <+> renderDataType ty
+renderValueExpr :: CompatMode -> ValueExpr -> Doc
+renderValueExpr _ (VEValue v)            = renderValue v
+renderValueExpr _ (VEColumn n optPrefix) = renderOptPrefix optPrefix
+                                           <> text n
+renderValueExpr compat (VECast v ty)          = kw "CAST" <> parens castExpr
+  where castExpr = renderValueExpr compat v <+> kw "AS" <+> renderDataType ty
 
-renderValueExpr (VEBinApp f a b)       =
-    parens $ renderValueExpr a
+renderValueExpr compat (VEBinApp f a b)       =
+    parens $ renderValueExpr compat a
              <+> renderBinaryFunction f
-             <+> renderValueExpr b
+             <+> renderValueExpr compat b
 
-renderValueExpr (VEUnApp f a)          =
-    parens $ renderUnaryFunction f <> parens (renderValueExpr a)
+renderValueExpr compat (VEUnApp f a)          =
+    parens $ renderUnaryFunction f <> parens (renderValueExpr compat a)
 
-renderValueExpr (VENot a)              =
-    parens $ kw "NOT" <+> renderValueExpr a
-renderValueExpr (VEExists q)           = kw "EXISTS" <+> renderSubQuery q
+renderValueExpr compat (VENot a)              =
+    parens $ kw "NOT" <+> renderValueExpr compat a
+renderValueExpr compat (VEExists q)           = kw "EXISTS" <+> renderSubQuery compat q
 
-renderValueExpr (VEIn v q)             =
-    parens $ renderValueExpr v
+renderValueExpr compat (VEIn v q)             =
+    parens $ renderValueExpr compat v
              <+> kw "IN"
-             <+> renderSubQuery q
+             <+> renderSubQuery compat q
 
 renderBinaryFunction :: BinaryFunction -> Doc
 renderBinaryFunction BFPlus         = op '+'

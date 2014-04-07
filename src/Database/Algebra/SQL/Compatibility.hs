@@ -9,4 +9,5 @@ module Database.Algebra.SQL.Compatibility
 -- materialization.
 data CompatMode = SQL99
                 | PostgreSQL
+                | MonetDB
 

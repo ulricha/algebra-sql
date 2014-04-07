@@ -806,8 +806,7 @@ translateAggrType aggr = case aggr of
     A.Sum e  -> (Q.AFSum, Just e)
     A.Count  -> (Q.AFCount, Nothing)
     A.All e  -> (Q.AFAll, Just e)
-    A.Prod e -> (Q.AFProd, Just e)
-    A.Dist e -> (Q.AFProd, Just e)
+    A.Any e  -> (Q.AFAny, Just e)
 
 translateExpr :: Maybe [Q.SelectColumn] -> A.Expr -> Q.ValueExpr
 translateExpr optSelectClause expr = case expr of

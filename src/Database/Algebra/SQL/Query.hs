@@ -174,8 +174,7 @@ data AggregateFunction = AFAvg
                        | AFSum
                        | AFCount
                        | AFAll
-                       | AFProd
-                       | AFDist
+                       | AFAny
                        deriving Show
 
 -- | Represents a value expression which can occur within several SQL parts.
