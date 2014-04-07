@@ -287,7 +287,15 @@ renderBinaryFunction BFAnd          = kw "AND"
 renderBinaryFunction BFOr           = kw "OR"
 
 renderUnaryFunction :: UnaryFunction -> Doc
-renderUnaryFunction f = text $ show f
+renderUnaryFunction UFSin  = kw "sin"
+renderUnaryFunction UFCos  = kw "cos"
+renderUnaryFunction UFTan  = kw "tan"
+renderUnaryFunction UFLog  = kw "log"
+renderUnaryFunction UFSqrt = kw "sqrt"
+renderUnaryFunction UFExp  = kw "exp"
+renderUnaryFunction UFASin = kw "asin"
+renderUnaryFunction UFACos = kw "acos"
+renderUnaryFunction UFATan = kw "atan"
 
 renderDataType :: DataType -> Doc
 renderDataType DTInteger         = kw "INTEGER"
