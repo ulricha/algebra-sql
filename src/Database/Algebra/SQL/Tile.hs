@@ -14,7 +14,6 @@ module Database.Algebra.SQL.Tile
 --      and the transform things.
 -- TODO embed closing tiles as subqueries (are there any sub queries which are
 -- correlated?)? (reader?)
--- TODO RowRank <-> DenseRank ?
 -- TODO isMultiReferenced special case: check for same parent !!
 
 import Control.Arrow (second)
@@ -312,12 +311,7 @@ transformUnOpRank rankConstructor (name, sortList) =
 transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
 transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
-    (select, children) <- case pos of
-        -- Workarround, since we can't use advanced expressions (like
-        -- aggregates) in the ORDER BY clause yet, and RelPos forces them to
-        -- only appear there.
-        (A.RelPos _) -> transformAsOpenSelectStmt c
-        _            -> transformAsSelectStmt c
+    (select, children) <- transformAsSelectStmt c
 
 
     let sClause              = Q.selectClause select
@@ -422,8 +416,9 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
                                     )
                                     n
 
-        partValueExprs   = map (second translateE) partExprMapping
-        partAdvancedExpr = map (second $ translateExprAE $ Just sClause) partExprMapping
+        partColumnExprs  = map (second translateE) partExprMapping
+        partAdvancedExpr = map (second $ translateExprAE $ Just sClause)
+                           partExprMapping
 
 
         wrapSCAlias (name, advancedExpr)
@@ -438,7 +433,7 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
              , -- Since SQL treats numbers in the group by clause as column
                -- indices, filter them out. (They do not change the semantics
                -- anyway.)
-               Q.groupByClause = discardConstColumnExprs $ map snd partValueExprs
+               Q.groupByClause = discardConstColumnExprs $ map snd partColumnExprs
              }
              children
 
@@ -830,11 +825,11 @@ translateAggrType aggr = case aggr of
     A.Any e  -> (Q.AFAny, Just e)
 
 translateExprValueExprTemplate :: (Maybe [Q.SelectColumn] -> A.Expr -> a)
-                            -> (Q.ValueExprTemplate a -> a)
-                            -> ([Q.SelectColumn] -> String -> a)
-                            -> Maybe [Q.SelectColumn]
-                            -> A.Expr
-                            -> a
+                               -> (Q.ValueExprTemplate a -> a)
+                               -> ([Q.SelectColumn] -> String -> a)
+                               -> Maybe [Q.SelectColumn]
+                               -> A.Expr
+                               -> a
 translateExprValueExprTemplate rec wrap inline optSelectClause expr =
     case expr of
         A.BinAppE f e1 e2 ->

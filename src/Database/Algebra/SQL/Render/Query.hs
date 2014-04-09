@@ -78,7 +78,7 @@ renderDefinitionQuery compat (DQTemporaryTable query name) =
             <$> indentedQuery
             -- Create the table with the result of the given value query.
             <$> kw "WITH DATA ON COMMIT DROP"
-        MonetDB -> 
+        MonetDB    -> 
             as
             <$> indentedQuery
             -- Create the table with the result of the given value query.

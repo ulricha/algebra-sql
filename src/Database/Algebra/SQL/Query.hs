@@ -1,12 +1,7 @@
 module Database.Algebra.SQL.Query where
 
 -- TODO Do we have to check for validity of types?
-
 -- TODO is window clause standard?
--- TODO what is VNat/ANat/ASur needed for
--- TODO add syntax for IN with lists
--- TODO maybe change whereClause to a conjuction list? would increase
--- readability
 
 -- | Mixed datatype for sequences of both types of queries.
 data Query = QValueQuery
