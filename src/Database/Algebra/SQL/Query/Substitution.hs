@@ -17,8 +17,8 @@ replaceReferencesSelectStmt r body =
     { Q.selectClause = map (replaceReferencesSelectColumn r)
                            $ Q.selectClause body
     , Q.fromClause = map (replaceReferencesFromPart r) $ Q.fromClause body
-    , Q.whereClause = liftM (replaceReferencesValueExpr r) $ Q.whereClause body
-    , Q.groupByClause = map (replaceReferencesValueExpr r)
+    , Q.whereClause = liftM (replaceReferencesColumnExpr r) $ Q.whereClause body
+    , Q.groupByClause = map (replaceReferencesColumnExpr r)
                             $ Q.groupByClause body
     , Q.orderByClause = map (replaceReferencesOrderExpr r)
                             $ Q.orderByClause body
@@ -27,36 +27,50 @@ replaceReferencesSelectStmt r body =
 replaceReferencesSelectColumn :: (Q.ReferenceType -> Q.FromExpr)
                               -> Q.SelectColumn
                               -> Q.SelectColumn
-replaceReferencesSelectColumn r (Q.SCAlias e a) =
-    Q.SCAlias (replaceReferencesSelectExpr r e) a
+replaceReferencesSelectColumn r (Q.SCAlias e a)     =
+    Q.SCAlias (replaceReferencesAdvancedExpr r e) a
 
-replaceReferencesSelectExpr :: (Q.ReferenceType -> Q.FromExpr)
-                            -> Q.SelectExpr
-                            -> Q.SelectExpr
-replaceReferencesSelectExpr r (Q.SEValueExpr v)   =
-    Q.SEValueExpr $ replaceReferencesValueExpr r v
-replaceReferencesSelectExpr r (Q.SERowNum p o)    =
-    Q.SERowNum (liftM (replaceReferencesValueExpr r) p)
+replaceReferencesAdvancedExpr :: (Q.ReferenceType -> Q.FromExpr)
+                              -> Q.AdvancedExpr
+                              -> Q.AdvancedExpr
+replaceReferencesAdvancedExpr r (Q.AEBase v)        =
+    Q.AEBase $ replaceReferencesAdvancedExprBase r v
+replaceReferencesAdvancedExpr r (Q.AERowNum p o)    =
+    Q.AERowNum (liftM (replaceReferencesAdvancedExpr r) p)
                (map (replaceReferencesOrderExpr r) o)
 
-replaceReferencesSelectExpr r (Q.SEDenseRank o)   =
-    Q.SEDenseRank (map (replaceReferencesOrderExpr r) o)
-replaceReferencesSelectExpr r (Q.SERank o)        =
-    Q.SERank (map (replaceReferencesOrderExpr r) o)
-replaceReferencesSelectExpr r (Q.SEAggregate v f) =
-    Q.SEAggregate (liftM (replaceReferencesValueExpr r) v) f
+replaceReferencesAdvancedExpr r (Q.AEDenseRank o)   =
+    Q.AEDenseRank (map (replaceReferencesOrderExpr r) o)
+replaceReferencesAdvancedExpr r (Q.AERank o)        =
+    Q.AERank (map (replaceReferencesOrderExpr r) o)
+replaceReferencesAdvancedExpr r (Q.AEAggregate v f) =
+    Q.AEAggregate (liftM (replaceReferencesColumnExpr r) v) f
 
-replaceReferencesValueExpr :: (Q.ReferenceType -> Q.FromExpr)
-                           -> Q.ValueExpr
-                           -> Q.ValueExpr
-replaceReferencesValueExpr r (Q.VEExists q) =
-    Q.VEExists $ replaceReferencesValueQuery r q
+-- | Replace references in a 'Q.AdvancedExprBase'.
+replaceReferencesAdvancedExprBase :: (Q.ReferenceType -> Q.FromExpr)
+                                  -> Q.AdvancedExprBase
+                                  -> Q.AdvancedExprBase
+replaceReferencesAdvancedExprBase r e = case e of
+    Q.VEExists q -> Q.VEExists $ replaceReferencesValueQuery r q
+    Q.VEIn ae q  -> Q.VEIn (replaceReferencesAdvancedExpr r ae)
+                           (replaceReferencesValueQuery r q)
+    _            -> e
 
-replaceReferencesValueExpr r (Q.VEIn e q)   =
-    Q.VEIn (replaceReferencesValueExpr r e)
-           (replaceReferencesValueQuery r q)
+replaceReferencesColumnExpr :: (Q.ReferenceType -> Q.FromExpr)
+                            -> Q.ColumnExpr
+                            -> Q.ColumnExpr
+replaceReferencesColumnExpr r (Q.CEBase v) =
+    Q.CEBase $ replaceReferencesColumnExprBase r v
 
-replaceReferencesValueExpr _ e                         = e
+-- | Replace references in a 'Q.ColumnExprBase'.
+replaceReferencesColumnExprBase :: (Q.ReferenceType -> Q.FromExpr)
+                                -> Q.ColumnExprBase
+                                -> Q.ColumnExprBase
+replaceReferencesColumnExprBase r e = case e of
+    Q.VEExists q -> Q.VEExists $ replaceReferencesValueQuery r q
+    Q.VEIn ve q  -> Q.VEIn (replaceReferencesColumnExpr r ve)
+                           (replaceReferencesValueQuery r q)
+    _            -> e
 
 replaceReferencesFromPart :: (Q.ReferenceType -> Q.FromExpr)
                           -> Q.FromPart
@@ -64,21 +78,15 @@ replaceReferencesFromPart :: (Q.ReferenceType -> Q.FromExpr)
 replaceReferencesFromPart r (Q.FPAlias e a c) =
     Q.FPAlias (replaceReferencesFromExpr r e) a c
 
-replaceReferencesFromPart r (Q.FPInnerJoin lp rp jc) =
-    Q.FPInnerJoin (replaceReferencesFromPart r lp)
-                  (replaceReferencesFromPart r rp)
-                  (replaceReferencesValueExpr r jc)
-
-
 replaceReferencesFromExpr :: (Q.ReferenceType -> Q.FromExpr)
                           -> Q.FromExpr
                           -> Q.FromExpr
 replaceReferencesFromExpr r (Q.FESubQuery q) =
     Q.FESubQuery $ replaceReferencesValueQuery r q
 
-replaceReferencesFromExpr r t@(Q.FEVariable v) = r v
+replaceReferencesFromExpr r (Q.FEVariable v) = r v
 
-replaceReferencesFromExpr _ t = t
+replaceReferencesFromExpr _ t                = t
 
 replaceReferencesValueQuery :: (Q.ReferenceType -> Q.FromExpr)
                             -> Q.ValueQuery
@@ -103,5 +111,5 @@ replaceReferencesOrderExpr :: (Q.ReferenceType -> Q.FromExpr)
                            -> Q.OrderExpr
                            -> Q.OrderExpr
 replaceReferencesOrderExpr r (Q.OE e d) =
-    Q.OE (replaceReferencesValueExpr r e) d
+    Q.OE (replaceReferencesAdvancedExpr r e) d
 

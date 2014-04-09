@@ -36,7 +36,7 @@ data ValueQuery = VQSelect
                 }
                   -- Literal tables (e.g. "VALUES (1, 2), (2, 4)").
                 | VQLiteral
-                { rows       :: [[ValueExpr]]  -- ^ The values contained.
+                { rows       :: [[ColumnExpr]]  -- ^ The values contained.
                 }
                   -- The with query to bind value queries to names.
                 | VQWith
@@ -76,10 +76,10 @@ data SelectStmt = SelectStmt -- TODO do we need a window clause ?
                 , fromClause    :: [FromPart]   
 
                   -- | Conditional expression in the where clause.
-                , whereClause   :: Maybe ValueExpr
+                , whereClause   :: Maybe ColumnExpr
                 
                   -- | The values to group by.
-                , groupByClause :: [ValueExpr]
+                , groupByClause :: [ColumnExpr]
                 
                   -- | The values and direction to order the table after.
                 , orderByClause :: [OrderExpr]
@@ -88,7 +88,7 @@ data SelectStmt = SelectStmt -- TODO do we need a window clause ?
 -- | Tells which column to sort by and in which direction.
 data OrderExpr = OE
                { -- | The expression to order after.
-                 oExpr         :: ValueExpr
+                 oExpr         :: AdvancedExpr
                , sortDirection :: SortDirection
                } deriving Show
 
@@ -105,12 +105,6 @@ data FromPart = -- Used as "... FROM foo AS bar ...", but also as
               { fExpr          :: FromExpr        -- ^ The aliased expression.
               , fName          :: String          -- ^ The name of the alias.
               , optColumns     :: Maybe [String]  -- ^ Optional column names.
-              }
-                -- Inner join of two from parts. TODO always aliased? maybe remove
-              | FPInnerJoin
-              { leftPart       :: FromPart        -- ^ The left part of the join.
-              , rightPart      :: FromPart        -- ^ The right part of the join.
-              , joinCondition  :: ValueExpr       -- ^ The join condition.
               } deriving Show
 
 -- A reference type used for placeholders.
@@ -136,36 +130,40 @@ data FromExpr = -- Contains a subquery (e.g. "SELECT * FROM (TABLE foo) f;"),
 -- select clause.
 data SelectColumn = -- | @SELECT foo AS bar ...@
                     SCAlias
-                  { sExpr    :: SelectExpr  -- ^ The value expression aliased.
-                  , sName    :: String      -- ^ The name of the alias.
+                  { sExpr    :: AdvancedExpr -- ^ The value expression aliased.
+                  , sName    :: String       -- ^ The name of the alias.
                   } deriving Show
 
--- | An expression which can only occur within a select clause.
-data SelectExpr = -- | Encapsulates a value expression.
-                  SEValueExpr
-                { valueExpr   :: ValueExpr    -- ^ The value expression.
-                }
-                  -- | @ROW_NUMBER() OVER (PARTITION BY p ORDER BY ...)@
-                | SERowNum
-                {  -- | The expression to partition by.
-                  optPartCol  :: Maybe ValueExpr
-                , orderBy     :: [OrderExpr]  -- ^ Order information.
-                }
-                  -- | @DENSE_RANK() OVER (ORDER BY ...)@
-                | SEDenseRank
-                { orderBy     :: [OrderExpr]
-                }
-                | SERank
-                { orderBy     :: [OrderExpr]
-                }
-                  -- | Aggregate function expression. 
-                | SEAggregate
-                { -- | The optional value expression used (e.g. @COUNT@ does
-                  -- not need one).
-                  optValueExpr :: Maybe ValueExpr
-                , -- | The function used to form the aggregate.
-                  aFunction    :: AggregateFunction
-                } deriving Show
+-- | Basic value expressions extended by aggregates and window functions.
+data AdvancedExpr =
+      -- | Encapsulates the base cases.
+      AEBase
+    { valueExpr   :: ValueExprTemplate AdvancedExpr
+                        -- ^ The value expression.
+    }
+      -- | @ROW_NUMBER() OVER (PARTITION BY p ORDER BY ...)@
+    | AERowNum
+    { -- | The expression to partition by.
+      optPartCol  :: Maybe AdvancedExpr
+    , orderBy     :: [OrderExpr]  -- ^ Order information.
+    }
+      -- | @DENSE_RANK() OVER (ORDER BY ...)@
+    | AEDenseRank
+    { orderBy     :: [OrderExpr]
+    }
+    | AERank
+    { orderBy     :: [OrderExpr]
+    }
+      -- | Aggregate function expression. 
+    | AEAggregate
+    { -- | The optional value expression used (e.g. @COUNT@ does
+        -- not need one). Aggregates can't be nested.
+        optValueExpr :: Maybe ColumnExpr
+    , -- | The function used to form the aggregate.
+        aFunction    :: AggregateFunction
+    } deriving Show
+
+type AdvancedExprBase = ValueExprTemplate AdvancedExpr
 
 -- | Aggregate functions.
 data AggregateFunction = AFAvg
@@ -177,48 +175,56 @@ data AggregateFunction = AFAvg
                        | AFAny
                        deriving Show
 
--- | Represents a value expression which can occur within several SQL parts.
--- FIXME merge VECast and VENot into UnaryFunction
-data ValueExpr = -- | Encapsulates a representation of a SQL value.
-                 VEValue
-               { value        :: Value          -- ^ The value contained.
-               }
-                 -- | A column.
-               | VEColumn
-               { cName        :: String         -- ^ The name of the column.
-                 -- | The optional prefix of the column.
-               , cPrefix      :: Maybe String
-               }
-                 -- | A type cast (e.g. @CAST(1 AS DOUBLE PRECISION)@).
-                 --     
-                 -- 
-               | VECast
-               { target       :: ValueExpr      -- ^ The target of the cast.
-               , type_        :: DataType       -- ^ The type to cast into.
-               }
-                 -- | Application of a binary function.
-               | VEBinApp
-               { binFun       :: BinaryFunction -- ^ The applied function.
-               , firstExpr    :: ValueExpr      -- ^ The first operand.
-               , secondExpr   :: ValueExpr      -- ^ The second operand.
-               }
-               | VEUnApp
-               { unFun        :: UnaryFunction  -- ^ The applied function
-               , arg          :: ValueExpr      -- ^ The operand
-               }
-                 -- | Application of the not function.
-               | VENot
-               { nTarget      :: ValueExpr      -- ^ The expression to negate.
-               }
-                 -- | e.g. @EXISTS (VALUES (1))@
-               | VEExists
-               { existsQuery  :: ValueQuery     -- ^ The query to check on.
-               }
-                 -- | e.g. @1 IN (VALUES (1))@
-               | VEIn
-               { inExpr       :: ValueExpr      -- ^ The value to check for.
-               , inQuery      :: ValueQuery     -- ^ The query to check in.
-               } deriving Show
+-- | A template which allows the definition of a mutual recursive type for value
+-- expressions, such that it can be extended with further constructors by other
+-- data definitions.
+data ValueExprTemplate rec =
+      -- | Encapsulates a representation of a SQL value.
+      VEValue
+    { value        :: Value          -- ^ The value contained.
+    }
+      -- | A column.
+    | VEColumn
+    { cName        :: String         -- ^ The name of the column.
+      -- | The optional prefix of the column.
+    , cPrefix      :: Maybe String
+    }
+      -- | A type cast (e.g. @CAST(1 AS DOUBLE PRECISION)@).
+    | VECast
+    { target       :: rec            -- ^ The target of the cast.
+    , type_        :: DataType       -- ^ The type to cast into.
+    }
+     -- | Application of a binary function.
+    | VEBinApp
+    { binFun       :: BinaryFunction -- ^ The applied function.
+    , firstExpr    :: rec            -- ^ The first operand.
+    , secondExpr   :: rec            -- ^ The second operand.
+    }
+    | VEUnApp
+    { unFun        :: UnaryFunction  -- ^ The applied function
+    , arg          :: rec            -- ^ The operand
+    }
+      -- | Application of the not function.
+    | VENot
+    { nTarget      :: rec            -- ^ The expression to negate.
+    }
+      -- | e.g. @EXISTS (VALUES (1))@
+    | VEExists
+    { existsQuery  :: ValueQuery     -- ^ The query to check on.
+    }
+      -- | e.g. @1 IN (VALUES (1))@
+    | VEIn
+    { inExpr       :: rec            -- ^ The value to check for.
+    , inQuery      :: ValueQuery     -- ^ The query to check in.
+    } deriving Show
+-- FIXME merge VECast and VENot into UnaryFunction (maybe not possible)
+
+-- | A type which does not extend basic value expressions, and therefore can
+-- appear in any SQL clause.
+newtype ColumnExpr = CEBase (ValueExprTemplate ColumnExpr)
+                     deriving Show
+
+type ColumnExprBase = (ValueExprTemplate ColumnExpr)
 
 -- | Types of binary functions.
 data BinaryFunction = BFPlus

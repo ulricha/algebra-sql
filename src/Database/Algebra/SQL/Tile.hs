@@ -36,7 +36,8 @@ import Database.Algebra.SQL.Query.Util
     ( emptySelectStmt
     , mkSubQuery
     , mkPCol
-    , affectsSortOrder
+    , affectsSortOrderAE
+    , affectsSortOrderCE
     )
 
 -- | A tile internal reference type.
@@ -238,10 +239,11 @@ transformNullaryOp :: A.NullOp -> TransformMonad TileTree
 transformNullaryOp (A.LitTable [] schema) = do
     alias <- generateAliasName
 
-    let sFun n   = Q.SCAlias (Q.SEValueExpr $ mkPCol alias n) n
+    let sFun n   = Q.SCAlias (Q.AEBase $ mkPCol alias n) n
         sClause  = map (sFun . fst) schema
-        castedNull ty = Q.VECast (Q.VEValue Q.VNull) (translateATy ty)
-        fLiteral = Q.FPAlias (Q.FESubQuery $ Q.VQLiteral $ [map (castedNull . snd) schema])
+        castedNull ty = Q.CEBase $ Q.VECast (Q.CEBase $ Q.VEValue Q.VNull)
+                                            (translateATy ty)
+        fLiteral = Q.FPAlias (Q.FESubQuery $ Q.VQLiteral [map (castedNull . snd) schema])
                              alias
                              $ Just $ map fst schema
 
@@ -250,13 +252,13 @@ transformNullaryOp (A.LitTable [] schema) = do
              emptySelectStmt
              { Q.selectClause = sClause
              , Q.fromClause = [fLiteral]
-             , Q.whereClause = Just (Q.VEValue $ Q.VBoolean False)
+             , Q.whereClause = Just (Q.CEBase . Q.VEValue $ Q.VBoolean False)
              }
              []
 transformNullaryOp (A.LitTable tuples schema) = do
     alias <- generateAliasName
 
-    let sFun n   = Q.SCAlias (Q.SEValueExpr $ mkPCol alias n) n
+    let sFun n   = Q.SCAlias (Q.AEBase $ mkPCol alias n) n
         sClause  = map (sFun . fst) schema
         fLiteral = Q.FPAlias (Q.FESubQuery $ Q.VQLiteral $ map tMap tuples)
                              alias
@@ -269,12 +271,12 @@ transformNullaryOp (A.LitTable tuples schema) = do
              , Q.fromClause = [fLiteral]
              }
              []
-  where tMap = map $ Q.VEValue . translateAVal 
+  where tMap = map $ Q.CEBase . Q.VEValue . translateAVal 
 
 transformNullaryOp (A.TableRef (name, info, _))   = do
     alias <- generateAliasName
     
-    let f (n, _) = Q.SCAlias (Q.SEValueExpr $ mkPCol alias n) n
+    let f (n, _) = Q.SCAlias (Q.AEBase $ mkPCol alias n) n
         body     =
             emptySelectStmt
             { -- Map the columns of the table reference to the given
@@ -292,8 +294,8 @@ transformNullaryOp (A.TableRef (name, info, _))   = do
 
 
 -- | Abstraktion for rank operators.
-transformUnOpRank :: -- SelectExpr constructor.
-                     ([Q.OrderExpr] -> Q.SelectExpr)
+transformUnOpRank :: -- AdvancedExpr constructor.
+                     ([Q.OrderExpr] -> Q.AdvancedExpr)
                   -> (String, [A.SortAttr])
                   -> C.AlgNode
                   -> TransformMonad TileTree
@@ -319,11 +321,11 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
 
     let sClause              = Q.selectClause select
-        inline               = inlineColumn sClause
-        project (col, alias) = Q.SCAlias (inlineSE sClause col) alias
+        inline               = inlineAE sClause
+        project (col, alias) = Q.SCAlias (inline col) alias
         itemi i              = "item" ++ show i
         payloadProjs         =
-            zipWith (\(A.PayloadCol col) i -> Q.SCAlias (inlineSE sClause col) (itemi i))
+            zipWith (\(A.PayloadCol col) i -> Q.SCAlias (inlineAE sClause col) (itemi i))
                     payloadCols
                     [1..]
 
@@ -336,9 +338,8 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
                -- since SQL99 defines different semantics.
                Q.orderByClause =
                    map (flip Q.OE Q.Ascending)
-                       $ descrColAdder . discardConstValueExprs
+                       $ descrColAdder . discardConstAdvancedExprs
                          $ map inline posOrderList
-                         -- $ map (\c -> Q.VEColumn c Nothing) $ descrOrderList ++ posOrderList
              }
              children
   where
@@ -346,7 +347,7 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
         Nothing               -> (id, [])
         -- Project and sort. Since descr gets added as new alias we can use it
         -- in the ORDER BY clause.
-        Just (A.DescrCol col) -> ( (:) $ Q.VEColumn "descr" Nothing
+        Just (A.DescrCol col) -> ( (:) $ Q.AEBase $ Q.VEColumn "descr" Nothing
                                  , [(col, "descr")]
                                  )
 
@@ -361,12 +362,12 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
     attachColFunUnOp colFun (TileNode False) c
   where colFun sClause = Q.SCAlias rowNumExpr name
-          where rowNumExpr = Q.SERowNum
-                             (liftM (inlineColumn sClause) optPart)
+          where rowNumExpr = Q.AERowNum
+                             (liftM (inlineAE sClause) optPart)
                              $ asOrderExprList sClause sortList
 
-transformUnOp (A.RowRank inf) c = transformUnOpRank Q.SEDenseRank inf c
-transformUnOp (A.Rank inf) c = transformUnOpRank Q.SERank inf c
+transformUnOp (A.RowRank inf) c = transformUnOpRank Q.AEDenseRank inf c
+transformUnOp (A.Rank inf) c = transformUnOpRank Q.AERank inf c
 transformUnOp (A.Project projList) c = do
     
     (select, children) <- transformAsOpenSelectStmt c
@@ -374,8 +375,8 @@ transformUnOp (A.Project projList) c = do
     let sClause  = Q.selectClause select
         -- Inlining is obligatory here, since we possibly eliminate referenced
         -- columns. ('translateExpr' inlines columns.)
-        f (n, e) = Q.SCAlias (Q.SEValueExpr tE) n
-          where tE = translateExpr (Just sClause) e
+        f (n, e) = Q.SCAlias tE n
+          where tE = translateExprAE (Just sClause) e
 
     return $ TileNode
              True
@@ -391,7 +392,7 @@ transformUnOp (A.Select expr) c = do
     
     return $ TileNode
              True
-             ( appendToWhere ( translateExpr
+             ( appendToWhere ( translateExprCE
                                (Just $ Q.selectClause select)
                                expr
                              )
@@ -410,32 +411,34 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
     
     (select, children) <- transformAsOpenSelectStmt c
 
-    let sClause         = Q.selectClause select
-        translateE      = translateExpr $ Just sClause
-        maybeTranslateE = liftM translateE
+    let sClause          = Q.selectClause select
+        translateE       = translateExprCE $ Just sClause
+        maybeTranslateE  = liftM translateE
         -- Inlining here is obligatory, since we could eliminate referenced
         -- columns. (This is similar to projection.)
-        aggrToSE (a, n) = Q.SCAlias ( let (fun, optExpr) = translateAggrType a
-                                      in Q.SEAggregate (maybeTranslateE optExpr)
+        aggrToAE (a, n)  = Q.SCAlias ( let (fun, optExpr) = translateAggrType a
+                                      in Q.AEAggregate (maybeTranslateE optExpr)
                                                        fun
                                     )
                                     n
 
-        partValueExprs  = map (second translateE) partExprMapping
+        partValueExprs   = map (second translateE) partExprMapping
+        partAdvancedExpr = map (second $ translateExprAE $ Just sClause) partExprMapping
 
-        wrapSCAlias (name, valueExpr)
+
+        wrapSCAlias (name, advancedExpr)
                         =
-            Q.SCAlias (Q.SEValueExpr valueExpr) name
+            Q.SCAlias advancedExpr name
 
     return $ TileNode
              False
              select
              { Q.selectClause =
-                   map wrapSCAlias partValueExprs ++ map aggrToSE aggrs
+                   map wrapSCAlias partAdvancedExpr ++ map aggrToAE aggrs
              , -- Since SQL treats numbers in the group by clause as column
                -- indices, filter them out. (They do not change the semantics
                -- anyway.)
-               Q.groupByClause = discardConstValueExprs $ map snd partValueExprs
+               Q.groupByClause = discardConstColumnExprs $ map snd partValueExprs
              }
              children
 
@@ -539,8 +542,8 @@ transformBinOp (A.EqJoin (lName, rName)) c0 c1 = do
     (select, children) <- transformCJToSelect c0 c1
 
     let sClause = Q.selectClause select
-        cond    = mkEqual (inlineColumn sClause lName)
-                          $ inlineColumn sClause rName
+        cond    = mkEqual (inlineCE sClause lName)
+                          $ inlineCE sClause rName
 
     return $ TileNode True (appendToWhere cond select) children
 
@@ -564,7 +567,7 @@ transformBinOp (A.ThetaJoin conditions) c0 c1  = do
 transformBinOp (A.SemiJoin cs) c0 c1          =
     transformExistsJoin cs c0 c1 id
 transformBinOp (A.AntiJoin cs) c0 c1          =
-    transformExistsJoin cs c0 c1 Q.VENot
+    transformExistsJoin cs c0 c1 (Q.CEBase. Q.VENot)
 transformBinOp (A.DisjUnion ()) c0 c1         =
     transformBinSetOp Q.SOUnionAll c0 c1
 transformBinOp (A.Difference ()) c0 c1        =
@@ -573,7 +576,7 @@ transformBinOp (A.Difference ()) c0 c1        =
 transformExistsJoin :: A.SemInfJoin
                     -> C.AlgNode 
                     -> C.AlgNode
-                    -> (Q.ValueExpr -> Q.ValueExpr)
+                    -> (Q.ColumnExpr -> Q.ColumnExpr)
                     -> TransformMonad TileTree
 transformExistsJoin conditions c0 c1 existsWrapF = case result of
     (Nothing, _)      -> do
@@ -582,7 +585,10 @@ transformExistsJoin conditions c0 c1 existsWrapF = case result of
         (select0, children0) <- transformAsOpenSelectStmt c0
         (select1, children1) <- transformAsOpenSelectStmt c1
 
-        let outerCond   = existsWrapF . Q.VEExists $ Q.VQSelect innerSelect
+        let outerCond   = existsWrapF
+                          . Q.CEBase
+                          . Q.VEExists
+                          $ Q.VQSelect innerSelect
             innerSelect = foldr appendToWhere select1 innerConds
             innerConds  = map f conditions
             f           = translateInlinedJoinCond (Q.selectClause select0)
@@ -596,13 +602,13 @@ transformExistsJoin conditions c0 c1 existsWrapF = case result of
         (select1, children1) <- transformAsOpenSelectStmt c1
        
         let -- Embedd the right query into the where clause of the left one.
-            leftCond    = existsWrapF $ Q.VEIn (inlineColumn lSClause l)
-                                        $ Q.VQSelect rightSelect
+            leftCond    = existsWrapF $ Q.CEBase $ Q.VEIn (inlineCE lSClause l)
+                                                   $ Q.VQSelect rightSelect
             -- Embedd all conditions in the right select, and set select clause
             -- to the right part of the equal join condition.
             rightSelect = (foldr f select1 cs) { Q.selectClause = [rightSCol] }
             f           = appendToWhere . translateInlinedJoinCond lSClause rSClause
-            rightSCol   = Q.SCAlias (Q.SEValueExpr $ inlineColumn rSClause r) r
+            rightSCol   = Q.SCAlias (inlineAE rSClause r) r
             lSClause    = Q.selectClause select0
             rSClause    = Q.selectClause select1
 
@@ -695,84 +701,113 @@ asSelectColumn :: String
                -> String
                -> Q.SelectColumn
 asSelectColumn prefix columnName =
-    Q.SCAlias (Q.SEValueExpr $ mkPCol prefix columnName) columnName
+    Q.SCAlias (Q.AEBase $ mkPCol prefix columnName) columnName
 
 translateInlinedJoinCond :: [Q.SelectColumn] -- ^ Left select clause.
                          -> [Q.SelectColumn] -- ^ Right select clause.
                          -> (A.LeftAttrName, A.RightAttrName, A.JoinRel)
-                         -> Q.ValueExpr
+                         -> Q.ColumnExpr
 translateInlinedJoinCond lSClause rSClause j =
-    translateJoinCond j (inlineColumn lSClause) (inlineColumn rSClause)
+    translateJoinCond j (inlineCE lSClause) (inlineCE rSClause)
 
--- Remove all 'Q.ValueExpr's which are constant in their column value.
-discardConstValueExprs :: [Q.ValueExpr] -> [Q.ValueExpr]
-discardConstValueExprs = filter $ affectsSortOrder
+-- Remove all 'Q.ColumnExpr's which are constant in their column value.
+discardConstColumnExprs :: [Q.ColumnExpr] -> [Q.ColumnExpr]
+discardConstColumnExprs = filter $ affectsSortOrderCE
+
+discardConstAdvancedExprs :: [Q.AdvancedExpr] -> [Q.AdvancedExpr]
+discardConstAdvancedExprs = filter $ affectsSortOrderAE
 
 -- Translates a '[A.SortAttr]' with inlining of value expressions and filtering
--- of constant 'Q.ValueExpr' (they are of no use).
+-- of constant 'Q.AdvancedExpr' (they are of no use).
 asOrderExprList :: [Q.SelectColumn]
                 -> [A.SortAttr]
                 -> [Q.OrderExpr]
 asOrderExprList sClause si =
-    filter (affectsSortOrder . Q.oExpr)
-           $ translateSortInf si (inlineColumn sClause)
+    filter (affectsSortOrderAE . Q.oExpr)
+           $ translateSortInf si (inlineAE sClause)
 
 -- | Uses the select clause to try to inline an aliased value. 
-inlineColumn :: [Q.SelectColumn]
-             -> String
-             -> Q.ValueExpr
-inlineColumn selectClause attrName =
-    fromMaybe (mkCol attrName) $ extractFromAlias attrName selectClause
-
--- | Tries to get a value expression from within a 'SCAlias'.
-extractFromAlias :: String
-                 -> [Q.SelectColumn]
-                 -> Maybe Q.ValueExpr
-extractFromAlias alias =
-    -- Fold the list from left to right because we normally add columns from the
-    -- left.
-    foldr f Nothing
-  where f (Q.SCAlias (Q.SEValueExpr e) a) r = if alias == a then return e
-                                                            else r
-        f _                               r = r
+inlineCE :: [Q.SelectColumn]
+         -> String
+         -> Q.ColumnExpr
+inlineCE selectClause col =
+    fromMaybe (Q.CEBase $ Q.VEColumn col Nothing)
+              $ convertAEToCE $ inlineAE selectClause col
 
 -- | Uses the select clause to try to inline an aliased select
 -- expression.
-inlineSE :: [Q.SelectColumn]
+inlineAE :: [Q.SelectColumn]
          -> String
-         -> Q.SelectExpr
-inlineSE selectClause col =
-    fromMaybe (Q.SEValueExpr $ mkCol col) $ foldr f Nothing selectClause
+         -> Q.AdvancedExpr
+inlineAE selectClause col =
+    fromMaybe (Q.AEBase $ mkCol col) $ foldr f Nothing selectClause
   where
     f (Q.SCAlias se a) r = if col == a then return se
                                        else r
 
--- | Shorthand to make an unprefixed column value expression.
+-- | Converts an 'Q.AdvancedExpr' to a 'Q.ColumnExpr', if possible.
+convertAEToCE :: Q.AdvancedExpr -> Maybe Q.ColumnExpr
+convertAEToCE ae = case ae of
+    Q.AEBase aeb -> do
+        ceb <- convertBase aeb
+        return $ Q.CEBase ceb
+    _            -> Nothing
+  where
+    convertBase :: Q.AdvancedExprBase
+                -> Maybe Q.ColumnExprBase
+    convertBase abt = case abt of
+        Q.VEValue v            -> return $ Q.VEValue v
+        Q.VEColumn n p         -> return $ Q.VEColumn n p
+        Q.VECast rec t         -> do
+            e <- convertAEToCE rec
+            return $ Q.VECast e t
+
+        Q.VEBinApp f lrec rrec -> do
+            l <- convertAEToCE lrec
+            r <- convertAEToCE rrec
+            return $ Q.VEBinApp f l r
+
+        Q.VEUnApp f rec        -> do
+            e <- convertAEToCE rec
+            return $ Q.VEUnApp f e
+
+        Q.VENot rec            -> do
+            e <- convertAEToCE rec
+            return $ Q.VENot e
+
+        Q.VEExists q           -> return $ Q.VEExists q
+        Q.VEIn rec q           -> do
+            e <- convertAEToCE rec
+            return $ Q.VEIn e q
+
+-- | Shorthand to make an unprefixed column.
 mkCol :: String
-      -> Q.ValueExpr
+      -> Q.ValueExprTemplate a
 mkCol c = Q.VEColumn c Nothing
 
--- | Shorthand to apply the equal function to value expressions.
-mkEqual :: Q.ValueExpr
-        -> Q.ValueExpr
-        -> Q.ValueExpr
-mkEqual = Q.VEBinApp Q.BFEqual
+-- | Shorthand to apply the equal function to column expressions.
+mkEqual :: Q.ColumnExpr
+        -> Q.ColumnExpr
+        -> Q.ColumnExpr
+mkEqual a b = Q.CEBase $ Q.VEBinApp Q.BFEqual a b
 
-mkAnd :: Q.ValueExpr
-      -> Q.ValueExpr
-      -> Q.ValueExpr
-mkAnd = Q.VEBinApp Q.BFAnd
+mkAnd :: Q.ColumnExpr
+      -> Q.ColumnExpr
+      -> Q.ColumnExpr
+mkAnd a b = Q.CEBase $ Q.VEBinApp Q.BFAnd a b
 
-mergeWhereClause :: Maybe Q.ValueExpr -> Maybe Q.ValueExpr -> Maybe Q.ValueExpr
+mergeWhereClause :: Maybe Q.ColumnExpr
+                 -> Maybe Q.ColumnExpr
+                 -> Maybe Q.ColumnExpr
 mergeWhereClause a b = case a of
     Nothing -> b
     Just e0 -> case b of
         Nothing -> a
         Just e1 -> Just $ mkAnd e0 e1
 
-appendToWhere :: Q.ValueExpr        -- ^ The expression added with logical and.
-              -> Q.SelectStmt       -- ^ The select statement to add to.
-              -> Q.SelectStmt       -- ^ The result.
+appendToWhere :: Q.ColumnExpr -- ^ The expression added with logical and.
+              -> Q.SelectStmt -- ^ The select statement to add to.
+              -> Q.SelectStmt -- ^ The result.
 appendToWhere cond select = select
                             { Q.whereClause =
                                   case Q.whereClause select of
@@ -808,31 +843,45 @@ translateAggrType aggr = case aggr of
     A.All e  -> (Q.AFAll, Just e)
     A.Any e  -> (Q.AFAny, Just e)
 
-translateExpr :: Maybe [Q.SelectColumn] -> A.Expr -> Q.ValueExpr
-translateExpr optSelectClause expr = case expr of
-    A.BinAppE f e1 e2 ->
-        Q.VEBinApp (translateBinFun f)
-                   (translateExpr optSelectClause e1)
-                   $ translateExpr optSelectClause e2
-    A.UnAppE f e      ->
-        case f of
-            A.Not    -> Q.VENot tE
-            A.Cast t -> Q.VECast tE $ translateATy t
-            A.Sin    -> Q.VEUnApp Q.UFSin tE
-            A.Cos    -> Q.VEUnApp Q.UFCos tE
-            A.Tan    -> Q.VEUnApp Q.UFTan tE
-            A.ASin   -> Q.VEUnApp Q.UFASin tE
-            A.ACos   -> Q.VEUnApp Q.UFACos tE
-            A.ATan   -> Q.VEUnApp Q.UFATan tE
-            A.Sqrt   -> Q.VEUnApp Q.UFSqrt tE
-            A.Log    -> Q.VEUnApp Q.UFLog tE
-            A.Exp    -> Q.VEUnApp Q.UFExp tE
+translateExprValueExprTemplate :: (Maybe [Q.SelectColumn] -> A.Expr -> a)
+                            -> (Q.ValueExprTemplate a -> a)
+                            -> ([Q.SelectColumn] -> String -> a)
+                            -> Maybe [Q.SelectColumn]
+                            -> A.Expr
+                            -> a
+translateExprValueExprTemplate rec wrap inline optSelectClause expr =
+    case expr of
+        A.BinAppE f e1 e2 ->
+            wrap $ Q.VEBinApp (translateBinFun f)
+                              (rec optSelectClause e1)
+                              $ rec optSelectClause e2
+        A.UnAppE f e      ->
+            wrap $ case f of
+                A.Not    -> Q.VENot tE
+                A.Cast t -> Q.VECast tE $ translateATy t
+                A.Sin    -> Q.VEUnApp Q.UFSin tE
+                A.Cos    -> Q.VEUnApp Q.UFCos tE
+                A.Tan    -> Q.VEUnApp Q.UFTan tE
+                A.ASin   -> Q.VEUnApp Q.UFASin tE
+                A.ACos   -> Q.VEUnApp Q.UFACos tE
+                A.ATan   -> Q.VEUnApp Q.UFATan tE
+                A.Sqrt   -> Q.VEUnApp Q.UFSqrt tE
+                A.Log    -> Q.VEUnApp Q.UFLog tE
+                A.Exp    -> Q.VEUnApp Q.UFExp tE
 
-      where tE = translateExpr optSelectClause e
-    A.ColE n          -> case optSelectClause of
-        Just s  -> inlineColumn s n
-        Nothing -> mkCol n
-    A.ConstE v        -> Q.VEValue $ translateAVal v
+          where
+            tE = rec optSelectClause e
+
+        A.ColE n          -> case optSelectClause of
+            Just s  -> inline s n
+            Nothing -> wrap $ mkCol n
+        A.ConstE v        -> wrap $ Q.VEValue $ translateAVal v
+
+translateExprCE :: Maybe [Q.SelectColumn] -> A.Expr -> Q.ColumnExpr
+translateExprCE = translateExprValueExprTemplate translateExprCE Q.CEBase inlineCE
+
+translateExprAE :: Maybe [Q.SelectColumn] -> A.Expr -> Q.AdvancedExpr
+translateExprAE = translateExprValueExprTemplate translateExprAE Q.AEBase inlineAE
 
 translateBinFun :: A.BinFun -> Q.BinaryFunction
 translateBinFun f = case f of
@@ -856,19 +905,19 @@ translateBinFun f = case f of
 -- | Translate sort information into '[Q.OrderExpr]', using the column
 -- function, which takes a 'String'.
 translateSortInf :: [A.SortAttr]
-                 -> (String -> Q.ValueExpr)
+                 -> (String -> Q.AdvancedExpr)
                  -> [Q.OrderExpr]
 translateSortInf si colFun = map f si
     where f (n, d) = Q.OE (colFun n) $ translateSortDir d
 
 
--- | Translate a single join condition into it's 'Q.ValueExpr' equivalent.
+-- | Translate a single join condition into it's 'Q.ColumnExpr' equivalent.
 translateJoinCond :: (A.LeftAttrName, A.RightAttrName, A.JoinRel)
-                  -> (String -> Q.ValueExpr) -- ^ Left column function.
-                  -> (String -> Q.ValueExpr) -- ^ Right column function.
-                  -> Q.ValueExpr
+                  -> (String -> Q.ColumnExpr) -- ^ Left column function.
+                  -> (String -> Q.ColumnExpr) -- ^ Right column function.
+                  -> Q.ColumnExpr
 translateJoinCond (l, r, j) lColFun rColFun =
-    Q.VEBinApp (translateJoinRel j) (lColFun l) (rColFun r)
+    Q.CEBase $ Q.VEBinApp (translateJoinRel j) (lColFun l) (rColFun r)
 
 translateSortDir :: A.SortDir -> Q.SortDirection
 translateSortDir d = case d of
