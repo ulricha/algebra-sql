@@ -11,7 +11,7 @@ import Database.Algebra.SQL.Query as Q
 
 -- | Helper value to construct select statements.
 emptySelectStmt :: Q.SelectStmt
-emptySelectStmt = Q.SelectStmt [] False [] Nothing [] []
+emptySelectStmt = Q.SelectStmt [] False [] [] [] []
 
 -- | Shorthand to make a prefixed column value expression.
 mkPCol :: String

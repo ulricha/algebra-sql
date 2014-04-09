@@ -76,7 +76,7 @@ data SelectStmt = SelectStmt -- TODO do we need a window clause ?
                 , fromClause    :: [FromPart]   
 
                   -- | Conditional expression in the where clause.
-                , whereClause   :: Maybe ColumnExpr
+                , whereClause   :: [ColumnExpr]
                 
                   -- | The values to group by.
                 , groupByClause :: [ColumnExpr]

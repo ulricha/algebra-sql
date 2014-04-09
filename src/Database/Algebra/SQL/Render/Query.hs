@@ -123,6 +123,14 @@ renderSetOperation :: SetOperation -> Doc
 renderSetOperation SOUnionAll  = kw "UNION ALL"
 renderSetOperation SOExceptAll = kw "EXCEPT ALL"
 
+
+renderAndList :: CompatMode -> [ColumnExpr] -> Doc
+renderAndList compat l = case l of
+    [] -> kw "TRUE"
+    _  -> align $ hsep $ punctuate (linebreak <> kw "AND")
+                         $ map (renderColumnExpr compat) l
+
+
 renderSelectStmt :: CompatMode -> SelectStmt -> Doc
 renderSelectStmt compat stmt =
     kw "SELECT"
@@ -139,10 +147,10 @@ renderSelectStmt compat stmt =
                <> kw "FROM"
                <+> align (enlist $ map (renderFromPart compat) fromParts)
     <> case whereClause stmt of
-           Just valExpr -> linebreak
-                           <> kw "WHERE"
-                           <+> align ((renderColumnExpr compat) valExpr)
-           Nothing      -> empty
+           []             -> empty
+           l              -> linebreak
+                             <> kw "WHERE"
+                             <+> renderAndList compat l
     <> case groupByClause stmt of
            []      -> empty
            valExpr -> linebreak

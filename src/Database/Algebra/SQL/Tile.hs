@@ -252,7 +252,7 @@ transformNullaryOp (A.LitTable [] schema) = do
              emptySelectStmt
              { Q.selectClause = sClause
              , Q.fromClause = [fLiteral]
-             , Q.whereClause = Just (Q.CEBase . Q.VEValue $ Q.VBoolean False)
+             , Q.whereClause = [Q.CEBase . Q.VEValue $ Q.VBoolean False]
              }
              []
 transformNullaryOp (A.LitTable tuples schema) = do
@@ -513,9 +513,8 @@ transformBinCrossJoin c0 c1 = do
                             Q.selectClause select0 ++ Q.selectClause select1
                       , Q.fromClause =
                             Q.fromClause select0 ++ Q.fromClause select1
-                      , Q.whereClause =
-                            mergeWhereClause (Q.whereClause select0)
-                                             $ Q.whereClause select1
+                      , Q.whereClause = Q.whereClause select0
+                                        ++ Q.whereClause select1
                       }
                       -- Removing duplicates is not efficient here (since it
                       -- needs substitution on non-self joins).
@@ -796,24 +795,11 @@ mkAnd :: Q.ColumnExpr
       -> Q.ColumnExpr
 mkAnd a b = Q.CEBase $ Q.VEBinApp Q.BFAnd a b
 
-mergeWhereClause :: Maybe Q.ColumnExpr
-                 -> Maybe Q.ColumnExpr
-                 -> Maybe Q.ColumnExpr
-mergeWhereClause a b = case a of
-    Nothing -> b
-    Just e0 -> case b of
-        Nothing -> a
-        Just e1 -> Just $ mkAnd e0 e1
-
 appendToWhere :: Q.ColumnExpr -- ^ The expression added with logical and.
               -> Q.SelectStmt -- ^ The select statement to add to.
               -> Q.SelectStmt -- ^ The result.
-appendToWhere cond select = select
-                            { Q.whereClause =
-                                  case Q.whereClause select of
-                                      Nothing -> Just cond
-                                      Just e  -> Just $ mkAnd cond e
-                            }
+appendToWhere cond select =
+    select { Q.whereClause = cond : Q.whereClause select }
 
 mkFromPartVar :: Int
               -> String
