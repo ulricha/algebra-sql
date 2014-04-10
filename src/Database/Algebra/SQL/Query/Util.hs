@@ -61,9 +61,9 @@ affectsSortOrderAE e = case e of
 
 isMergeable :: Q.SelectStmt -> Bool
 isMergeable (Q.SelectStmt sClause d _ _ [] _) =
-    not $ d || any (isComplexSelectExpr . sExpr) sClause
+    not $ d || any (usesAdvancedExprs . sExpr) sClause
   where
-    isComplexSelectExpr e = case e of
+    usesAdvancedExprs e = case e of
         AEBase _ -> False
         _        -> True
 isMergeable _                                 = False
