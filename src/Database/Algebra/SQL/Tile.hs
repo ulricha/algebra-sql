@@ -810,6 +810,11 @@ translateAggrType aggr = case aggr of
 
 translateExpr :: Maybe [Q.SelectColumn] -> A.Expr -> Q.ValueExpr
 translateExpr optSelectClause expr = case expr of
+    A.IfE c t e        ->
+        Q.VECase (translateExpr optSelectClause c)
+                 (translateExpr optSelectClause t)
+                 (translateExpr optSelectClause e)
+                               
     A.BinAppE f e1 e2 ->
         Q.VEBinApp (translateBinFun f)
                    (translateExpr optSelectClause e1)

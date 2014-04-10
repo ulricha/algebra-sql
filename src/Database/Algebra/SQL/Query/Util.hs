@@ -30,13 +30,14 @@ mkSubQuery sel = Q.FPAlias (Q.FESubQuery $ Q.VQSelect sel)
 -- eliminate single values, everything else is optional. This means that some
 -- expressions have no effect on the sort order but will still return 'True'.
 affectsSortOrder :: Q.ValueExpr -> Bool
-affectsSortOrder e = case e of
+affectsSortOrder expr = case expr of
     -- A constant value won't affect the sort order.
     Q.VEValue _        -> False
     Q.VEColumn _ _     -> True
     Q.VECast e1 _      -> affectsSortOrder e1
     Q.VEBinApp _ e1 e2 -> affectsSortOrder e1 || affectsSortOrder e2
     Q.VEUnApp _ e1     -> affectsSortOrder e1
+    Q.VECase c t e     -> affectsSortOrder c || affectsSortOrder t || affectsSortOrder e
     Q.VENot e1         -> affectsSortOrder e1
     -- We have no correlated queries (in open tiles), but in case we get some,
     -- this is the most flexible solution.

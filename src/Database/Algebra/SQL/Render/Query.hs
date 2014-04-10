@@ -255,25 +255,33 @@ renderValueExpr :: CompatMode -> ValueExpr -> Doc
 renderValueExpr _ (VEValue v)            = renderValue v
 renderValueExpr _ (VEColumn n optPrefix) = renderOptPrefix optPrefix
                                            <> text n
-renderValueExpr compat (VECast v ty)          = kw "CAST" <> parens castExpr
+renderValueExpr compat (VECast v ty)     = kw "CAST" <> parens castExpr
   where castExpr = renderValueExpr compat v <+> kw "AS" <+> renderDataType ty
 
-renderValueExpr compat (VEBinApp f a b)       =
+renderValueExpr compat (VEBinApp f a b)  =
     parens $ renderValueExpr compat a
              <+> renderBinaryFunction f
              <+> renderValueExpr compat b
 
-renderValueExpr compat (VEUnApp f a)          =
+renderValueExpr compat (VEUnApp f a)     =
     parens $ renderUnaryFunction f <> parens (renderValueExpr compat a)
 
-renderValueExpr compat (VENot a)              =
+renderValueExpr compat (VENot a)         =
     parens $ kw "NOT" <+> renderValueExpr compat a
-renderValueExpr compat (VEExists q)           = kw "EXISTS" <+> renderSubQuery compat q
+renderValueExpr compat (VEExists q)      = kw "EXISTS" <+> renderSubQuery compat q
 
-renderValueExpr compat (VEIn v q)             =
+renderValueExpr compat (VEIn v q)        =
     parens $ renderValueExpr compat v
              <+> kw "IN"
              <+> renderSubQuery compat q
+
+renderValueExpr compat (VECase c t e)    =
+    text "CASE WHEN" <+> renderValueExpr compat c
+                     <+> text "THEN"
+                     <+> renderValueExpr compat t
+                     <+> text "ELSE"
+                     <+> renderValueExpr compat e
+                     <+> text "END"
 
 renderBinaryFunction :: BinaryFunction -> Doc
 renderBinaryFunction BFPlus         = op '+'

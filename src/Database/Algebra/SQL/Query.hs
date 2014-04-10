@@ -214,6 +214,14 @@ data ValueExpr = -- | Encapsulates a representation of a SQL value.
                | VEExists
                { existsQuery  :: ValueQuery     -- ^ The query to check on.
                }
+
+                 -- | CASE WHEN ELSE (restricted to one WHEN branch)
+               | VECase
+               { condExpr     :: ValueExpr
+               , thenBranch   :: ValueExpr
+               , elseBranch   :: ValueExpr
+               }
+
                  -- | e.g. @1 IN (VALUES (1))@
                | VEIn
                { inExpr       :: ValueExpr      -- ^ The value to check for.
