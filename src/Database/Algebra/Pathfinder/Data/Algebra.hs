@@ -203,6 +203,7 @@ data Expr = BinAppE BinFun Expr Expr
           | UnAppE UnFun Expr
           | ColE AttrName
           | ConstE AVal
+          | IfE Expr Expr Expr
           deriving (Eq, Ord, Generic)
               
 instance Show Expr where
@@ -210,6 +211,7 @@ instance Show Expr where
   show (UnAppE f e)      = show f ++ "(" ++ show e ++ ")"
   show (ColE c)          = c
   show (ConstE v)        = show v
+  show (IfE c t e)       = "if " ++ show c ++ " then " ++ show t ++ " else " ++ show e
 
 -- | New column name and the expression that generates the new column
 type Proj                = (NewAttrName, Expr)

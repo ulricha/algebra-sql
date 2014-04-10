@@ -211,6 +211,12 @@ data ValueExprTemplate rec =
     | VEIn
     { inExpr       :: rec            -- ^ The value to check for.
     , inQuery      :: ValueQuery     -- ^ The query to check in.
+    }
+      -- | CASE WHEN ELSE (restricted to one WHEN branch)
+    | VECase
+    { condExpr     :: rec
+    , thenBranch   :: rec
+    , elseBranch   :: rec
     } deriving Show
 -- FIXME merge VECast and VENot into UnaryFunction (maybe not possible)
 

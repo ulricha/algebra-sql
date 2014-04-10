@@ -561,7 +561,7 @@ transformBinOp (A.ThetaJoin conditions) c0 c1  = do
 transformBinOp (A.SemiJoin cs) c0 c1          =
     transformExistsJoin cs c0 c1 id
 transformBinOp (A.AntiJoin cs) c0 c1          =
-    transformExistsJoin cs c0 c1 (Q.CEBase. Q.VENot)
+    transformExistsJoin cs c0 c1 (Q.CEBase . Q.VENot)
 transformBinOp (A.DisjUnion ()) c0 c1         =
     transformBinSetOp Q.SOUnionAll c0 c1
 transformBinOp (A.Difference ()) c0 c1        =
@@ -832,6 +832,11 @@ translateExprValueExprTemplate :: (Maybe [Q.SelectColumn] -> A.Expr -> a)
                                -> a
 translateExprValueExprTemplate rec wrap inline optSelectClause expr =
     case expr of
+        A.IfE c t e        ->
+            Q.VECase (rec optSelectClause c)
+                     (rec optSelectClause t)
+                     (rec optSelectClause e)
+                               
         A.BinAppE f e1 e2 ->
             wrap $ Q.VEBinApp (translateBinFun f)
                               (rec optSelectClause e1)
