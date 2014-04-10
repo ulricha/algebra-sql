@@ -750,29 +750,35 @@ convertAEToCE ae = case ae of
     convertBase :: Q.AdvancedExprBase
                 -> Maybe Q.ColumnExprBase
     convertBase abt = case abt of
-        Q.VEValue v            -> return $ Q.VEValue v
-        Q.VEColumn n p         -> return $ Q.VEColumn n p
-        Q.VECast rec t         -> do
+        Q.VEValue v             -> return $ Q.VEValue v
+        Q.VEColumn n p          -> return $ Q.VEColumn n p
+        Q.VECast rec t          -> do
             e <- convertAEToCE rec
             return $ Q.VECast e t
 
-        Q.VEBinApp f lrec rrec -> do
+        Q.VEBinApp f lrec rrec  -> do
             l <- convertAEToCE lrec
             r <- convertAEToCE rrec
             return $ Q.VEBinApp f l r
 
-        Q.VEUnApp f rec        -> do
+        Q.VEUnApp f rec         -> do
             e <- convertAEToCE rec
             return $ Q.VEUnApp f e
 
-        Q.VENot rec            -> do
+        Q.VENot rec             -> do
             e <- convertAEToCE rec
             return $ Q.VENot e
 
-        Q.VEExists q           -> return $ Q.VEExists q
-        Q.VEIn rec q           -> do
+        Q.VEExists q            -> return $ Q.VEExists q
+        Q.VEIn rec q            -> do
             e <- convertAEToCE rec
             return $ Q.VEIn e q
+        Q.VECase crec trec erec -> do
+            c <- convertAEToCE crec
+            t <- convertAEToCE trec
+            e <- convertAEToCE erec
+
+            return $ Q.VECase c t e
 
 -- | Shorthand to make an unprefixed column.
 mkCol :: String
@@ -833,9 +839,9 @@ translateExprValueExprTemplate :: (Maybe [Q.SelectColumn] -> A.Expr -> a)
 translateExprValueExprTemplate rec wrap inline optSelectClause expr =
     case expr of
         A.IfE c t e        ->
-            Q.VECase (rec optSelectClause c)
-                     (rec optSelectClause t)
-                     (rec optSelectClause e)
+            wrap $ Q.VECase (rec optSelectClause c)
+                            (rec optSelectClause t)
+                            (rec optSelectClause e)
                                
         A.BinAppE f e1 e2 ->
             wrap $ Q.VEBinApp (translateBinFun f)

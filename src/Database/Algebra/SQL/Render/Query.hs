@@ -262,13 +262,13 @@ renderValueExprTemplate renderRec compat e = case e of
     VEIn v q             -> parens $ renderRec compat v
                             <+> kw "IN"
                             <+> renderSubQuery compat q
-	VECase c t e		 ->
-	    text "CASE WHEN" <+> renderValueExpr compat c
-    	                 <+> text "THEN"
-    	                 <+> renderValueExpr compat t
-    	                 <+> text "ELSE"
-    	                 <+> renderValueExpr compat e
-    	                 <+> text "END"
+    VECase c t e         ->
+        text "CASE WHEN" <+> renderRec compat c
+                         <+> text "THEN"
+                         <+> renderRec compat t
+                         <+> text "ELSE"
+                         <+> renderRec compat e
+                         <+> text "END"
 
 -- | Render a VEBaseTemplate specialized to a AdvancedExpr.
 renderAdvancedExprBase :: CompatMode -> AdvancedExprBase -> Doc

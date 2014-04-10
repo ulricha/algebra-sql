@@ -45,7 +45,8 @@ affectsSortOrderValueExprTemplate affectsSortOrderRec e = case e of
     -- this is the most flexible solution.
     Q.VEExists _       -> True
     Q.VEIn _ _         -> True
-	Q.VECase c t e     -> affectsSortOrder c || affectsSortOrder t || affectsSortOrder e
+    Q.VECase c t e     ->
+        affectsSortOrderRec c || affectsSortOrderRec t || affectsSortOrderRec e
 
 affectsSortOrderCE :: Q.ColumnExpr -> Bool
 affectsSortOrderCE (Q.CEBase e) =
