@@ -31,7 +31,7 @@ data ValueQuery = VQSelect
                 }
                   -- Literal tables (e.g. "VALUES (1, 2), (2, 4)").
                 | VQLiteral
-                { rows       :: [[ColumnExpr]]  -- ^ The values contained.
+                { rows       :: [[ColumnExpr]] -- ^ The values contained.
                 }
                   -- The with query to bind value queries to names.
                 | VQWith
@@ -44,8 +44,8 @@ data ValueQuery = VQSelect
                   -- A binary set operation
                   -- (e.g. "TABLE foo UNION ALL TABLE bar").
                 | VQBinarySetOperation
-                { leftQuery  :: ValueQuery     -- ^ The left query.
-                , rightQuery :: ValueQuery     -- ^ The right query.
+                { leftQuery  :: ValueQuery -- ^ The left query.
+                , rightQuery :: ValueQuery -- ^ The right query.
                   -- The used (multi-) set operation.
                 , operation  :: SetOperation
                 } deriving Show
@@ -133,8 +133,7 @@ data SelectColumn = -- | @SELECT foo AS bar ...@
 data AdvancedExpr =
       -- | Encapsulates the base cases.
       AEBase
-    { valueExpr   :: ValueExprTemplate AdvancedExpr
-                        -- ^ The value expression.
+    { valueExpr   :: ValueExprTemplate AdvancedExpr -- ^ The value expression.
     }
       -- | @ROW_NUMBER() OVER (PARTITION BY p ORDER BY ...)@
     | AERowNum
@@ -151,13 +150,14 @@ data AdvancedExpr =
     }
       -- | Aggregate function expression. 
     | AEAggregate
-    { -- | The optional value expression used (e.g. @COUNT@ does
-        -- not need one). Aggregates can't be nested.
-        optValueExpr :: Maybe ColumnExpr
+    { -- | The optional column expression used (e.g. @COUNT@ does
+        -- not need one), since aggregates can't be nested.
+      optValueExpr :: Maybe ColumnExpr
     , -- | The function used to form the aggregate.
-        aFunction    :: AggregateFunction
+      aFunction    :: AggregateFunction
     } deriving Show
 
+-- | Shorthand for the value expression base part of 'AdvancedExpr'.
 type AdvancedExprBase = ValueExprTemplate AdvancedExpr
 
 -- | Aggregate functions.
@@ -225,6 +225,7 @@ data ValueExprTemplate rec =
 newtype ColumnExpr = CEBase (ValueExprTemplate ColumnExpr)
                      deriving Show
 
+-- | Shorthand for the value expression base part of 'ColumnExpr'.
 type ColumnExprBase = (ValueExprTemplate ColumnExpr)
 
 -- | Types of binary functions.

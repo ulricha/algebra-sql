@@ -73,22 +73,19 @@ renderDefinitionQuery compat (DQTemporaryTable query name) =
     createStmt
     <+>
     case compat of
-        SQL99      ->
-            as
-            <$> indentedQuery
-            -- Create the table with the result of the given value query.
-            <$> kw "WITH DATA ON COMMIT DROP"
-        MonetDB    -> 
-            as
-            <$> indentedQuery
-            -- Create the table with the result of the given value query.
-            <$> kw "WITH DATA ON COMMIT DROP"
         PostgreSQL ->
             -- PostgreSQL does not accept the default syntax. In order to
             -- achieve the same behaviour, the SQL code is rendered differently.
             kw "ON COMMIT DROP"
             <+> as
             <$> indentedQuery
+
+        -- Default implementation for SQL:1999 compliant DBMS. 
+        _          ->
+            as
+            <$> indentedQuery
+            -- Create the table with the result of the given value query.
+            <$> kw "WITH DATA ON COMMIT DROP"
   where
     createStmt    = kw "CREATE LOCAL TEMPORARY TABLE" <+> text name
     as            = kw "AS"
@@ -123,13 +120,13 @@ renderSetOperation :: SetOperation -> Doc
 renderSetOperation SOUnionAll  = kw "UNION ALL"
 renderSetOperation SOExceptAll = kw "EXCEPT ALL"
 
-
+-- | Render a conjunction list, renders the neutral element, when given the
+-- empty list.
 renderAndList :: CompatMode -> [ColumnExpr] -> Doc
 renderAndList compat l = case l of
     [] -> kw "TRUE"
     _  -> align $ hsep $ punctuate (linebreak <> kw "AND")
                          $ map (renderColumnExpr compat) l
-
 
 renderSelectStmt :: CompatMode -> SelectStmt -> Doc
 renderSelectStmt compat stmt =
@@ -227,15 +224,16 @@ renderAdvancedExpr compat (AERowNum partColumn order) =
                                       <> linebreak)
                                partColumn
 
-renderAdvancedExpr compat (AEDenseRank order)         = renderRank compat "DENSE_RANK() OVER"
-                                                          order
-renderAdvancedExpr compat (AERank order)              = renderRank compat "RANK() OVER" order
+renderAdvancedExpr compat (AEDenseRank order)         =
+    renderRank compat "DENSE_RANK() OVER" order
+renderAdvancedExpr compat (AERank order)              =
+    renderRank compat "RANK() OVER" order
 
 renderAdvancedExpr compat (AEAggregate optVE aggr)    =
     renderAggregateFunction compat aggr
     <> parens (maybe (char '*') (renderColumnExpr compat) optVE)
 
--- | Generic VEBaseTemplate renderer.
+-- | Generic 'ValueExprTemplate' renderer.
 renderValueExprTemplate :: (CompatMode -> a -> Doc)
                         -> CompatMode
                         -> ValueExprTemplate a
@@ -270,12 +268,12 @@ renderValueExprTemplate renderRec compat e = case e of
                          <+> renderRec compat e
                          <+> text "END"
 
--- | Render a VEBaseTemplate specialized to a AdvancedExpr.
+-- | Render a 'AdvancedExprBase' with the generic renderer.
 renderAdvancedExprBase :: CompatMode -> AdvancedExprBase -> Doc
 renderAdvancedExprBase = renderValueExprTemplate renderAdvancedExpr
     
 
--- | Render a VEBaseTemplate specialized to a AdvancedExpr.
+-- | Render a 'ColumnExprBase' with the generic renderer.
 renderColumnExprBase :: CompatMode -> ColumnExprBase -> Doc
 renderColumnExprBase = renderValueExprTemplate renderColumnExpr
 

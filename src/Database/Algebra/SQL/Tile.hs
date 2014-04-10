@@ -292,7 +292,7 @@ transformNullaryOp (A.TableRef (name, info, _))   = do
     return $ TileNode True body []
 
 
--- | Abstraktion for rank operators.
+-- | Abstraction for rank operators.
 transformUnOpRank :: -- AdvancedExpr constructor.
                      ([Q.OrderExpr] -> Q.AdvancedExpr)
                   -> (String, [A.SortAttr])
@@ -307,19 +307,17 @@ transformUnOpRank rankConstructor (name, sortList) =
                          name
     in attachColFunUnOp colFun (TileNode False)
 
-
 transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
 transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
     (select, children) <- transformAsSelectStmt c
-
 
     let sClause              = Q.selectClause select
         inline               = inlineAE sClause
         project (col, alias) = Q.SCAlias (inline col) alias
         itemi i              = "item" ++ show i
         payloadProjs         =
-            zipWith (\(A.PayloadCol col) i -> Q.SCAlias (inlineAE sClause col) (itemi i))
+            zipWith (\(A.PayloadCol col) i -> Q.SCAlias (inline col) (itemi i))
                     payloadCols
                     [1..]
 
@@ -454,7 +452,7 @@ attachColFunUnOp colFun ctor child = do
              select { Q.selectClause = colFun sClause : sClause }
              children
 
--- Abstracts over binary set operation operators.
+-- | Abstracts over binary set operation operators.
 transformBinSetOp :: Q.SetOperation
                   -> C.AlgNode
                   -> C.AlgNode
@@ -686,11 +684,12 @@ embedExternalReference extRef schema = do
                , [(varId, ReferenceLeaf extRef schema)]
                )
 
--- | Get the column names from a list of column names.
+-- | Generate a select clause with column names from a schema and a prefix.
 columnsFromSchema :: String -> [String] -> [Q.SelectColumn]
 columnsFromSchema p = map (asSelectColumn p)
 
--- | Creates an alias which points at a prefixed column with the same name.
+-- | Creates 'Q.SelectColumn' which points at a prefixed column with the same
+-- name.
 asSelectColumn :: String
                -> String
                -> Q.SelectColumn
@@ -704,15 +703,18 @@ translateInlinedJoinCond :: [Q.SelectColumn] -- ^ Left select clause.
 translateInlinedJoinCond lSClause rSClause j =
     translateJoinCond j (inlineCE lSClause) (inlineCE rSClause)
 
--- Remove all 'Q.ColumnExpr's which are constant in their column value.
+-- Remove all 'Q.ColumnExpr's which are constant (i.e. do not depend on a
+-- column).
 discardConstColumnExprs :: [Q.ColumnExpr] -> [Q.ColumnExpr]
-discardConstColumnExprs = filter $ affectsSortOrderCE
+discardConstColumnExprs = filter affectsSortOrderCE
 
+-- Remove all 'Q.AdvancedExpr's which are constant (i.e. do not depend on a
+-- column).
 discardConstAdvancedExprs :: [Q.AdvancedExpr] -> [Q.AdvancedExpr]
-discardConstAdvancedExprs = filter $ affectsSortOrderAE
+discardConstAdvancedExprs = filter affectsSortOrderAE
 
--- Translates a '[A.SortAttr]' with inlining of value expressions and filtering
--- of constant 'Q.AdvancedExpr' (they are of no use).
+-- Translates a '[A.SortAttr]' into a '[Q.OrderExpr]'. Column names will be
+-- inlined as an 'Q.AdvancedExpr', constant ones will be discarded.
 asOrderExprList :: [Q.SelectColumn]
                 -> [A.SortAttr]
                 -> [Q.OrderExpr]
@@ -720,7 +722,8 @@ asOrderExprList sClause si =
     filter (affectsSortOrderAE . Q.oExpr)
            $ translateSortInf si (inlineAE sClause)
 
--- | Uses the select clause to try to inline an aliased value. 
+-- | Search the select clause for a specific column definition and return it as
+-- 'Q.ColumnExpr'.
 inlineCE :: [Q.SelectColumn]
          -> String
          -> Q.ColumnExpr
@@ -728,15 +731,15 @@ inlineCE selectClause col =
     fromMaybe (Q.CEBase $ Q.VEColumn col Nothing)
               $ convertAEToCE $ inlineAE selectClause col
 
--- | Uses the select clause to try to inline an aliased select
--- expression.
+-- | Search the select clause for a specific column definition and return it as
+-- 'Q.AdvancedExpr'.
 inlineAE :: [Q.SelectColumn]
          -> String
          -> Q.AdvancedExpr
 inlineAE selectClause col =
     fromMaybe (Q.AEBase $ mkCol col) $ foldr f Nothing selectClause
   where
-    f (Q.SCAlias se a) r = if col == a then return se
+    f (Q.SCAlias ae a) r = if col == a then return ae
                                        else r
 
 -- | Converts an 'Q.AdvancedExpr' to a 'Q.ColumnExpr', if possible.
