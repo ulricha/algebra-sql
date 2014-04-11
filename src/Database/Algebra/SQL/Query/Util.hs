@@ -34,7 +34,7 @@ mkSubQuery sel = Q.FPAlias (Q.FESubQuery $ Q.VQSelect sel)
 affectsSortOrderValueExprTemplate :: (a -> Bool)
                                   -> Q.ValueExprTemplate a
                                   -> Bool
-affectsSortOrderValueExprTemplate affectsSortOrderRec e = case e of
+affectsSortOrderValueExprTemplate affectsSortOrderRec ve = case ve of
     -- A constant value won't affect the sort order.
     Q.VEValue _        -> False
     Q.VEColumn _ _     -> True
@@ -67,14 +67,14 @@ affectsSortOrderAE ae = case ae of
     -- TODO
     AEAggregate _ _   -> True
 
-isMergeable :: Q.SelectStmt -> Bool
-isMergeable (Q.SelectStmt sClause d _ _ [] _) =
-    not $ d || any (usesExtendedExprs . sExpr) sClause
-  where
-    usesExtendedExprs e = case e of
-        EEBase _ -> False
-        _        -> True
-isMergeable _                                 = False
+--isMergeable :: Q.SelectStmt -> Bool
+--isMergeable (Q.SelectStmt sClause d _ _ [] _) =
+--    not $ d || any (usesExtendedExprs . sExpr) sClause
+--  where
+--    usesExtendedExprs e = case e of
+--        EEBase _ -> False
+--        _        -> True
+--isMergeable _                                 = False
 
 -- | Search for references and try to merge a select stmt at that position.
 --deepMergeSelectStmt :: (Int -> (Bool, Q.SelectStmt)) -> Q.SelectStmt -> Q.SelectStmt

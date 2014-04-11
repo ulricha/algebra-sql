@@ -250,7 +250,6 @@ transformNullaryOp (A.LitTable [] schema) = do
                              $ Just $ map fst schema
 
     return $ TileNode
-             -- TODO Projection needed?
              (Set.fromList [T.FProjection, T.FFilter, T.FTable])
              emptySelectStmt
              { Q.selectClause = sClause
@@ -319,7 +318,7 @@ transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
 transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
     (childFeatures, select, children) <-
-        transformTerminated c $ opFeatures
+        transformTerminated c opFeatures
 
     let sClause              = Q.selectClause select
         inline               = inlineEE sClause
@@ -455,7 +454,8 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
              , -- Since SQL treats numbers in the group by clause as column
                -- indices, filter them out. (They do not change the semantics
                -- anyway.)
-               Q.groupByClause = discardConstColumnExprs $ map snd partColumnExprs
+               Q.groupByClause =
+                   filter affectsSortOrderCE $ map snd partColumnExprs
              }
              children
   where
@@ -534,11 +534,7 @@ transformBinCrossJoin c0 c1 = do
     -- We can simply concatenate everything, because all things are prefixed and
     -- cross join is associative.
     return ( Set.unions [childFeatures0, childFeatures1, opFeatures]
-           , -- Mergeable tiles are guaranteed to have at most a
-             -- select, from and where clause. (And since
-             -- 'tileToOpenSelectStmt' does this, we always get at most that
-             -- structure.)
-             emptySelectStmt
+           , emptySelectStmt
              { Q.selectClause =
                    Q.selectClause select0 ++ Q.selectClause select1
              , Q.fromClause =
@@ -546,10 +542,7 @@ transformBinCrossJoin c0 c1 = do
              , Q.whereClause = Q.whereClause select0
                                ++ Q.whereClause select1
              }
-           , -- Removing duplicates is not efficient here (since it
-             -- needs substitution on non-self joins).
-             -- Will be done automatically later on.
-             children0 ++ children1
+           , children0 ++ children1
            )
   where
     opFeatures = Set.fromList [T.FProjection, T.FTable, T.FFilter]
@@ -567,8 +560,8 @@ transformBinOp (A.EqJoin (lName, rName)) c0 c1 = do
     (childrenFeatures, select, children) <- transformBinCrossJoin c0 c1
 
     let sClause = Q.selectClause select
-        cond    = mkEqual (inlineCE sClause lName)
-                          $ inlineCE sClause rName
+        cond    = Q.CEBase $ Q.VEBinApp Q.BFEqual (inlineCE sClause lName)
+                                                  $ inlineCE sClause rName
 
     -- 'transformBinCrossJoin' already has the 'T.FFilter' feature.
     return $ TileNode childrenFeatures (appendToWhere cond select) children
@@ -578,18 +571,19 @@ transformBinOp (A.ThetaJoin conditions) c0 c1  = do
 
     (childrenFeatures, select, children) <- transformBinCrossJoin c0 c1
 
-    -- Is there at least one join conditon? TODO T.FFilter not used TODO add
-    -- extra features to transformBinCrossJoin
+    -- Is there at least one join conditon?
     if null conditions
+    -- TODO T.FFilter not used, but added to features
     then return $ TileNode childrenFeatures select children
     else do
 
         let sClause = Q.selectClause select
-            cond    = foldr mkAnd (head conds) (tail conds)
             conds   = map f conditions
             f       = translateInlinedJoinCond sClause sClause
 
-        return $ TileNode childrenFeatures (appendToWhere cond select) children
+        return $ TileNode childrenFeatures
+                          (appendAllToWhere conds select)
+                          children
 
 transformBinOp (A.SemiJoin cs) c0 c1          =
     transformExistsJoin cs c0 c1 id
@@ -610,7 +604,8 @@ transformExistsJoin conditions c0 c1 existsWrapF = do
     (childFeatures0, select0, children0) <-
         transformTerminated c0 opFeatures
 
-    -- Ignore operator features, since it will be nested.
+    -- Ignore operator features, since it will be nested and therefore
+    -- terminated.
     (_, select1, children1) <- transformTerminated c1 Set.empty
 
     let newFeatures = Set.union opFeatures childFeatures0
@@ -618,7 +613,7 @@ transformExistsJoin conditions c0 c1 existsWrapF = do
         ctor s      = TileNode newFeatures s newChildren
     
     case result of
-        (Nothing, _)      -> do
+        (Nothing, _)               -> do
             -- TODO in case we do not have merge conditions we can simply use
             -- the unmergeable but less nested select stmt on the right side
 
@@ -626,13 +621,13 @@ transformExistsJoin conditions c0 c1 existsWrapF = do
                               . Q.CEBase
                               . Q.VEExists
                               $ Q.VQSelect innerSelect
-                innerSelect = foldr appendToWhere select1 innerConds
+                innerSelect = appendAllToWhere innerConds select1
                 innerConds  = map f conditions
                 f           = translateInlinedJoinCond (Q.selectClause select0)
-                                                    $ Q.selectClause select1
+                                                       $ Q.selectClause select1
 
             return $ ctor (appendToWhere outerCond select0)
-        (Just (l, r), cs) -> do
+        (Just (l, r), conditions') -> do
            
             let -- Embedd the right query into the where clause of the left one.
                 leftCond    =
@@ -640,10 +635,10 @@ transformExistsJoin conditions c0 c1 existsWrapF = do
                                                     $ Q.VQSelect rightSelect
                 -- Embedd all conditions in the right select, and set select
                 -- clause to the right part of the equal join condition.
-                rightSelect = (foldr f select1 cs)
+                rightSelect = appendAllToWhere innerConds select1
                               { Q.selectClause = [rightSCol] }
-                f           =
-                    appendToWhere . translateInlinedJoinCond lSClause rSClause
+                innerConds  = map f conditions'
+                f           = translateInlinedJoinCond lSClause rSClause
                 rightSCol   = Q.SCAlias (inlineEE rSClause r) r
                 lSClause    = Q.selectClause select0
                 rSClause    = Q.selectClause select1
@@ -737,7 +732,7 @@ transformTerminated n topFs = do
 --tileToSelectStmt t = case t of
 --    TileNode _ body children -> return (body, children)
 --    ReferenceLeaf r s        -> embedExternalReference r s
---
+
 -- | Embeds an external reference into a 'Q.SelectStmt'.
 embedExternalReference :: ExternalReference
                        -> [String]
@@ -775,16 +770,6 @@ translateInlinedJoinCond :: [Q.SelectColumn] -- ^ Left select clause.
                          -> Q.ColumnExpr
 translateInlinedJoinCond lSClause rSClause j =
     translateJoinCond j (inlineCE lSClause) (inlineCE rSClause)
-
--- Remove all 'Q.ColumnExpr's which are constant (i.e. do not depend on a
--- column).
-discardConstColumnExprs :: [Q.ColumnExpr] -> [Q.ColumnExpr]
-discardConstColumnExprs = filter affectsSortOrderCE
-
--- Remove all 'Q.AggrExpr's which are constant (i.e. do not depend on a
--- column).
-discardConstAggrExprs :: [Q.AggrExpr] -> [Q.AggrExpr]
-discardConstAggrExprs = filter affectsSortOrderAE
 
 -- Translates a '[A.SortAttr]' into a '[Q.WindowOrderExpr]'. Column names will
 -- be inlined as a 'Q.AggrExpr', constant ones will be discarded.
@@ -825,7 +810,8 @@ inlineEE sClause col =
     f (Q.SCAlias ae a) r = if col == a then return ae
                                        else r
 
--- | Generic base converter for the value expression template.
+-- | Generic base converter for the value expression template. Since types do
+-- not have equal functionality, conversion can fail.
 convertEEBaseTemplate :: (Q.ExtendedExpr -> Maybe a)
                       -> Q.ExtendedExprBase
                       -> Maybe (Q.ValueExprTemplate a)
@@ -884,22 +870,17 @@ mkCol :: String
       -> Q.ValueExprTemplate a
 mkCol c = Q.VEColumn c Nothing
 
--- | Shorthand to apply the equal function to column expressions.
-mkEqual :: Q.ColumnExpr
-        -> Q.ColumnExpr
-        -> Q.ColumnExpr
-mkEqual a b = Q.CEBase $ Q.VEBinApp Q.BFEqual a b
-
-mkAnd :: Q.ColumnExpr
-      -> Q.ColumnExpr
-      -> Q.ColumnExpr
-mkAnd a b = Q.CEBase $ Q.VEBinApp Q.BFAnd a b
-
 appendToWhere :: Q.ColumnExpr -- ^ The expression added with logical and.
               -> Q.SelectStmt -- ^ The select statement to add to.
               -> Q.SelectStmt -- ^ The result.
 appendToWhere cond select =
     select { Q.whereClause = cond : Q.whereClause select }
+
+appendAllToWhere :: [Q.ColumnExpr]
+                 -> Q.SelectStmt
+                 -> Q.SelectStmt
+appendAllToWhere conds select =
+    select { Q.whereClause = conds ++ Q.whereClause select }
 
 mkFromPartVar :: Int
               -> String

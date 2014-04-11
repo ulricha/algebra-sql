@@ -93,7 +93,7 @@ materialize transformResult =
             let -- Get those results which need inlining.
                 results    = catMaybes allResults
                 -- Inline those results into the current label.
-                selectStmt =
+                select     =
                     replaceReferencesSelectStmt
                     replace
                     (fromMaybe errorMsg $ G.node v graph)
@@ -108,17 +108,17 @@ materialize transformResult =
 
             if doInline
             then -- Inline this vertex within one or zero parents.
-                return $ Just (v, selectStmt)
+                return $ Just (v, select)
             else do
                 -- This vertex is referenced by multiple ones, there is no way
                 -- we could inline it.
-                addBinding v selectStmt
+                addBinding v select
 
                 return Nothing
                 
     addBinding :: G.Vertex -> SelectStmt -> Gather ()
-    addBinding v selectStmt =
-        modify $ IntMap.insert v selectStmt
+    addBinding v select =
+        modify $ IntMap.insert v select
 
     hasBinding :: G.Vertex -> Gather Bool
     hasBinding v = gets $ IntMap.member v
@@ -134,5 +134,5 @@ materialize transformResult =
         return $ case knownParents of
             []  -> True
             -- Has just one known parent.
-            [p] -> True
+            [_] -> True
             _   -> False

@@ -264,7 +264,7 @@ renderValueExprTemplate :: (CompatMode -> a -> Doc)
                         -> CompatMode
                         -> ValueExprTemplate a
                         -> Doc
-renderValueExprTemplate renderRec compat e = case e of
+renderValueExprTemplate renderRec compat ve = case ve of
     VEValue v            -> renderValue v
     VEColumn n optPrefix -> renderOptPrefix optPrefix
                             <> text n

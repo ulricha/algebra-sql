@@ -107,7 +107,7 @@ flattenTileNodeWith :: Ord a
                     -> Q.SelectStmt
                     -> TileChildren
                     -> FlatTile a
-flattenTileNodeWith materializer substituter features body children =
+flattenTileNodeWith materializer substituter _ body children =
     -- Merge the replacements into the body.
     ( replaceReferencesSelectStmt lookupFun body
     , externalReferences
