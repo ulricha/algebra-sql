@@ -7,9 +7,11 @@ import Control.Monad (liftM)
 
 import qualified Database.Algebra.SQL.Query as Q
 
+type SubstitutionFunction = Q.ReferenceType -> Q.FromExpr
+
 -- | Replaces all references in this 'Q.SelectStmt' with the result from the
 -- given function.
-replaceReferencesSelectStmt :: (Q.ReferenceType -> Q.FromExpr)
+replaceReferencesSelectStmt :: SubstitutionFunction
                             -> Q.SelectStmt
                             -> Q.SelectStmt
 replaceReferencesSelectStmt r body =
@@ -24,61 +26,66 @@ replaceReferencesSelectStmt r body =
                             $ Q.orderByClause body
     }
 
-replaceReferencesSelectColumn :: (Q.ReferenceType -> Q.FromExpr)
+replaceReferencesSelectColumn :: SubstitutionFunction
                               -> Q.SelectColumn
                               -> Q.SelectColumn
 replaceReferencesSelectColumn r (Q.SCAlias e a)     =
-    Q.SCAlias (replaceReferencesAdvancedExpr r e) a
+    Q.SCAlias (replaceReferencesExtendedExpr r e) a
 
-replaceReferencesAdvancedExpr :: (Q.ReferenceType -> Q.FromExpr)
-                              -> Q.AdvancedExpr
-                              -> Q.AdvancedExpr
-replaceReferencesAdvancedExpr r (Q.AEBase v)        =
-    Q.AEBase $ replaceReferencesAdvancedExprBase r v
-replaceReferencesAdvancedExpr r (Q.AERowNum p o)    =
-    Q.AERowNum (liftM (replaceReferencesAdvancedExpr r) p)
+replaceReferencesExtendedExpr :: SubstitutionFunction
+                              -> Q.ExtendedExpr
+                              -> Q.ExtendedExpr
+replaceReferencesExtendedExpr r (Q.EEBase v)        =
+    Q.EEBase $ replaceReferencesValueExprTemplate replaceReferencesExtendedExpr
+                                                  r
+                                                  v
+replaceReferencesExtendedExpr r (Q.EERowNum p o)    =
+    Q.EERowNum (liftM (replaceReferencesAggrExpr r) p)
                (map (replaceReferencesOrderExpr r) o)
 
-replaceReferencesAdvancedExpr r (Q.AEDenseRank o)   =
-    Q.AEDenseRank (map (replaceReferencesOrderExpr r) o)
-replaceReferencesAdvancedExpr r (Q.AERank o)        =
-    Q.AERank (map (replaceReferencesOrderExpr r) o)
-replaceReferencesAdvancedExpr r (Q.AEAggregate v f) =
-    Q.AEAggregate (liftM (replaceReferencesColumnExpr r) v) f
+replaceReferencesExtendedExpr r (Q.EEDenseRank o)   =
+    Q.EEDenseRank (map (replaceReferencesOrderExpr r) o)
+replaceReferencesExtendedExpr r (Q.EERank o)        =
+    Q.EERank (map (replaceReferencesOrderExpr r) o)
+replaceReferencesExtendedExpr r (Q.EEAggrExpr ae) =
+    Q.EEAggrExpr $ replaceReferencesAggrExpr r ae
 
--- | Replace references in a 'Q.AdvancedExprBase'.
-replaceReferencesAdvancedExprBase :: (Q.ReferenceType -> Q.FromExpr)
-                                  -> Q.AdvancedExprBase
-                                  -> Q.AdvancedExprBase
-replaceReferencesAdvancedExprBase r e = case e of
+-- | Generic value expression substitution function.
+replaceReferencesValueExprTemplate :: (SubstitutionFunction -> a -> a)
+                                   -> SubstitutionFunction
+                                   -> Q.ValueExprTemplate a
+                                   -> Q.ValueExprTemplate a
+replaceReferencesValueExprTemplate replaceReferencesRec r ve = case ve of
     Q.VEExists q -> Q.VEExists $ replaceReferencesValueQuery r q
-    Q.VEIn ae q  -> Q.VEIn (replaceReferencesAdvancedExpr r ae)
+    Q.VEIn ae q  -> Q.VEIn (replaceReferencesRec r ae)
                            (replaceReferencesValueQuery r q)
-    _            -> e
+    _            -> ve
 
-replaceReferencesColumnExpr :: (Q.ReferenceType -> Q.FromExpr)
+replaceReferencesColumnExpr :: SubstitutionFunction
                             -> Q.ColumnExpr
                             -> Q.ColumnExpr
 replaceReferencesColumnExpr r (Q.CEBase v) =
-    Q.CEBase $ replaceReferencesColumnExprBase r v
+    Q.CEBase $ replaceReferencesValueExprTemplate replaceReferencesColumnExpr
+                                                  r
+                                                  v
 
--- | Replace references in a 'Q.ColumnExprBase'.
-replaceReferencesColumnExprBase :: (Q.ReferenceType -> Q.FromExpr)
-                                -> Q.ColumnExprBase
-                                -> Q.ColumnExprBase
-replaceReferencesColumnExprBase r e = case e of
-    Q.VEExists q -> Q.VEExists $ replaceReferencesValueQuery r q
-    Q.VEIn ve q  -> Q.VEIn (replaceReferencesColumnExpr r ve)
-                           (replaceReferencesValueQuery r q)
-    _            -> e
+replaceReferencesAggrExpr :: SubstitutionFunction
+                          -> Q.AggrExpr
+                          -> Q.AggrExpr
+replaceReferencesAggrExpr r (Q.AEBase v)        =
+    Q.AEBase $ replaceReferencesValueExprTemplate replaceReferencesAggrExpr
+                                                  r
+                                                  v
+replaceReferencesAggrExpr r (Q.AEAggregate v f) =
+    Q.AEAggregate (liftM (replaceReferencesColumnExpr r) v) f
 
-replaceReferencesFromPart :: (Q.ReferenceType -> Q.FromExpr)
+replaceReferencesFromPart :: SubstitutionFunction
                           -> Q.FromPart
                           -> Q.FromPart
 replaceReferencesFromPart r (Q.FPAlias e a c) =
     Q.FPAlias (replaceReferencesFromExpr r e) a c
 
-replaceReferencesFromExpr :: (Q.ReferenceType -> Q.FromExpr)
+replaceReferencesFromExpr :: SubstitutionFunction
                           -> Q.FromExpr
                           -> Q.FromExpr
 replaceReferencesFromExpr r (Q.FESubQuery q) =
@@ -88,7 +95,7 @@ replaceReferencesFromExpr r (Q.FEVariable v) = r v
 
 replaceReferencesFromExpr _ t                = t
 
-replaceReferencesValueQuery :: (Q.ReferenceType -> Q.FromExpr)
+replaceReferencesValueQuery :: SubstitutionFunction
                             -> Q.ValueQuery
                             -> Q.ValueQuery
 replaceReferencesValueQuery r (Q.VQSelect s) =
@@ -107,9 +114,9 @@ replaceReferencesValueQuery r
 
 replaceReferencesValueQuery _ q = q
 
-replaceReferencesOrderExpr :: (Q.ReferenceType -> Q.FromExpr)
+replaceReferencesOrderExpr :: SubstitutionFunction
                            -> Q.OrderExpr
                            -> Q.OrderExpr
-replaceReferencesOrderExpr r (Q.OE e d) =
-    Q.OE (replaceReferencesAdvancedExpr r e) d
+replaceReferencesOrderExpr r (Q.OE ae d) =
+    Q.OE (replaceReferencesAggrExpr r ae) d
 

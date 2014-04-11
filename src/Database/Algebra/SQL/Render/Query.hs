@@ -161,7 +161,9 @@ renderSelectStmt compat stmt =
 
 
 renderOrderExpr :: CompatMode -> OrderExpr -> Doc
-renderOrderExpr compat (OE expr dir) = renderAdvancedExpr compat expr <+> renderSortDirection dir
+renderOrderExpr compat (OE ae dir) =
+    renderAggrExpr compat ae
+    <+> renderSortDirection dir
 
 -- | Render a list of order expressions.
 renderOrderExprList :: CompatMode -> [OrderExpr] -> Doc
@@ -205,13 +207,13 @@ renderOptPrefix = maybe empty $ (<> char '.') . text
 
 
 renderSelectColumn :: CompatMode -> SelectColumn -> Doc
-renderSelectColumn compat (SCAlias expr name) = renderAdvancedExpr compat expr
+renderSelectColumn compat (SCAlias expr name) = renderExtendedExpr compat expr
                                                 <+> kw "AS"
                                                 <+> text name
 
-renderAdvancedExpr :: CompatMode -> AdvancedExpr -> Doc
-renderAdvancedExpr compat (AEBase v)                  = renderAdvancedExprBase compat v
-renderAdvancedExpr compat (AERowNum partColumn order) =
+renderExtendedExpr :: CompatMode -> ExtendedExpr -> Doc
+renderExtendedExpr compat (EEBase v)                  = renderExtendedExprBase compat v
+renderExtendedExpr compat (EERowNum partColumn order) =
     kw "ROW_NUMBER() OVER"
     <+> parens (partitionByDoc 
                 <>
@@ -220,18 +222,26 @@ renderAdvancedExpr compat (AERowNum partColumn order) =
                     _  -> kw "ORDER BY" <+> renderOrderExprList compat order)
   where partitionByDoc = maybe empty
                                (\c -> kw "PARTITION BY"
-                                      </> renderAdvancedExpr compat c
+                                      </> renderAggrExpr compat c
                                       <> linebreak)
                                partColumn
 
-renderAdvancedExpr compat (AEDenseRank order)         =
+renderExtendedExpr compat (EEDenseRank order)         =
     renderRank compat "DENSE_RANK() OVER" order
-renderAdvancedExpr compat (AERank order)              =
+renderExtendedExpr compat (EERank order)              =
     renderRank compat "RANK() OVER" order
 
-renderAdvancedExpr compat (AEAggregate optVE aggr)    =
-    renderAggregateFunction compat aggr
-    <> parens (maybe (char '*') (renderColumnExpr compat) optVE)
+renderExtendedExpr compat (EEAggrExpr ae)             =
+    renderAggrExpr compat ae
+
+renderAggrExpr :: CompatMode -> AggrExpr -> Doc
+renderAggrExpr compat e = case e of
+    AEBase ve              ->
+        renderValueExprTemplate renderAggrExpr compat ve
+
+    AEAggregate optVE aggr -> 
+        renderAggregateFunction compat aggr
+        <> parens (maybe (char '*') (renderColumnExpr compat) optVE)
 
 -- | Generic 'ValueExprTemplate' renderer.
 renderValueExprTemplate :: (CompatMode -> a -> Doc)
@@ -268,9 +278,9 @@ renderValueExprTemplate renderRec compat e = case e of
                          <+> renderRec compat e
                          <+> text "END"
 
--- | Render a 'AdvancedExprBase' with the generic renderer.
-renderAdvancedExprBase :: CompatMode -> AdvancedExprBase -> Doc
-renderAdvancedExprBase = renderValueExprTemplate renderAdvancedExpr
+-- | Render a 'ExtendedExprBase' with the generic renderer.
+renderExtendedExprBase :: CompatMode -> ExtendedExprBase -> Doc
+renderExtendedExprBase = renderValueExprTemplate renderExtendedExpr
     
 
 -- | Render a 'ColumnExprBase' with the generic renderer.

@@ -5,6 +5,7 @@ module Database.Algebra.SQL.Query.Util
     , mkSubQuery
     , affectsSortOrderCE
     , affectsSortOrderAE
+    , affectsSortOrderEE
     ) where
 
 import Database.Algebra.SQL.Query as Q
@@ -52,21 +53,26 @@ affectsSortOrderCE :: Q.ColumnExpr -> Bool
 affectsSortOrderCE (Q.CEBase e) =
     affectsSortOrderValueExprTemplate affectsSortOrderCE e
 
-affectsSortOrderAE :: Q.AdvancedExpr -> Bool
-affectsSortOrderAE e = case e of
-    AEBase ve         -> affectsSortOrderValueExprTemplate affectsSortOrderAE ve
-    AERowNum _ _      -> True
-    AEDenseRank _     -> True
-    AERank _          -> True
+affectsSortOrderEE :: Q.ExtendedExpr -> Bool
+affectsSortOrderEE e = case e of
+    EEBase ve         -> affectsSortOrderValueExprTemplate affectsSortOrderEE ve
+    EERowNum _ _      -> True
+    EEDenseRank _     -> True
+    EERank _          -> True
+    EEAggrExpr ae     -> affectsSortOrderAE ae
+
+affectsSortOrderAE :: Q.AggrExpr -> Bool
+affectsSortOrderAE ae = case ae of
+    AEBase ve -> affectsSortOrderValueExprTemplate affectsSortOrderAE ve
     -- TODO
-    AEAggregate _   _ -> True
+    AEAggregate _ _   -> True
 
 isMergeable :: Q.SelectStmt -> Bool
 isMergeable (Q.SelectStmt sClause d _ _ [] _) =
-    not $ d || any (usesAdvancedExprs . sExpr) sClause
+    not $ d || any (usesExtendedExprs . sExpr) sClause
   where
-    usesAdvancedExprs e = case e of
-        AEBase _ -> False
+    usesExtendedExprs e = case e of
+        EEBase _ -> False
         _        -> True
 isMergeable _                                 = False
 

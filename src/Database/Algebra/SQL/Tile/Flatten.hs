@@ -95,7 +95,7 @@ flattenTileTreeWith materializer substituter (ReferenceLeaf tableId s)  =
       }
     , MultiSet.singleton alias
     )
-  where f col         = Q.SCAlias (Q.AEBase $ mkPCol aliasName col) col
+  where f col         = Q.SCAlias (Q.EEBase $ mkPCol aliasName col) col
         aliasName     = "tmpAlias"
         alias         = materializer tableId
 

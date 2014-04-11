@@ -83,7 +83,7 @@ data SelectStmt = SelectStmt -- TODO do we need a window clause ?
 -- | Tells which column to sort by and in which direction.
 data OrderExpr = OE
                { -- | The expression to order after.
-                 oExpr         :: AdvancedExpr
+                 oExpr         :: AggrExpr
                , sortDirection :: SortDirection
                } deriving Show
 
@@ -125,40 +125,46 @@ data FromExpr = -- Contains a subquery (e.g. "SELECT * FROM (TABLE foo) f;"),
 -- select clause.
 data SelectColumn = -- | @SELECT foo AS bar ...@
                     SCAlias
-                  { sExpr    :: AdvancedExpr -- ^ The value expression aliased.
+                  { sExpr    :: ExtendedExpr -- ^ The value expression aliased.
                   , sName    :: String       -- ^ The name of the alias.
                   } deriving Show
 
 -- | Basic value expressions extended by aggregates and window functions.
-data AdvancedExpr =
+data ExtendedExpr =
       -- | Encapsulates the base cases.
-      AEBase
-    { valueExpr   :: ValueExprTemplate AdvancedExpr -- ^ The value expression.
+      EEBase
+    { valueExpr   :: ValueExprTemplate ExtendedExpr -- ^ The value expression.
     }
       -- | @ROW_NUMBER() OVER (PARTITION BY p ORDER BY ...)@
-    | AERowNum
+    | EERowNum
     { -- | The expression to partition by.
-      optPartCol  :: Maybe AdvancedExpr
+      optPartCol  :: Maybe AggrExpr
     , orderBy     :: [OrderExpr]  -- ^ Order information.
     }
       -- | @DENSE_RANK() OVER (ORDER BY ...)@
-    | AEDenseRank
+    | EEDenseRank
     { orderBy     :: [OrderExpr]
     }
-    | AERank
+    | EERank
     { orderBy     :: [OrderExpr]
     }
       -- | Aggregate function expression. 
-    | AEAggregate
-    { -- | The optional column expression used (e.g. @COUNT@ does
-        -- not need one), since aggregates can't be nested.
-      optValueExpr :: Maybe ColumnExpr
-    , -- | The function used to form the aggregate.
-      aFunction    :: AggregateFunction
+    | EEAggrExpr
+    { aggrExpr    :: AggrExpr
     } deriving Show
 
--- | Shorthand for the value expression base part of 'AdvancedExpr'.
-type AdvancedExprBase = ValueExprTemplate AdvancedExpr
+-- | Shorthand for the value expression base part of 'ExtendedExpr'.
+type ExtendedExprBase = ValueExprTemplate ExtendedExpr
+
+-- | Basic value expressions extended only by aggregates.
+data AggrExpr = AEBase (ValueExprTemplate AggrExpr)
+              | AEAggregate
+              { optValueExpr :: Maybe ColumnExpr
+              , aFunction    :: AggregateFunction
+              } deriving Show
+
+-- | Shorthand for the value expression base part of 'AggrExpr'.
+type AggrExprBase = ValueExprTemplate AggrExpr
 
 -- | Aggregate functions.
 data AggregateFunction = AFAvg
