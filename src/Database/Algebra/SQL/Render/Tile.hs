@@ -53,10 +53,8 @@ renderTileTreeNode compat body children =
 renderTileTree :: CompatMode -> TileTree -> Doc
 renderTileTree _ (ReferenceLeaf n _)                = type_ "references"
                                                     <+> extRef n
-renderTileTree compat (TileNode mergeable body children) =
-    type_ ( case mergeable of
-                True  -> "open"
-                False -> "closed"
+renderTileTree compat (TileNode features body children) =
+    type_ ( show features
           )
     <+> renderTileTreeNode compat body children
 

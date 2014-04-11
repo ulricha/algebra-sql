@@ -37,6 +37,7 @@ import Database.Algebra.SQL.Query.Util
     ( emptySelectStmt
     , mkPCol
     )
+import Database.Algebra.SQL.Termination
 import Database.Algebra.SQL.Tile
 
 
@@ -83,8 +84,8 @@ flattenTileTreeWith :: Ord a
                     -> (a -> Q.FromExpr)
                     -> TileTree
                     -> FlatTile a
-flattenTileTreeWith materializer substituter (TileNode m body children) =
-    flattenTileNodeWith materializer substituter m body children
+flattenTileTreeWith materializer substituter (TileNode fs body children) =
+    flattenTileNodeWith materializer substituter fs body children
 
 -- This case should never happen, but is provided for completeness.
 flattenTileTreeWith materializer substituter (ReferenceLeaf tableId s)  =
@@ -102,11 +103,11 @@ flattenTileTreeWith materializer substituter (ReferenceLeaf tableId s)  =
 flattenTileNodeWith :: Ord a
                     => (ExternalReference -> a)
                     -> (a -> Q.FromExpr)
-                    -> Bool
+                    -> FeatureSet
                     -> Q.SelectStmt
                     -> TileChildren
                     -> FlatTile a
-flattenTileNodeWith materializer substituter mergeable body children =
+flattenTileNodeWith materializer substituter features body children =
     -- Merge the replacements into the body.
     ( replaceReferencesSelectStmt lookupFun body
     , externalReferences

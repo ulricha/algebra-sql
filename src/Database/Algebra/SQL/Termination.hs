@@ -1,10 +1,15 @@
 -- | Datatypes and functions which determine termination of SQL fragements.
 module Database.Algebra.SQL.Termination
-    ( Featrue
+    ( Feature(..)
+    , FeatureSet
     , terminates
     ) where
 
-import Data.Set
+import qualified Data.Set as S
+
+-- TODO module needs Set, maybe hide somehow
+-- TODO EnumSet would not require Eq and Ord, and maybe faster (IntSet wrapper),
+-- but requires Enum instead
 
 -- | Specifies a part in a SQL statement which is currently in use.
 data Feature = FProjection -- ^ Projection of columns.
@@ -14,17 +19,17 @@ data Feature = FProjection -- ^ Projection of columns.
              | FOrdering
              | FWindowFunction
              | FAggrAndGrouping
-             deriving Ord
+             deriving (Eq, Ord, Show)
 
-type FeatureSet = Set Feature
+type FeatureSet = S.Set Feature
 
 -- | Lists all features which lead to a termination, for a given feature
 -- coming from an operator placed below.
 terminatingFeatures :: Feature -> FeatureSet
 terminatingFeatures bottomF = case bottomF of
-    FProjection      -> empty
-    FTable           -> empty
-    FFilter          -> empty
+    FProjection      -> S.empty
+    FTable           -> S.empty
+    FFilter          -> S.empty
     -- Distinction has to occur before:
     --
     --     * Projection of columns: Because there exist cases where to much gets
@@ -36,9 +41,9 @@ terminatingFeatures bottomF = case bottomF of
     --     * Grouping: Grouping could project away columns, which are needed for
     --       duplicate elimination.
     --
-    FDupElim         -> fromList [FProjection, FAggrAndGrouping]
+    FDupElim         -> S.fromList [FProjection, FAggrAndGrouping]
     -- The ORDER BY clause will only be used on top.
-    FOrdering        -> empty
+    FOrdering        -> S.empty
     -- Problematic cases:
     --
     --     * Filtering: May change the intermediate result set.
@@ -48,49 +53,27 @@ terminatingFeatures bottomF = case bottomF of
     --     * Stacked window functions can possibly have other windows and window
     --       functions can not be nested.
     --
-    --     * Window functions in ORDER BY clauses are executed row wise.
+    --     * Aggregates of window functions can not be built.
     --
     FWindowFunction  ->
-        fromList [FFilter, FDupElim, FAggrAndGrouping, FOrdering]
+        S.fromList [FFilter, FDupElim, FWindowFunction, FAggrAndGrouping]
     -- Problematic cases:
     -- 
     --     * Filtering: May change intermediate result set.
     --
-    --     * Is there a case, where OLAP functions using windows with aggregates
-    --       makes sense? TODO otherwise the representation has to be changed,
-    --       since aggregates over aggregates are not allowed. In fact
-    --       AdvancedExpr has to be changed (AEBase, AEAggr, AEWindow) and two
-    --       types has to be added AggrExpr/WindowExpr.
+    --     * Aggregate functions can not be stacked.
     --
-    FAggrAndGrouping -> fromList [FFilter, FWindowFunction, FAggrAndGrouping]
+    --     * Is there a case, where OLAP functions using windows with aggregates
+    --       makes sense? It is possible, and inlining works, therefore it is
+    --       enabled.
+    --
+    FAggrAndGrouping -> S.fromList [FFilter, FAggrAndGrouping]
 
+-- | Determines whether two feature sets collide and therefore whether we should
+-- terminate a SQL fragment.
 terminates :: FeatureSet -> FeatureSet -> Bool
 terminates topFs bottomFs =
-    any (flip member conflictingFs) topFs
+    any (flip S.member conflictingFs) $ S.toList topFs
   where
-    conflictingFs = unions $ map terminatingFeatures $ toList bottomFs
+    conflictingFs = S.unions $ map terminatingFeatures $ S.toList bottomFs
 
--- LitTable [Tuple] SchemaInfos    -> FTable
--- LitTable [] SchemaInfos         -> FTable, FFilter
--- 
--- TableRef SemInfTableRef         -> FTable
--- 
--- RowNum SemInfRowNum             -> FProjection, FWindowFunction
--- RowRank SemInfRank              -> FProjection, FWindowFunction
--- Rank SemInfRank                 -> FProjection, FWindowFunction
--- Project [(AttrName, Expr)]      -> FProjection
--- Select Expr                     -> FFilter
--- Distinct ()                     -> FDupElim
--- Aggr SemInfAggr                 -> FProjection, CAggregateFunction, CGroupBy
--- 
--- Serialize (Maybe DescrCol, SerializeOrder, [PayloadCol])
---                                 -> []
--- 
--- 
--- Cross ()                        -> FTable, FProjection
--- EqJoin SemInfEqJoin             -> FTable, FProjection, FFilter
--- ThetaJoin SemInfJoin            -> FTable, FProjection, FFilter
--- SemiJoin SemInfJoin             -> FFilter
--- AntiJoin SemInfJoin             -> FFilter
--- DisjUnion                       -> []
--- Difference                      -> []

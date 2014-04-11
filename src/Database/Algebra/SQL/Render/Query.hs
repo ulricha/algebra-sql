@@ -157,17 +157,30 @@ renderSelectStmt compat stmt =
            []    -> empty
            order -> linebreak
                     <> kw "ORDER BY"
-                    <+> align (renderOrderExprList compat order)
+                    <+> align ( renderGenericOrderByList renderOrderExpr
+                                                         compat
+                                                         order
+                              ) 
 
 
 renderOrderExpr :: CompatMode -> OrderExpr -> Doc
-renderOrderExpr compat (OE ae dir) =
+renderOrderExpr compat (OE ee dir) =
+    renderExtendedExpr compat ee
+    <+> renderSortDirection dir
+
+renderWindowOrderExpr :: CompatMode -> WindowOrderExpr -> Doc
+renderWindowOrderExpr compat (WOE ae dir) =
     renderAggrExpr compat ae
     <+> renderSortDirection dir
 
--- | Render a list of order expressions.
-renderOrderExprList :: CompatMode -> [OrderExpr] -> Doc
-renderOrderExprList compat = enlistOnLine . map (renderOrderExpr compat)
+-- | Render a list of generic order expressions.
+renderGenericOrderByList :: (CompatMode -> o -> Doc) -> CompatMode -> [o] -> Doc
+renderGenericOrderByList renderGenericOrderExpr compat =
+    enlistOnLine . map (renderGenericOrderExpr compat)
+
+renderWindowOrderByList :: CompatMode -> [WindowOrderExpr] -> Doc
+renderWindowOrderByList compat wos =
+    kw "ORDER BY" <+> renderGenericOrderByList renderWindowOrderExpr compat wos
 
 renderSortDirection :: SortDirection -> Doc
 renderSortDirection Ascending  = kw "ASC"
@@ -215,16 +228,19 @@ renderExtendedExpr :: CompatMode -> ExtendedExpr -> Doc
 renderExtendedExpr compat (EEBase v)                  = renderExtendedExprBase compat v
 renderExtendedExpr compat (EERowNum partColumn order) =
     kw "ROW_NUMBER() OVER"
-    <+> parens (partitionByDoc 
-                <>
-                case order of
-                    [] -> empty
-                    _  -> kw "ORDER BY" <+> renderOrderExprList compat order)
-  where partitionByDoc = maybe empty
-                               (\c -> kw "PARTITION BY"
-                                      </> renderAggrExpr compat c
-                                      <> linebreak)
-                               partColumn
+    <+> parens ( partitionByDoc 
+                 <>
+                 case order of
+                     [] -> empty
+                     _  -> renderWindowOrderByList compat order
+               )
+  where
+    partitionByDoc = maybe empty
+                           ( \c -> kw "PARTITION BY"
+                                   </> renderAggrExpr compat c
+                                   <> linebreak
+                           ) 
+                           partColumn
 
 renderExtendedExpr compat (EEDenseRank order)         =
     renderRank compat "DENSE_RANK() OVER" order
@@ -289,9 +305,9 @@ renderColumnExprBase = renderValueExprTemplate renderColumnExpr
 
 
 -- | Render the postfix part of a rank operator.
-renderRank :: CompatMode -> String -> [OrderExpr] -> Doc
+renderRank :: CompatMode -> String -> [WindowOrderExpr] -> Doc
 renderRank compat prefix order =
-    kw prefix <+> parens (kw "ORDER BY" <+> renderOrderExprList compat order)
+    kw prefix <+> parens (renderWindowOrderByList compat order)
 
 renderAggregateFunction :: CompatMode -> AggregateFunction -> Doc
 renderAggregateFunction _          AFAvg   = kw "AVG"

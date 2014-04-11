@@ -63,27 +63,22 @@ data SetOperation = -- The union of two sets.
 data SelectStmt = SelectStmt -- TODO do we need a window clause ?
                 { -- | The constituents of the select clause.
                   selectClause  :: [SelectColumn] -- TODO should not be empty
-
-                  -- | Indicates whether duplicates are removed.
-                , distinct      :: Bool
-
-                  -- | The constituents of the from clause.
-                , fromClause    :: [FromPart]   
-
-                  -- | Conditional expression in the where clause.
-                , whereClause   :: [ColumnExpr]
-                
-                  -- | The values to group by.
-                , groupByClause :: [ColumnExpr]
-                
-                  -- | The values and direction to order the table after.
-                , orderByClause :: [OrderExpr]
+                , -- | Indicates whether duplicates are removed.
+                  distinct      :: Bool
+                , -- | The constituents of the from clause.
+                  fromClause    :: [FromPart]   
+                , -- | A list of conjunctive column expression.
+                  whereClause   :: [ColumnExpr]
+                , -- | The values to group by.
+                  groupByClause :: [ColumnExpr]
+                , -- | The values and direction to order the table after.
+                  orderByClause :: [OrderExpr]
                 } deriving Show
 
 -- | Tells which column to sort by and in which direction.
 data OrderExpr = OE
                { -- | The expression to order after.
-                 oExpr         :: AggrExpr
+                 oExpr         :: ExtendedExpr
                , sortDirection :: SortDirection
                } deriving Show
 
@@ -139,14 +134,14 @@ data ExtendedExpr =
     | EERowNum
     { -- | The expression to partition by.
       optPartCol  :: Maybe AggrExpr
-    , orderBy     :: [OrderExpr]  -- ^ Order information.
+    , orderBy     :: [WindowOrderExpr]  -- ^ Order information.
     }
       -- | @DENSE_RANK() OVER (ORDER BY ...)@
     | EEDenseRank
-    { orderBy     :: [OrderExpr]
+    { orderBy     :: [WindowOrderExpr]
     }
     | EERank
-    { orderBy     :: [OrderExpr]
+    { orderBy     :: [WindowOrderExpr]
     }
       -- | Aggregate function expression. 
     | EEAggrExpr
@@ -155,6 +150,14 @@ data ExtendedExpr =
 
 -- | Shorthand for the value expression base part of 'ExtendedExpr'.
 type ExtendedExprBase = ValueExprTemplate ExtendedExpr
+
+-- | A special order expression, which is used in windows of window functions.
+-- This is needed because we can use window functions in the ORDER BY clause,
+-- but not in window functions.
+data WindowOrderExpr = WOE
+                       { woExpr         :: AggrExpr
+                       , wSortDirection :: SortDirection
+                       } deriving Show
 
 -- | Basic value expressions extended only by aggregates.
 data AggrExpr = AEBase (ValueExprTemplate AggrExpr)

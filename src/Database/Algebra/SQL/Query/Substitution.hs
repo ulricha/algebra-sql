@@ -41,12 +41,12 @@ replaceReferencesExtendedExpr r (Q.EEBase v)        =
                                                   v
 replaceReferencesExtendedExpr r (Q.EERowNum p o)    =
     Q.EERowNum (liftM (replaceReferencesAggrExpr r) p)
-               (map (replaceReferencesOrderExpr r) o)
+               (map (replaceReferencesWindowOrderExpr r) o)
 
 replaceReferencesExtendedExpr r (Q.EEDenseRank o)   =
-    Q.EEDenseRank (map (replaceReferencesOrderExpr r) o)
+    Q.EEDenseRank (map (replaceReferencesWindowOrderExpr r) o)
 replaceReferencesExtendedExpr r (Q.EERank o)        =
-    Q.EERank (map (replaceReferencesOrderExpr r) o)
+    Q.EERank (map (replaceReferencesWindowOrderExpr r) o)
 replaceReferencesExtendedExpr r (Q.EEAggrExpr ae) =
     Q.EEAggrExpr $ replaceReferencesAggrExpr r ae
 
@@ -117,6 +117,12 @@ replaceReferencesValueQuery _ q = q
 replaceReferencesOrderExpr :: SubstitutionFunction
                            -> Q.OrderExpr
                            -> Q.OrderExpr
-replaceReferencesOrderExpr r (Q.OE ae d) =
-    Q.OE (replaceReferencesAggrExpr r ae) d
+replaceReferencesOrderExpr r (Q.OE ee d) =
+    Q.OE (replaceReferencesExtendedExpr r ee) d
+
+replaceReferencesWindowOrderExpr :: SubstitutionFunction
+                                 -> Q.WindowOrderExpr
+                                 -> Q.WindowOrderExpr
+replaceReferencesWindowOrderExpr r (Q.WOE ae d) =
+    Q.WOE (replaceReferencesAggrExpr r ae) d
 

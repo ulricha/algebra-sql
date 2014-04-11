@@ -25,12 +25,14 @@ import qualified Data.DList as DL
     ( DList
     , singleton
     )
+import qualified Data.Set as Set
 
 import qualified Database.Algebra.Dag as D
 import qualified Database.Algebra.Dag.Common as C
 import qualified Database.Algebra.Pathfinder.Data.Algebra as A
 
 import qualified Database.Algebra.SQL.Query as Q
+import qualified Database.Algebra.SQL.Termination as T
 import Database.Algebra.SQL.Query.Util
     ( emptySelectStmt
     , mkSubQuery
@@ -51,10 +53,9 @@ type ExternalReference = Int
 type TileChildren = [(InternalReference, TileTree)]
 
 -- | Defines the tile tree structure.
-data TileTree = -- | A tile: The first argument determines whether the
-                -- 'Q.SelectStmt' has nothing else but the select, from or
-                -- where clause set and is thus mergeable.
-                TileNode Bool Q.SelectStmt TileChildren
+data TileTree = -- | A tile: The first argument determines which features the
+                -- 'Q.SelectStmt' uses.
+                TileNode T.FeatureSet Q.SelectStmt TileChildren
                 -- | A reference pointing to another TileTree: The second
                 -- argument specifies the columns of the referenced table
                 -- expression.
@@ -235,6 +236,7 @@ transformNode n = do
                 return $ ReferenceLeaf tableId schema
     else transformOp
 
+
 transformNullaryOp :: A.NullOp -> TransformMonad TileTree
 transformNullaryOp (A.LitTable [] schema) = do
     alias <- generateAliasName
@@ -248,7 +250,8 @@ transformNullaryOp (A.LitTable [] schema) = do
                              $ Just $ map fst schema
 
     return $ TileNode
-             True
+             -- TODO Projection needed?
+             (Set.fromList [T.FProjection, T.FFilter, T.FTable])
              emptySelectStmt
              { Q.selectClause = sClause
              , Q.fromClause = [fLiteral]
@@ -265,7 +268,7 @@ transformNullaryOp (A.LitTable tuples schema) = do
                              $ Just $ map fst schema
 
     return $ TileNode
-             True
+             (Set.fromList [T.FProjection, T.FTable])
              emptySelectStmt
              { Q.selectClause = sClause
              , Q.fromClause = [fLiteral]
@@ -290,28 +293,33 @@ transformNullaryOp (A.TableRef (name, info, _))   = do
                     ] 
             }
 
-    return $ TileNode True body []
+    return $ TileNode (Set.fromList [T.FProjection, T.FTable]) body []
 
 
 -- | Abstraction for rank operators.
 transformUnOpRank :: -- ExtendedExpr constructor.
-                     ([Q.OrderExpr] -> Q.ExtendedExpr)
+                     ([Q.WindowOrderExpr] -> Q.ExtendedExpr)
                   -> (String, [A.SortAttr])
                   -> C.AlgNode
                   -> TransformMonad TileTree
 transformUnOpRank rankConstructor (name, sortList) =
-    let colFun sClause = Q.SCAlias
-                         ( rankConstructor $ asOrderExprList
-                                             sClause
-                                             sortList
-                         )
-                         name
-    in attachColFunUnOp colFun (TileNode False)
+    attachColFunUnOp colFun
+                     $ Set.fromList [ T.FProjection
+                                  , T.FWindowFunction
+                                  ]
+  where
+    colFun sClause = Q.SCAlias
+                     ( rankConstructor $ asWindowOrderExprList
+                                         sClause
+                                         sortList
+                     )
+                     name
 
 transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
 transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
-    (select, children) <- transformAsSelectStmt c
+    (childFeatures, select, children) <-
+        transformTerminated c $ opFeatures
 
     let sClause              = Q.selectClause select
         inline               = inlineEE sClause
@@ -323,7 +331,7 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
                     [1..]
 
     return $ TileNode
-             False
+             (Set.union childFeatures opFeatures)
              select
              { Q.selectClause = map project (descrProjList ++ posProjList)
                                 ++ payloadProjs
@@ -331,16 +339,17 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
                -- since SQL99 defines different semantics.
                Q.orderByClause =
                    map (flip Q.OE Q.Ascending)
-                       $ descrColAdder . discardConstAggrExprs
-                         $ map (inlineAE sClause) posOrderList
+                       $ descrColAdder . filter affectsSortOrderEE
+                         $ map (inlineEE sClause) posOrderList
              }
              children
   where
+    opFeatures                     = Set.fromList [T.FProjection, T.FOrdering]
     (descrColAdder, descrProjList) = case mDescr of
         Nothing               -> (id, [])
         -- Project and sort. Since descr gets added as new alias we can use it
         -- in the ORDER BY clause.
-        Just (A.DescrCol col) -> ( (:) $ Q.AEBase $ Q.VEColumn "descr" Nothing
+        Just (A.DescrCol col) -> ( (:) $ Q.EEBase $ Q.VEColumn "descr" Nothing
                                  , [(col, "descr")]
                                  )
 
@@ -351,19 +360,21 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
         -- Sort but do not project.
         A.RelPos cols -> (cols, [])
 
-
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
-    attachColFunUnOp colFun (TileNode False) c
+    attachColFunUnOp colFun
+                     (Set.fromList [T.FProjection, T.FWindowFunction])
+                     c
   where colFun sClause = Q.SCAlias rowNumExpr name
           where rowNumExpr = Q.EERowNum
                              (liftM (inlineAE sClause) optPart)
-                             $ asOrderExprList sClause sortList
+                             $ asWindowOrderExprList sClause sortList
 
 transformUnOp (A.RowRank inf) c = transformUnOpRank Q.EEDenseRank inf c
 transformUnOp (A.Rank inf) c = transformUnOpRank Q.EERank inf c
 transformUnOp (A.Project projList) c = do
     
-    (select, children) <- transformAsOpenSelectStmt c
+    (childFeatures, select, children) <-
+        transformTerminated c opFeatures
 
     let sClause  = Q.selectClause select
         -- Inlining is obligatory here, since we possibly eliminate referenced
@@ -372,19 +383,22 @@ transformUnOp (A.Project projList) c = do
           where tE = translateExprEE (Just sClause) e
 
     return $ TileNode
-             True
+             (Set.union opFeatures childFeatures)
              -- Replace the select clause with the projection list.
              select { Q.selectClause = map f projList }
              -- But use the old children.
              children
+  where
+    opFeatures = Set.singleton T.FProjection
 
 
 transformUnOp (A.Select expr) c = do
 
-    (select, children) <- transformAsOpenSelectStmt c
+    (childFeatures, select, children) <-
+        transformTerminated c opFeatures
     
     return $ TileNode
-             True
+             (Set.union opFeatures childFeatures)
              ( appendToWhere ( translateExprCE
                                (Just $ Q.selectClause select)
                                expr
@@ -392,18 +406,25 @@ transformUnOp (A.Select expr) c = do
                select
              )
              children
+  where
+    opFeatures = Set.singleton T.FFilter
 
 transformUnOp (A.Distinct ()) c = do
 
-    (select, children) <- transformAsOpenSelectStmt c
+    (childFeatures, select, children) <-
+        transformTerminated c opFeatures
 
     -- Keep everything but set distinct.
-    return $ TileNode False select { Q.distinct = True } children
-
+    return $ TileNode (Set.union opFeatures childFeatures)
+                      select { Q.distinct = True }
+                      children
+  where
+    opFeatures = Set.singleton T.FDupElim
 transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
-    
-    (select, children) <- transformAsOpenSelectStmt c
 
+    (childFeatures, select, children) <-
+        transformTerminated c opFeatures
+    
     let sClause          = Q.selectClause select
         translateE       = translateExprCE $ Just sClause
         maybeTranslateE  = liftM translateE
@@ -427,7 +448,7 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
             Q.SCAlias extendedExpr name
 
     return $ TileNode
-             False
+             (Set.union childFeatures opFeatures)
              select
              { Q.selectClause =
                    map wrapSCAlias partExtendedExpr ++ map aggrToEE aggrs
@@ -437,19 +458,23 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
                Q.groupByClause = discardConstColumnExprs $ map snd partColumnExprs
              }
              children
+  where
+    opFeatures = Set.fromList [T.FProjection, T.FAggrAndGrouping]
 
 -- | Generates a new 'TileTree' by attaching a column, generated by a function
 -- taking the select clause.
 attachColFunUnOp :: ([Q.SelectColumn] -> Q.SelectColumn)
-                 -> (Q.SelectStmt -> TileChildren -> TileTree)
+                 -> T.FeatureSet
                  -> C.AlgNode
                  -> TransformMonad TileTree
-attachColFunUnOp colFun ctor child = do
+attachColFunUnOp colFun opFeatures c = do
 
-    (select, children) <- transformAsOpenSelectStmt child
+    (childFeatures, select, children) <-
+        transformTerminated c opFeatures
 
     let sClause = Q.selectClause select
-    return $ ctor
+    return $ TileNode
+             (Set.union opFeatures childFeatures)
              -- Attach a column to the select clause generated by the given
              -- function.
              select { Q.selectClause = colFun sClause : sClause }
@@ -463,8 +488,8 @@ transformBinSetOp :: Q.SetOperation
 transformBinSetOp setOp c0 c1 = do
 
     -- Use one tile to get the schema information.
-    (select0, children0) <- transformAsSelectStmt c0
-    (select1, children1) <- transformAsSelectStmt c1
+    (_, select0, children0) <- transformTerminated c0 Set.empty
+    (_, select1, children1) <- transformTerminated c1 Set.empty
 
     alias <- generateAliasName
 
@@ -472,7 +497,7 @@ transformBinSetOp setOp c0 c1 = do
     -- since we assume they are equal.
     let schema = getSchemaSelectStmt select0
 
-    return $ TileNode True
+    return $ TileNode opFeatures
                       emptySelectStmt
                       { Q.selectClause =
                             columnsFromSchema alias schema
@@ -488,68 +513,75 @@ transformBinSetOp setOp c0 c1 = do
                             ]
                       }
                       $ children0 ++ children1
+  where
+    opFeatures = Set.fromList [T.FProjection, T.FTable]
+
 
 -- | Perform a cross join between two nodes.
 transformBinCrossJoin :: C.AlgNode
                       -> C.AlgNode
-                      -> TransformMonad TileTree
+                      -> TransformMonad ( T.FeatureSet
+                                        , Q.SelectStmt
+                                        , TileChildren
+                                        )
 transformBinCrossJoin c0 c1 = do
-    (select0, children0) <- transformAsOpenSelectStmt c0
-    (select1, children1) <- transformAsOpenSelectStmt c1
+
+    (childFeatures0, select0, children0) <-
+        transformTerminated c0 opFeatures
+    (childFeatures1, select1, children1) <-
+        transformTerminated c1 opFeatures
 
     -- We can simply concatenate everything, because all things are prefixed and
     -- cross join is associative.
-    return $ TileNode True
-                      -- Mergeable tiles are guaranteed to have at most a
-                      -- select, from and where clause. (And since
-                      -- 'tileToOpenSelectStmt' does this, we always get at most that
-                      -- structure.)
-                      emptySelectStmt
-                      { Q.selectClause =
-                            Q.selectClause select0 ++ Q.selectClause select1
-                      , Q.fromClause =
-                            Q.fromClause select0 ++ Q.fromClause select1
-                      , Q.whereClause = Q.whereClause select0
-                                        ++ Q.whereClause select1
-                      }
-                      -- Removing duplicates is not efficient here (since it
-                      -- needs substitution on non-self joins).
-                      -- Will be done automatically later on.
-                      $ children0 ++ children1
-
--- | Perform a corss join with two nodes and get a select statement from the
--- result.
-transformCJToSelect :: C.AlgNode
-                    -> C.AlgNode
-                    -> TransformMonad (Q.SelectStmt, TileChildren)
-transformCJToSelect c0 c1 = do
-    cTile <- transformBinCrossJoin c0 c1
-    tileToOpenSelectStmt cTile
+    return ( Set.unions [childFeatures0, childFeatures1, opFeatures]
+           , -- Mergeable tiles are guaranteed to have at most a
+             -- select, from and where clause. (And since
+             -- 'tileToOpenSelectStmt' does this, we always get at most that
+             -- structure.)
+             emptySelectStmt
+             { Q.selectClause =
+                   Q.selectClause select0 ++ Q.selectClause select1
+             , Q.fromClause =
+                   Q.fromClause select0 ++ Q.fromClause select1
+             , Q.whereClause = Q.whereClause select0
+                               ++ Q.whereClause select1
+             }
+           , -- Removing duplicates is not efficient here (since it
+             -- needs substitution on non-self joins).
+             -- Will be done automatically later on.
+             children0 ++ children1
+           )
+  where
+    opFeatures = Set.fromList [T.FProjection, T.FTable, T.FFilter]
 
 transformBinOp :: A.BinOp
                -> C.AlgNode
                -> C.AlgNode
                -> TransformMonad TileTree
-transformBinOp (A.Cross ()) c0 c1 = transformBinCrossJoin c0 c1
+transformBinOp (A.Cross ()) c0 c1 = do
+    (f, s, c) <- transformBinCrossJoin c0 c1
+    return $ TileNode f s c
 
 transformBinOp (A.EqJoin (lName, rName)) c0 c1 = do
 
-    (select, children) <- transformCJToSelect c0 c1
+    (childrenFeatures, select, children) <- transformBinCrossJoin c0 c1
 
     let sClause = Q.selectClause select
         cond    = mkEqual (inlineCE sClause lName)
                           $ inlineCE sClause rName
 
-    return $ TileNode True (appendToWhere cond select) children
+    -- 'transformBinCrossJoin' already has the 'T.FFilter' feature.
+    return $ TileNode childrenFeatures (appendToWhere cond select) children
 
 
 transformBinOp (A.ThetaJoin conditions) c0 c1  = do
 
-    (select, children) <- transformCJToSelect c0 c1
+    (childrenFeatures, select, children) <- transformBinCrossJoin c0 c1
 
-    -- Is there at least one join conditon?
+    -- Is there at least one join conditon? TODO T.FFilter not used TODO add
+    -- extra features to transformBinCrossJoin
     if null conditions
-    then return $ TileNode True select children
+    then return $ TileNode childrenFeatures select children
     else do
 
         let sClause = Q.selectClause select
@@ -557,7 +589,7 @@ transformBinOp (A.ThetaJoin conditions) c0 c1  = do
             conds   = map f conditions
             f       = translateInlinedJoinCond sClause sClause
 
-        return $ TileNode True (appendToWhere cond select) children
+        return $ TileNode childrenFeatures (appendToWhere cond select) children
 
 transformBinOp (A.SemiJoin cs) c0 c1          =
     transformExistsJoin cs c0 c1 id
@@ -573,43 +605,50 @@ transformExistsJoin :: A.SemInfJoin
                     -> C.AlgNode
                     -> (Q.ColumnExpr -> Q.ColumnExpr)
                     -> TransformMonad TileTree
-transformExistsJoin conditions c0 c1 existsWrapF = case result of
-    (Nothing, _)      -> do
-        -- TODO in case we do not have merge conditions we can simply use the
-        -- unmergeable but less nested select stmt on the right side
-        (select0, children0) <- transformAsOpenSelectStmt c0
-        (select1, children1) <- transformAsOpenSelectStmt c1
+transformExistsJoin conditions c0 c1 existsWrapF = do
 
-        let outerCond   = existsWrapF
-                          . Q.CEBase
-                          . Q.VEExists
-                          $ Q.VQSelect innerSelect
-            innerSelect = foldr appendToWhere select1 innerConds
-            innerConds  = map f conditions
-            f           = translateInlinedJoinCond (Q.selectClause select0)
-                                                $ Q.selectClause select1
+    (childFeatures0, select0, children0) <-
+        transformTerminated c0 opFeatures
 
-        return $ TileNode True
-                        (appendToWhere outerCond select0)
-                        $ children0 ++ children1
-    (Just (l, r), cs) -> do
-        (select0, children0) <- transformAsOpenSelectStmt c0
-        (select1, children1) <- transformAsOpenSelectStmt c1
-       
-        let -- Embedd the right query into the where clause of the left one.
-            leftCond    = existsWrapF $ Q.CEBase $ Q.VEIn (inlineCE lSClause l)
-                                                   $ Q.VQSelect rightSelect
-            -- Embedd all conditions in the right select, and set select clause
-            -- to the right part of the equal join condition.
-            rightSelect = (foldr f select1 cs) { Q.selectClause = [rightSCol] }
-            f           = appendToWhere . translateInlinedJoinCond lSClause rSClause
-            rightSCol   = Q.SCAlias (inlineEE rSClause r) r
-            lSClause    = Q.selectClause select0
-            rSClause    = Q.selectClause select1
+    -- Ignore operator features, since it will be nested.
+    (_, select1, children1) <- transformTerminated c1 Set.empty
 
-        return $ TileNode True
-                          (appendToWhere leftCond select0)
-                          $ children0 ++ children1
+    let newFeatures = Set.union opFeatures childFeatures0
+        newChildren = children0 ++ children1
+        ctor s      = TileNode newFeatures s newChildren
+    
+    case result of
+        (Nothing, _)      -> do
+            -- TODO in case we do not have merge conditions we can simply use
+            -- the unmergeable but less nested select stmt on the right side
+
+            let outerCond   = existsWrapF
+                              . Q.CEBase
+                              . Q.VEExists
+                              $ Q.VQSelect innerSelect
+                innerSelect = foldr appendToWhere select1 innerConds
+                innerConds  = map f conditions
+                f           = translateInlinedJoinCond (Q.selectClause select0)
+                                                    $ Q.selectClause select1
+
+            return $ ctor (appendToWhere outerCond select0)
+        (Just (l, r), cs) -> do
+           
+            let -- Embedd the right query into the where clause of the left one.
+                leftCond    =
+                    existsWrapF $ Q.CEBase $ Q.VEIn (inlineCE lSClause l)
+                                                    $ Q.VQSelect rightSelect
+                -- Embedd all conditions in the right select, and set select
+                -- clause to the right part of the equal join condition.
+                rightSelect = (foldr f select1 cs)
+                              { Q.selectClause = [rightSCol] }
+                f           =
+                    appendToWhere . translateInlinedJoinCond lSClause rSClause
+                rightSCol   = Q.SCAlias (inlineEE rSClause r) r
+                lSClause    = Q.selectClause select0
+                rSClause    = Q.selectClause select1
+
+            return $ ctor (appendToWhere leftCond select0)
   where
     result                                = foldr tryIn (Nothing, []) conditions
     -- Tries to extract a join condition for usage in the IN sql construct.
@@ -617,57 +656,88 @@ transformExistsJoin conditions c0 c1 existsWrapF = case result of
     tryIn c@(left, right, j) (Nothing, r) = case j of
         A.EqJ -> (Just (left, right), r)
         _     -> (Nothing, c:r)
+    opFeatures                            = Set.singleton T.FFilter
 
--- | Transform a vertex and return it as a mergeable select statement.
-transformAsOpenSelectStmt :: C.AlgNode
-                          -> TransformMonad (Q.SelectStmt, TileChildren) 
-transformAsOpenSelectStmt n = do
+-- | Terminates a SQL fragment when suggested. Returns the resulting
+-- 'T.FeatureSet' of the child, the 'Q.SelectStmt' and its children.
+transformTerminated :: C.AlgNode
+                    -> T.FeatureSet
+                    -> TransformMonad (T.FeatureSet, Q.SelectStmt, TileChildren)
+transformTerminated n topFs = do
     tile <- transformNode n
-    tileToOpenSelectStmt tile
+    
+    case tile of
+        TileNode bottomFs body children ->
+            if T.terminates topFs bottomFs
+            then do
+               alias <- generateAliasName
 
--- | Transform a vertex and return it as a select statement, without regard to
--- mergability.
-transformAsSelectStmt :: C.AlgNode
-                      -> TransformMonad (Q.SelectStmt, TileChildren)
-transformAsSelectStmt n = do
-    tile <- transformNode n
-    tileToSelectStmt tile
+               let schema = getSchemaSelectStmt body
 
--- | Converts a 'TileTree' into a select statement, inlines if possible.
--- Select statements produced by this function are mergeable, which means they
--- contain at most a select, from and where clause and have distinct set to
--- tile.
-tileToOpenSelectStmt :: TileTree
-                     -- The resulting 'SelectStmt' and used children (if the
-                     -- 'TileTree' could not be inlined or had children itself).
-                     -> TransformMonad (Q.SelectStmt, TileChildren)
-tileToOpenSelectStmt t = case t of
-    -- The only thing we are able to merge.
-    TileNode True body children  -> return (body, children)
-    -- Embed as sub query.
-    TileNode False body children -> do
-        alias <- generateAliasName
+               return ( Set.fromList [T.FProjection, T.FTable]
+                      , emptySelectStmt
+                        { Q.selectClause =
+                              columnsFromSchema alias schema
+                        , Q.fromClause =
+                              [mkSubQuery body alias $ Just schema]
+                        }
+                      , children
+                      )
+            else return (bottomFs, body, children)
+        ReferenceLeaf r s               -> do
+            (sel, cs) <- embedExternalReference r s
+            return (Set.fromList [T.FProjection, T.FTable], sel, cs)
 
-        let schema = getSchemaSelectStmt body
-
-        return ( emptySelectStmt
-                 { Q.selectClause =
-                       columnsFromSchema alias schema
-                 , Q.fromClause =
-                       [mkSubQuery body alias $ Just schema]
-                 }
-               , children
-               )
-    -- Asign name and produce a 'SelectStmt' which uses it. (Let the
-    -- materialization strategy handle it.)
-    ReferenceLeaf r s            -> embedExternalReference r s
-
-tileToSelectStmt :: TileTree
-                 -> TransformMonad (Q.SelectStmt, TileChildren)
-tileToSelectStmt t = case t of
-    TileNode _ body children -> return (body, children)
-    ReferenceLeaf r s        -> embedExternalReference r s
-
+---- | Transform a vertex and return it as a mergeable select statement.
+--transformAsOpenSelectStmt :: C.AlgNode
+--                          -> TransformMonad (Q.SelectStmt, TileChildren) 
+--transformAsOpenSelectStmt n = do
+--    tile <- transformNode n
+--    tileToOpenSelectStmt tile
+--
+---- | Transform a vertex and return it as a select statement, without regard to
+---- mergability.
+--transformAsSelectStmt :: C.AlgNode
+--                      -> TransformMonad (Q.SelectStmt, TileChildren)
+--transformAsSelectStmt n = do
+--    tile <- transformNode n
+--    tileToSelectStmt tile
+--
+---- | Converts a 'TileTree' into a select statement, inlines if possible.
+---- Select statements produced by this function are mergeable, which means they
+---- contain at most a select, from and where clause and have distinct set to
+---- tile.
+--tileToOpenSelectStmt :: TileTree
+--                     -- The resulting 'SelectStmt' and used children (if the
+--                     -- 'TileTree' could not be inlined or had children itself).
+--                     -> TransformMonad (Q.SelectStmt, TileChildren)
+--tileToOpenSelectStmt t = case t of
+--    -- The only thing we are able to merge.
+--    TileNode True body children  -> return (body, children)
+--    -- Embed as sub query.
+--    TileNode False body children -> do
+--        alias <- generateAliasName
+--
+--        let schema = getSchemaSelectStmt body
+--
+--        return ( emptySelectStmt
+--                 { Q.selectClause =
+--                       columnsFromSchema alias schema
+--                 , Q.fromClause =
+--                       [mkSubQuery body alias $ Just schema]
+--                 }
+--               , children
+--               )
+--    -- Asign name and produce a 'SelectStmt' which uses it. (Let the
+--    -- materialization strategy handle it.)
+--    ReferenceLeaf r s            -> embedExternalReference r s
+--
+--tileToSelectStmt :: TileTree
+--                 -> TransformMonad (Q.SelectStmt, TileChildren)
+--tileToSelectStmt t = case t of
+--    TileNode _ body children -> return (body, children)
+--    ReferenceLeaf r s        -> embedExternalReference r s
+--
 -- | Embeds an external reference into a 'Q.SelectStmt'.
 embedExternalReference :: ExternalReference
                        -> [String]
@@ -716,13 +786,13 @@ discardConstColumnExprs = filter affectsSortOrderCE
 discardConstAggrExprs :: [Q.AggrExpr] -> [Q.AggrExpr]
 discardConstAggrExprs = filter affectsSortOrderAE
 
--- Translates a '[A.SortAttr]' into a '[Q.OrderExpr]'. Column names will be
--- inlined as an 'Q.ExtendedExpr', constant ones will be discarded.
-asOrderExprList :: [Q.SelectColumn]
-                -> [A.SortAttr]
-                -> [Q.OrderExpr]
-asOrderExprList sClause si =
-    filter (affectsSortOrderAE . Q.oExpr)
+-- Translates a '[A.SortAttr]' into a '[Q.WindowOrderExpr]'. Column names will
+-- be inlined as a 'Q.AggrExpr', constant ones will be discarded.
+asWindowOrderExprList :: [Q.SelectColumn]
+                      -> [A.SortAttr]
+                      -> [Q.WindowOrderExpr]
+asWindowOrderExprList sClause si =
+    filter (affectsSortOrderAE . Q.woExpr)
            $ translateSortInf si (inlineAE sClause)
 
 -- | Search the select clause for a specific column definition and return it as
@@ -923,13 +993,13 @@ translateBinFun f = case f of
     A.Like      -> Q.BFLike
     A.Concat    -> Q.BFConcat
 
--- | Translate sort information into '[Q.OrderExpr]', using the column
+-- | Translate sort information into '[Q.WindowOrderExpr]', using the column
 -- function, which takes a 'String'.
 translateSortInf :: [A.SortAttr]
                  -> (String -> Q.AggrExpr)
-                 -> [Q.OrderExpr]
+                 -> [Q.WindowOrderExpr]
 translateSortInf si colFun = map f si
-    where f (n, d) = Q.OE (colFun n) $ translateSortDir d
+    where f (n, d) = Q.WOE (colFun n) $ translateSortDir d
 
 
 -- | Translate a single join condition into it's 'Q.ColumnExpr' equivalent.
