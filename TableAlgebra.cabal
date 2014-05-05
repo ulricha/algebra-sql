@@ -41,7 +41,8 @@ library
                       errors >= 1.0.0,
                       dlist,
                       ansi-wl-pprint,
-                      multiset
+                      multiset,
+                      template-haskell
 
     exposed-modules:  Database.Algebra.Dag
                       Database.Algebra.Dag.Builder
@@ -177,5 +178,6 @@ executable sqlcodegentest
                       ansi-wl-pprint,
                       process,
                       filepath,
-                      multiset
+                      multiset,
+                      template-haskell
 

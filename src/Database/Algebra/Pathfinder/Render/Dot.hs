@@ -2,13 +2,13 @@
 
 module Database.Algebra.Pathfinder.Render.Dot(renderPFDot) where
 
-import qualified Data.IntMap                         		as Map
-import           Data.List 							 		--as List
+import qualified Data.IntMap                              as Map
+import           Data.List
 
-import           Text.PrettyPrint 					 		--as Pretty
+import           Text.PrettyPrint
 
-import qualified Database.Algebra.Dag                		as Dag
-import           Database.Algebra.Dag.Common		 		--as DagC
+import qualified Database.Algebra.Dag                     as Dag
+import           Database.Algebra.Dag.Common
 import           Database.Algebra.Pathfinder.Data.Algebra
 
 
@@ -38,10 +38,10 @@ renderSortInf :: (SortAttrName, SortDir) -> Doc
 renderSortInf (attr, Desc) = text $ attr ++ "/desc"
 renderSortInf (attr, Asc)  = text attr
 
-renderJoinArgs :: (LeftAttrName, RightAttrName, JoinRel) -> Doc
-renderJoinArgs (left, right, joinR) = 
-    text left <+> (text $ show joinR) <+> text right
-    
+renderJoinArgs :: (Expr, Expr, JoinRel) -> Doc
+renderJoinArgs (left, right, joinR) =
+    (text $ show left) <+> (text $ show joinR) <+> (text $ show right)
+
 renderOptCol :: Maybe AttrName -> Doc
 renderOptCol Nothing  = empty
 renderOptCol (Just c) = text "/" <> text c
@@ -53,7 +53,7 @@ renderColumn :: (AttrName, ATy) -> Doc
 renderColumn (c, t) = text c <> text "::" <> (text $ show t)
 
 renderTableInfo :: TableName -> [(AttrName, ATy)] -> [Key] -> Doc
-renderTableInfo tableName cols keys = 
+renderTableInfo tableName cols keys =
     (text tableName)
     <> text "\\n"
     <> (brackets $ commas renderColumn cols)
@@ -62,7 +62,7 @@ renderTableInfo tableName cols keys =
 
 opDotLabel :: NodeMap [Tag] -> AlgNode -> PFLabel -> Doc
 -- | Nullary operations
-opDotLabel tags i (LitTableL _ _)             = labelToDoc i 
+opDotLabel tags i (LitTableL _ _)             = labelToDoc i
     "LITTABLE" empty (lookupTags i tags)
 opDotLabel tags i (TableRefL (name, attrs, keys)) = labelToDoc i
     "TABLE" (renderTableInfo name attrs keys) (lookupTags i tags)
@@ -82,23 +82,23 @@ opDotLabel tags i (SemiJoinL info)           = labelToDoc i
 opDotLabel tags i (AntiJoinL info)           = labelToDoc i
     "ANTIJOIN" (commas renderJoinArgs info) (lookupTags i tags)
 -- | Unary operations
-opDotLabel tags i (RowNumL (res,sortI,attr))  = labelToDoc i 
+opDotLabel tags i (RowNumL (res,sortI,attr))  = labelToDoc i
     "ROWNUM" ((text $ res ++ ":<")
               <> (commas renderSortInf sortI)
               <> text ">"
               <> renderOptCol attr)
     (lookupTags i tags)
 opDotLabel tags i (RowRankL (res,sortInf))    = labelToDoc i
-    "ROWRANK" ((text $ res ++ ":<") 
+    "ROWRANK" ((text $ res ++ ":<")
                <> (commas renderSortInf sortInf)
-               <> text ">")                
+               <> text ">")
     (lookupTags i tags)
 opDotLabel tags i (RankL (res,sortInf))       = labelToDoc i
-    "RANK" ((text $ res ++ ":<") 
+    "RANK" ((text $ res ++ ":<")
             <> commas renderSortInf sortInf
-            <> text ">")                
+            <> text ">")
     (lookupTags i tags)
-opDotLabel tags i (ProjectL info)                = labelToDoc i 
+opDotLabel tags i (ProjectL info)                = labelToDoc i
     "PROJECT" (commas renderProj info) (lookupTags i tags)
 opDotLabel tags i (SelL info)                 = labelToDoc i
     "SELECT" (text $ show info) (lookupTags i tags)

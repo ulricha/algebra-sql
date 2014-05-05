@@ -1,4 +1,5 @@
 {-# LANGUAGE DoAndIfThenElse #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Database.Algebra.SQL.Tile
     ( TileTree (TileNode, ReferenceLeaf)
     , TileChildren
@@ -17,27 +18,23 @@ module Database.Algebra.SQL.Tile
 -- TODO RowRank <-> DenseRank ?
 -- TODO isMultiReferenced special case: check for same parent !!
 
-import Control.Arrow (second)
-import Control.Monad (liftM)
-import Control.Monad.Trans.RWS.Strict
-import qualified Data.IntMap as IntMap
-import Data.Maybe
-import qualified Data.DList as DL
-    ( DList
-    , singleton
-    )
+import           Control.Arrow                            (second)
+import           Control.Monad                            (liftM)
+import           Control.Monad.Trans.RWS.Strict
+import qualified Data.DList                               as DL (DList,
+                                                                 singleton)
+import qualified Data.IntMap                              as IntMap
+import           Data.Maybe
 
-import qualified Database.Algebra.Dag as D
-import qualified Database.Algebra.Dag.Common as C
+import qualified Database.Algebra.Dag                     as D
+import qualified Database.Algebra.Dag.Common              as C
+import           Database.Algebra.Impossible
 import qualified Database.Algebra.Pathfinder.Data.Algebra as A
 
-import qualified Database.Algebra.SQL.Query as Q
-import Database.Algebra.SQL.Query.Util
-    ( emptySelectStmt
-    , mkSubQuery
-    , mkPCol
-    , affectsSortOrder
-    )
+import qualified Database.Algebra.SQL.Query               as Q
+import           Database.Algebra.SQL.Query.Util          (affectsSortOrder,
+                                                           emptySelectStmt,
+                                                           mkPCol, mkSubQuery)
 
 -- | A tile internal reference type.
 type InternalReference = Q.ReferenceType
@@ -70,7 +67,7 @@ type DependencyList = DL.DList (ExternalReference, TileTree)
 -- transforming:
 --     * The processed nodes with multiple parents.
 --
---     * The current state of the table id generator.      
+--     * The current state of the table id generator.
 --
 --     * The current state of the variable id generator.
 --
@@ -152,7 +149,7 @@ runTransformMonad :: TransformMonad a
                   -> PFDag                      -- ^ The used DAG.
                   -> TransformState             -- ^ The inital state.
                   -> (a, DependencyList)
-runTransformMonad = evalRWS 
+runTransformMonad = evalRWS
 
 -- | Check if node has more than one parent.
 isMultiReferenced :: C.AlgNode
@@ -186,7 +183,7 @@ transform dag = runTransformMonad result dag sInitial
 
 -- | This function basically checks for already referenced nodes with more than
 -- one parent, returning a reference to already computed 'TileTree's.
-transformNode :: C.AlgNode -> TransformMonad TileTree 
+transformNode :: C.AlgNode -> TransformMonad TileTree
 transformNode n = do
 
     op <- asks $ D.operator n
@@ -269,11 +266,11 @@ transformNullaryOp (A.LitTable tuples schema) = do
              , Q.fromClause = [fLiteral]
              }
              []
-  where tMap = map $ Q.VEValue . translateAVal 
+  where tMap = map $ Q.VEValue . translateAVal
 
 transformNullaryOp (A.TableRef (name, info, _))   = do
     alias <- generateAliasName
-    
+
     let f (n, _) = Q.SCAlias (Q.SEValueExpr $ mkPCol alias n) n
         body     =
             emptySelectStmt
@@ -284,8 +281,8 @@ transformNullaryOp (A.TableRef (name, info, _))   = do
                     [ Q.FPAlias (Q.FETableReference name)
                                 alias
                                 -- Map to old column name.
-                                $ Just $ map fst info 
-                    ] 
+                                $ Just $ map fst info
+                    ]
             }
 
     return $ TileNode True body []
@@ -368,7 +365,7 @@ transformUnOp (A.RowNum (name, sortList, optPart)) c =
 transformUnOp (A.RowRank inf) c = transformUnOpRank Q.SEDenseRank inf c
 transformUnOp (A.Rank inf) c = transformUnOpRank Q.SERank inf c
 transformUnOp (A.Project projList) c = do
-    
+
     (select, children) <- transformAsOpenSelectStmt c
 
     let sClause  = Q.selectClause select
@@ -388,7 +385,7 @@ transformUnOp (A.Project projList) c = do
 transformUnOp (A.Select expr) c = do
 
     (select, children) <- transformAsOpenSelectStmt c
-    
+
     return $ TileNode
              True
              ( appendToWhere ( translateExpr
@@ -407,7 +404,7 @@ transformUnOp (A.Distinct ()) c = do
     return $ TileNode False select { Q.distinct = True } children
 
 transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
-    
+
     (select, children) <- transformAsOpenSelectStmt c
 
     let sClause         = Q.selectClause select
@@ -554,10 +551,12 @@ transformBinOp (A.ThetaJoin conditions) c0 c1  = do
     then return $ TileNode True select children
     else do
 
-        let sClause = Q.selectClause select
-            cond    = foldr mkAnd (head conds) (tail conds)
-            conds   = map f conditions
-            f       = translateInlinedJoinCond sClause sClause
+        let sClause        = Q.selectClause select
+            cond           = foldr mkAnd (head conds) (tail conds)
+            conds          = map f conditions
+            f (e1, e2, op) = Q.VEBinApp (translateJoinRel op)
+                                        (translateExpr (Just sClause) e1)
+                                        (translateExpr (Just sClause) e2)
 
         return $ TileNode True (appendToWhere cond select) children
 
@@ -571,37 +570,21 @@ transformBinOp (A.Difference ()) c0 c1        =
     transformBinSetOp Q.SOExceptAll c0 c1
 
 transformExistsJoin :: A.SemInfJoin
-                    -> C.AlgNode 
+                    -> C.AlgNode
                     -> C.AlgNode
                     -> (Q.ValueExpr -> Q.ValueExpr)
                     -> TransformMonad TileTree
-transformExistsJoin conditions c0 c1 existsWrapF = case result of
-    (Nothing, _)      -> do
-        -- TODO in case we do not have merge conditions we can simply use the
-        -- unmergeable but less nested select stmt on the right side
+transformExistsJoin conditions c0 c1 existsWrapF = case conditions of
+    [(A.ColE l, A.ColE r, A.EqJ)] -> do
         (select0, children0) <- transformAsOpenSelectStmt c0
         (select1, children1) <- transformAsOpenSelectStmt c1
 
-        let outerCond   = existsWrapF . Q.VEExists $ Q.VQSelect innerSelect
-            innerSelect = foldr appendToWhere select1 innerConds
-            innerConds  = map f conditions
-            f           = translateInlinedJoinCond (Q.selectClause select0)
-                                                $ Q.selectClause select1
-
-        return $ TileNode True
-                        (appendToWhere outerCond select0)
-                        $ children0 ++ children1
-    (Just (l, r), cs) -> do
-        (select0, children0) <- transformAsOpenSelectStmt c0
-        (select1, children1) <- transformAsOpenSelectStmt c1
-       
         let -- Embedd the right query into the where clause of the left one.
             leftCond    = existsWrapF $ Q.VEIn (inlineColumn lSClause l)
                                         $ Q.VQSelect rightSelect
             -- Embedd all conditions in the right select, and set select clause
             -- to the right part of the equal join condition.
-            rightSelect = (foldr f select1 cs) { Q.selectClause = [rightSCol] }
-            f           = appendToWhere . translateInlinedJoinCond lSClause rSClause
+            rightSelect = select1 { Q.selectClause = [rightSCol] }
             rightSCol   = Q.SCAlias (Q.SEValueExpr $ inlineColumn rSClause r) r
             lSClause    = Q.selectClause select0
             rSClause    = Q.selectClause select1
@@ -609,17 +592,25 @@ transformExistsJoin conditions c0 c1 existsWrapF = case result of
         return $ TileNode True
                           (appendToWhere leftCond select0)
                           $ children0 ++ children1
-  where
-    result                                = foldr tryIn (Nothing, []) conditions
-    -- Tries to extract a join condition for usage in the IN sql construct.
-    tryIn c (Just eqCols, r)              = (Just eqCols, c:r)
-    tryIn c@(left, right, j) (Nothing, r) = case j of
-        A.EqJ -> (Just (left, right), r)
-        _     -> (Nothing, c:r)
+    _      -> do
+        -- TODO in case we do not have merge conditions we can simply use the
+        -- unmergeable but less nested select stmt on the right side
+        (select0, children0) <- transformAsOpenSelectStmt c0
+        (select1, children1) <- transformAsOpenSelectStmt c1
+
+        let outerCond   = existsWrapF . Q.VEExists $ Q.VQSelect innerSelect
+            innerSelect = appendToWhere innerConds select1
+            innerConds  = translateJoinCond (Q.selectClause select0)
+                                            (Q.selectClause select1)
+                                            conditions
+
+        return $ TileNode True
+                        (appendToWhere outerCond select0)
+                        $ children0 ++ children1
 
 -- | Transform a vertex and return it as a mergeable select statement.
 transformAsOpenSelectStmt :: C.AlgNode
-                          -> TransformMonad (Q.SelectStmt, TileChildren) 
+                          -> TransformMonad (Q.SelectStmt, TileChildren)
 transformAsOpenSelectStmt n = do
     tile <- transformNode n
     tileToOpenSelectStmt tile
@@ -697,13 +688,6 @@ asSelectColumn :: String
 asSelectColumn prefix columnName =
     Q.SCAlias (Q.SEValueExpr $ mkPCol prefix columnName) columnName
 
-translateInlinedJoinCond :: [Q.SelectColumn] -- ^ Left select clause.
-                         -> [Q.SelectColumn] -- ^ Right select clause.
-                         -> (A.LeftAttrName, A.RightAttrName, A.JoinRel)
-                         -> Q.ValueExpr
-translateInlinedJoinCond lSClause rSClause j =
-    translateJoinCond j (inlineColumn lSClause) (inlineColumn rSClause)
-
 -- Remove all 'Q.ValueExpr's which are constant in their column value.
 discardConstValueExprs :: [Q.ValueExpr] -> [Q.ValueExpr]
 discardConstValueExprs = filter $ affectsSortOrder
@@ -717,7 +701,7 @@ asOrderExprList sClause si =
     filter (affectsSortOrder . Q.oExpr)
            $ translateSortInf si (inlineColumn sClause)
 
--- | Uses the select clause to try to inline an aliased value. 
+-- | Uses the select clause to try to inline an aliased value.
 inlineColumn :: [Q.SelectColumn]
              -> String
              -> Q.ValueExpr
@@ -814,7 +798,7 @@ translateExpr optSelectClause expr = case expr of
         Q.VECase (translateExpr optSelectClause c)
                  (translateExpr optSelectClause t)
                  (translateExpr optSelectClause e)
-                               
+
     A.BinAppE f e1 e2 ->
         Q.VEBinApp (translateBinFun f)
                    (translateExpr optSelectClause e1)
@@ -868,13 +852,20 @@ translateSortInf si colFun = map f si
     where f (n, d) = Q.OE (colFun n) $ translateSortDir d
 
 
--- | Translate a single join condition into it's 'Q.ValueExpr' equivalent.
-translateJoinCond :: (A.LeftAttrName, A.RightAttrName, A.JoinRel)
-                  -> (String -> Q.ValueExpr) -- ^ Left column function.
-                  -> (String -> Q.ValueExpr) -- ^ Right column function.
-                  -> Q.ValueExpr
-translateJoinCond (l, r, j) lColFun rColFun =
-    Q.VEBinApp (translateJoinRel j) (lColFun l) (rColFun r)
+-- | Translate a join condition into it's 'Q.ValueExpr' equivalent.
+translateJoinCond :: [Q.SelectColumn]
+                  -> [Q.SelectColumn]
+                  -> [(A.Expr, A.Expr, A.JoinRel)] -> Q.ValueExpr
+translateJoinCond sClause1 sClause2 conjs =
+    case conjs of
+        []       -> $impossible
+        (c : cs) -> foldr mkAnd (joinConjunct c) (map joinConjunct cs)
+
+  where
+    joinConjunct (l, r, j) =
+        Q.VEBinApp (translateJoinRel j)
+                   (translateExpr (Just sClause1) l)
+                   (translateExpr (Just sClause2) r)
 
 translateSortDir :: A.SortDir -> Q.SortDirection
 translateSortDir d = case d of
@@ -884,7 +875,7 @@ translateSortDir d = case d of
 translateAVal :: A.AVal -> Q.Value
 translateAVal v = case v of
     A.VInt i    -> Q.VInteger i
-    A.VStr s    -> Q.VText s 
+    A.VStr s    -> Q.VText s
     A.VBool b   -> Q.VBoolean b
     A.VDouble d -> Q.VDoublePrecision d
     A.VDec d    -> Q.VDecimal d

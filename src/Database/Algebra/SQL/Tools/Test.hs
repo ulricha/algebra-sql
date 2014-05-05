@@ -140,8 +140,8 @@ g2 = D.mkDag ( IntMap.fromList [ (0, C.UnOp (A.Project [ ( "result"
 --
 
 g6 :: T.PFDag
-g6 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.AntiJoin [ ("a", "c", A.EqJ)
-                                                          , ("b", "d", A.LtJ)
+g6 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.AntiJoin [ (A.ColE "a", A.ColE "c", A.EqJ)
+                                                          , (A.ColE "b", A.ColE "d", A.LtJ)
                                                           ]
                                              )
                                              1
@@ -166,8 +166,8 @@ g6 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.AntiJoin [ ("a", "c", A.EqJ)
              [0]
 
 g7 :: T.PFDag
-g7 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.SemiJoin [ ("a", "c", A.EqJ)
-                                                          , ("b", "d", A.LtJ)
+g7 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.SemiJoin [ (A.ColE "a", A.ColE "c", A.EqJ)
+                                                          , (A.ColE "b", A.ColE "d", A.LtJ)
                                                           ]
                                              )
                                              1
@@ -193,7 +193,7 @@ g7 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.SemiJoin [ ("a", "c", A.EqJ)
 
 -- Should use EXISTS due to the lack of the equal join condition.
 g8 :: T.PFDag
-g8 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.SemiJoin [ ("b", "d", A.LtJ)
+g8 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.SemiJoin [ (A.ColE "b", A.ColE "d", A.LtJ)
                                                           ]
                                              )
                                              1
@@ -276,7 +276,7 @@ singleTests = [ tLitTable
               , tDifference
               ]
   where
-    joinInfo          = [("a", "c", A.EqJ), ("b", "d", A.LeJ)]
+    joinInfo          = [(A.ColE "a", A.ColE "c", A.EqJ), (A.ColE "b", A.ColE "d", A.LeJ)]
     sortInfo          = [("a", A.Asc)]
     colTypes          = [("a", A.AInt), ("b", A.AStr)]
     colTypes2         = [("c", A.AInt), ("d", A.AInt)]
