@@ -140,6 +140,7 @@ data BinFun = Gt
             | GtE
             | LtE
             | Eq
+            | NEq
             | And
             | Or
             | Plus
@@ -168,6 +169,7 @@ instance Show BinFun where
   show GtE       = ">="
   show LtE       = "<="
   show Eq        = "=="
+  show NEq       = "<>"
   show And       = "&&"
   show Or        = "||"
   

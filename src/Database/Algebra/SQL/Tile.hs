@@ -846,6 +846,7 @@ translateBinFun f = case f of
     A.GtE       -> Q.BFGreaterEqual
     A.LtE       -> Q.BFLowerEqual
     A.Eq        -> Q.BFEqual
+    A.NEq       -> Q.BFNotEqual
     A.And       -> Q.BFAnd
     A.Or        -> Q.BFOr
     A.Plus      -> Q.BFPlus
