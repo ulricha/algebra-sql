@@ -1015,3 +1015,8 @@ translateATy t = case t of
     A.ADouble -> Q.DTDoublePrecision
     A.ANat    -> Q.DTInteger
 
+
+mkAnd :: Q.ColumnExpr
+      -> Q.ColumnExpr
+      -> Q.ColumnExpr
+mkAnd = Q.VEBinApp Q.BFAnd
