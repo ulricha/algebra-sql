@@ -1,4 +1,6 @@
 {-# LANGUAGE DoAndIfThenElse #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Database.Algebra.SQL.Tile
     ( TileTree (TileNode, ReferenceLeaf)
     , TileChildren
@@ -16,31 +18,27 @@ module Database.Algebra.SQL.Tile
 -- correlated?)? (reader?)
 -- TODO isMultiReferenced special case: check for same parent !!
 
-import Control.Arrow (second)
-import Control.Monad (liftM)
-import Control.Monad.Trans.RWS.Strict
-import qualified Data.IntMap as IntMap
-import Data.Maybe
-import qualified Data.DList as DL
-    ( DList
-    , singleton
-    )
+import           Control.Arrow                            (second)
+import           Control.Monad                            (liftM)
+import           Control.Monad.Trans.RWS.Strict
+import qualified Data.DList                               as DL (DList,
+                                                                 singleton)
+import qualified Data.IntMap                              as IntMap
+import           Data.Maybe
 import qualified Data.Set as Set
 
-import qualified Database.Algebra.Dag as D
-import qualified Database.Algebra.Dag.Common as C
+import qualified Database.Algebra.Dag                     as D
+import qualified Database.Algebra.Dag.Common              as C
+import           Database.Algebra.Impossible
 import qualified Database.Algebra.Pathfinder.Data.Algebra as A
 
-import qualified Database.Algebra.SQL.Query as Q
+import qualified Database.Algebra.SQL.Query               as Q
 import qualified Database.Algebra.SQL.Termination as T
-import Database.Algebra.SQL.Query.Util
-    ( emptySelectStmt
-    , mkSubQuery
-    , mkPCol
-    , affectsSortOrderAE
-    , affectsSortOrderCE
-    , affectsSortOrderEE
-    )
+import           Database.Algebra.SQL.Query.Util          (affectsSortOrderCE,
+                                                           affectsSortOrderAE,
+                                                           affectsSortOrderEE,
+                                                           emptySelectStmt,
+                                                           mkPCol, mkSubQuery)
 
 -- | A tile internal reference type.
 type InternalReference = Q.ReferenceType
@@ -72,7 +70,7 @@ type DependencyList = DL.DList (ExternalReference, TileTree)
 -- transforming:
 --     * The processed nodes with multiple parents.
 --
---     * The current state of the table id generator.      
+--     * The current state of the table id generator.
 --
 --     * The current state of the variable id generator.
 --
@@ -154,7 +152,7 @@ runTransformMonad :: TransformMonad a
                   -> PFDag                      -- ^ The used DAG.
                   -> TransformState             -- ^ The inital state.
                   -> (a, DependencyList)
-runTransformMonad = evalRWS 
+runTransformMonad = evalRWS
 
 -- | Check if node has more than one parent.
 isMultiReferenced :: C.AlgNode
@@ -188,7 +186,7 @@ transform dag = runTransformMonad result dag sInitial
 
 -- | This function basically checks for already referenced nodes with more than
 -- one parent, returning a reference to already computed 'TileTree's.
-transformNode :: C.AlgNode -> TransformMonad TileTree 
+transformNode :: C.AlgNode -> TransformMonad TileTree
 transformNode n = do
 
     op <- asks $ D.operator n
@@ -200,11 +198,7 @@ transformNode n = do
             (C.NullaryOp nop)   -> (False, transformNullaryOp nop)
             (C.UnOp uop c)      -> (True, transformUnOp uop c)
             (C.BinOp bop c0 c1) -> (True, transformBinOp bop c0 c1)
-            (C.TerOp () _ _ _)  ->
-                ( True
-                , fail "transformOperator: invalid operator type TerOp found"
-                )
-
+            (C.TerOp () _ _ _)  -> $impossible
 
     multiRef <- asks $ isMultiReferenced n
 
@@ -288,8 +282,8 @@ transformNullaryOp (A.TableRef (name, info, _))   = do
                     [ Q.FPAlias (Q.FETableReference name)
                                 alias
                                 -- Map to old column name.
-                                $ Just $ map fst info 
-                    ] 
+                                $ Just $ map fst info
+                    ]
             }
 
     return $ TileNode (Set.fromList [T.FProjection, T.FTable]) body []
@@ -371,7 +365,6 @@ transformUnOp (A.RowNum (name, sortList, optPart)) c =
 transformUnOp (A.RowRank inf) c = transformUnOpRank Q.EEDenseRank inf c
 transformUnOp (A.Rank inf) c = transformUnOpRank Q.EERank inf c
 transformUnOp (A.Project projList) c = do
-    
     (childFeatures, select, children) <-
         transformTerminated c opFeatures
 
@@ -420,7 +413,6 @@ transformUnOp (A.Distinct ()) c = do
   where
     opFeatures = Set.singleton T.FDupElim
 transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
-
     (childFeatures, select, children) <-
         transformTerminated c opFeatures
     
@@ -595,7 +587,7 @@ transformBinOp (A.Difference ()) c0 c1        =
     transformBinSetOp Q.SOExceptAll c0 c1
 
 transformExistsJoin :: A.SemInfJoin
-                    -> C.AlgNode 
+                    -> C.AlgNode
                     -> C.AlgNode
                     -> (Q.ColumnExpr -> Q.ColumnExpr)
                     -> TransformMonad TileTree
@@ -962,6 +954,7 @@ translateBinFun f = case f of
     A.GtE       -> Q.BFGreaterEqual
     A.LtE       -> Q.BFLowerEqual
     A.Eq        -> Q.BFEqual
+    A.NEq       -> Q.BFNotEqual
     A.And       -> Q.BFAnd
     A.Or        -> Q.BFOr
     A.Plus      -> Q.BFPlus
@@ -983,13 +976,21 @@ translateSortInf si colFun = map f si
     where f (n, d) = Q.WOE (colFun n) $ translateSortDir d
 
 
--- | Translate a single join condition into it's 'Q.ColumnExpr' equivalent.
-translateJoinCond :: (A.LeftAttrName, A.RightAttrName, A.JoinRel)
-                  -> (String -> Q.ColumnExpr) -- ^ Left column function.
-                  -> (String -> Q.ColumnExpr) -- ^ Right column function.
-                  -> Q.ColumnExpr
-translateJoinCond (l, r, j) lColFun rColFun =
-    Q.CEBase $ Q.VEBinApp (translateJoinRel j) (lColFun l) (rColFun r)
+-- | Translate a join condition into it's 'Q.ValueExpr' equivalent.
+translateJoinCond :: [Q.SelectColumn]
+                  -> [Q.SelectColumn]
+                  -> [(A.Expr, A.Expr, A.JoinRel)] 
+                  -> Q.ValueExprTemplate a
+translateJoinCond sClause1 sClause2 conjs =
+    case conjs of
+        []       -> $impossible
+        (c : cs) -> foldr mkAnd (joinConjunct c) (map joinConjunct cs)
+
+  where
+    joinConjunct (l, r, j) =
+        Q.VEBinApp (translateJoinRel j)
+                   (translateExprCE (Just sClause1) l)
+                   (translateExprCE (Just sClause2) r)
 
 translateSortDir :: A.SortDir -> Q.SortDirection
 translateSortDir d = case d of
@@ -999,7 +1000,7 @@ translateSortDir d = case d of
 translateAVal :: A.AVal -> Q.Value
 translateAVal v = case v of
     A.VInt i    -> Q.VInteger i
-    A.VStr s    -> Q.VText s 
+    A.VStr s    -> Q.VText s
     A.VBool b   -> Q.VBoolean b
     A.VDouble d -> Q.VDoublePrecision d
     A.VDec d    -> Q.VDecimal d
