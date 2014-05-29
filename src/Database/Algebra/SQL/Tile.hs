@@ -1,5 +1,6 @@
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE TemplateHaskell #-}
+
 module Database.Algebra.SQL.Tile
     ( TileTree (TileNode, ReferenceLeaf)
     , TileChildren
@@ -195,11 +196,7 @@ transformNode n = do
             (C.NullaryOp nop)   -> (False, transformNullaryOp nop)
             (C.UnOp uop c)      -> (True, transformUnOp uop c)
             (C.BinOp bop c0 c1) -> (True, transformBinOp bop c0 c1)
-            (C.TerOp () _ _ _)  ->
-                ( True
-                , fail "transformOperator: invalid operator type TerOp found"
-                )
-
+            (C.TerOp () _ _ _)  -> $impossible
 
     multiRef <- asks $ isMultiReferenced n
 
@@ -552,11 +549,7 @@ transformBinOp (A.ThetaJoin conditions) c0 c1  = do
     else do
 
         let sClause        = Q.selectClause select
-            cond           = foldr mkAnd (head conds) (tail conds)
-            conds          = map f conditions
-            f (e1, e2, op) = Q.VEBinApp (translateJoinRel op)
-                                        (translateExpr (Just sClause) e1)
-                                        (translateExpr (Just sClause) e2)
+            cond           = translateJoinCond sClause sClause conditions
 
         return $ TileNode True (appendToWhere cond select) children
 
@@ -855,7 +848,8 @@ translateSortInf si colFun = map f si
 -- | Translate a join condition into it's 'Q.ValueExpr' equivalent.
 translateJoinCond :: [Q.SelectColumn]
                   -> [Q.SelectColumn]
-                  -> [(A.Expr, A.Expr, A.JoinRel)] -> Q.ValueExpr
+                  -> [(A.Expr, A.Expr, A.JoinRel)] 
+                  -> Q.ValueExpr
 translateJoinCond sClause1 sClause2 conjs =
     case conjs of
         []       -> $impossible
