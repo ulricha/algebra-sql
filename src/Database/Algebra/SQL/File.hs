@@ -1,42 +1,26 @@
--- Provides file tools used for outputting and converting xml and json plan
--- files.
+-- | Provides file tools used for outputting and converting xml and
+-- json plan files.
 module Database.Algebra.SQL.File where
 
-import Control.Monad.Error.Class (throwError)
-import System.FilePath (takeExtension)
-import System.Process
-    ( rawSystem
-    , createProcess
-    , CreateProcess
-    , std_out
-    , std_in
-    , StdStream(UseHandle, CreatePipe)
-    , proc
-    , waitForProcess
-    )
-import qualified Data.IntMap as IntMap
-    ( empty
-    )
-import System.IO
-    ( openFile
-    , IOMode(WriteMode)
-    , hClose
-    )
+import           Control.Monad.Error.Class
+import qualified Data.IntMap                        as IntMap
+import           System.FilePath
+import           System.IO                          
+import           System.Process                     
 
-import qualified Database.Algebra.Dag as D
---import qualified Database.Algebra.Pathfinder.Parse.XML as XML
-import qualified Database.Algebra.Pathfinder.Render.JSON as JSON
-import Database.Algebra.Pathfinder.Render.Dot (renderPFDot)
+import qualified Database.Algebra.Dag               as D
+import           Database.Algebra.Table.Render.Dot  (renderTADot)
+import qualified Database.Algebra.Table.Render.JSON as JSON
 
-import qualified Database.Algebra.SQL.Tile as T
+import qualified Database.Algebra.SQL.Tile          as T
 
-readDagFromFile :: FilePath -> IO (Either String T.PFDag)
+readDagFromFile :: FilePath -> IO (Either String T.TADag)
 readDagFromFile filename = case takeExtension filename of
     -- ".xml"  -> do
     --     s <- readFile filename
-    --     
+    --
     --     case XML.deserializeQueryPlan filename s of
-    -- 
+    --
     --         Left es   ->
     --             return $ throwError $ "could not deserialize "
     --                                   ++ filename
@@ -46,7 +30,7 @@ readDagFromFile filename = case takeExtension filename of
     --                     errorLineFun e = "    " ++ e ++ "\n"
     --         Right dag ->
     --             return $ return dag
-    -- 
+    --
     ".plan" -> do
         -- FIXME This function is a mess, does an unchecked fromJust, which
         -- easily fails.
@@ -57,11 +41,11 @@ readDagFromFile filename = case takeExtension filename of
     format ->
         return $ throwError $ "unkown file format '" ++ format ++ "'"
 
-outputDot :: FilePath -> T.PFDag -> IO ()
+outputDot :: FilePath -> T.TADag -> IO ()
 outputDot filename dag = do
     writeFile filename result
     putStrLn $ "Writing dot file to '" ++ filename ++ "'"
-  where result = renderPFDot IntMap.empty (D.rootNodes dag) (D.nodeMap dag)
+  where result = renderTADot IntMap.empty (D.rootNodes dag) (D.nodeMap dag)
 
 renderDot :: FilePath -> FilePath -> IO ()
 renderDot dotPath pdfPath = do
@@ -75,7 +59,7 @@ optimizeXML inputFile tmpFile outputFile = do
 
     -- Can't rely on pfopt reading from pipe.
     hFormatted <- openFile tmpFile WriteMode
-    hOutput <- openFile outputFile WriteMode 
+    hOutput <- openFile outputFile WriteMode
     -- pfopt only accepts formatted XML.
     (_, _, _, phXmllint) <-
         createProcess (proc "xmllint" ["--format", inputFile])

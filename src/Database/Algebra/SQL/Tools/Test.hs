@@ -1,37 +1,26 @@
-import qualified Data.IntMap as IntMap
-    ( fromList
-    )
-import Control.Monad (when, forM_)
-import System.Console.GetOpt
-    ( getOpt
-    , ArgOrder(RequireOrder)
-    , usageInfo
-    , ArgDescr(NoArg, ReqArg, OptArg)
-    , OptDescr(Option)
-    )
-import System.Environment (getArgs)
+import           Control.Monad                                       (forM_,
+                                                                      when)
+import qualified Data.IntMap                                         as IntMap (fromList)
+import           System.Console.GetOpt                               (ArgDescr (NoArg, ReqArg, OptArg), ArgOrder (RequireOrder), OptDescr (Option),
+                                                                      getOpt,
+                                                                      usageInfo)
+import           System.Environment                                  (getArgs)
 
-import qualified Database.Algebra.Pathfinder.Data.Algebra as A
-import qualified Database.Algebra.Dag as D
-import qualified Database.Algebra.Dag.Common as C
+import qualified Database.Algebra.Dag                                as D
+import qualified Database.Algebra.Dag.Common                         as C
+import qualified Database.Algebra.Table.Lang                         as A
 
-import Database.Algebra.SQL.File
-import Database.Algebra.SQL.Materialization
-import Database.Algebra.SQL.Materialization.CTE as CTE
-import Database.Algebra.SQL.Materialization.TemporaryTable as TemporaryTable
-import qualified Database.Algebra.SQL.Materialization.Combined as Combined
-import Database.Algebra.SQL.Util
-    ( renderDebugOutput
-    , putShowSLn
-    , renderAdvancedDebugOutput
-    , renderOutputCompact
-    , renderOutputPlain
-    )
-import qualified Database.Algebra.SQL.Tile as T
-import Database.Algebra.SQL.Compatibility
+import           Database.Algebra.SQL.Compatibility
+import           Database.Algebra.SQL.File
+import           Database.Algebra.SQL.Materialization
+import qualified Database.Algebra.SQL.Materialization.Combined       as Combined
+import           Database.Algebra.SQL.Materialization.CTE            as CTE
+import           Database.Algebra.SQL.Materialization.TemporaryTable as TemporaryTable
+import qualified Database.Algebra.SQL.Tile                           as T
+import           Database.Algebra.SQL.Util
 
 
-test :: T.PFDag
+test :: T.TADag
 test = D.mkDag ( IntMap.fromList [ (0, C.BinOp (A.Cross ()) 1 2)
                                  , (1, C.UnOp (A.Project [("x", A.ColE "y")]) 4)
                                  , (2, C.BinOp (A.Cross ()) 1 3)
@@ -47,7 +36,7 @@ test = D.mkDag ( IntMap.fromList [ (0, C.BinOp (A.Cross ()) 1 2)
 
 -- TODO when using mutiple root nodes the result gets computed multiple times,
 -- maybe save every computed tile in the state part of the transform monad for a node.
-g1 :: T.PFDag
+g1 :: T.TADag
 g1 = D.mkDag ( IntMap.fromList [ (0, C.UnOp (A.Project [("result", A.ColE "str")]) 1)
                                , (1, C.UnOp (A.Select eq) 2)
                                , (2, C.NullaryOp $ A.LitTable
@@ -58,14 +47,14 @@ g1 = D.mkDag ( IntMap.fromList [ (0, C.UnOp (A.Project [("result", A.ColE "str")
                                                    [("str", A.AStr)]
                                  )
                                ]
-                               
+
              )
              [0]
    where eq   = A.BinAppE A.Eq (A.BinAppE A.Plus cast $ A.ConstE $ A.VInt 41)
                                $ A.ConstE $ A.VInt 42
          cast = A.UnAppE (A.Cast A.AInt) $ A.ColE "str"
 
-g2 :: T.PFDag
+g2 :: T.TADag
 g2 = D.mkDag ( IntMap.fromList [ (0, C.UnOp (A.Project [ ( "result"
                                                          , A.BinAppE A.Plus
                                                                      (A.ColE "a")
@@ -91,7 +80,7 @@ g2 = D.mkDag ( IntMap.fromList [ (0, C.UnOp (A.Project [ ( "result"
              )
              [0]
 
---g3 :: T.PFDag
+--g3 :: T.TADag
 --g3 = D.mkDag ( IntMap.fromList [ (0, C.BinOp (A.EqJoin ("a", "b")) 1 2)
 --                               , (1, C.UnOp (A.Proj [("a", "u")]) 3)
 --                               , (2, C.UnOp (A.Proj [("b", "u")]) 3)
@@ -105,9 +94,9 @@ g2 = D.mkDag ( IntMap.fromList [ (0, C.UnOp (A.Project [ ( "result"
 --             )
 --             [0, 1, 2]
 --
---g4 :: T.PFDag
+--g4 :: T.TADag
 --g4 = D.mkDag ( IntMap.fromList [ (0, C.UnOp (A.Proj [("qsum", "qsum"), ("id", "id")]) 1)
---                               , (1, C.UnOp (A.Aggr ([(A.Sum "quantity", "qsum")], Just "id")) 2) 
+--                               , (1, C.UnOp (A.Aggr ([(A.Sum "quantity", "qsum")], Just "id")) 2)
 --                               , (2, C.NullaryOp ( A.LitTable
 --                                                   [ [A.VInt 0, A.VInt 2]
 --                                                   , [A.VInt 0, A.VInt 10]
@@ -121,7 +110,7 @@ g2 = D.mkDag ( IntMap.fromList [ (0, C.UnOp (A.Project [ ( "result"
 --             )
 --             [0]
 --
---g5 :: T.PFDag
+--g5 :: T.TADag
 --g5 = D.mkDag ( IntMap.fromList [ (0, C.UnOp (A.Proj [("y", "id")]) 1)
 --                               , (1, C.UnOp (A.Proj [("y", "id")]) 3)
 --                               , (2, C.UnOp (A.Proj [("y", "id")]) 3)
@@ -139,7 +128,7 @@ g2 = D.mkDag ( IntMap.fromList [ (0, C.UnOp (A.Project [ ( "result"
 --             [0, 1]
 --
 
-g6 :: T.PFDag
+g6 :: T.TADag
 g6 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.AntiJoin [ (A.ColE "a", A.ColE "c", A.EqJ)
                                                           , (A.ColE "b", A.ColE "d", A.LtJ)
                                                           ]
@@ -165,7 +154,7 @@ g6 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.AntiJoin [ (A.ColE "a", A.ColE 
              )
              [0]
 
-g7 :: T.PFDag
+g7 :: T.TADag
 g7 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.SemiJoin [ (A.ColE "a", A.ColE "c", A.EqJ)
                                                           , (A.ColE "b", A.ColE "d", A.LtJ)
                                                           ]
@@ -192,7 +181,7 @@ g7 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.SemiJoin [ (A.ColE "a", A.ColE 
              [0]
 
 -- Should use EXISTS due to the lack of the equal join condition.
-g8 :: T.PFDag
+g8 :: T.TADag
 g8 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.SemiJoin [ (A.ColE "b", A.ColE "d", A.LtJ)
                                                           ]
                                              )
@@ -217,7 +206,7 @@ g8 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.SemiJoin [ (A.ColE "b", A.ColE 
              )
              [0]
 
-g9 :: T.PFDag
+g9 :: T.TADag
 g9 = D.mkDag ( IntMap.fromList [ (0, C.UnOp p 2)
                                , (1, C.UnOp p 2)
                                , (2, C.UnOp p 4)
@@ -238,7 +227,7 @@ g9 = D.mkDag ( IntMap.fromList [ (0, C.UnOp p 2)
 
 -- | Tests whether different binding strategies for Materialization.Combined
 -- work.
-g10 :: T.PFDag
+g10 :: T.TADag
 g10 = D.mkDag ( IntMap.fromList [ (0, C.BinOp eq 1 1)
                                 , (1, C.BinOp eq 2 2)
                                 , (2, C.UnOp p 3)
@@ -251,11 +240,11 @@ g10 = D.mkDag ( IntMap.fromList [ (0, C.BinOp eq 1 1)
         eq   = A.EqJoin ("c", "d")
 
 
-testGraphs :: [T.PFDag]
+testGraphs :: [T.TADag]
 testGraphs = singleTests ++ [test, g1, g2, g6, g7, g8, g9, g10] -- g3, g4, g5]
 
 -- Test for single operator translation.
-singleTests :: [T.PFDag]
+singleTests :: [T.TADag]
 singleTests = [ tLitTable
               , tEmptyTable
               , tTableRef
@@ -284,7 +273,7 @@ singleTests = [ tLitTable
                         , (1, C.NullaryOp (A.LitTable [] colTypes2))
                         , (2, op)
                         ]
-    singletonGraph :: A.PFAlgebra -> T.PFDag
+    singletonGraph :: A.TableAlgebra -> T.TADag
     singletonGraph op = D.mkDag ( IntMap.fromList $ mapping op
                                 )
                                 [2]
@@ -294,7 +283,7 @@ singleTests = [ tLitTable
         singletonN $ A.LitTable [[A.VInt 0, A.VStr "test"]] colTypes
     tEmptyTable   = singletonN $ A.LitTable [] colTypes
     tTableRef     = singletonN $ A.TableRef ("foo", colTypes, [])
-    
+
     -- unary operators
     singletonU op = singletonGraph $ C.UnOp op 0
 
@@ -336,8 +325,8 @@ data Options = Options
             , optDebug      :: Bool
             , optHelp       :: Bool
             , optMatFun     :: MatFun
-            , optFast       :: Maybe (CompatMode -> T.PFDag -> MatFun -> ShowS)
-            , optDebugFun   :: Maybe (CompatMode -> T.PFDag -> MatFun -> String)
+            , optFast       :: Maybe (CompatMode -> T.TADag -> MatFun -> ShowS)
+            , optDebugFun   :: Maybe (CompatMode -> T.TADag -> MatFun -> String)
             , optCompatMode :: CompatMode
             }
 defaultOptions :: Options
@@ -469,7 +458,7 @@ main = do
                                             pdfPath = filename ++ ".pdf"
 
                                         outputDot dotPath dag
-                                        
+
                                         when (optRenderDot usedOptions)
                                             $ renderDot dotPath pdfPath
                                     else case optFast usedOptions of
@@ -477,7 +466,7 @@ main = do
                                             putShowSLn $ r compatMode dag matFun
                                         Nothing -> output dag
                 []              ->
-                    -- Run tests 
+                    -- Run tests
                     forM_ testGraphs $ \d -> output d
 
         -- show help when requested or wrong arguments given

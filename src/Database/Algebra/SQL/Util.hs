@@ -20,12 +20,12 @@ import Database.Algebra.SQL.Compatibility
 
 -- TODO include materialization strategy depending on compat mode
 
-resultFromDAG :: T.PFDag -> MatFun -> (T.TransformResult, ([Query], [Query]))
+resultFromDAG :: T.TADag -> MatFun -> (T.TransformResult, ([Query], [Query]))
 resultFromDAG dag matFun = (transformResult, matFun transformResult)
   where transformResult = T.transform dag
 
 -- | Produces pretty output, optionally with debug information.
-renderDebugOutput :: CompatMode -> T.PFDag -> MatFun -> Bool -> ShowS
+renderDebugOutput :: CompatMode -> T.TADag -> MatFun -> Bool -> ShowS
 renderDebugOutput c dag matFun debug =
     ( if debug
       then dBegin . R.debugTransformResult c r . showChar '\n'
@@ -49,7 +49,7 @@ putShowSLn s = putStrLn $ s ""
 -- | Renders a DAG with the given renderer.
 renderOutputWith :: (CompatMode -> [Query] -> [ShowS])
                  -> CompatMode
-                 -> T.PFDag
+                 -> T.TADag
                  -> MatFun
                  -> ShowS
 renderOutputWith renderer c dag matFun =
@@ -57,21 +57,21 @@ renderOutputWith renderer c dag matFun =
   where (_, (tqs, rqs)) = resultFromDAG dag matFun
         renderedQs      = renderer c $ tqs ++ rqs
 
-renderOutputCompact :: CompatMode -> T.PFDag -> MatFun -> ShowS
+renderOutputCompact :: CompatMode -> T.TADag -> MatFun -> ShowS
 renderOutputCompact = renderOutputWith R.renderCompact
 
-renderOutputPlain :: CompatMode -> T.PFDag -> MatFun -> ShowS
+renderOutputPlain :: CompatMode -> T.TADag -> MatFun -> ShowS
 renderOutputPlain = renderOutputWith R.renderPlain
 
 -- | Render output directly for DSH. The order from the root nodes in the
 -- directed acyclic graph is preserved. (This function uses the combined
 -- materialization strategy.)
-renderOutputDSH :: CompatMode -> T.PFDag -> (Maybe String, [String])
+renderOutputDSH :: CompatMode -> T.TADag -> (Maybe String, [String])
 renderOutputDSH = flip renderOutputDSHWith C.materialize
 
 -- | Render output directly for DSH. The order from the root nodes in the
 -- directed acyclic graph is preserved.
-renderOutputDSHWith :: CompatMode -> MatFun -> T.PFDag -> (Maybe String, [String])
+renderOutputDSHWith :: CompatMode -> MatFun -> T.TADag -> (Maybe String, [String])
 renderOutputDSHWith c matFun dag =
     ( if null preludeString
       then Nothing
@@ -86,7 +86,7 @@ renderOutputDSHWith c matFun dag =
 
 -- | Produces output which allows further inspection with the psql command line
 -- utility (and possibly others too).
-renderAdvancedDebugOutput :: CompatMode -> Bool -> Bool -> T.PFDag -> MatFun -> String
+renderAdvancedDebugOutput :: CompatMode -> Bool -> Bool -> T.TADag -> MatFun -> String
 renderAdvancedDebugOutput c explain analyze dag matFun =
     foldr ((.) . (prefixes .)) id (renderedTQs ++ renderedRQs) ""
   where

@@ -1,15 +1,13 @@
--- Dot
+module Database.Algebra.Table.Render.Dot(renderTADot) where
 
-module Database.Algebra.Pathfinder.Render.Dot(renderPFDot) where
-
-import qualified Data.IntMap                              as Map
+import qualified Data.IntMap                 as Map
 import           Data.List
 
 import           Text.PrettyPrint
 
-import qualified Database.Algebra.Dag                     as Dag
+import qualified Database.Algebra.Dag        as Dag
 import           Database.Algebra.Dag.Common
-import           Database.Algebra.Pathfinder.Data.Algebra
+import           Database.Algebra.Table.Lang
 
 
 nodeToDoc :: AlgNode -> Doc
@@ -60,7 +58,7 @@ renderTableInfo tableName cols keys =
     <> text "\\n"
     <> (brackets $ commas renderKey keys)
 
-opDotLabel :: NodeMap [Tag] -> AlgNode -> PFLabel -> Doc
+opDotLabel :: NodeMap [Tag] -> AlgNode -> TALabel -> Doc
 -- | Nullary operations
 opDotLabel tags i (LitTableL _ _)             = labelToDoc i
     "LITTABLE" empty (lookupTags i tags)
@@ -117,7 +115,7 @@ renderSerCol :: Show c => Maybe c -> Doc
 renderSerCol Nothing  = empty
 renderSerCol (Just c) = (text $ show c) <> comma
 
-constructDotNode :: NodeMap [Tag] -> (AlgNode, PFLabel) -> DotNode
+constructDotNode :: NodeMap [Tag] -> (AlgNode, TALabel) -> DotNode
 constructDotNode tags (n, op) =
     DotNode n l c Nothing
       where l = render $ opDotLabel tags n op
@@ -154,7 +152,7 @@ renderColor DCCyan         = text "cyan"
 renderColor DCCyan4        = text "cyan4"
 renderColor DCHotPink      = text "hotpink"
 
-opDotColor :: PFLabel -> DotColor
+opDotColor :: TALabel -> DotColor
 
 -- | Nullaryops
 opDotColor (LitTableL _ _)   = DCGray52
@@ -249,7 +247,7 @@ renderDot ns es = text "digraph" <> (braces $ preamble $$ nodeSection $$ edgeSec
           edgeSection = vcat $ map renderDotEdge es
 
 -- | Labels (to collect all operations (nullary, unary,binary))
-data PFLabel = LitTableL [Tuple] SchemaInfos
+data TALabel = LitTableL [Tuple] SchemaInfos
              | TableRefL SemInfTableRef    -- nullops
              | AggrL SemInfAggr
              | DistinctL ()
@@ -267,13 +265,13 @@ data PFLabel = LitTableL [Tuple] SchemaInfos
              | AntiJoinL SemInfJoin
              | SerializeL (Maybe DescrCol, SerializeOrder, [PayloadCol])
 
-labelOfOp :: PFAlgebra -> PFLabel
+labelOfOp :: TableAlgebra -> TALabel
 labelOfOp (Database.Algebra.Dag.Common.BinOp op _ _) = labelOfBinOp op
 labelOfOp (Database.Algebra.Dag.Common.UnOp op _)    = labelOfUnOp op
 labelOfOp (Database.Algebra.Dag.Common.NullaryOp op) = labelOfNullaryOp op
 labelOfOp (TerOp _ _ _ _)                            = error "no tertiary operations"
 
-labelOfBinOp :: BinOp -> PFLabel
+labelOfBinOp :: BinOp -> TALabel
 labelOfBinOp (Cross info)     	= CrossL info
 labelOfBinOp (Difference info)  = DifferenceL info
 labelOfBinOp (DisjUnion info) 	= DisjUnionL info
@@ -282,7 +280,7 @@ labelOfBinOp (ThetaJoin info)   = ThetaJoinL info
 labelOfBinOp (SemiJoin info)    = SemiJoinL info
 labelOfBinOp (AntiJoin info)    = AntiJoinL info
 
-labelOfUnOp :: UnOp -> PFLabel
+labelOfUnOp :: UnOp -> TALabel
 labelOfUnOp (Aggr info)      = AggrL info
 labelOfUnOp (Distinct info)  = DistinctL  info
 labelOfUnOp (Project info)   = ProjectL info
@@ -292,24 +290,24 @@ labelOfUnOp (RowRank info)   = RowRankL info
 labelOfUnOp (Select info)    = SelL info
 labelOfUnOp (Serialize info) = SerializeL info
 
-labelOfNullaryOp :: NullOp -> PFLabel
+labelOfNullaryOp :: NullOp -> TALabel
 labelOfNullaryOp (LitTable  info1 info2) = LitTableL info1 info2
 labelOfNullaryOp (TableRef  info)      	 = TableRefL info
 
 -- | extract the operator descriptions and list of edges from a DAG
 
-extractGraphStructure :: Dag.Operator a => (a -> PFLabel)
+extractGraphStructure :: Dag.Operator a => (a -> TALabel)
                      -> Dag.AlgebraDag a
-                     -> ([(AlgNode, PFLabel)], [(AlgNode, AlgNode)])
+                     -> ([(AlgNode, TALabel)], [(AlgNode, AlgNode)])
 extractGraphStructure toLabel d = (labels, childs)
     where nodes = Dag.topsort d
           operators = zip nodes $ map (flip Dag.operator d) nodes
           labels = map (\(n, op) -> (n, toLabel op)) operators
           childs = concat $ map (\(n, op) -> zip (repeat n) (Dag.opChildren op)) operators
 
--- | Render an PFAlgebra plan into a dot file (GraphViz).
-renderPFDot :: NodeMap [Tag] -> [AlgNode] -> NodeMap PFAlgebra -> String
-renderPFDot ts roots m = render $ renderDot dotNodes dotEdges
+-- | Render an TableAlgebra plan into a dot file (GraphViz).
+renderTADot :: NodeMap [Tag] -> [AlgNode] -> NodeMap TableAlgebra -> String
+renderTADot ts roots m = render $ renderDot dotNodes dotEdges
     where (opLabels, edges) = extractGraphStructure labelOfOp d
           d = Dag.mkDag m roots
           dotNodes = map (constructDotNode ts) opLabels

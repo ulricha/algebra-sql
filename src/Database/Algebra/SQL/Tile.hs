@@ -9,7 +9,7 @@ module Database.Algebra.SQL.Tile
     , DependencyList
     , TransformResult
     , transform
-    , PFDag
+    , TADag
     ) where
 
 -- TODO maybe split this file into the tile definition
@@ -19,23 +19,22 @@ module Database.Algebra.SQL.Tile
 -- TODO RowRank <-> DenseRank ?
 -- TODO isMultiReferenced special case: check for same parent !!
 
-import           Control.Arrow                            (second)
-import           Control.Monad                            (liftM)
+import           Control.Arrow                   (second)
+import           Control.Monad                   (liftM)
 import           Control.Monad.Trans.RWS.Strict
-import qualified Data.DList                               as DL (DList,
-                                                                 singleton)
-import qualified Data.IntMap                              as IntMap
+import qualified Data.DList                      as DL (DList, singleton)
+import qualified Data.IntMap                     as IntMap
 import           Data.Maybe
 
-import qualified Database.Algebra.Dag                     as D
-import qualified Database.Algebra.Dag.Common              as C
+import qualified Database.Algebra.Dag            as D
+import qualified Database.Algebra.Dag.Common     as C
 import           Database.Algebra.Impossible
-import qualified Database.Algebra.Pathfinder.Data.Algebra as A
+import qualified Database.Algebra.Table.Lang     as A
 
-import qualified Database.Algebra.SQL.Query               as Q
-import           Database.Algebra.SQL.Query.Util          (affectsSortOrder,
-                                                           emptySelectStmt,
-                                                           mkPCol, mkSubQuery)
+import qualified Database.Algebra.SQL.Query      as Q
+import           Database.Algebra.SQL.Query.Util (affectsSortOrder,
+                                                  emptySelectStmt, mkPCol,
+                                                  mkSubQuery)
 
 -- | A tile internal reference type.
 type InternalReference = Q.ReferenceType
@@ -57,8 +56,8 @@ data TileTree = -- | A tile: The first argument determines whether the
                 -- expression.
               | ReferenceLeaf ExternalReference [String]
 
--- | The type of DAG used by Pathfinder.
-type PFDag = D.AlgebraDag A.PFAlgebra
+-- | Table algebra DAGs
+type TADag = D.AlgebraDag A.TableAlgebra
 
 -- | Association list (where dependencies should be ordered topologically).
 type DependencyList = DL.DList (ExternalReference, TileTree)
@@ -110,7 +109,7 @@ sLookupBinding n = IntMap.lookup n . multiParentNodes
 --
 --     * A state for generating fresh names and maintain the mapping of nodes
 --
-type TransformMonad = RWS PFDag DependencyList TransformState
+type TransformMonad = RWS TADag DependencyList TransformState
 
 -- | A table expression id generator using the state within the
 -- 'TransformMonad'.
@@ -147,14 +146,14 @@ generateVariableId = do
 
 -- | Unpack values (or run computation).
 runTransformMonad :: TransformMonad a
-                  -> PFDag                      -- ^ The used DAG.
+                  -> TADag                      -- ^ The used DAG.
                   -> TransformState             -- ^ The inital state.
                   -> (a, DependencyList)
 runTransformMonad = evalRWS
 
 -- | Check if node has more than one parent.
 isMultiReferenced :: C.AlgNode
-                  -> PFDag
+                  -> TADag
                   -> Bool
 isMultiReferenced n dag = case D.parents n dag of
     -- Has at least 2 parents.
@@ -173,11 +172,11 @@ getSchemaSelectStmt s = map Q.sName $ Q.selectClause s
 -- | The result of the 'transform' function.
 type TransformResult = ([TileTree], DependencyList)
 
--- | Transform a 'PFDag', while swapping out repeatedly used sub expressions
+-- | Transform a 'TADag', while swapping out repeatedly used sub expressions
 -- (nodes with more than one parent).
--- A 'PFDag' can have multiple root nodes, and therefore the function returns a
+-- A 'TADag' can have multiple root nodes, and therefore the function returns a
 -- list of root tiles and their dependencies.
-transform :: PFDag -> TransformResult
+transform :: TADag -> TransformResult
 transform dag = runTransformMonad result dag sInitial
   where rootNodes = D.rootNodes dag
         result    = mapM transformNode rootNodes
@@ -848,7 +847,7 @@ translateSortInf si colFun = map f si
 -- | Translate a join condition into it's 'Q.ValueExpr' equivalent.
 translateJoinCond :: [Q.SelectColumn]
                   -> [Q.SelectColumn]
-                  -> [(A.Expr, A.Expr, A.JoinRel)] 
+                  -> [(A.Expr, A.Expr, A.JoinRel)]
                   -> Q.ValueExpr
 translateJoinCond sClause1 sClause2 conjs =
     case conjs of

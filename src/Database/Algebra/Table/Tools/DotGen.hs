@@ -11,8 +11,8 @@ import Data.Maybe
 
 import Data.ByteString.Lazy.Char8                (pack)
 
-import Database.Algebra.Pathfinder.Render.Dot
-import Database.Algebra.Pathfinder.Render.JSON
+import Database.Algebra.Table.Render.Dot
+import Database.Algebra.Table.Render.JSON
 
 data Options = Options { optInput          :: IO String
                        , optRootNodes      :: Maybe [Int]
@@ -56,6 +56,6 @@ main = do
     let (tags, rs, m) = deserializePlan $ pack plan
         rs'           = fromMaybe rs mRootNodes 
 
-    let dot = renderPFDot tags rs' m
+    let dot = renderTADot tags rs' m
 
     putStr dot
