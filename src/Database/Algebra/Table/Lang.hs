@@ -47,7 +47,7 @@ instance Show SortDir where
     show Asc  = "ascending"
     show Desc = "descending"
 
--- | PFAlgebraic types
+-- | table algebra types
 --  At this level we do not have any structural types anymore
 --  those are represented by columns. 
 data ATy where
@@ -59,7 +59,7 @@ data ATy where
     ANat :: ATy
     deriving (Eq, Ord, Generic)
 
--- | Show the PFAlgebraic types in a way that is compatible with
+-- | Show the table algebra types in a way that is compatible with
 --  the xml plan.
 instance Show ATy where
   show AInt     = "int"
@@ -69,7 +69,7 @@ instance Show ATy where
   show ADouble  = "dbl"
   show ANat     = "nat"
 
--- | Wrapper around values that can occur in an PFAlgebraic plan
+-- | Wrapper around values that can occur in an table algebra plan
 data AVal where
   VInt    :: Integer -> AVal
   VStr    :: String -> AVal
