@@ -21,8 +21,8 @@ Description:    The Ferry 2.0 Table Algebra library
                  4. <http://www-db.informatik.uni-tuebingen.de/files/publications/ferryhaskell.pdf>
 License:        BSD3
 License-file:   LICENSE
-Author:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>, Tom Schreiber <tom.schreiber@uni-tuebingen.de>, Alexander Ulrich <alexander.ulrich@uni-tuebingen.de>
-Maintainer:	Alexander Ulrich <alexander.ulrich@uni-tuebingen.de>
+Author:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>, Tom Schreiber <tom.schreiber@uni-tuebingen.de>, Alexander Ulrich <alexander.ulrich@uni-tuebingen.de>, Moritz Bruder <moritz.bruder@student.uni-tuebingen.de>
+Maintainer:	Alexander Ulrich <alex@etc-network.de>
 Build-Type:     Simple
 
 library
