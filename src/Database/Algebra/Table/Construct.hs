@@ -133,9 +133,6 @@ rownum res sort part c1 = insertNode $ UnOp (RowNum (res, zip sort $ repeat Asc,
 rownum' :: AttrName -> [(AttrName, SortDir)] -> Maybe AttrName -> AlgNode -> GraphM a TableAlgebra AlgNode
 rownum' res sort part c1 = insertNode $ UnOp (RowNum (res, sort, part)) c1
 
-initLoop :: TableAlgebra
-initLoop = NullaryOp $ LitTable [[nat 1]] [("iter", natT)]
-
 --------------------------------------------------------------------------------
 -- Lifted smart constructors for table algebra operators
 

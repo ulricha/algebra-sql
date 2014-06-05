@@ -36,9 +36,9 @@ type AlgPlan alg res = (AlgMap alg, res, NodeMap [Tag])
 
 -- | Evaluate the monadic graph into an algebraic plan, given a loop relation.
 
-runGraph :: alg -> GraphM r alg res -> AlgPlan alg res
-runGraph l =  constructAlgPlan . flip runState initialBuildState . flip runReaderT ([], 1)
-  where initialBuildState = BuildState { supply = 2, algMap = M.singleton l 1, tags = IM.empty }
+runGraph :: GraphM r alg res -> AlgPlan alg res
+runGraph =  constructAlgPlan . flip runState initialBuildState . flip runReaderT ([], 1)
+  where initialBuildState = BuildState { supply = 2, algMap = M.empty, tags = IM.empty }
         constructAlgPlan (r, s) = (algMap s, r, tags s)
         
 reverseAlgMap :: AlgMap alg -> NodeMap alg
@@ -58,15 +58,8 @@ tagM s = (=<<) (tag s)
 addTag :: AlgNode -> String -> GraphM res alg ()
 addTag i c = modify insertTag
   where
-    -- insertTag :: (Int, M.Map Algebra AlgNode, NodeMap [Tag]) -> (Int, M.Map Algebra AlgNode, NodeMap [Tag])
     insertTag :: BuildState a -> BuildState a
     insertTag s = s { tags = IM.insertWith (++) i [c] $ tags s }
-
--- | Get the current loop table
-getLoop :: GraphM res alg AlgNode
-getLoop = do
-            (_, l) <- ask
-            return l
 
 -- | Get the current variable environment
 getGamma :: GraphM res alg (Gam res)
