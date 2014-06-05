@@ -45,7 +45,7 @@ library
                       template-haskell
 
     exposed-modules:  Database.Algebra.Dag
-                      Database.Algebra.Dag.Builder
+                      Database.Algebra.Dag.Build
                       Database.Algebra.Dag.Common
                       Database.Algebra.Aux
 
