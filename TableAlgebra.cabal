@@ -60,6 +60,7 @@ library
                       Database.Algebra.Table.Render.Dot
                       Database.Algebra.Table.Render.JSON
                       Database.Algebra.Table.Lang
+                      Database.Algebra.Table.Construct
 
                       Database.Algebra.SQL.Util
                       Database.Algebra.SQL.Compatibility
@@ -80,8 +81,7 @@ library
                       Database.Algebra.X100.ProjectUtils
     hs-source-dirs:   src
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -auto-all
-    other-modules:    Database.Algebra.Table.Construct
-                      Database.Algebra.SQL.Query
+    other-modules:    Database.Algebra.SQL.Query
                       Database.Algebra.SQL.Query.Substitution
                       Database.Algebra.SQL.Query.Util
                       Database.Algebra.SQL.Tile
