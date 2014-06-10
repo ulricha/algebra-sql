@@ -94,16 +94,8 @@ library
                       Database.Algebra.SQL.Materialization.TemporaryTable
                       Database.Algebra.X100.Render.Sharing
                       Database.Algebra.X100.Properties.Schema
---                      Database.Algebra.X100.Properties.Card1
---                      Database.Algebra.X100.Properties.Const
---                      Database.Algebra.X100.Properties.Empty
---                      Database.Algebra.X100.Properties.SideEffect
---                      Database.Algebra.X100.Properties.ICols
---                      Database.Algebra.X100.Properties.Key
---                      Database.Algebra.X100.Properties.Domain
                       Database.Algebra.X100.Properties.Types
                       Database.Algebra.X100.Properties.BottomUp
---                      Database.Algebra.X100.Properties.TopDown
                       Database.Algebra.X100.Render.Dot
                       Database.Algebra.X100.Render.X100Code
                       Database.Algebra.Impossible
