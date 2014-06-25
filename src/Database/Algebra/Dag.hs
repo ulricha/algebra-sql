@@ -151,7 +151,7 @@ cutEdge d edgeTarget =
 addRefTo :: AlgebraDag a -> AlgNode -> AlgebraDag a
 addRefTo d n =
   let refCount = lookupRefCount n d
-  in assert (refCount /= 0) $ d { refCountMap = IM.insert n (refCount + 1) (refCountMap d) }
+  in d { refCountMap = IM.insert n (refCount + 1) (refCountMap d) }
 
 -- | Replace an entry in the list of root nodes with a new node. The root node must be
 -- present in the DAG.
