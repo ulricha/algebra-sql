@@ -303,16 +303,9 @@ transformUnOpRank rankConstructor (name, sortList) =
 transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
 transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
-    (select, children) <- case pos of
-        -- Workarround, since we can't use advanced expressions (like
-        -- aggregates) in the ORDER BY clause yet, and RelPos forces them to
-        -- only appear there.
-        (A.RelPos _) -> transformAsOpenSelectStmt c
-        _            -> transformAsSelectStmt c
-
+    (select, children) <- transformAsSelectStmt c
 
     let sClause              = Q.selectClause select
-        inline               = inlineColumn sClause
         project (col, alias) = Q.SCAlias (inlineSE sClause col) alias
         itemi i              = "item" ++ show i
         payloadProjs         =
@@ -323,15 +316,12 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
     return $ TileNode
              False
              select
-             { Q.selectClause = map project (descrProjList ++ posProjList)
-                                ++ payloadProjs
-             , -- Order by optional columns. Remove constant column expressions,
-               -- since SQL99 defines different semantics.
+             { Q.selectClause = map project (descrProjList ++ posProjList) ++ payloadProjs
+             , -- Order by optional columns. 
                Q.orderByClause =
                    map (flip Q.OE Q.Ascending)
-                       $ descrColAdder . discardConstValueExprs
-                         $ map inline posOrderList
-                         -- $ map (\c -> Q.VEColumn c Nothing) $ descrOrderList ++ posOrderList
+                       $ descrColAdder posOrderList
+                       -- $ map (\c -> Q.VEColumn c Nothing) $ descrOrderList ++ posOrderList
              }
              children
   where
@@ -345,10 +335,13 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
     (posOrderList, posProjList)     = case pos of
         A.NoPos       -> ([], [])
-        -- Sort and project.
-        A.AbsPos col  -> (["pos"], [(col, "pos")])
-        -- Sort but do not project.
-        A.RelPos cols -> (cols, [])
+        A.AbsPos col  -> ([Q.VEColumn "pos" Nothing], [(col, "pos")])
+        -- For RelPos, all pos columns are added to the projection
+        -- list. This is not strictly necessary because relative
+        -- positions are not necessary to reconstruct nested
+        -- results. However, at the moment we do this to avoid
+        -- problems with column inlining.
+        A.RelPos cols -> (map (flip Q.VEColumn Nothing) cols, map (\col -> (col, col)) cols)
 
 
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
@@ -365,15 +358,17 @@ transformUnOp (A.Project projList) c = do
     (select, children) <- transformAsOpenSelectStmt c
 
     let sClause  = Q.selectClause select
+
         -- Inlining is obligatory here, since we possibly eliminate referenced
         -- columns. ('translateExpr' inlines columns.)
-        f (n, e) = Q.SCAlias (Q.SEValueExpr tE) n
-          where tE = translateExpr (Just sClause) e
+        selectAlias :: (A.AttrName, A.Expr) -> Q.SelectColumn
+        selectAlias (n, e) = Q.SCAlias (Q.SEValueExpr sqlExpr) n
+          where sqlExpr = translateExpr (Just sClause) e
 
     return $ TileNode
              True
              -- Replace the select clause with the projection list.
-             select { Q.selectClause = map f projList }
+             select { Q.selectClause = map selectAlias projList }
              -- But use the old children.
              children
 
@@ -512,8 +507,8 @@ transformBinCrossJoin c0 c1 = do
                       -- Will be done automatically later on.
                       $ children0 ++ children1
 
--- | Perform a corss join with two nodes and get a select statement from the
--- result.
+-- | Perform a cross join with two nodes and get a select statement
+-- from the result.
 transformCJToSelect :: C.AlgNode
                     -> C.AlgNode
                     -> TransformMonad (Q.SelectStmt, TileChildren)
@@ -601,19 +596,13 @@ transformExistsJoin conditions c0 c1 existsWrapF = case conditions of
                         $ children0 ++ children1
 
 -- | Transform a vertex and return it as a mergeable select statement.
-transformAsOpenSelectStmt :: C.AlgNode
-                          -> TransformMonad (Q.SelectStmt, TileChildren)
-transformAsOpenSelectStmt n = do
-    tile <- transformNode n
-    tileToOpenSelectStmt tile
+transformAsOpenSelectStmt :: C.AlgNode -> TransformMonad (Q.SelectStmt, TileChildren)
+transformAsOpenSelectStmt n = transformNode n >>= tileToOpenSelectStmt
 
--- | Transform a vertex and return it as a select statement, without regard to
--- mergability.
-transformAsSelectStmt :: C.AlgNode
-                      -> TransformMonad (Q.SelectStmt, TileChildren)
-transformAsSelectStmt n = do
-    tile <- transformNode n
-    tileToSelectStmt tile
+-- | Transform a vertex and return it as a select statement, without
+-- regard to mergability.
+transformAsSelectStmt :: C.AlgNode -> TransformMonad (Q.SelectStmt, TileChildren)
+transformAsSelectStmt n = transformNode n >>= tileToSelectStmt
 
 -- | Converts a 'TileTree' into a select statement, inlines if possible.
 -- Select statements produced by this function are mergeable, which means they
@@ -661,10 +650,8 @@ embedExternalReference extRef schema = do
 
         return ( emptySelectStmt
                    -- Use the schema to construct the select clause.
-                 { Q.selectClause =
-                       columnsFromSchema alias schema
-                 , Q.fromClause =
-                       [mkFromPartVar varId alias $ Just schema]
+                 { Q.selectClause = columnsFromSchema alias schema
+                 , Q.fromClause   = [mkFromPartVar varId alias $ Just schema]
                  }
                , [(varId, ReferenceLeaf extRef schema)]
                )
