@@ -50,6 +50,13 @@ renderKey (Key k) = brackets $ commas text k
 renderColumn :: (AttrName, ATy) -> Doc
 renderColumn (c, t) = text c <> text "::" <> (text $ show t)
 
+renderTuple :: Tuple -> Doc
+renderTuple = hcat . punctuate comma . map (text . show)
+
+renderData :: [Tuple] -> Doc
+renderData [] = empty
+renderData xs = sep $ punctuate semi $ map renderTuple xs
+
 renderTableInfo :: TableName -> [(AttrName, ATy)] -> [Key] -> Doc
 renderTableInfo tableName cols keys =
     (text tableName)
@@ -60,8 +67,8 @@ renderTableInfo tableName cols keys =
 
 opDotLabel :: NodeMap [Tag] -> AlgNode -> TALabel -> Doc
 -- | Nullary operations
-opDotLabel tags i (LitTableL _ _)             = labelToDoc i
-    "LITTABLE" empty (lookupTags i tags)
+opDotLabel tags i (LitTableL dat _schema)      = labelToDoc i
+    "LITTABLE" (renderData dat) (lookupTags i tags)
 opDotLabel tags i (TableRefL (name, attrs, keys)) = labelToDoc i
     "TABLE" (renderTableInfo name attrs keys) (lookupTags i tags)
 -- |  Binary operations
