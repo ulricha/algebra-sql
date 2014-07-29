@@ -20,7 +20,7 @@ putProperty n p = do
   put $ M.insert n p pm
 
 
-traverse :: (Show o, Operator o) => (o -> AlgNode -> NodeMap p -> p) -> AlgNode -> Inference p o ()
+traverse :: (Show o, Operator o) => (NodeMap o -> o -> AlgNode -> NodeMap p -> p) -> AlgNode -> Inference p o ()
 traverse inferWorker n = do
   visited <- hasBeenVisited n
   if visited
@@ -30,11 +30,11 @@ traverse inferWorker n = do
       let op = operator n dag
       mapM_ (traverse inferWorker) (opChildren op)
       pm <- get
-      putProperty n (inferWorker op n pm)
+      putProperty n (inferWorker (nodeMap dag) op n pm)
 
 -- | Infer bottom up properties with the given inference function.
 inferBottomUpGeneral :: Operator o
-                        => (o -> AlgNode -> NodeMap p -> p)  -- ^ Function that infers properties for a single node
+                        => (NodeMap o -> o -> AlgNode -> NodeMap p -> p)  -- ^ Function that infers properties for a single node
                         -> AlgebraDag o                   -- ^ The DAG
                         -> NodeMap p                      -- ^ The final mapping from nodes to properties
 inferBottomUpGeneral inferWorker dag = runReader (execStateT infer M.empty) dag
