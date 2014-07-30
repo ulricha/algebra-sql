@@ -347,7 +347,7 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
         -- Sort but do not project. It is not necessary because
         -- relative positions are not needed to reconstruct nested
         -- results.
-        A.RelPos cols -> (cols, cols)
+        A.RelPos cols -> (cols, [])
 
 
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
@@ -571,7 +571,7 @@ transformBinOp (A.ThetaJoin conditions) c0 c1  = do
 
         let sClause = Q.selectClause select
             conds   = map f conditions
-            f       = translateInlinedJoinCond sClause sClause
+            f       = translateJoinCond sClause sClause
 
         return $ TileNode childrenFeatures
                           (appendAllToWhere conds select)
@@ -615,23 +615,25 @@ transformExistsJoin conditions c0 c1 existsWrapF = do
                               $ Q.VQSelect innerSelect
                 innerSelect = appendAllToWhere innerConds select1
                 innerConds  = map f conditions
-                f           = translateInlinedJoinCond (Q.selectClause select0)
-                                                       $ Q.selectClause select1
+                f           = translateJoinCond (Q.selectClause select0)
+                                                $ Q.selectClause select1
 
             return $ ctor (appendToWhere outerCond select0)
         (Just (l, r), conditions') -> do
            
             let -- Embedd the right query into the where clause of the left one.
                 leftCond    =
-                    existsWrapF $ Q.CEBase $ Q.VEIn (inlineCE lSClause l)
-                                                    $ Q.VQSelect rightSelect
+                    existsWrapF $ Q.CEBase
+                                  $ Q.VEIn (translateExprCE (Just lSClause) l)
+                                           $ Q.VQSelect rightSelect
                 -- Embedd all conditions in the right select, and set select
                 -- clause to the right part of the equal join condition.
                 rightSelect = appendAllToWhere innerConds select1
                               { Q.selectClause = [rightSCol] }
                 innerConds  = map f conditions'
-                f           = translateInlinedJoinCond lSClause rSClause
-                rightSCol   = Q.SCAlias (inlineEE rSClause r) r
+                f           = translateJoinCond lSClause rSClause
+                rightSCol   = Q.SCAlias (translateExprEE (Just rSClause) r)
+                                        "rightCond"
                 lSClause    = Q.selectClause select0
                 rSClause    = Q.selectClause select1
 
@@ -755,13 +757,6 @@ asSelectColumn :: String
                -> Q.SelectColumn
 asSelectColumn prefix columnName =
     Q.SCAlias (Q.EEBase $ mkPCol prefix columnName) columnName
-
-translateInlinedJoinCond :: [Q.SelectColumn] -- ^ Left select clause.
-                         -> [Q.SelectColumn] -- ^ Right select clause.
-                         -> (A.LeftAttrName, A.RightAttrName, A.JoinRel)
-                         -> Q.ColumnExpr
-translateInlinedJoinCond lSClause rSClause j =
-    translateJoinCond j (inlineCE lSClause) (inlineCE rSClause)
 
 -- Translates a '[A.SortAttr]' into a '[Q.WindowOrderExpr]'. Column names will
 -- be inlined as a 'Q.AggrExpr', constant ones will be discarded.
@@ -910,7 +905,7 @@ translateExprValueExprTemplate :: (Maybe [Q.SelectColumn] -> A.Expr -> a)
                                -> a
 translateExprValueExprTemplate rec wrap inline optSelectClause expr =
     case expr of
-        A.IfE c t e        ->
+        A.IfE c t e       ->
             wrap $ Q.VECase (rec optSelectClause c)
                             (rec optSelectClause t)
                             (rec optSelectClause e)
@@ -954,6 +949,7 @@ translateBinFun f = case f of
     A.GtE       -> Q.BFGreaterEqual
     A.LtE       -> Q.BFLowerEqual
     A.Eq        -> Q.BFEqual
+    A.NEq       -> Q.BFNotEqual
     A.And       -> Q.BFAnd
     A.Or        -> Q.BFOr
     A.Plus      -> Q.BFPlus
@@ -976,15 +972,19 @@ translateSortInf si colFun = map f si
 
 
 -- | Translate a single join condition into it's 'Q.ColumnExpr' equivalent.
-translateJoinCond :: (A.Expr, A.Expr, A.JoinRel)
-                  -> (String -> Q.ColumnExpr) -- ^ Left column function.
-                  -> (String -> Q.ColumnExpr) -- ^ Right column function.
+-- 'A.Expr' contained within the join condition are inlined with the according
+-- select clauses.
+translateJoinCond :: [Q.SelectColumn] -- ^ Left select clause.
+                  -> [Q.SelectColumn] -- ^ Right select clause.
+                  -> (A.Expr, A.Expr, A.JoinRel)
                   -> Q.ColumnExpr
-translateJoinCond (l, r, j) lColFun rColFun =
-    Q.CEBase $ Q.VEBinApp (translateJoinRel j) (lColFun l) (rColFun r)
--- | Translate a join condition into it's 'Q.ValueExpr' equivalent.
+translateJoinCond lSelectClause rSelectClause (l, r, j) =
+    Q.CEBase $ Q.VEBinApp (translateJoinRel j)
+                          (translateExprCE (Just lSelectClause) l)
+                          (translateExprCE (Just rSelectClause) r)
 
 -- TODO edited by alex
+-- | Translate a join condition into it's 'Q.ValueExpr' equivalent.
 --translateJoinCond :: [Q.SelectColumn]
 --                  -> [Q.SelectColumn]
 --                  -> [(A.Expr, A.Expr, A.JoinRel)]
