@@ -557,21 +557,17 @@ transformBinOp (A.EqJoin (lName, rName)) c0 c1 = do
 
 transformBinOp (A.ThetaJoin conditions) c0 c1  = do
 
+    when (null conditions) $impossible
+
     (childrenFeatures, select, children) <- transformBinCrossJoin c0 c1
 
-    -- Is there at least one join conditon?
-    if null conditions
-    -- TODO FFilter not used, but added to features
-    then return $ TileNode childrenFeatures select children
-    else do
+    let sClause = Q.selectClause select
+        conds   = map f conditions
+        f       = translateJoinCond sClause sClause
 
-        let sClause = Q.selectClause select
-            conds   = map f conditions
-            f       = translateJoinCond sClause sClause
-
-        return $ TileNode childrenFeatures
-                          (appendAllToWhere conds select)
-                          children
+    return $ TileNode childrenFeatures
+                        (appendAllToWhere conds select)
+                        children
 
 transformBinOp (A.SemiJoin cs) c0 c1          =
     transformExistsJoin cs c0 c1 id
@@ -588,6 +584,8 @@ transformExistsJoin :: A.SemInfJoin
                     -> (Q.ColumnExpr -> Q.ColumnExpr)
                     -> TransformMonad TileTree
 transformExistsJoin conditions c0 c1 existsWrapF = do
+
+    when (null conditions) $impossible
 
     (childFeatures0, select0, children0) <-
         transformTerminated c0 opFeatures
@@ -672,56 +670,6 @@ transformTerminated n topFs = do
         ReferenceLeaf r s               -> do
             (sel, cs) <- embedExternalReference r s
             return (projectF <> tableF, sel, cs)
-
----- | Transform a vertex and return it as a mergeable select statement.
---transformAsOpenSelectStmt :: C.AlgNode
---                          -> TransformMonad (Q.SelectStmt, TileChildren) 
---transformAsOpenSelectStmt n = do
---    tile <- transformNode n
---    tileToOpenSelectStmt tile
---
----- | Transform a vertex and return it as a select statement, without regard to
----- mergability.
---transformAsSelectStmt :: C.AlgNode
---                      -> TransformMonad (Q.SelectStmt, TileChildren)
---transformAsSelectStmt n = do
---    tile <- transformNode n
---    tileToSelectStmt tile
---
----- | Converts a 'TileTree' into a select statement, inlines if possible.
----- Select statements produced by this function are mergeable, which means they
----- contain at most a select, from and where clause and have distinct set to
----- tile.
---tileToOpenSelectStmt :: TileTree
---                     -- The resulting 'SelectStmt' and used children (if the
---                     -- 'TileTree' could not be inlined or had children itself).
---                     -> TransformMonad (Q.SelectStmt, TileChildren)
---tileToOpenSelectStmt t = case t of
---    -- The only thing we are able to merge.
---    TileNode True body children  -> return (body, children)
---    -- Embed as sub query.
---    TileNode False body children -> do
---        alias <- generateAliasName
---
---        let schema = getSchemaSelectStmt body
---
---        return ( emptySelectStmt
---                 { Q.selectClause =
---                       columnsFromSchema alias schema
---                 , Q.fromClause =
---                       [mkSubQuery body alias $ Just schema]
---                 }
---               , children
---               )
---    -- Asign name and produce a 'SelectStmt' which uses it. (Let the
---    -- materialization strategy handle it.)
---    ReferenceLeaf r s            -> embedExternalReference r s
---
---tileToSelectStmt :: TileTree
---                 -> TransformMonad (Q.SelectStmt, TileChildren)
---tileToSelectStmt t = case t of
---    TileNode _ body children -> return (body, children)
---    ReferenceLeaf r s        -> embedExternalReference r s
 
 -- | Embeds an external reference into a 'Q.SelectStmt'.
 embedExternalReference :: ExternalReference
@@ -978,23 +926,6 @@ translateJoinCond lSelectClause rSelectClause (l, r, j) =
     Q.CEBase $ Q.VEBinApp (translateJoinRel j)
                           (translateExprCE (Just lSelectClause) l)
                           (translateExprCE (Just rSelectClause) r)
-
--- TODO edited by alex
--- | Translate a join condition into it's 'Q.ValueExpr' equivalent.
---translateJoinCond :: [Q.SelectColumn]
---                  -> [Q.SelectColumn]
---                  -> [(A.Expr, A.Expr, A.JoinRel)]
---                  -> Q.ValueExpr
---translateJoinCond sClause1 sClause2 conjs =
---    case conjs of
---        []       -> $impossible
---        (c : cs) -> foldr mkAnd (joinConjunct c) (map joinConjunct cs)
---
---  where
---    joinConjunct (l, r, j) =
---        Q.VEBinApp (translateJoinRel j)
---                   (translateExpr (Just sClause1) l)
---                   (translateExpr (Just sClause2) r)
 
 translateSortDir :: A.SortDir -> Q.SortDirection
 translateSortDir d = case d of
