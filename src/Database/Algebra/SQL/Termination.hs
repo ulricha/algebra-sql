@@ -1,15 +1,21 @@
 -- | Datatypes and functions which determine termination of SQL fragements.
 module Database.Algebra.SQL.Termination
-    ( Feature(..)
-    , FeatureSet
-    , terminates
+    ( FeatureSet
+    , terminatesOver
+    , noneF
+    , projectF
+    , filterF
+    , tableF
+    , dupElimF
+    , orderingF
+    , windowFunctionF
+    , aggrAndGroupingF
+    , module Data.Monoid
     ) where
 
-import qualified Data.Set as S
-
--- TODO module needs Set, maybe hide somehow
--- TODO EnumSet would not require Eq and Ord, and maybe faster (IntSet wrapper),
--- but requires Enum instead
+import           Data.Monoid
+import qualified Data.Set    as S
+import           Data.List   (intercalate)
 
 -- | Specifies a part in a SQL statement which is currently in use.
 data Feature = FProjection -- ^ Projection of columns.
@@ -21,12 +27,36 @@ data Feature = FProjection -- ^ Projection of columns.
              | FAggrAndGrouping
              deriving (Eq, Ord, Show)
 
-type FeatureSet = S.Set Feature
+-- TODO maybe use just list, since we usually have so few
+newtype FeatureSet = F { unF :: S.Set Feature }
+
+wrap :: Feature -> FeatureSet
+wrap = F . S.singleton
+
+noneF, filterF, tableF, dupElimF, orderingF, windowFunctionF, aggrAndGroupingF
+    :: FeatureSet
+noneF = F S.empty
+projectF = wrap FProjection
+filterF = wrap FFilter
+tableF = wrap FTable
+dupElimF = wrap FDupElim
+orderingF = wrap FOrdering
+windowFunctionF = wrap FWindowFunction
+aggrAndGroupingF = wrap FAggrAndGrouping
+
+instance Monoid FeatureSet where
+    mempty              = noneF
+    mappend (F l) (F r) = F $ l `S.union` r
+    mconcat fs          = F $ S.unions $ map unF fs
+
+instance Show FeatureSet where
+    show (F s) = "<" ++ intercalate ", " (map show $ S.toList s) ++ ">"
+
 
 -- | Lists all features which lead to a termination, for a given feature
 -- coming from an operator placed below.
 terminatingFeatures :: Feature -> FeatureSet
-terminatingFeatures bottomF = case bottomF of
+terminatingFeatures bottomF = F $ case bottomF of
     FProjection      -> S.empty
     FTable           -> S.empty
     FFilter          -> S.empty
@@ -71,9 +101,9 @@ terminatingFeatures bottomF = case bottomF of
 
 -- | Determines whether two feature sets collide and therefore whether we should
 -- terminate a SQL fragment.
-terminates :: FeatureSet -> FeatureSet -> Bool
-terminates topFs bottomFs =
-    any (flip S.member conflictingFs) $ S.toList topFs
+terminatesOver :: FeatureSet -> FeatureSet -> Bool
+terminatesOver (F topFs) (F bottomFs) =
+    any (`S.member` conflictingFs) $ S.toList topFs
   where
-    conflictingFs = S.unions $ map terminatingFeatures $ S.toList bottomFs
+    (F conflictingFs) = mconcat $ map terminatingFeatures $ S.toList bottomFs
 

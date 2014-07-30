@@ -24,7 +24,6 @@ import           Control.Monad.Trans.RWS.Strict
 import qualified Data.DList                       as DL (DList, singleton)
 import qualified Data.IntMap                      as IntMap
 import           Data.Maybe
-import qualified Data.Set as Set
 
 import qualified Database.Algebra.Dag             as D
 import qualified Database.Algebra.Dag.Common      as C
@@ -32,7 +31,7 @@ import           Database.Algebra.Impossible
 import qualified Database.Algebra.Table.Lang      as A
 
 import qualified Database.Algebra.SQL.Query       as Q
-import qualified Database.Algebra.SQL.Termination as T
+import           Database.Algebra.SQL.Termination
 import Database.Algebra.SQL.Query.Util            (emptySelectStmt, mkSubQuery, mkPCol, affectsSortOrderAE, affectsSortOrderCE, affectsSortOrderEE)
 
 -- | A tile internal reference type.
@@ -48,7 +47,7 @@ type TileChildren = [(InternalReference, TileTree)]
 -- | Defines the tile tree structure.
 data TileTree = -- | A tile: The first argument determines which features the
                 -- 'Q.SelectStmt' uses.
-                TileNode T.FeatureSet Q.SelectStmt TileChildren
+                TileNode FeatureSet Q.SelectStmt TileChildren
                 -- | A reference pointing to another TileTree: The second
                 -- argument specifies the columns of the referenced table
                 -- expression.
@@ -238,7 +237,7 @@ transformNullaryOp (A.LitTable [] schema) = do
                              $ Just $ map fst schema
 
     return $ TileNode
-             (Set.fromList [T.FProjection, T.FFilter, T.FTable])
+             (projectF <> filterF <> tableF)
              emptySelectStmt
              { Q.selectClause = sClause
              , Q.fromClause = [fLiteral]
@@ -255,7 +254,7 @@ transformNullaryOp (A.LitTable tuples schema) = do
                              $ Just $ map fst schema
 
     return $ TileNode
-             (Set.fromList [T.FProjection, T.FTable])
+             (projectF <> tableF)
              emptySelectStmt
              { Q.selectClause = sClause
              , Q.fromClause = [fLiteral]
@@ -280,7 +279,7 @@ transformNullaryOp (A.TableRef (name, info, _))   = do
                     ]
             }
 
-    return $ TileNode (Set.fromList [T.FProjection, T.FTable]) body []
+    return $ TileNode (projectF <> tableF) body []
 
 
 -- | Abstraction for rank operators.
@@ -290,10 +289,7 @@ transformUnOpRank :: -- ExtendedExpr constructor.
                   -> C.AlgNode
                   -> TransformMonad TileTree
 transformUnOpRank rankConstructor (name, sortList) =
-    attachColFunUnOp colFun
-                     $ Set.fromList [ T.FProjection
-                                    , T.FWindowFunction
-                                    ]
+    attachColFunUnOp colFun $ projectF <> windowFunctionF
   where
     colFun sClause = Q.SCAlias
                      ( rankConstructor $ asWindowOrderExprList
@@ -318,7 +314,7 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
                     [1..]
 
     return $ TileNode
-             (Set.union childFeatures opFeatures)
+             (childFeatures <> opFeatures)
              select
              { Q.selectClause = map project (descrProjList ++ posProjList)
                                 ++ payloadProjs
@@ -331,7 +327,7 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
              }
              children
   where
-    opFeatures                     = Set.fromList [T.FProjection, T.FOrdering]
+    opFeatures                     = projectF <> orderingF
     (descrColAdder, descrProjList) = case mDescr of
         Nothing               -> (id, [])
         -- Project and sort. Since descr gets added as new alias we can use it
@@ -352,7 +348,7 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
     attachColFunUnOp colFun
-                     (Set.fromList [T.FProjection, T.FWindowFunction])
+                     (projectF <> windowFunctionF)
                      c
   where colFun sClause = Q.SCAlias rowNumExpr name
           where rowNumExpr = Q.EERowNum
@@ -374,13 +370,13 @@ transformUnOp (A.Project projList) c = do
           where translatedExpr = translateExprEE (Just sClause) expr
 
     return $ TileNode
-             (Set.union opFeatures childFeatures)
+             (opFeatures <> childFeatures)
              -- Replace the select clause with the projection list.
              select { Q.selectClause = map translateAlias projList }
              -- But use the old children.
              children
   where
-    opFeatures = Set.singleton T.FProjection
+    opFeatures = projectF
 
 
 transformUnOp (A.Select expr) c = do
@@ -389,7 +385,7 @@ transformUnOp (A.Select expr) c = do
         transformTerminated c opFeatures
     
     return $ TileNode
-             (Set.union opFeatures childFeatures)
+             (opFeatures <> childFeatures)
              ( appendToWhere ( translateExprCE
                                (Just $ Q.selectClause select)
                                expr
@@ -398,7 +394,7 @@ transformUnOp (A.Select expr) c = do
              )
              children
   where
-    opFeatures = Set.singleton T.FFilter
+    opFeatures = filterF
 
 transformUnOp (A.Distinct ()) c = do
 
@@ -406,11 +402,11 @@ transformUnOp (A.Distinct ()) c = do
         transformTerminated c opFeatures
 
     -- Keep everything but set distinct.
-    return $ TileNode (Set.union opFeatures childFeatures)
+    return $ TileNode (opFeatures <> childFeatures)
                       select { Q.distinct = True }
                       children
   where
-    opFeatures = Set.singleton T.FDupElim
+    opFeatures = dupElimF
 transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
 
     (childFeatures, select, children) <-
@@ -439,7 +435,7 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
             Q.SCAlias extendedExpr name
 
     return $ TileNode
-             (Set.union childFeatures opFeatures)
+             (childFeatures <> opFeatures)
              select
              { Q.selectClause =
                    map wrapSCAlias partExtendedExprs ++ map aggrToEE aggrs
@@ -451,12 +447,12 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
              }
              children
   where
-    opFeatures = Set.fromList [T.FProjection, T.FAggrAndGrouping]
+    opFeatures = projectF <> aggrAndGroupingF
 
 -- | Generates a new 'TileTree' by attaching a column, generated by a function
 -- taking the select clause.
 attachColFunUnOp :: ([Q.SelectColumn] -> Q.SelectColumn)
-                 -> T.FeatureSet
+                 -> FeatureSet
                  -> C.AlgNode
                  -> TransformMonad TileTree
 attachColFunUnOp colFun opFeatures c = do
@@ -466,7 +462,7 @@ attachColFunUnOp colFun opFeatures c = do
 
     let sClause = Q.selectClause select
     return $ TileNode
-             (Set.union opFeatures childFeatures)
+             (opFeatures <> childFeatures)
              -- Attach a column to the select clause generated by the given
              -- function.
              select { Q.selectClause = colFun sClause : sClause }
@@ -480,8 +476,8 @@ transformBinSetOp :: Q.SetOperation
 transformBinSetOp setOp c0 c1 = do
 
     -- Use one tile to get the schema information.
-    (_, select0, children0) <- transformTerminated c0 Set.empty
-    (_, select1, children1) <- transformTerminated c1 Set.empty
+    (_, select0, children0) <- transformTerminated c0 noneF
+    (_, select1, children1) <- transformTerminated c1 noneF
 
     alias <- generateAliasName
 
@@ -506,13 +502,13 @@ transformBinSetOp setOp c0 c1 = do
                       }
                       $ children0 ++ children1
   where
-    opFeatures = Set.fromList [T.FProjection, T.FTable]
+    opFeatures = projectF <> tableF
 
 
 -- | Perform a cross join between two nodes.
 transformBinCrossJoin :: C.AlgNode
                       -> C.AlgNode
-                      -> TransformMonad ( T.FeatureSet
+                      -> TransformMonad ( FeatureSet
                                         , Q.SelectStmt
                                         , TileChildren
                                         )
@@ -525,7 +521,7 @@ transformBinCrossJoin c0 c1 = do
 
     -- We can simply concatenate everything, because all things are prefixed and
     -- cross join is associative.
-    return ( Set.unions [childFeatures0, childFeatures1, opFeatures]
+    return ( mconcat [childFeatures0, childFeatures1, opFeatures]
            , emptySelectStmt
              { Q.selectClause =
                    Q.selectClause select0 ++ Q.selectClause select1
@@ -537,7 +533,7 @@ transformBinCrossJoin c0 c1 = do
            , children0 ++ children1
            )
   where
-    opFeatures = Set.fromList [T.FProjection, T.FTable, T.FFilter]
+    opFeatures = projectF <> tableF <> filterF
 
 transformBinOp :: A.BinOp
                -> C.AlgNode
@@ -555,7 +551,7 @@ transformBinOp (A.EqJoin (lName, rName)) c0 c1 = do
         cond    = Q.CEBase $ Q.VEBinApp Q.BFEqual (inlineCE sClause lName)
                                                   $ inlineCE sClause rName
 
-    -- 'transformBinCrossJoin' already has the 'T.FFilter' feature.
+    -- 'transformBinCrossJoin' already has the 'filterF' feature.
     return $ TileNode childrenFeatures (appendToWhere cond select) children
 
 
@@ -565,7 +561,7 @@ transformBinOp (A.ThetaJoin conditions) c0 c1  = do
 
     -- Is there at least one join conditon?
     if null conditions
-    -- TODO T.FFilter not used, but added to features
+    -- TODO FFilter not used, but added to features
     then return $ TileNode childrenFeatures select children
     else do
 
@@ -598,9 +594,9 @@ transformExistsJoin conditions c0 c1 existsWrapF = do
 
     -- Ignore operator features, since it will be nested and therefore
     -- terminated.
-    (_, select1, children1) <- transformTerminated c1 Set.empty
+    (_, select1, children1) <- transformTerminated c1 noneF
 
-    let newFeatures = Set.union opFeatures childFeatures0
+    let newFeatures = opFeatures <> childFeatures0
         newChildren = children0 ++ children1
         ctor s      = TileNode newFeatures s newChildren
     
@@ -645,25 +641,25 @@ transformExistsJoin conditions c0 c1 existsWrapF = do
     tryIn c@(left, right, j) (Nothing, r) = case j of
         A.EqJ -> (Just (left, right), r)
         _     -> (Nothing, c:r)
-    opFeatures                            = Set.singleton T.FFilter
+    opFeatures                            = filterF
 
 -- | Terminates a SQL fragment when suggested. Returns the resulting
--- 'T.FeatureSet' of the child, the 'Q.SelectStmt' and its children.
+-- 'FeatureSet' of the child, the 'Q.SelectStmt' and its children.
 transformTerminated :: C.AlgNode
-                    -> T.FeatureSet
-                    -> TransformMonad (T.FeatureSet, Q.SelectStmt, TileChildren)
+                    -> FeatureSet
+                    -> TransformMonad (FeatureSet, Q.SelectStmt, TileChildren)
 transformTerminated n topFs = do
     tile <- transformNode n
     
     case tile of
         TileNode bottomFs body children ->
-            if T.terminates topFs bottomFs
+            if topFs `terminatesOver` bottomFs
             then do
                alias <- generateAliasName
 
                let schema = getSchemaSelectStmt body
 
-               return ( Set.fromList [T.FProjection, T.FTable]
+               return ( projectF <> tableF
                       , emptySelectStmt
                         { Q.selectClause =
                               columnsFromSchema alias schema
@@ -675,7 +671,7 @@ transformTerminated n topFs = do
             else return (bottomFs, body, children)
         ReferenceLeaf r s               -> do
             (sel, cs) <- embedExternalReference r s
-            return (Set.fromList [T.FProjection, T.FTable], sel, cs)
+            return (projectF <> tableF, sel, cs)
 
 ---- | Transform a vertex and return it as a mergeable select statement.
 --transformAsOpenSelectStmt :: C.AlgNode
