@@ -33,8 +33,7 @@ newtype FeatureSet = F { unF :: S.Set Feature }
 wrap :: Feature -> FeatureSet
 wrap = F . S.singleton
 
-noneF, filterF, tableF, dupElimF, orderingF, windowFunctionF, aggrAndGroupingF
-    :: FeatureSet
+noneF, projectF, filterF, tableF, dupElimF, orderingF, windowFunctionF, aggrAndGroupingF :: FeatureSet
 noneF = F S.empty
 projectF = wrap ProjectionF
 filterF = wrap FilterF

@@ -19,7 +19,7 @@ module Database.Algebra.SQL.Tile
 -- TODO isMultiReferenced special case: check for same parent !!
 
 import           Control.Arrow                    (second)
-import           Control.Monad                    (liftM)
+import           Control.Monad                    (liftM, when)
 import           Control.Monad.Trans.RWS.Strict
 import qualified Data.DList                       as DL (DList, singleton)
 import qualified Data.IntMap                      as IntMap
