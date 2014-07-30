@@ -336,7 +336,7 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
         Nothing               -> (id, [])
         -- Project and sort. Since descr gets added as new alias we can use it
         -- in the ORDER BY clause.
-        Just (A.DescrCol col) -> ( (:) $ Q.EEBase $ Q.VEColumn "descr" Nothing
+        Just (A.DescrCol col) -> ( (:) $ Q.EEBase $ mkCol "descr"
                                  , [(col, "descr")]
                                  )
 
