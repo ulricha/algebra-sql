@@ -200,7 +200,7 @@ renderFromPart _ (FPAlias (FETableReference n) alias _) =
     <+> kw "AS"
     <+> text alias
 
-renderFromPart compat (FPAlias expr alias optCols)           =
+renderFromPart compat (FPAlias expr alias optCols)      =
     renderFromExpr compat expr
     <+> kw "AS"
     <+> text alias

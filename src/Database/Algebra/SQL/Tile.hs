@@ -175,8 +175,9 @@ type TransformResult = ([TileTree], DependencyList)
 -- list of root tiles and their dependencies.
 transform :: TADag -> TransformResult
 transform dag = runTransformMonad result dag sInitial
-  where rootNodes = D.rootNodes dag
-        result    = mapM transformNode rootNodes
+  where
+    rootNodes = D.rootNodes dag
+    result    = mapM transformNode rootNodes
 
 -- | This function basically checks for already referenced nodes with more than
 -- one parent, returning a reference to already computed 'TileTree's.
@@ -260,7 +261,8 @@ transformNullaryOp (A.LitTable tuples schema) = do
              , Q.fromClause = [fLiteral]
              }
              []
-  where tMap = map $ Q.CEBase . Q.VEValue . translateAVal
+  where
+    tMap = map $ Q.CEBase . Q.VEValue . translateAVal
 
 transformNullaryOp (A.TableRef (name, info, _))   = do
     alias <- generateAliasName
@@ -350,10 +352,11 @@ transformUnOp (A.RowNum (name, sortList, optPart)) c =
     attachColFunUnOp colFun
                      (projectF <> windowFunctionF)
                      c
-  where colFun sClause = Q.SCAlias rowNumExpr name
-          where rowNumExpr = Q.EERowNum
-                             (liftM (inlineAE sClause) optPart)
-                             $ asWindowOrderExprList sClause sortList
+  where
+    colFun sClause = Q.SCAlias rowNumExpr name
+        where
+          rowNumExpr = Q.EERowNum (liftM (inlineAE sClause) optPart)
+                                  $ asWindowOrderExprList sClause sortList
 
 transformUnOp (A.RowRank inf) c = transformUnOpRank Q.EEDenseRank inf c
 transformUnOp (A.Rank inf) c = transformUnOpRank Q.EERank inf c
@@ -367,7 +370,8 @@ transformUnOp (A.Project projList) c = do
         -- columns. ('translateExpr' inlines columns.)
         translateAlias :: (A.AttrName, A.Expr) -> Q.SelectColumn
         translateAlias (col, expr) = Q.SCAlias translatedExpr col
-          where translatedExpr = translateExprEE (Just sClause) expr
+          where
+            translatedExpr = translateExprEE (Just sClause) expr
 
     return $ TileNode
              (opFeatures <> childFeatures)
@@ -407,6 +411,7 @@ transformUnOp (A.Distinct ()) c = do
                       children
   where
     opFeatures = dupElimF
+
 transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
 
     (childFeatures, select, children) <-
@@ -650,26 +655,25 @@ transformTerminated n topFs = do
     tile <- transformNode n
     
     case tile of
-        TileNode bottomFs body children ->
-            if topFs `terminatesOver` bottomFs
-            then do
-               alias <- generateAliasName
+        TileNode bottomFs body children
+            | topFs `terminatesOver` bottomFs -> do
+                alias <- generateAliasName
 
-               let schema = getSchemaSelectStmt body
+                let schema = getSchemaSelectStmt body
 
-               return ( projectF <> tableF
-                      , emptySelectStmt
-                        { Q.selectClause =
-                              columnsFromSchema alias schema
-                        , Q.fromClause =
-                              [mkSubQuery body alias $ Just schema]
-                        }
-                      , children
-                      )
-            else return (bottomFs, body, children)
-        ReferenceLeaf r s               -> do
-            (sel, cs) <- embedExternalReference r s
-            return (projectF <> tableF, sel, cs)
+                return ( projectF <> tableF
+                       , emptySelectStmt
+                         { Q.selectClause =
+                               columnsFromSchema alias schema
+                         , Q.fromClause =
+                               [mkSubQuery body alias $ Just schema]
+                         }
+                       , children
+                       )
+            | otherwise                       -> return (bottomFs, body, children)
+        ReferenceLeaf r s                     -> do
+                (sel, cs) <- embedExternalReference r s
+                return (projectF <> tableF, sel, cs)
 
 -- | Embeds an external reference into a 'Q.SelectStmt'.
 embedExternalReference :: ExternalReference
@@ -738,8 +742,8 @@ inlineEE :: [Q.SelectColumn]
 inlineEE sClause col =
     fromMaybe (Q.EEBase $ mkCol col) $ foldr f Nothing sClause
   where
-    f (Q.SCAlias ae a) r = if col == a then return ae
-                                       else r
+    f (Q.SCAlias ae a) r | col == a  = return ae
+                         | otherwise = r
 
 -- | Generic base converter for the value expression template. Since types do
 -- not have equal functionality, conversion can fail.
@@ -911,8 +915,9 @@ translateBinFun f = case f of
 translateSortInf :: [A.SortAttr]
                  -> (String -> Q.AggrExpr)
                  -> [Q.WindowOrderExpr]
-translateSortInf si colFun = map f si
-    where f (n, d) = Q.WOE (colFun n) $ translateSortDir d
+translateSortInf sortInfos colFun = map toWOE sortInfos
+  where
+    toWOE (n, d) = Q.WOE (colFun n) $ translateSortDir d
 
 
 -- | Translate a single join condition into it's 'Q.ColumnExpr' equivalent.
