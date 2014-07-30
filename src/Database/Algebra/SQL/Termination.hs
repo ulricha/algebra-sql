@@ -18,13 +18,13 @@ import qualified Data.Set    as S
 import           Data.List   (intercalate)
 
 -- | Specifies a part in a SQL statement which is currently in use.
-data Feature = FProjection -- ^ Projection of columns.
-             | FTable -- ^ Physical or virtual table.
-             | FFilter -- ^ Filtering of rows.
-             | FDupElim
-             | FOrdering
-             | FWindowFunction
-             | FAggrAndGrouping
+data Feature = ProjectionF -- ^ Projection of columns.
+             | TableF -- ^ Physical or virtual table.
+             | FilterF -- ^ Filtering of rows.
+             | DupElimF
+             | OrderingF
+             | WindowFunctionF
+             | AggrAndGroupingF
              deriving (Eq, Ord, Show)
 
 -- TODO maybe use just list, since we usually have so few
@@ -36,13 +36,13 @@ wrap = F . S.singleton
 noneF, filterF, tableF, dupElimF, orderingF, windowFunctionF, aggrAndGroupingF
     :: FeatureSet
 noneF = F S.empty
-projectF = wrap FProjection
-filterF = wrap FFilter
-tableF = wrap FTable
-dupElimF = wrap FDupElim
-orderingF = wrap FOrdering
-windowFunctionF = wrap FWindowFunction
-aggrAndGroupingF = wrap FAggrAndGrouping
+projectF = wrap ProjectionF
+filterF = wrap FilterF
+tableF = wrap TableF
+dupElimF = wrap DupElimF
+orderingF = wrap OrderingF
+windowFunctionF = wrap WindowFunctionF
+aggrAndGroupingF = wrap AggrAndGroupingF
 
 instance Monoid FeatureSet where
     mempty              = noneF
@@ -57,9 +57,9 @@ instance Show FeatureSet where
 -- coming from an operator placed below.
 terminatingFeatures :: Feature -> FeatureSet
 terminatingFeatures bottomF = F $ case bottomF of
-    FProjection      -> S.empty
-    FTable           -> S.empty
-    FFilter          -> S.empty
+    ProjectionF      -> S.empty
+    TableF           -> S.empty
+    FilterF          -> S.empty
     -- Distinction has to occur before:
     --
     --     * Projection of columns: Because there exist cases where to much gets
@@ -71,9 +71,9 @@ terminatingFeatures bottomF = F $ case bottomF of
     --     * Grouping: Grouping could project away columns, which are needed for
     --       duplicate elimination.
     --
-    FDupElim         -> S.fromList [FProjection, FAggrAndGrouping]
+    DupElimF         -> S.fromList [ProjectionF, AggrAndGroupingF]
     -- The ORDER BY clause will only be used on top.
-    FOrdering        -> S.empty
+    OrderingF        -> S.empty
     -- Problematic cases:
     --
     --     * Filtering: May change the intermediate result set.
@@ -85,8 +85,8 @@ terminatingFeatures bottomF = F $ case bottomF of
     --
     --     * Aggregates of window functions can not be built.
     --
-    FWindowFunction  ->
-        S.fromList [FFilter, FDupElim, FWindowFunction, FAggrAndGrouping]
+    WindowFunctionF  ->
+        S.fromList [FilterF, DupElimF, WindowFunctionF, AggrAndGroupingF]
     -- Problematic cases:
     -- 
     --     * Filtering: May change intermediate result set.
@@ -97,7 +97,7 @@ terminatingFeatures bottomF = F $ case bottomF of
     --       makes sense? It is possible, and inlining works, therefore it is
     --       enabled.
     --
-    FAggrAndGrouping -> S.fromList [FFilter, FAggrAndGrouping]
+    AggrAndGroupingF -> S.fromList [FilterF, AggrAndGroupingF]
 
 -- | Determines whether two feature sets collide and therefore whether we should
 -- terminate a SQL fragment.
