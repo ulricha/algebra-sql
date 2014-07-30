@@ -4,11 +4,9 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE DeriveGeneric #-}
 
--- | The Algebra module provides the internal datatypes used for
--- constructing algebaric plans. It is not recommended to use these
--- datatypes directly instead it is adviced to use the functions
--- provided by the module Database.Algebra.Pathfinder.Algebra.Create
-module Database.Algebra.Pathfinder.Data.Algebra where
+-- | A representation of table algebra operators over multiset
+-- relations.
+module Database.Algebra.Table.Lang where
 
 import Numeric                     (showFFloat)
 import Text.Printf
@@ -49,7 +47,7 @@ instance Show SortDir where
     show Asc  = "ascending"
     show Desc = "descending"
 
--- | PFAlgebraic types
+-- | table algebra types
 --  At this level we do not have any structural types anymore
 --  those are represented by columns. 
 data ATy where
@@ -61,7 +59,7 @@ data ATy where
     ANat :: ATy
     deriving (Eq, Ord, Generic)
 
--- | Show the PFAlgebraic types in a way that is compatible with
+-- | Show the table algebra types in a way that is compatible with
 --  the xml plan.
 instance Show ATy where
   show AInt     = "int"
@@ -71,7 +69,7 @@ instance Show ATy where
   show ADouble  = "dbl"
   show ANat     = "nat"
 
--- | Wrapper around values that can occur in an PFAlgebraic plan
+-- | Wrapper around values that can occur in an table algebra plan
 data AVal where
   VInt    :: Integer -> AVal
   VStr    :: String -> AVal
@@ -140,6 +138,7 @@ data BinFun = Gt
             | GtE
             | LtE
             | Eq
+            | NEq
             | And
             | Or
             | Plus
@@ -168,6 +167,7 @@ instance Show BinFun where
   show GtE       = ">="
   show LtE       = "<="
   show Eq        = "=="
+  show NEq       = "<>"
   show And       = "&&"
   show Or        = "||"
   
@@ -242,7 +242,7 @@ type SemInfEqJoin  = (LeftAttrName,RightAttrName)
 -- the column from the first table that has to relate to the column in the
 -- second table represnted by the second element in tuple. The third element
 -- represents the type of relation.
-type SemInfJoin = [(LeftAttrName, RightAttrName, JoinRel)]
+type SemInfJoin = [(Expr, Expr, JoinRel)]
 
 -- | Comparison operators which can be used for ThetaJoins.
 data JoinRel = EqJ -- equal
@@ -324,7 +324,7 @@ data BinOp = Cross ()
            | Difference ()
            deriving (Ord, Eq, Show, Generic)
 
-type PFAlgebra = Algebra () BinOp UnOp NullOp AlgNode
+type TableAlgebra = Algebra () BinOp UnOp NullOp AlgNode
 
 replaceChild :: forall t b u n c. Eq c => c -> c -> Algebra t b u n c -> Algebra t b u n c
 replaceChild o n (TerOp op c1 c2 c3) = TerOp op (replace o n c1) (replace o n c2) (replace o n c3)
@@ -332,7 +332,7 @@ replaceChild o n (BinOp op c1 c2) = BinOp op (replace o n c1) (replace o n c2)
 replaceChild o n (UnOp op c) = UnOp op (replace o n c)
 replaceChild _ _ (NullaryOp op) = NullaryOp op
 
-instance Operator PFAlgebra where
+instance Operator TableAlgebra where
     opChildren (TerOp _ c1 c2 c3) = [c1, c2, c3]
     opChildren (BinOp _ c1 c2) = [c1, c2]
     opChildren (UnOp _ c) = [c]

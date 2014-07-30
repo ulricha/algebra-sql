@@ -1,16 +1,24 @@
---JSON
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
-module Database.Algebra.Pathfinder.Render.JSON(serializePlan, deserializePlan, planToFile, planFromFile) where
+module Database.Algebra.Table.Render.JSON
+    ( serializePlan
+    , deserializePlan
+    , planToFile
+    , planFromFile
+    ) where
 
-import GHC.Generics (Generic)    
-import Control.Monad
+import           Control.Monad
+import           GHC.Generics                             (Generic)
 
-import Database.Algebra.Dag.Common
-import Database.Algebra.Pathfinder.Data.Algebra 
-import qualified Data.IntMap as M
-import qualified Data.ByteString.Lazy.Char8 as BL
-import Data.Aeson (FromJSON, ToJSON, decode, encode)
+import           Data.Aeson                               (FromJSON, ToJSON,
+                                                           decode, encode)
+import qualified Data.ByteString.Lazy.Char8               as BL
+import qualified Data.IntMap                              as M
+
+import           Database.Algebra.Dag.Common
+import           Database.Algebra.Table.Lang
 
 
 instance ToJSON ATy where
@@ -49,21 +57,21 @@ instance FromJSON PayloadCol where
 
 instance ToJSON Plan where
 instance FromJSON Plan where
-   
-data Plan = Plan { tags :: [(AlgNode, [Tag])], roots :: [AlgNode], graph :: [(AlgNode, PFAlgebra)] }
+
+data Plan = Plan { tags :: [(AlgNode, [Tag])], roots :: [AlgNode], graph :: [(AlgNode, TableAlgebra)] }
     deriving Generic
 
-serializePlan :: (NodeMap [Tag], [AlgNode], NodeMap PFAlgebra) -> BL.ByteString
+serializePlan :: (NodeMap [Tag], [AlgNode], NodeMap TableAlgebra) -> BL.ByteString
 serializePlan (ts, rs, g) = let tags' = M.toList ts
                                 graph' = M.toList g
                              in encode $ Plan {tags = tags', roots = rs, graph = graph'}
 
-deserializePlan :: BL.ByteString -> (NodeMap [Tag], [AlgNode], NodeMap PFAlgebra)
+deserializePlan :: BL.ByteString -> (NodeMap [Tag], [AlgNode], NodeMap TableAlgebra)
 deserializePlan s = let Just (Plan ts rs g) = decode s
                      in (M.fromList ts, rs, M.fromList g)
 
-planToFile :: FilePath -> (NodeMap [Tag], [AlgNode], NodeMap PFAlgebra) -> IO ()
+planToFile :: FilePath -> (NodeMap [Tag], [AlgNode], NodeMap TableAlgebra) -> IO ()
 planToFile f t = BL.writeFile f $ serializePlan t
 
-planFromFile :: FilePath -> IO (NodeMap [Tag], [AlgNode], NodeMap PFAlgebra)
+planFromFile :: FilePath -> IO (NodeMap [Tag], [AlgNode], NodeMap TableAlgebra)
 planFromFile f = liftM deserializePlan $ BL.readFile f

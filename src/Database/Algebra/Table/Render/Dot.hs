@@ -1,15 +1,13 @@
--- Dot
+module Database.Algebra.Table.Render.Dot(renderTADot) where
 
-module Database.Algebra.Pathfinder.Render.Dot(renderPFDot) where
+import qualified Data.IntMap                 as Map
+import           Data.List
 
-import qualified Data.IntMap                         		as Map
-import           Data.List 							 		--as List
+import           Text.PrettyPrint
 
-import           Text.PrettyPrint 					 		--as Pretty
-
-import qualified Database.Algebra.Dag                		as Dag
-import           Database.Algebra.Dag.Common		 		--as DagC
-import           Database.Algebra.Pathfinder.Data.Algebra
+import qualified Database.Algebra.Dag        as Dag
+import           Database.Algebra.Dag.Common
+import           Database.Algebra.Table.Lang
 
 
 nodeToDoc :: AlgNode -> Doc
@@ -38,10 +36,10 @@ renderSortInf :: (SortAttrName, SortDir) -> Doc
 renderSortInf (attr, Desc) = text $ attr ++ "/desc"
 renderSortInf (attr, Asc)  = text attr
 
-renderJoinArgs :: (LeftAttrName, RightAttrName, JoinRel) -> Doc
-renderJoinArgs (left, right, joinR) = 
-    text left <+> (text $ show joinR) <+> text right
-    
+renderJoinArgs :: (Expr, Expr, JoinRel) -> Doc
+renderJoinArgs (left, right, joinR) =
+    (text $ show left) <+> (text $ show joinR) <+> (text $ show right)
+
 renderOptCol :: Maybe AttrName -> Doc
 renderOptCol Nothing  = empty
 renderOptCol (Just c) = text "/" <> text c
@@ -52,18 +50,25 @@ renderKey (Key k) = brackets $ commas text k
 renderColumn :: (AttrName, ATy) -> Doc
 renderColumn (c, t) = text c <> text "::" <> (text $ show t)
 
+renderTuple :: Tuple -> Doc
+renderTuple = hcat . punctuate comma . map (text . show)
+
+renderData :: [Tuple] -> Doc
+renderData [] = empty
+renderData xs = sep $ punctuate semi $ map renderTuple xs
+
 renderTableInfo :: TableName -> [(AttrName, ATy)] -> [Key] -> Doc
-renderTableInfo tableName cols keys = 
+renderTableInfo tableName cols keys =
     (text tableName)
     <> text "\\n"
     <> (brackets $ commas renderColumn cols)
     <> text "\\n"
     <> (brackets $ commas renderKey keys)
 
-opDotLabel :: NodeMap [Tag] -> AlgNode -> PFLabel -> Doc
+opDotLabel :: NodeMap [Tag] -> AlgNode -> TALabel -> Doc
 -- | Nullary operations
-opDotLabel tags i (LitTableL _ _)             = labelToDoc i 
-    "LITTABLE" empty (lookupTags i tags)
+opDotLabel tags i (LitTableL dat _schema)      = labelToDoc i
+    "LITTABLE" (renderData dat) (lookupTags i tags)
 opDotLabel tags i (TableRefL (name, attrs, keys)) = labelToDoc i
     "TABLE" (renderTableInfo name attrs keys) (lookupTags i tags)
 -- |  Binary operations
@@ -82,23 +87,23 @@ opDotLabel tags i (SemiJoinL info)           = labelToDoc i
 opDotLabel tags i (AntiJoinL info)           = labelToDoc i
     "ANTIJOIN" (commas renderJoinArgs info) (lookupTags i tags)
 -- | Unary operations
-opDotLabel tags i (RowNumL (res,sortI,attr))  = labelToDoc i 
+opDotLabel tags i (RowNumL (res,sortI,attr))  = labelToDoc i
     "ROWNUM" ((text $ res ++ ":<")
               <> (commas renderSortInf sortI)
               <> text ">"
               <> renderOptCol attr)
     (lookupTags i tags)
 opDotLabel tags i (RowRankL (res,sortInf))    = labelToDoc i
-    "ROWRANK" ((text $ res ++ ":<") 
+    "ROWRANK" ((text $ res ++ ":<")
                <> (commas renderSortInf sortInf)
-               <> text ">")                
+               <> text ">")
     (lookupTags i tags)
 opDotLabel tags i (RankL (res,sortInf))       = labelToDoc i
-    "RANK" ((text $ res ++ ":<") 
+    "RANK" ((text $ res ++ ":<")
             <> commas renderSortInf sortInf
-            <> text ">")                
+            <> text ">")
     (lookupTags i tags)
-opDotLabel tags i (ProjectL info)                = labelToDoc i 
+opDotLabel tags i (ProjectL info)                = labelToDoc i
     "PROJECT" (commas renderProj info) (lookupTags i tags)
 opDotLabel tags i (SelL info)                 = labelToDoc i
     "SELECT" (text $ show info) (lookupTags i tags)
@@ -117,7 +122,7 @@ renderSerCol :: Show c => Maybe c -> Doc
 renderSerCol Nothing  = empty
 renderSerCol (Just c) = (text $ show c) <> comma
 
-constructDotNode :: NodeMap [Tag] -> (AlgNode, PFLabel) -> DotNode
+constructDotNode :: NodeMap [Tag] -> (AlgNode, TALabel) -> DotNode
 constructDotNode tags (n, op) =
     DotNode n l c Nothing
       where l = render $ opDotLabel tags n op
@@ -154,7 +159,7 @@ renderColor DCCyan         = text "cyan"
 renderColor DCCyan4        = text "cyan4"
 renderColor DCHotPink      = text "hotpink"
 
-opDotColor :: PFLabel -> DotColor
+opDotColor :: TALabel -> DotColor
 
 -- | Nullaryops
 opDotColor (LitTableL _ _)   = DCGray52
@@ -249,7 +254,7 @@ renderDot ns es = text "digraph" <> (braces $ preamble $$ nodeSection $$ edgeSec
           edgeSection = vcat $ map renderDotEdge es
 
 -- | Labels (to collect all operations (nullary, unary,binary))
-data PFLabel = LitTableL [Tuple] SchemaInfos
+data TALabel = LitTableL [Tuple] SchemaInfos
              | TableRefL SemInfTableRef    -- nullops
              | AggrL SemInfAggr
              | DistinctL ()
@@ -267,13 +272,13 @@ data PFLabel = LitTableL [Tuple] SchemaInfos
              | AntiJoinL SemInfJoin
              | SerializeL (Maybe DescrCol, SerializeOrder, [PayloadCol])
 
-labelOfOp :: PFAlgebra -> PFLabel
+labelOfOp :: TableAlgebra -> TALabel
 labelOfOp (Database.Algebra.Dag.Common.BinOp op _ _) = labelOfBinOp op
 labelOfOp (Database.Algebra.Dag.Common.UnOp op _)    = labelOfUnOp op
 labelOfOp (Database.Algebra.Dag.Common.NullaryOp op) = labelOfNullaryOp op
 labelOfOp (TerOp _ _ _ _)                            = error "no tertiary operations"
 
-labelOfBinOp :: BinOp -> PFLabel
+labelOfBinOp :: BinOp -> TALabel
 labelOfBinOp (Cross info)     	= CrossL info
 labelOfBinOp (Difference info)  = DifferenceL info
 labelOfBinOp (DisjUnion info) 	= DisjUnionL info
@@ -282,7 +287,7 @@ labelOfBinOp (ThetaJoin info)   = ThetaJoinL info
 labelOfBinOp (SemiJoin info)    = SemiJoinL info
 labelOfBinOp (AntiJoin info)    = AntiJoinL info
 
-labelOfUnOp :: UnOp -> PFLabel
+labelOfUnOp :: UnOp -> TALabel
 labelOfUnOp (Aggr info)      = AggrL info
 labelOfUnOp (Distinct info)  = DistinctL  info
 labelOfUnOp (Project info)   = ProjectL info
@@ -292,24 +297,24 @@ labelOfUnOp (RowRank info)   = RowRankL info
 labelOfUnOp (Select info)    = SelL info
 labelOfUnOp (Serialize info) = SerializeL info
 
-labelOfNullaryOp :: NullOp -> PFLabel
+labelOfNullaryOp :: NullOp -> TALabel
 labelOfNullaryOp (LitTable  info1 info2) = LitTableL info1 info2
 labelOfNullaryOp (TableRef  info)      	 = TableRefL info
 
 -- | extract the operator descriptions and list of edges from a DAG
 
-extractGraphStructure :: Dag.Operator a => (a -> PFLabel)
+extractGraphStructure :: Dag.Operator a => (a -> TALabel)
                      -> Dag.AlgebraDag a
-                     -> ([(AlgNode, PFLabel)], [(AlgNode, AlgNode)])
+                     -> ([(AlgNode, TALabel)], [(AlgNode, AlgNode)])
 extractGraphStructure toLabel d = (labels, childs)
     where nodes = Dag.topsort d
           operators = zip nodes $ map (flip Dag.operator d) nodes
           labels = map (\(n, op) -> (n, toLabel op)) operators
           childs = concat $ map (\(n, op) -> zip (repeat n) (Dag.opChildren op)) operators
 
--- | Render an PFAlgebra plan into a dot file (GraphViz).
-renderPFDot :: NodeMap [Tag] -> [AlgNode] -> NodeMap PFAlgebra -> String
-renderPFDot ts roots m = render $ renderDot dotNodes dotEdges
+-- | Render an TableAlgebra plan into a dot file (GraphViz).
+renderTADot :: NodeMap [Tag] -> [AlgNode] -> NodeMap TableAlgebra -> String
+renderTADot ts roots m = render $ renderDot dotNodes dotEdges
     where (opLabels, edges) = extractGraphStructure labelOfOp d
           d = Dag.mkDag m roots
           dotNodes = map (constructDotNode ts) opLabels

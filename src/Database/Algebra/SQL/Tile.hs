@@ -1,4 +1,6 @@
 {-# LANGUAGE DoAndIfThenElse #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Database.Algebra.SQL.Tile
     ( TileTree (TileNode, ReferenceLeaf)
     , TileChildren
@@ -7,7 +9,7 @@ module Database.Algebra.SQL.Tile
     , DependencyList
     , TransformResult
     , transform
-    , PFDag
+    , TADag
     ) where
 
 -- TODO maybe split this file into the tile definition
@@ -16,31 +18,22 @@ module Database.Algebra.SQL.Tile
 -- correlated?)? (reader?)
 -- TODO isMultiReferenced special case: check for same parent !!
 
-import Control.Arrow (second)
-import Control.Monad (liftM)
-import Control.Monad.Trans.RWS.Strict
-import qualified Data.IntMap as IntMap
-import Data.Maybe
-import qualified Data.DList as DL
-    ( DList
-    , singleton
-    )
+import           Control.Arrow                    (second)
+import           Control.Monad                    (liftM)
+import           Control.Monad.Trans.RWS.Strict
+import qualified Data.DList                       as DL (DList, singleton)
+import qualified Data.IntMap                      as IntMap
+import           Data.Maybe
 import qualified Data.Set as Set
 
-import qualified Database.Algebra.Dag as D
-import qualified Database.Algebra.Dag.Common as C
-import qualified Database.Algebra.Pathfinder.Data.Algebra as A
+import qualified Database.Algebra.Dag             as D
+import qualified Database.Algebra.Dag.Common      as C
+import           Database.Algebra.Impossible
+import qualified Database.Algebra.Table.Lang      as A
 
-import qualified Database.Algebra.SQL.Query as Q
+import qualified Database.Algebra.SQL.Query       as Q
 import qualified Database.Algebra.SQL.Termination as T
-import Database.Algebra.SQL.Query.Util
-    ( emptySelectStmt
-    , mkSubQuery
-    , mkPCol
-    , affectsSortOrderAE
-    , affectsSortOrderCE
-    , affectsSortOrderEE
-    )
+import Database.Algebra.SQL.Query.Util            (emptySelectStmt, mkSubQuery, mkPCol, affectsSortOrderAE, affectsSortOrderCE, affectsSortOrderEE)
 
 -- | A tile internal reference type.
 type InternalReference = Q.ReferenceType
@@ -61,8 +54,8 @@ data TileTree = -- | A tile: The first argument determines which features the
                 -- expression.
               | ReferenceLeaf ExternalReference [String]
 
--- | The type of DAG used by Pathfinder.
-type PFDag = D.AlgebraDag A.PFAlgebra
+-- | Table algebra DAGs
+type TADag = D.AlgebraDag A.TableAlgebra
 
 -- | Association list (where dependencies should be ordered topologically).
 type DependencyList = DL.DList (ExternalReference, TileTree)
@@ -72,7 +65,7 @@ type DependencyList = DL.DList (ExternalReference, TileTree)
 -- transforming:
 --     * The processed nodes with multiple parents.
 --
---     * The current state of the table id generator.      
+--     * The current state of the table id generator.
 --
 --     * The current state of the variable id generator.
 --
@@ -114,7 +107,7 @@ sLookupBinding n = IntMap.lookup n . multiParentNodes
 --
 --     * A state for generating fresh names and maintain the mapping of nodes
 --
-type TransformMonad = RWS PFDag DependencyList TransformState
+type TransformMonad = RWS TADag DependencyList TransformState
 
 -- | A table expression id generator using the state within the
 -- 'TransformMonad'.
@@ -151,14 +144,14 @@ generateVariableId = do
 
 -- | Unpack values (or run computation).
 runTransformMonad :: TransformMonad a
-                  -> PFDag                      -- ^ The used DAG.
+                  -> TADag                      -- ^ The used DAG.
                   -> TransformState             -- ^ The inital state.
                   -> (a, DependencyList)
-runTransformMonad = evalRWS 
+runTransformMonad = evalRWS
 
 -- | Check if node has more than one parent.
 isMultiReferenced :: C.AlgNode
-                  -> PFDag
+                  -> TADag
                   -> Bool
 isMultiReferenced n dag = case D.parents n dag of
     -- Has at least 2 parents.
@@ -177,18 +170,18 @@ getSchemaSelectStmt s = map Q.sName $ Q.selectClause s
 -- | The result of the 'transform' function.
 type TransformResult = ([TileTree], DependencyList)
 
--- | Transform a 'PFDag', while swapping out repeatedly used sub expressions
+-- | Transform a 'TADag', while swapping out repeatedly used sub expressions
 -- (nodes with more than one parent).
--- A 'PFDag' can have multiple root nodes, and therefore the function returns a
+-- A 'TADag' can have multiple root nodes, and therefore the function returns a
 -- list of root tiles and their dependencies.
-transform :: PFDag -> TransformResult
+transform :: TADag -> TransformResult
 transform dag = runTransformMonad result dag sInitial
   where rootNodes = D.rootNodes dag
         result    = mapM transformNode rootNodes
 
 -- | This function basically checks for already referenced nodes with more than
 -- one parent, returning a reference to already computed 'TileTree's.
-transformNode :: C.AlgNode -> TransformMonad TileTree 
+transformNode :: C.AlgNode -> TransformMonad TileTree
 transformNode n = do
 
     op <- asks $ D.operator n
@@ -200,11 +193,7 @@ transformNode n = do
             (C.NullaryOp nop)   -> (False, transformNullaryOp nop)
             (C.UnOp uop c)      -> (True, transformUnOp uop c)
             (C.BinOp bop c0 c1) -> (True, transformBinOp bop c0 c1)
-            (C.TerOp () _ _ _)  ->
-                ( True
-                , fail "transformOperator: invalid operator type TerOp found"
-                )
-
+            (C.TerOp () _ _ _)  -> $impossible
 
     multiRef <- asks $ isMultiReferenced n
 
@@ -235,7 +224,6 @@ transformNode n = do
 
                 return $ ReferenceLeaf tableId schema
     else transformOp
-
 
 transformNullaryOp :: A.NullOp -> TransformMonad TileTree
 transformNullaryOp (A.LitTable [] schema) = do
@@ -273,11 +261,11 @@ transformNullaryOp (A.LitTable tuples schema) = do
              , Q.fromClause = [fLiteral]
              }
              []
-  where tMap = map $ Q.CEBase . Q.VEValue . translateAVal 
+  where tMap = map $ Q.CEBase . Q.VEValue . translateAVal
 
 transformNullaryOp (A.TableRef (name, info, _))   = do
     alias <- generateAliasName
-    
+
     let f (n, _) = Q.SCAlias (Q.EEBase $ mkPCol alias n) n
         body     =
             emptySelectStmt
@@ -288,8 +276,8 @@ transformNullaryOp (A.TableRef (name, info, _))   = do
                     [ Q.FPAlias (Q.FETableReference name)
                                 alias
                                 -- Map to old column name.
-                                $ Just $ map fst info 
-                    ] 
+                                $ Just $ map fst info
+                    ]
             }
 
     return $ TileNode (Set.fromList [T.FProjection, T.FTable]) body []
@@ -304,8 +292,8 @@ transformUnOpRank :: -- ExtendedExpr constructor.
 transformUnOpRank rankConstructor (name, sortList) =
     attachColFunUnOp colFun
                      $ Set.fromList [ T.FProjection
-                                  , T.FWindowFunction
-                                  ]
+                                    , T.FWindowFunction
+                                    ]
   where
     colFun sClause = Q.SCAlias
                      ( rankConstructor $ asWindowOrderExprList
@@ -356,8 +344,11 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
         A.NoPos       -> ([], [])
         -- Sort and project.
         A.AbsPos col  -> (["pos"], [(col, "pos")])
-        -- Sort but do not project.
-        A.RelPos cols -> (cols, [])
+        -- Sort but do not project. It is not necessary because
+        -- relative positions are not needed to reconstruct nested
+        -- results.
+        A.RelPos cols -> (cols, cols)
+
 
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
     attachColFunUnOp colFun
@@ -378,13 +369,14 @@ transformUnOp (A.Project projList) c = do
     let sClause  = Q.selectClause select
         -- Inlining is obligatory here, since we possibly eliminate referenced
         -- columns. ('translateExpr' inlines columns.)
-        f (n, e) = Q.SCAlias tE n
-          where tE = translateExprEE (Just sClause) e
+        translateAlias :: (A.AttrName, A.Expr) -> Q.SelectColumn
+        translateAlias (col, expr) = Q.SCAlias translatedExpr col
+          where translatedExpr = translateExprEE (Just sClause) expr
 
     return $ TileNode
              (Set.union opFeatures childFeatures)
              -- Replace the select clause with the projection list.
-             select { Q.selectClause = map f projList }
+             select { Q.selectClause = map translateAlias projList }
              -- But use the old children.
              children
   where
@@ -424,12 +416,12 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
     (childFeatures, select, children) <-
         transformTerminated c opFeatures
     
-    let sClause          = Q.selectClause select
-        translateE       = translateExprCE $ Just sClause
-        maybeTranslateE  = liftM translateE
+    let sClause           = Q.selectClause select
+        translateE        = translateExprCE $ Just sClause
+        maybeTranslateE   = liftM translateE
         -- Inlining here is obligatory, since we could eliminate referenced
         -- columns. (This is similar to projection.)
-        aggrToEE (a, n)  = 
+        aggrToEE (a, n)   = 
             Q.SCAlias ( let (fun, optExpr) = translateAggrType a
                         in Q.EEAggrExpr
                            $ Q.AEAggregate (maybeTranslateE optExpr)
@@ -437,9 +429,9 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
                       )
                       n
 
-        partColumnExprs  = map (second translateE) partExprMapping
-        partExtendedExpr = map (second $ translateExprEE $ Just sClause)
-                           partExprMapping
+        partColumnExprs   = map (second translateE) partExprMapping
+        partExtendedExprs = map (second $ translateExprEE $ Just sClause)
+                            partExprMapping
 
 
         wrapSCAlias (name, extendedExpr)
@@ -450,7 +442,7 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
              (Set.union childFeatures opFeatures)
              select
              { Q.selectClause =
-                   map wrapSCAlias partExtendedExpr ++ map aggrToEE aggrs
+                   map wrapSCAlias partExtendedExprs ++ map aggrToEE aggrs
              , -- Since SQL treats numbers in the group by clause as column
                -- indices, filter them out. (They do not change the semantics
                -- anyway.)
@@ -984,12 +976,29 @@ translateSortInf si colFun = map f si
 
 
 -- | Translate a single join condition into it's 'Q.ColumnExpr' equivalent.
-translateJoinCond :: (A.LeftAttrName, A.RightAttrName, A.JoinRel)
+translateJoinCond :: (A.Expr, A.Expr, A.JoinRel)
                   -> (String -> Q.ColumnExpr) -- ^ Left column function.
                   -> (String -> Q.ColumnExpr) -- ^ Right column function.
                   -> Q.ColumnExpr
 translateJoinCond (l, r, j) lColFun rColFun =
     Q.CEBase $ Q.VEBinApp (translateJoinRel j) (lColFun l) (rColFun r)
+-- | Translate a join condition into it's 'Q.ValueExpr' equivalent.
+
+-- TODO edited by alex
+--translateJoinCond :: [Q.SelectColumn]
+--                  -> [Q.SelectColumn]
+--                  -> [(A.Expr, A.Expr, A.JoinRel)]
+--                  -> Q.ValueExpr
+--translateJoinCond sClause1 sClause2 conjs =
+--    case conjs of
+--        []       -> $impossible
+--        (c : cs) -> foldr mkAnd (joinConjunct c) (map joinConjunct cs)
+--
+--  where
+--    joinConjunct (l, r, j) =
+--        Q.VEBinApp (translateJoinRel j)
+--                   (translateExpr (Just sClause1) l)
+--                   (translateExpr (Just sClause2) r)
 
 translateSortDir :: A.SortDir -> Q.SortDirection
 translateSortDir d = case d of
@@ -999,7 +1008,7 @@ translateSortDir d = case d of
 translateAVal :: A.AVal -> Q.Value
 translateAVal v = case v of
     A.VInt i    -> Q.VInteger i
-    A.VStr s    -> Q.VText s 
+    A.VStr s    -> Q.VText s
     A.VBool b   -> Q.VBoolean b
     A.VDouble d -> Q.VDoublePrecision d
     A.VDec d    -> Q.VDecimal d

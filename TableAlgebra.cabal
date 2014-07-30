@@ -21,8 +21,8 @@ Description:    The Ferry 2.0 Table Algebra library
                  4. <http://www-db.informatik.uni-tuebingen.de/files/publications/ferryhaskell.pdf>
 License:        BSD3
 License-file:   LICENSE
-Author:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>, Tom Schreiber <tom.schreiber@uni-tuebingen.de>, Alexander Ulrich <alexander.ulrich@uni-tuebingen.de>
-Maintainer:	Alexander Ulrich <alexander.ulrich@uni-tuebingen.de>
+Author:		Jeroen Weijers <jeroen.weijers@uni-tuebingen.de>, Tom Schreiber <tom.schreiber@uni-tuebingen.de>, Alexander Ulrich <alexander.ulrich@uni-tuebingen.de>, Moritz Bruder <moritz.bruder@student.uni-tuebingen.de>
+Maintainer:	Alexander Ulrich <alex@etc-network.de>
 Build-Type:     Simple
 
 library
@@ -41,10 +41,11 @@ library
                       errors >= 1.0.0,
                       dlist,
                       ansi-wl-pprint,
-                      multiset
+                      multiset,
+                      template-haskell
 
     exposed-modules:  Database.Algebra.Dag
-                      Database.Algebra.Dag.Builder
+                      Database.Algebra.Dag.Build
                       Database.Algebra.Dag.Common
                       Database.Algebra.Aux
 
@@ -56,10 +57,10 @@ library
                       Database.Algebra.Rewrite.PatternConstruction
                       Database.Algebra.Rewrite.DagRewrite
 
-                      Database.Algebra.Pathfinder
-                      Database.Algebra.Pathfinder.Render.Dot
-                      Database.Algebra.Pathfinder.Render.JSON
-                      Database.Algebra.Pathfinder.Data.Algebra
+                      Database.Algebra.Table.Render.Dot
+                      Database.Algebra.Table.Render.JSON
+                      Database.Algebra.Table.Lang
+                      Database.Algebra.Table.Construct
 
                       Database.Algebra.SQL.Util
                       Database.Algebra.SQL.Compatibility
@@ -75,14 +76,12 @@ library
                       Database.Algebra.X100.Data
                       Database.Algebra.X100.Data.Create
                       Database.Algebra.X100.Properties
-                      Database.Algebra.X100.Properties.AbstractDomains
+--                      Database.Algebra.X100.Properties.AbstractDomains
                       Database.Algebra.X100.ExprUtils
                       Database.Algebra.X100.ProjectUtils
     hs-source-dirs:   src
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind -auto-all
-    other-modules:    Database.Algebra.Pathfinder.Monadic.Create
-                      Database.Algebra.Pathfinder.Data.Create
-                      Database.Algebra.SQL.Query
+    other-modules:    Database.Algebra.SQL.Query
                       Database.Algebra.SQL.Query.Substitution
                       Database.Algebra.SQL.Query.Util
                       Database.Algebra.SQL.Termination
@@ -96,16 +95,8 @@ library
                       Database.Algebra.SQL.Materialization.TemporaryTable
                       Database.Algebra.X100.Render.Sharing
                       Database.Algebra.X100.Properties.Schema
-                      Database.Algebra.X100.Properties.Card1
-                      Database.Algebra.X100.Properties.Const
-                      Database.Algebra.X100.Properties.Empty
-                      Database.Algebra.X100.Properties.SideEffect
-                      Database.Algebra.X100.Properties.ICols
-                      Database.Algebra.X100.Properties.Key
-                      Database.Algebra.X100.Properties.Domain
                       Database.Algebra.X100.Properties.Types
                       Database.Algebra.X100.Properties.BottomUp
-                      Database.Algebra.X100.Properties.TopDown
                       Database.Algebra.X100.Render.Dot
                       Database.Algebra.X100.Render.X100Code
                       Database.Algebra.Impossible
@@ -129,7 +120,7 @@ executable x100dot
 
 
 executable tadot
-    Main-is: Database/Algebra/Pathfinder/Tools/DotGen.hs
+    Main-is: Database/Algebra/Table/Tools/DotGen.hs
     GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind
     hs-source-dirs:   src
     build-depends:    base >= 4.2 && < 5, 
@@ -178,5 +169,6 @@ executable sqlcodegentest
                       ansi-wl-pprint,
                       process,
                       filepath,
-                      multiset
+                      multiset,
+                      template-haskell
 
