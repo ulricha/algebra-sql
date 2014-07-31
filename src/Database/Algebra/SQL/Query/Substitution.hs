@@ -95,7 +95,7 @@ replaceReferencesFromExpr :: (Q.ReferenceType -> Q.FromExpr)
 replaceReferencesFromExpr r (Q.FESubQuery q) =
     Q.FESubQuery $ replaceReferencesValueQuery r q
 
-replaceReferencesFromExpr r t@(Q.FEVariable v) = r v
+replaceReferencesFromExpr r (Q.FEVariable v) = r v
 
 replaceReferencesFromExpr _ t = t
 
