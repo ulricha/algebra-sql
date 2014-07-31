@@ -323,9 +323,9 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
              , -- Order by optional columns. Remove constant column expressions,
                -- since SQL99 defines different semantics.
                Q.orderByClause =
-                   map (flip Q.OE Q.Ascending)
+                   map (`Q.OE` Q.Ascending)
                        $ descrColAdder . filter affectsSortOrderEE
-                         $ map (inlineEE sClause) posOrderList
+                         $ map inline posOrderList
              }
              children
   where
@@ -341,7 +341,7 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
     (posOrderList, posProjList)     = case pos of
         A.NoPos       -> ([], [])
         -- Sort and project.
-        A.AbsPos col  -> (["pos"], [(col, "pos")])
+        A.AbsPos col  -> ([col], [(col, "pos")])
         -- Sort but do not project. It is not necessary because
         -- relative positions are not needed to reconstruct nested
         -- results.
