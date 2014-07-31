@@ -329,7 +329,7 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
              }
              children
   where
-    opFeatures                     = projectF <> orderingF
+    opFeatures                     = projectF <> sortF
     (descrColAdder, descrProjList) = case mDescr of
         Nothing               -> (id, [])
         -- Project and sort. Since descr gets added as new alias we can use it
