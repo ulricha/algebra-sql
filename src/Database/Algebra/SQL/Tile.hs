@@ -97,20 +97,20 @@ sLookupBinding :: C.AlgNode
                -> Maybe (ExternalReference, [String])
 sLookupBinding n = IntMap.lookup n . multiParentNodes
 
--- | The transform monad is used for transforming from DAGs into the tile plan. It
--- contains:
+-- | The transform monad is used for transforming DAGs into dense tiles, it
+-- is built from:
 --
---     * A reader for the DAG (since we only read from it)
+--     * A reader for the DAG
 --
 --     * A writer for outputting the dependencies
 --
 --     * A state for generating fresh names and maintain the mapping of nodes
 --
-type TransformMonad = RWS TADag DependencyList TransformState
+type Transform = RWS TADag DependencyList TransformState
 
 -- | A table expression id generator using the state within the
--- 'TransformMonad'.
-generateTableId :: TransformMonad ExternalReference
+-- 'Transform'.
+generateTableId :: Transform ExternalReference
 generateTableId = do
     st <- get
 
@@ -120,7 +120,7 @@ generateTableId = do
 
     return tid
 
-generateAliasName :: TransformMonad String
+generateAliasName :: Transform String
 generateAliasName = do
     st <- get
 
@@ -131,7 +131,7 @@ generateAliasName = do
     return $ 'a' : show aid
 
 -- | A variable identifier generator.
-generateVariableId :: TransformMonad InternalReference
+generateVariableId :: Transform InternalReference
 generateVariableId = do
     st <- get
 
@@ -142,11 +142,11 @@ generateVariableId = do
     return vid
 
 -- | Unpack values (or run computation).
-runTransformMonad :: TransformMonad a
+runTransform :: Transform a
                   -> TADag                      -- ^ The used DAG.
                   -> TransformState             -- ^ The inital state.
                   -> (a, DependencyList)
-runTransformMonad = evalRWS
+runTransform = evalRWS
 
 -- | Check if node has more than one parent.
 isMultiReferenced :: C.AlgNode
@@ -174,14 +174,14 @@ type TransformResult = ([TileTree], DependencyList)
 -- A 'TADag' can have multiple root nodes, and therefore the function returns a
 -- list of root tiles and their dependencies.
 transform :: TADag -> TransformResult
-transform dag = runTransformMonad result dag sInitial
+transform dag = runTransform result dag sInitial
   where
     rootNodes = D.rootNodes dag
     result    = mapM transformNode rootNodes
 
 -- | This function basically checks for already referenced nodes with more than
 -- one parent, returning a reference to already computed 'TileTree's.
-transformNode :: C.AlgNode -> TransformMonad TileTree
+transformNode :: C.AlgNode -> Transform TileTree
 transformNode n = do
 
     op <- asks $ D.operator n
@@ -225,7 +225,7 @@ transformNode n = do
                 return $ ReferenceLeaf tableId schema
     else transformOp
 
-transformNullaryOp :: A.NullOp -> TransformMonad TileTree
+transformNullaryOp :: A.NullOp -> Transform TileTree
 transformNullaryOp (A.LitTable tuples schema) = do
     alias <- generateAliasName
 
@@ -283,7 +283,7 @@ transformUnOpRank :: -- ExtendedExpr constructor.
                      ([Q.WindowOrderExpr] -> Q.ExtendedExpr)
                   -> (String, [A.SortAttr])
                   -> C.AlgNode
-                  -> TransformMonad TileTree
+                  -> Transform TileTree
 transformUnOpRank rankConstructor (name, sortList) =
     attachColFunUnOp colFun $ projectF <> windowFunctionF
   where
@@ -294,7 +294,7 @@ transformUnOpRank rankConstructor (name, sortList) =
                      )
                      name
 
-transformUnOp :: A.UnOp -> C.AlgNode -> TransformMonad TileTree
+transformUnOp :: A.UnOp -> C.AlgNode -> Transform TileTree
 transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
     (childFeatures, select, children) <-
@@ -456,7 +456,7 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
 attachColFunUnOp :: ([Q.SelectColumn] -> Q.SelectColumn)
                  -> FeatureSet
                  -> C.AlgNode
-                 -> TransformMonad TileTree
+                 -> Transform TileTree
 attachColFunUnOp colFun opFeatures c = do
 
     (childFeatures, select, children) <-
@@ -474,7 +474,7 @@ attachColFunUnOp colFun opFeatures c = do
 transformBinSetOp :: Q.SetOperation
                   -> C.AlgNode
                   -> C.AlgNode
-                  -> TransformMonad TileTree
+                  -> Transform TileTree
 transformBinSetOp setOp c0 c1 = do
 
     -- Use one tile to get the schema information.
@@ -510,10 +510,10 @@ transformBinSetOp setOp c0 c1 = do
 -- | Perform a cross join between two nodes.
 transformBinCrossJoin :: C.AlgNode
                       -> C.AlgNode
-                      -> TransformMonad ( FeatureSet
-                                        , Q.SelectStmt
-                                        , TileChildren
-                                        )
+                      -> Transform ( FeatureSet
+                                   , Q.SelectStmt
+                                   , TileChildren
+                                   )
 transformBinCrossJoin c0 c1 = do
 
     (childFeatures0, select0, children0) <-
@@ -540,7 +540,7 @@ transformBinCrossJoin c0 c1 = do
 transformBinOp :: A.BinOp
                -> C.AlgNode
                -> C.AlgNode
-               -> TransformMonad TileTree
+               -> Transform TileTree
 transformBinOp (A.Cross ()) c0 c1 = do
     (f, s, c) <- transformBinCrossJoin c0 c1
     return $ TileNode f s c
@@ -584,7 +584,7 @@ transformExistsJoin :: A.SemInfJoin
                     -> C.AlgNode 
                     -> C.AlgNode
                     -> (Q.ColumnExpr -> Q.ColumnExpr)
-                    -> TransformMonad TileTree
+                    -> Transform TileTree
 transformExistsJoin conditions c0 c1 existsWrapF = do
 
     when (null conditions) $impossible
@@ -646,7 +646,7 @@ transformExistsJoin conditions c0 c1 existsWrapF = do
 -- 'FeatureSet' of the child, the 'Q.SelectStmt' and its children.
 transformTerminated :: C.AlgNode
                     -> FeatureSet
-                    -> TransformMonad (FeatureSet, Q.SelectStmt, TileChildren)
+                    -> Transform (FeatureSet, Q.SelectStmt, TileChildren)
 transformTerminated n topFs = do
     tile <- transformNode n
     
@@ -674,7 +674,7 @@ transformTerminated n topFs = do
 -- | Embeds an external reference into a 'Q.SelectStmt'.
 embedExternalReference :: ExternalReference
                        -> [String]
-                       -> TransformMonad (Q.SelectStmt, TileChildren)
+                       -> Transform (Q.SelectStmt, TileChildren)
 embedExternalReference extRef schema = do
 
         alias <- generateAliasName
