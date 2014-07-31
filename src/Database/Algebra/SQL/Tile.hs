@@ -306,46 +306,49 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
     (childFeatures, select, children) <-
         transformTerminated c opFeatures
 
-    let sClause              = Q.selectClause select
-        inline               = inlineEE sClause
-        project (col, alias) = Q.SCAlias (inline col) alias
-        itemi i              = "item" ++ show i
-        payloadProjs         =
-            zipWith (\(A.PayloadCol col) i -> Q.SCAlias (inline col) (itemi i))
+    let inline                      = inlineEE $ Q.selectClause select
+        -- Inline a column and alias the result.
+        project                     = Q.SCAlias . inline
+        itemi i                     = "item" ++ show i
+        payloadProjs                =
+            zipWith (\(A.PayloadCol col) i -> project col $ itemi i)
                     payloadCols
                     [1..]
+
+        (posOrderList, posProjList) = case pos of
+            A.NoPos       -> ([], [])
+            -- Sort and project (avoid inlining, because not necessary).
+            A.AbsPos col  -> ([Q.EEBase $ mkCol "pos"], [(col, "pos")])
+            -- Sort but do not project. It is not necessary because
+            -- relative positions are not needed to reconstruct nested
+            -- results.
+            A.RelPos cols -> (map inline cols, [])
 
     return $ TileNode
              (childFeatures <> opFeatures)
              select
-             { Q.selectClause = map project (descrProjList ++ posProjList)
-                                ++ payloadProjs
+             { Q.selectClause =
+                   map (uncurry project) (descrProjAdder posProjList)
+                   ++ payloadProjs
              , -- Order by optional columns. Remove constant column expressions,
                -- since SQL99 defines different semantics.
                Q.orderByClause =
                    map (`Q.OE` Q.Ascending)
-                       $ descrColAdder . filter affectsSortOrderEE
-                         $ map inline posOrderList
+                       . filter affectsSortOrderEE
+                       . descrColAdder
+                       $ posOrderList
              }
              children
   where
-    opFeatures                     = projectF <> sortF
-    (descrColAdder, descrProjList) = case mDescr of
-        Nothing               -> (id, [])
+    opFeatures                      = projectF <> sortF
+    (descrColAdder, descrProjAdder) = case mDescr of
+        Nothing               -> (id, id)
         -- Project and sort. Since descr gets added as new alias we can use it
-        -- in the ORDER BY clause.
+        -- in the ORDER BY clause (also avoid inlining).
         Just (A.DescrCol col) -> ( (:) $ Q.EEBase $ mkCol "descr"
-                                 , [(col, "descr")]
+                                 , (:) (col, "descr")
                                  )
 
-    (posOrderList, posProjList)     = case pos of
-        A.NoPos       -> ([], [])
-        -- Sort and project.
-        A.AbsPos col  -> ([col], [(col, "pos")])
-        -- Sort but do not project. It is not necessary because
-        -- relative positions are not needed to reconstruct nested
-        -- results.
-        A.RelPos cols -> (cols, [])
 
 
 transformUnOp (A.RowNum (name, sortList, optPart)) c =
