@@ -33,6 +33,7 @@ import Text.PrettyPrint.ANSI.Leijen ( (<$>)
                                     , sep
                                     , squotes
                                     , text
+                                    , vcat
                                     )
 
 import Database.Algebra.SQL.Query
@@ -142,7 +143,9 @@ renderSelectStmt compat stmt =
            fromParts ->
                linebreak
                <> kw "FROM"
-               <+> align (enlist $ map (renderFromPart compat) fromParts)
+               <+> align ( vcat . punctuate comma
+                                $ map (renderFromPart compat) fromParts
+                         )
     <> case whereClause stmt of
            []             -> empty
            l              -> linebreak
