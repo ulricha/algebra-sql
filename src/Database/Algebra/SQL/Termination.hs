@@ -13,9 +13,9 @@ module Database.Algebra.SQL.Termination
     , module Data.Monoid
     ) where
 
+import           Data.List   (intercalate)
 import           Data.Monoid
 import qualified Data.Set    as S
-import           Data.List   (intercalate)
 
 -- | Specifies a part in a SQL statement which is currently in use.
 data Feature = ProjectionF -- ^ Projection of columns.

@@ -32,7 +32,7 @@ import qualified Database.Algebra.Table.Lang      as A
 
 import qualified Database.Algebra.SQL.Query       as Q
 import           Database.Algebra.SQL.Termination
-import Database.Algebra.SQL.Query.Util            (emptySelectStmt, mkSubQuery, mkPCol, affectsSortOrderAE, affectsSortOrderCE, affectsSortOrderEE)
+import Database.Algebra.SQL.Query.Util
 
 -- | A tile internal reference type.
 type InternalReference = Q.ReferenceType
