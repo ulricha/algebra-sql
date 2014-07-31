@@ -29,8 +29,11 @@ replaceReferencesSelectStmt r body =
 replaceReferencesSelectColumn :: SubstitutionFunction
                               -> Q.SelectColumn
                               -> Q.SelectColumn
-replaceReferencesSelectColumn r (Q.SCAlias e a)     =
+replaceReferencesSelectColumn r (Q.SCAlias e a) =
     Q.SCAlias (replaceReferencesExtendedExpr r e) a
+
+replaceReferencesSelectColumn r (Q.SCExpr e)    =
+    Q.SCExpr $ replaceReferencesExtendedExpr r e
 
 replaceReferencesExtendedExpr :: SubstitutionFunction
                               -> Q.ExtendedExpr

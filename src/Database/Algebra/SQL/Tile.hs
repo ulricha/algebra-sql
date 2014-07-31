@@ -226,53 +226,47 @@ transformNode n = do
     else transformOp
 
 transformNullaryOp :: A.NullOp -> TransformMonad TileTree
-transformNullaryOp (A.LitTable [] schema) = do
-    alias <- generateAliasName
-
-    let sFun n   = Q.SCAlias (Q.EEBase $ mkPCol alias n) n
-        sClause  = map (sFun . fst) schema
-        castedNull ty = Q.CEBase $ Q.VECast (Q.CEBase $ Q.VEValue Q.VNull)
-                                            (translateATy ty)
-        fLiteral = Q.FPAlias (Q.FESubQuery $ Q.VQLiteral [map (castedNull . snd) schema])
-                             alias
-                             $ Just $ map fst schema
-
-    return $ TileNode
-             (projectF <> filterF <> tableF)
-             emptySelectStmt
-             { Q.selectClause = sClause
-             , Q.fromClause = [fLiteral]
-             , Q.whereClause = [Q.CEBase . Q.VEValue $ Q.VBoolean False]
-             }
-             []
 transformNullaryOp (A.LitTable tuples schema) = do
     alias <- generateAliasName
 
-    let sFun n   = Q.SCAlias (Q.EEBase $ mkPCol alias n) n
-        sClause  = map (sFun . fst) schema
-        fLiteral = Q.FPAlias (Q.FESubQuery $ Q.VQLiteral $ map tMap tuples)
-                             alias
-                             $ Just $ map fst schema
+    let -- Create a column and alias it with the same name.
+        project n                          =
+            Q.SCAlias (Q.EEBase $ mkPCol alias n) n
+        -- Abstracts over the differences.
+        tile otherFeatures tuples' wClause =
+            TileNode (otherFeatures <> tableF)
+                     emptySelectStmt
+                     { Q.selectClause = map (project . fst) schema
+                     , Q.fromClause   =
+                         [ Q.FPAlias (Q.FESubQuery $ Q.VQLiteral tuples')
+                                     alias
+                                     $ Just $ map fst schema
+                         ]
+                     , Q.whereClause  = wClause
+                     }
+                     []
 
-    return $ TileNode
-             (projectF <> tableF)
-             emptySelectStmt
-             { Q.selectClause = sClause
-             , Q.fromClause = [fLiteral]
-             }
-             []
+    return $ case tuples of
+        [] -> tile (projectF <> filterF)
+                   [map (castedNull . snd) schema]
+                   [Q.CEBase . Q.VEValue $ Q.VBoolean False]
+        _  -> tile projectF
+                   (map (map translateLit) tuples)
+                   []
   where
-    tMap = map $ Q.CEBase . Q.VEValue . translateAVal
+    castedNull ty = Q.CEBase $ Q.VECast (Q.CEBase $ Q.VEValue Q.VNull)
+                                         (translateATy ty)
+    translateLit  = Q.CEBase . Q.VEValue . translateAVal
 
 transformNullaryOp (A.TableRef (name, info, _))   = do
     alias <- generateAliasName
 
-    let f (n, _) = Q.SCAlias (Q.EEBase $ mkPCol alias n) n
-        body     =
+    let project n = Q.SCAlias (Q.EEBase $ mkPCol alias n) n
+        body      =
             emptySelectStmt
             { -- Map the columns of the table reference to the given
               -- column names.
-              Q.selectClause = map f info
+              Q.selectClause = map (project . fst) info
             , Q.fromClause =
                     [ Q.FPAlias (Q.FETableReference name)
                                 alias
@@ -634,8 +628,7 @@ transformExistsJoin conditions c0 c1 existsWrapF = do
                               { Q.selectClause = [rightSCol] }
                 innerConds  = map f conditions'
                 f           = translateJoinCond lSClause rSClause
-                rightSCol   = Q.SCAlias (translateExprEE (Just rSClause) r)
-                                        "rightCond"
+                rightSCol   = Q.SCExpr (translateExprEE (Just rSClause) r)
                 lSClause    = Q.selectClause select0
                 rSClause    = Q.selectClause select1
 
@@ -745,8 +738,9 @@ inlineEE :: [Q.SelectColumn]
 inlineEE sClause col =
     fromMaybe (Q.EEBase $ mkCol col) $ foldr f Nothing sClause
   where
-    f (Q.SCAlias ae a) r | col == a  = return ae
-                         | otherwise = r
+    f sc r = case sc of
+        Q.SCAlias expr alias | col == alias -> return expr
+        _                                   -> r
 
 -- | Generic base converter for the value expression template. Since types do
 -- not have equal functionality, conversion can fail.

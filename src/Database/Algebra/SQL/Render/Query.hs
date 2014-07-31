@@ -226,6 +226,7 @@ renderSelectColumn :: CompatMode -> SelectColumn -> Doc
 renderSelectColumn compat (SCAlias expr name) = renderExtendedExpr compat expr
                                                 <+> kw "AS"
                                                 <+> text name
+renderSelectColumn compat (SCExpr expr)       = renderExtendedExpr compat expr
 
 renderExtendedExpr :: CompatMode -> ExtendedExpr -> Doc
 renderExtendedExpr compat (EEBase v)                  = renderExtendedExprBase compat v
