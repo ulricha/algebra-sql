@@ -226,21 +226,18 @@ transformNode n = do
     else transformOp
 
 transformNullaryOp :: A.NullOp -> Transform TileTree
-transformNullaryOp (A.LitTable tuples schema) = do
-    alias <- freshAlias
+transformNullaryOp (A.LitTable tuples typedSchema) = do
+    tableAlias <- freshAlias
 
-    let -- Create a column and alias it with the same name.
-        project n                          =
-            Q.SCAlias (Q.EEBase $ mkPCol alias n) n
-        -- Abstracts over the differences.
+    let -- Abstracts over the differences.
         tile otherFeatures tuples' wClause =
             TileNode (otherFeatures <> tableF)
                      emptySelectStmt
-                     { Q.selectClause = map (project . fst) schema
+                     { Q.selectClause = columnsFromSchema tableAlias schema
                      , Q.fromClause   =
                          [ Q.FPAlias (Q.FESubQuery $ Q.VQLiteral tuples')
-                                     alias
-                                     $ Just $ map fst schema
+                                     tableAlias
+                                     $ Just schema
                          ]
                      , Q.whereClause  = wClause
                      }
@@ -248,35 +245,35 @@ transformNullaryOp (A.LitTable tuples schema) = do
 
     return $ case tuples of
         [] -> tile (projectF <> filterF)
-                   [map (castedNull . snd) schema]
+                   [map (castedNull . snd) typedSchema]
                    [Q.CEBase . Q.VEValue $ Q.VBoolean False]
         _  -> tile projectF
                    (map (map translateLit) tuples)
                    []
   where
+    schema        = map fst typedSchema
     castedNull ty = Q.CEBase $ Q.VECast (Q.CEBase $ Q.VEValue Q.VNull)
                                          (translateATy ty)
     translateLit  = Q.CEBase . Q.VEValue . translateAVal
 
-transformNullaryOp (A.TableRef (name, info, _))   = do
-    alias <- freshAlias
+transformNullaryOp (A.TableRef (name, typedSchema, _))   = do
+    tableAlias <- freshAlias
 
-    let project n = Q.SCAlias (Q.EEBase $ mkPCol alias n) n
-        body      =
-            emptySelectStmt
-            { -- Map the columns of the table reference to the given
-              -- column names.
-              Q.selectClause = map (project . fst) info
-            , Q.fromClause =
-                    [ Q.FPAlias (Q.FETableReference name)
-                                alias
-                                -- Map to old column name.
-                                $ Just $ map fst info
-                    ]
-            }
-
-    return $ TileNode (projectF <> tableF) body []
-
+    return $ TileNode (projectF <> tableF)
+                      emptySelectStmt
+                      { -- Map the columns of the table reference to the given
+                        -- column names.
+                        Q.selectClause = columnsFromSchema tableAlias schema
+                      , Q.fromClause   =
+                              [ Q.FPAlias (Q.FETableReference name)
+                                          tableAlias
+                                          -- Map to old column name.
+                                          $ Just schema
+                              ]
+                      }
+                      []
+  where
+    schema = map fst typedSchema
 
 -- | Abstraction for rank operators.
 transformUnOpRank :: -- ExtendedExpr constructor.
@@ -297,8 +294,7 @@ transformUnOpRank rankConstructor (name, sortList) =
 transformUnOp :: A.UnOp -> C.AlgNode -> Transform TileTree
 transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
-    (childFeatures, select, children) <-
-        transformTerminated c opFeatures
+    (childFeatures, select, children) <- transformTerminated c opFeatures
 
     let inline                      = inlineEE $ Q.selectClause select
         -- Inline a column and alias the result.
@@ -359,8 +355,7 @@ transformUnOp (A.RowRank inf) c = transformUnOpRank Q.EEDenseRank inf c
 transformUnOp (A.Rank inf) c = transformUnOpRank Q.EERank inf c
 transformUnOp (A.Project projList) c = do
     
-    (childFeatures, select, children) <-
-        transformTerminated c opFeatures
+    (childFeatures, select, children) <- transformTerminated c opFeatures
 
     let sClause  = Q.selectClause select
         -- Inlining is obligatory here, since we possibly eliminate referenced
@@ -382,8 +377,7 @@ transformUnOp (A.Project projList) c = do
 
 transformUnOp (A.Select expr) c = do
 
-    (childFeatures, select, children) <-
-        transformTerminated c opFeatures
+    (childFeatures, select, children) <- transformTerminated c opFeatures
     
     return $ TileNode
              (opFeatures <> childFeatures)
@@ -399,8 +393,7 @@ transformUnOp (A.Select expr) c = do
 
 transformUnOp (A.Distinct ()) c = do
 
-    (childFeatures, select, children) <-
-        transformTerminated c opFeatures
+    (childFeatures, select, children) <- transformTerminated c opFeatures
 
     -- Keep everything but set distinct.
     return $ TileNode (opFeatures <> childFeatures)
@@ -411,8 +404,7 @@ transformUnOp (A.Distinct ()) c = do
 
 transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
 
-    (childFeatures, select, children) <-
-        transformTerminated c opFeatures
+    (childFeatures, select, children) <- transformTerminated c opFeatures
     
     let sClause           = Q.selectClause select
         translateE        = translateExprCE $ Just sClause
@@ -459,8 +451,7 @@ attachColFunUnOp :: ([Q.SelectColumn] -> Q.SelectColumn)
                  -> Transform TileTree
 attachColFunUnOp colFun opFeatures c = do
 
-    (childFeatures, select, children) <-
-        transformTerminated c opFeatures
+    (childFeatures, select, children) <- transformTerminated c opFeatures
 
     let sClause = Q.selectClause select
     return $ TileNode
@@ -481,7 +472,7 @@ transformBinSetOp setOp c0 c1 = do
     (_, select0, children0) <- transformTerminated c0 noneF
     (_, select1, children1) <- transformTerminated c1 noneF
 
-    alias <- freshAlias
+    tableAlias <- freshAlias
 
     -- Take the schema of the first one, but could also be from the second one,
     -- since we assume they are equal.
@@ -490,7 +481,7 @@ transformBinSetOp setOp c0 c1 = do
     return $ TileNode opFeatures
                       emptySelectStmt
                       { Q.selectClause =
-                            columnsFromSchema alias schema
+                            columnsFromSchema tableAlias schema
                       , Q.fromClause =
                             [ Q.FPAlias ( Q.FESubQuery
                                           $ Q.VQBinarySetOperation
@@ -498,7 +489,7 @@ transformBinSetOp setOp c0 c1 = do
                                             (Q.VQSelect select1)
                                             setOp
                                         )
-                                        alias
+                                        tableAlias
                                         $ Just schema
                             ]
                       }
@@ -516,10 +507,8 @@ transformBinCrossJoin :: C.AlgNode
                                    )
 transformBinCrossJoin c0 c1 = do
 
-    (childFeatures0, select0, children0) <-
-        transformTerminated c0 opFeatures
-    (childFeatures1, select1, children1) <-
-        transformTerminated c1 opFeatures
+    (childFeatures0, select0, children0) <- transformTerminated c0 opFeatures
+    (childFeatures1, select1, children1) <- transformTerminated c1 opFeatures
 
     -- We can simply concatenate everything, because all things are prefixed and
     -- cross join is associative.
@@ -585,12 +574,11 @@ transformExistsJoin :: A.SemInfJoin
                     -> C.AlgNode
                     -> (Q.ColumnExpr -> Q.ColumnExpr)
                     -> Transform TileTree
-transformExistsJoin conditions c0 c1 existsWrapF = do
+transformExistsJoin conditions c0 c1 wrapFun = do
 
     when (null conditions) $impossible
 
-    (childFeatures0, select0, children0) <-
-        transformTerminated c0 opFeatures
+    (childFeatures0, select0, children0) <- transformTerminated c0 opFeatures
 
     -- Ignore operator features, since it will be nested and therefore
     -- terminated.
@@ -605,10 +593,9 @@ transformExistsJoin conditions c0 c1 existsWrapF = do
             -- TODO in case we do not have merge conditions we can simply use
             -- the unmergeable but less nested select stmt on the right side
 
-            let outerCond   = existsWrapF
-                              . Q.CEBase
-                              . Q.VEExists
-                              $ Q.VQSelect innerSelect
+            let outerCond   = wrapFun . Q.CEBase
+                                      . Q.VEExists
+                                      $ Q.VQSelect innerSelect
                 innerSelect = appendAllToWhere innerConds select1
                 innerConds  = map f conditions
                 f           = translateJoinCond (Q.selectClause select0)
@@ -619,9 +606,9 @@ transformExistsJoin conditions c0 c1 existsWrapF = do
            
             let -- Embedd the right query into the where clause of the left one.
                 leftCond    =
-                    existsWrapF $ Q.CEBase
-                                  $ Q.VEIn (translateExprCE (Just lSClause) l)
-                                           $ Q.VQSelect rightSelect
+                    wrapFun . Q.CEBase
+                            . Q.VEIn (translateExprCE (Just lSClause) l)
+                            $ Q.VQSelect rightSelect
                 -- Embedd all conditions in the right select, and set select
                 -- clause to the right part of the equal join condition.
                 rightSelect = appendAllToWhere innerConds select1
@@ -653,16 +640,16 @@ transformTerminated n topFs = do
     case tile of
         TileNode bottomFs body children
             | topFs `terminatesOver` bottomFs -> do
-                alias <- freshAlias
+                tableAlias <- freshAlias
 
                 let schema = getSchemaSelectStmt body
 
                 return ( projectF <> tableF
                        , emptySelectStmt
                          { Q.selectClause =
-                               columnsFromSchema alias schema
+                               columnsFromSchema tableAlias schema
                          , Q.fromClause =
-                               [mkSubQuery body alias $ Just schema]
+                               [mkSubQuery body tableAlias $ Just schema]
                          }
                        , children
                        )
@@ -677,30 +664,30 @@ embedExternalReference :: ExternalReference
                        -> Transform (Q.SelectStmt, TileChildren)
 embedExternalReference extRef schema = do
 
-        alias <- freshAlias
+        tableAlias <- freshAlias
         varId <- freshVariableId
 
         return ( emptySelectStmt
                    -- Use the schema to construct the select clause.
                  { Q.selectClause =
-                       columnsFromSchema alias schema
+                       columnsFromSchema tableAlias schema
                  , Q.fromClause =
-                       [mkFromPartVar varId alias $ Just schema]
+                       [mkFromPartVar varId tableAlias $ Just schema]
                  }
                , [(varId, ReferenceLeaf extRef schema)]
                )
 
 -- | Generate a select clause with column names from a schema and a prefix.
 columnsFromSchema :: String -> [String] -> [Q.SelectColumn]
-columnsFromSchema p = map (asSelectColumn p)
+columnsFromSchema p = map $ asSelectColumn p
 
 -- | Creates 'Q.SelectColumn' which points at a prefixed column with the same
 -- name.
 asSelectColumn :: String
                -> String
                -> Q.SelectColumn
-asSelectColumn prefix columnName =
-    Q.SCAlias (Q.EEBase $ mkPCol prefix columnName) columnName
+asSelectColumn tablePrefix columnName =
+    Q.SCAlias (Q.EEBase $ mkPCol tablePrefix columnName) columnName
 
 -- Translates a '[A.SortAttr]' into a '[Q.WindowOrderExpr]'. Column names will
 -- be inlined as a 'Q.AggrExpr', constant ones will be discarded.
