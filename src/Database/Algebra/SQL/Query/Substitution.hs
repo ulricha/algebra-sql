@@ -49,14 +49,33 @@ replaceReferencesSelectExpr r (Q.SEAggregate v f) =
 replaceReferencesValueExpr :: (Q.ReferenceType -> Q.FromExpr)
                            -> Q.ValueExpr
                            -> Q.ValueExpr
-replaceReferencesValueExpr r (Q.VEExists q) =
+replaceReferencesValueExpr r (Q.VEExists q)          =
     Q.VEExists $ replaceReferencesValueQuery r q
 
-replaceReferencesValueExpr r (Q.VEIn e q)   =
+replaceReferencesValueExpr r (Q.VEIn e q)            =
     Q.VEIn (replaceReferencesValueExpr r e)
            (replaceReferencesValueQuery r q)
 
-replaceReferencesValueExpr _ e                         = e
+replaceReferencesValueExpr r (Q.VECast targetExpr t) =
+    Q.VECast (replaceReferencesValueExpr r targetExpr) t
+
+replaceReferencesValueExpr r (Q.VEBinApp bf fe se)   =
+    Q.VEBinApp bf
+               (replaceReferencesValueExpr r fe)
+               (replaceReferencesValueExpr r se)
+
+replaceReferencesValueExpr r (Q.VEUnApp uf e)        =
+    Q.VEUnApp uf (replaceReferencesValueExpr r e)
+
+replaceReferencesValueExpr r (Q.VENot e)             =
+    Q.VENot (replaceReferencesValueExpr r e)
+
+replaceReferencesValueExpr r (Q.VECase cE tE eE)     =
+    Q.VECase (replaceReferencesValueExpr r cE)
+             (replaceReferencesValueExpr r tE)
+             (replaceReferencesValueExpr r eE)
+
+replaceReferencesValueExpr _ e                       = e
 
 replaceReferencesFromPart :: (Q.ReferenceType -> Q.FromExpr)
                           -> Q.FromPart
