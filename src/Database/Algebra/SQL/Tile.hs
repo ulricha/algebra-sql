@@ -109,9 +109,9 @@ sLookupBinding n = IntMap.lookup n . multiParentNodes
 type Transform = RWS TADag DependencyList TransformState
 
 -- | A table expression id generator using the state within the
--- 'Transform'.
-generateTableId :: Transform ExternalReference
-generateTableId = do
+-- 'Transform' type.
+freshTableId :: Transform ExternalReference
+freshTableId = do
     st <- get
 
     let tid = tableIdGen st
@@ -120,8 +120,8 @@ generateTableId = do
 
     return tid
 
-generateAliasName :: Transform String
-generateAliasName = do
+freshAlias :: Transform String
+freshAlias = do
     st <- get
 
     let aid = aliasIdGen st
@@ -131,8 +131,8 @@ generateAliasName = do
     return $ 'a' : show aid
 
 -- | A variable identifier generator.
-generateVariableId :: Transform InternalReference
-generateVariableId = do
+freshVariableId :: Transform InternalReference
+freshVariableId = do
     st <- get
 
     let vid = varIdGen st
@@ -143,9 +143,9 @@ generateVariableId = do
 
 -- | Unpack values (or run computation).
 runTransform :: Transform a
-                  -> TADag                      -- ^ The used DAG.
-                  -> TransformState             -- ^ The inital state.
-                  -> (a, DependencyList)
+             -> TADag               -- ^ The used DAG.
+             -> TransformState      -- ^ The inital state.
+             -> (a, DependencyList)
 runTransform = evalRWS
 
 -- | Check if node has more than one parent.
@@ -212,7 +212,7 @@ transformNode n = do
                 resultingTile <- transformOp
 
                 -- Generate a name for the sub tree.
-                tableId <- generateTableId
+                tableId <- freshTableId
 
                 -- Add the tree to the writer.
                 tell $ DL.singleton (tableId, resultingTile)
@@ -227,7 +227,7 @@ transformNode n = do
 
 transformNullaryOp :: A.NullOp -> Transform TileTree
 transformNullaryOp (A.LitTable tuples schema) = do
-    alias <- generateAliasName
+    alias <- freshAlias
 
     let -- Create a column and alias it with the same name.
         project n                          =
@@ -259,7 +259,7 @@ transformNullaryOp (A.LitTable tuples schema) = do
     translateLit  = Q.CEBase . Q.VEValue . translateAVal
 
 transformNullaryOp (A.TableRef (name, info, _))   = do
-    alias <- generateAliasName
+    alias <- freshAlias
 
     let project n = Q.SCAlias (Q.EEBase $ mkPCol alias n) n
         body      =
@@ -481,7 +481,7 @@ transformBinSetOp setOp c0 c1 = do
     (_, select0, children0) <- transformTerminated c0 noneF
     (_, select1, children1) <- transformTerminated c1 noneF
 
-    alias <- generateAliasName
+    alias <- freshAlias
 
     -- Take the schema of the first one, but could also be from the second one,
     -- since we assume they are equal.
@@ -653,7 +653,7 @@ transformTerminated n topFs = do
     case tile of
         TileNode bottomFs body children
             | topFs `terminatesOver` bottomFs -> do
-                alias <- generateAliasName
+                alias <- freshAlias
 
                 let schema = getSchemaSelectStmt body
 
@@ -677,8 +677,8 @@ embedExternalReference :: ExternalReference
                        -> Transform (Q.SelectStmt, TileChildren)
 embedExternalReference extRef schema = do
 
-        alias <- generateAliasName
-        varId <- generateVariableId
+        alias <- freshAlias
+        varId <- freshVariableId
 
         return ( emptySelectStmt
                    -- Use the schema to construct the select clause.
