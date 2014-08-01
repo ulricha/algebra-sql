@@ -1,23 +1,24 @@
+{-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 -- | A representation of table algebra operators over multiset
 -- relations.
 module Database.Algebra.Table.Lang where
 
-import Numeric                     (showFFloat)
-import Text.Printf
-import Data.List
+import           Data.List
+import           Numeric                     (showFFloat)
+import           Text.Printf
 
-import Database.Algebra.Aux
-import Database.Algebra.Dag        (Operator, opChildren, replaceOpChild)
-import Database.Algebra.Dag.Common
+import           Database.Algebra.Aux
+import           Database.Algebra.Dag        (Operator, opChildren,
+                                              replaceOpChild)
+import           Database.Algebra.Dag.Common
 
 -- required for JSON
-import GHC.Generics (Generic)
+import           GHC.Generics                (Generic)
 
 -- | Sorting rows in a direction
 data SortDir = Asc
@@ -49,7 +50,7 @@ instance Show SortDir where
 
 -- | table algebra types
 --  At this level we do not have any structural types anymore
---  those are represented by columns. 
+--  those are represented by columns.
 data ATy where
     AInt :: ATy
     AStr :: ATy
@@ -90,47 +91,34 @@ instance Show AVal where
   show (VNat x)     = show x
 
 -- | Attribute name or column name
-type AttrName            = String
+type Attr            = String
 
--- | Result attribute name, used as type synonym where the name for a
--- result column of a computation is needed
-type ResAttrName         = AttrName
+-- | Name of an attribute in which the result of an expression,
+-- aggregate or window function is stored.
+type ResAttr         = Attr
 
--- | Sort attribute name, used as type synonym where a column for
--- sorting is needed
-type SortAttrName        = AttrName
-
--- | Partition attribute name, used as a synonym where the name for
--- the partitioning column is expected by the rownum operator
-type PartAttrName        = AttrName
-
--- | New attribute name, used to represent the new column name when
--- renaming columns
-type NewAttrName         = AttrName
-
--- | Old attribute name, used to represent the old column name when
--- renaming columns
-type OldAttrName         = AttrName
+-- | Names of partition attributes used in window specifications
+type PartAttr        = Attr
 
 -- | Left attribute name, used to represent the left argument when
 -- applying binary operators
-type LeftAttrName        = AttrName
+type LeftAttr        = Attr
 
 -- | Right attribute name, used to represent the right argument when
 -- applying binary operators
-type RightAttrName       = AttrName
+type RightAttr       = Attr
 --
 -- | Name of a database table
 type TableName           = String
 
 -- | Typed columns
-type TypedAttr = (AttrName, ATy)
+type TypedAttr = (Attr, ATy)
 
 -- | Key of a database table, a key consists of multiple column names
-newtype Key = Key [AttrName] deriving (Eq, Ord, Show, Generic)
+newtype Key = Key [Attr] deriving (Eq, Ord, Show, Generic)
 
--- | Sort information, a list (ordered in sorting priority), of pair of columns and their sort direction--
-type SortAttr              = (AttrName, SortDir)
+-- | Sorting information
+type SortSpec              = (Attr, SortDir)
 
 -- | Binary functions and operators in expressions
 data BinFun = Gt
@@ -170,7 +158,7 @@ instance Show BinFun where
   show NEq       = "<>"
   show And       = "&&"
   show Or        = "||"
-  
+
 -- | Unary functions/operators in expressions
 data UnFun = Not
            | Cast ATy
@@ -201,11 +189,11 @@ instance Show UnFun where
 -- | Projection expressions
 data Expr = BinAppE BinFun Expr Expr
           | UnAppE UnFun Expr
-          | ColE AttrName
+          | ColE Attr
           | ConstE AVal
           | IfE Expr Expr Expr
           deriving (Eq, Ord, Generic)
-              
+
 instance Show Expr where
   show (BinAppE f e1 e2) = "(" ++ show e1 ++ ") " ++ show f ++ " (" ++ show e2 ++ ")"
   show (UnAppE f e)      = show f ++ "(" ++ show e ++ ")"
@@ -214,35 +202,14 @@ instance Show Expr where
   show (IfE c t e)       = "if " ++ show c ++ " then " ++ show t ++ " else " ++ show e
 
 -- | New column name and the expression that generates the new column
-type Proj                = (NewAttrName, Expr)
+type Proj                = (ResAttr, Expr)
 
 -- | A tuple is a list of values
 type Tuple = [AVal]
 
 -- | Schema information, represents a table structure, the first element of the
 -- tuple is the column name the second its type.
-type SchemaInfos = [(AttrName, ATy)]
-
-type SemInfRowNum  = (ResAttrName, [SortAttr], Maybe PartAttrName)
-
--- | Information that specifies how to perform the rank operation.  its first
---  element is the column where the output of the operation is inserted the
---  second element represents the sorting criteria that determine the ranking.
-type SemInfRank    = (ResAttrName,  [SortAttr])
-
--- | Information that specifies how to select element at a certain position
-type SemInfPosSel  = (Int, [SortAttr], Maybe PartAttrName)
-
--- | Information on how to perform an eq-join. The first element represents the
--- column from the first table that has to be equal to the column in the second
--- table represented by the second element in the pair.
-type SemInfEqJoin  = (LeftAttrName,RightAttrName)
-
--- | Information on how to perform a theta-join. The first element represents
--- the column from the first table that has to relate to the column in the
--- second table represnted by the second element in tuple. The third element
--- represents the type of relation.
-type SemInfJoin = [(Expr, Expr, JoinRel)]
+type SchemaInfos = [(Attr, ATy)]
 
 -- | Comparison operators which can be used for ThetaJoins.
 data JoinRel = EqJ -- equal
@@ -252,7 +219,7 @@ data JoinRel = EqJ -- equal
              | LeJ -- less equal
              | NeJ -- not equal
              deriving (Eq, Ord, Generic)
-             
+
 instance Show JoinRel where
   show EqJ = "eq"
   show GtJ = "gt"
@@ -261,20 +228,11 @@ instance Show JoinRel where
   show LeJ = "le"
   show NeJ = "ne"
 
--- | Information for accessing a database table
-type SemInfTableRef = (TableName, [TypedAttr], [Key])
-
-type SemInfCast     = (ResAttrName, AttrName, ATy)
-
-type SemUnOp = (ResAttrName, AttrName)
-
-type SemInfAggr = ([(AggrType, ResAttrName)], [(AttrName, Expr)])
-
 data NullOp = LitTable [Tuple] SchemaInfos
-            | TableRef SemInfTableRef
+            | TableRef (TableName, [TypedAttr], [Key])
             deriving (Ord, Eq, Show, Generic)
 
-newtype DescrCol   = DescrCol AttrName deriving (Ord, Eq, Generic)
+newtype DescrCol   = DescrCol Attr deriving (Ord, Eq, Generic)
 
 instance Show DescrCol where
     show (DescrCol c) = "Descr " ++ c
@@ -284,8 +242,8 @@ instance Show DescrCol where
 -- optimizer: AbsPos signals that the actual pos values are
 -- required. RelPos signals that only the order induced by the pos
 -- column is relevant.
-data SerializeOrder = AbsPos AttrName
-                    | RelPos [AttrName]
+data SerializeOrder = AbsPos Attr
+                    | RelPos [Attr]
                     | NoPos
                     deriving (Ord, Eq, Generic)
 
@@ -294,18 +252,18 @@ instance Show SerializeOrder where
     show (RelPos cs) = "RelPos " ++ (intercalate ", " cs)
     show NoPos       = "NoPos"
 
-newtype PayloadCol = PayloadCol AttrName deriving (Ord, Eq, Generic)
+newtype PayloadCol = PayloadCol Attr deriving (Ord, Eq, Generic)
 
 instance Show PayloadCol where
     show (PayloadCol c) = c
 
-data UnOp = RowNum SemInfRowNum
-          | RowRank SemInfRank
-          | Rank SemInfRank
-          | Project [(AttrName, Expr)]
+data UnOp = RowNum (Attr, [SortSpec], Maybe PartAttr)
+          | RowRank (ResAttr, [SortSpec])
+          | Rank (ResAttr, [SortSpec])
+          | Project [(Attr, Expr)]
           | Select Expr
           | Distinct ()
-          | Aggr SemInfAggr
+          | Aggr ([(AggrType, ResAttr)], [(PartAttr, Expr)])
 
           -- Serialize must only occur as the root node of a
           -- query. It defines physical order of the query result:
@@ -316,10 +274,10 @@ data UnOp = RowNum SemInfRowNum
           deriving (Ord, Eq, Show, Generic)
 
 data BinOp = Cross ()
-           | EqJoin SemInfEqJoin
-           | ThetaJoin SemInfJoin
-           | SemiJoin SemInfJoin
-           | AntiJoin SemInfJoin
+           | EqJoin (LeftAttr,RightAttr)
+           | ThetaJoin [(Expr, Expr, JoinRel)]
+           | SemiJoin [(Expr, Expr, JoinRel)]
+           | AntiJoin [(Expr, Expr, JoinRel)]
            | DisjUnion ()
            | Difference ()
            deriving (Ord, Eq, Show, Generic)

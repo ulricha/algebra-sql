@@ -278,7 +278,7 @@ transformNullaryOp (A.TableRef (name, typedSchema, _))   = do
 -- | Abstraction for rank operators.
 transformUnOpRank :: -- ExtendedExpr constructor.
                      ([Q.WindowOrderExpr] -> Q.ExtendedExpr)
-                  -> (String, [A.SortAttr])
+                  -> (String, [A.SortSpec])
                   -> C.AlgNode
                   -> Transform TileTree
 transformUnOpRank rankConstructor (name, sortList) =
@@ -357,7 +357,7 @@ transformUnOp (A.Project projList) c = do
 
     let -- Inlining is obligatory here, since we possibly eliminate referenced
         -- columns. ('translateExpr' inlines columns.)
-        translateAlias :: (A.AttrName, A.Expr) -> Q.SelectColumn
+        translateAlias :: (A.Attr, A.Expr) -> Q.SelectColumn
         translateAlias (col, expr) = Q.SCAlias translatedExpr col
           where
             translatedExpr = translateExprEE (Just $ Q.selectClause select) expr
@@ -547,7 +547,7 @@ transformBinOp (A.DisjUnion ()) c0 c1         =
 transformBinOp (A.Difference ()) c0 c1        =
     transformBinSetOp Q.SOExceptAll c0 c1
 
-transformExistsJoin :: A.SemInfJoin
+transformExistsJoin :: [(A.Expr, A.Expr, A.JoinRel)]
                     -> C.AlgNode 
                     -> C.AlgNode
                     -> (Q.ColumnExpr -> Q.ColumnExpr)
@@ -680,10 +680,10 @@ asSelectColumn :: String
 asSelectColumn tablePrefix columnName =
     Q.SCAlias (Q.EEBase $ mkPCol tablePrefix columnName) columnName
 
--- Translates a '[A.SortAttr]' into a '[Q.WindowOrderExpr]'. Column names will
+-- Translates a '[A.SortSpec]' into a '[Q.WindowOrderExpr]'. Column names will
 -- be inlined as a 'Q.AggrExpr', constant ones will be discarded.
 asWindowOrderExprList :: [Q.SelectColumn]
-                      -> [A.SortAttr]
+                      -> [A.SortSpec]
                       -> [Q.WindowOrderExpr]
 asWindowOrderExprList sClause si =
     filter (affectsSortOrderAE . Q.woExpr)
@@ -881,7 +881,7 @@ translateBinFun f = case f of
 
 -- | Translate sort information into '[Q.WindowOrderExpr]', using the column
 -- function, which takes a 'String'.
-translateSortInf :: [A.SortAttr]
+translateSortInf :: [A.SortSpec]
                  -> (String -> Q.AggrExpr)
                  -> [Q.WindowOrderExpr]
 translateSortInf sortInfos colFun = map toWOE sortInfos

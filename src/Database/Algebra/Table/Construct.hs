@@ -62,7 +62,7 @@ natT    = ANat
 -- table. The second describes the columns in alphabetical order.
 -- The third argument describes the database keys (one table key can
 -- span over multiple columns).
-dbTable :: String -> [(AttrName, ATy)] -> [Key] -> Build TableAlgebra AlgNode
+dbTable :: String -> [(Attr, ATy)] -> [Key] -> Build TableAlgebra AlgNode
 dbTable n cs ks = insertNode $ NullaryOp $ TableRef (n, cs, ks)
 
 -- | Construct a table with one value
@@ -75,21 +75,21 @@ litTable' v s = insertNode $ NullaryOp $ LitTable v s
 
 -- | Join two plans where the columns n1 of table 1 and columns n2 of table
 --  2 are equal.
-eqJoin :: LeftAttrName -> RightAttrName -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
+eqJoin :: LeftAttr -> RightAttr -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
 eqJoin n1 n2 c1 c2 = insertNode $ BinOp (EqJoin (n1, n2)) c1 c2
 
-thetaJoin :: SemInfJoin -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
+thetaJoin :: [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
 thetaJoin cond c1 c2 = insertNode $ BinOp (ThetaJoin cond) c1 c2
 
-semiJoin :: SemInfJoin -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
+semiJoin :: [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
 semiJoin cond c1 c2 = insertNode $ BinOp (SemiJoin cond) c1 c2
 
-antiJoin :: SemInfJoin -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
+antiJoin :: [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
 antiJoin cond c1 c2 = insertNode $ BinOp (AntiJoin cond) c1 c2
 
--- | Assign a number to each row in column 'ResAttrName' incrementally
+-- | Assign a number to each row in column 'ResAttr' incrementally
 -- sorted by `sort'. The numbering is not dense!
-rank :: ResAttrName -> [SortAttr] -> AlgNode -> Build TableAlgebra AlgNode
+rank :: ResAttr -> [SortSpec] -> AlgNode -> Build TableAlgebra AlgNode
 rank res sort c1 = insertNode $ UnOp (Rank (res, sort)) c1
 
 -- | Compute the difference between two plans.
@@ -97,10 +97,10 @@ difference :: AlgNode -> AlgNode -> Build TableAlgebra AlgNode
 difference q1 q2 = insertNode $ BinOp (Difference ()) q1 q2
 
 -- | Same as rank but provides a dense numbering.
-rowrank :: ResAttrName -> [SortAttr] -> AlgNode -> Build TableAlgebra AlgNode
+rowrank :: ResAttr -> [SortSpec] -> AlgNode -> Build TableAlgebra AlgNode
 rowrank res sort c1 = insertNode $ UnOp (RowRank (res, sort)) c1
 
--- | Select rows where the column `SelAttrName' contains True.
+-- | Select rows where the column `SelAttr' contains True.
 select :: Expr -> AlgNode -> Build TableAlgebra AlgNode
 select sel c1 = insertNode $ UnOp (Select sel) c1
 
@@ -121,16 +121,16 @@ proj :: [Proj] -> AlgNode -> Build TableAlgebra AlgNode
 proj ps c = insertNode $ UnOp (Project ps) c
 
 -- | Apply aggregate functions to a plan
-aggr :: [(AggrType, ResAttrName)] -> [(AttrName, Expr)] -> AlgNode -> Build TableAlgebra AlgNode
+aggr :: [(AggrType, ResAttr)] -> [(Attr, Expr)] -> AlgNode -> Build TableAlgebra AlgNode
 aggr aggrs part c1 = insertNode $ UnOp (Aggr (aggrs, part)) c1
 
 -- | Similar to rowrank but this will assign a \emph{unique} number to every row
 -- (even if two rows are equal)
-rownum :: AttrName -> [AttrName] -> Maybe AttrName -> AlgNode -> Build TableAlgebra AlgNode
+rownum :: Attr -> [Attr] -> Maybe Attr -> AlgNode -> Build TableAlgebra AlgNode
 rownum res sort part c1 = insertNode $ UnOp (RowNum (res, zip sort $ repeat Asc, part)) c1
 
 -- | Same as rownum but columns can be assigned an ordering direction
-rownum' :: AttrName -> [(AttrName, SortDir)] -> Maybe AttrName -> AlgNode -> Build TableAlgebra AlgNode
+rownum' :: Attr -> [(Attr, SortDir)] -> Maybe Attr -> AlgNode -> Build TableAlgebra AlgNode
 rownum' res sort part c1 = insertNode $ UnOp (RowNum (res, sort, part)) c1
 
 --------------------------------------------------------------------------------
@@ -146,15 +146,15 @@ bind2 f a b = do
     f a' b'
 
 -- | Perform theta join on two plans
-thetaJoinM :: SemInfJoin -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
+thetaJoinM :: [(Expr, Expr, JoinRel)] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 thetaJoinM cond = bind2 (thetaJoin cond)
 
 -- | Perform a semi join on two plans
-semiJoinM :: SemInfJoin -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
+semiJoinM :: [(Expr, Expr, JoinRel)] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 semiJoinM cond = bind2 (semiJoin cond)
 
 -- | Perform an anti join on two plans
-antiJoinM :: SemInfJoin -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
+antiJoinM :: [(Expr, Expr, JoinRel)] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 antiJoinM cond = bind2 (antiJoin cond)
 
 -- | Join two plans where the columns n1 of table 1 and columns n2 of table
@@ -162,9 +162,9 @@ antiJoinM cond = bind2 (antiJoin cond)
 eqJoinM :: String -> String -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 eqJoinM n1 n2 = bind2 (eqJoin n1 n2)
 
--- | Assign a number to each row in column 'ResAttrName' incrementing
+-- | Assign a number to each row in column 'ResAttr' incrementing
 -- sorted by `sort'. The numbering is not dense!
-rankM :: ResAttrName -> [SortAttr] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
+rankM :: ResAttr -> [SortSpec] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 rankM res sort = bind1 (rank res sort)
 
 -- | Compute the difference between two plans.
@@ -172,10 +172,10 @@ differenceM :: Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode -> Build
 differenceM = bind2 difference
 
 -- | Same as rank but provides a dense numbering.
-rowrankM :: ResAttrName -> [SortAttr] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
+rowrankM :: ResAttr -> [SortSpec] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 rowrankM res sort = bind1 (rowrank res sort)
 
--- | Select rows where the column `SelAttrName' contains True.
+-- | Select rows where the column `SelAttr' contains True.
 selectM :: Expr -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 selectM sel = bind1 (select sel)
 
@@ -196,14 +196,14 @@ projM :: [Proj] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 projM cols = bind1 (proj cols)
 
 -- | Apply aggregate functions to a plan
-aggrM :: [(AggrType, ResAttrName)] -> [(AttrName, Expr)] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
+aggrM :: [(AggrType, ResAttr)] -> [(Attr, Expr)] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 aggrM aggrs part = bind1 (aggr aggrs part)
 
 -- | Similar to rowrank but this will assign a \emph{unique} number to every row
 -- (even if two rows are equal)
-rownumM :: AttrName -> [AttrName] -> Maybe AttrName -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
+rownumM :: Attr -> [Attr] -> Maybe Attr -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 rownumM res sort part = bind1 (rownum res sort part)
 
 -- | Same as rownum but columns can be assigned an ordering direction
-rownum'M :: AttrName -> [(AttrName, SortDir)] -> Maybe AttrName -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
+rownum'M :: Attr -> [(Attr, SortDir)] -> Maybe Attr -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 rownum'M res sort part = bind1 (rownum' res sort part)

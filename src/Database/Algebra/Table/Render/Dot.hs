@@ -29,10 +29,10 @@ renderProj :: Proj -> Doc
 renderProj (new, ColE c) | new == c = text new
 renderProj (new, e)                 = text $ concat [new, ":", show e]
 
-renderAggr :: (AggrType, ResAttrName) -> Doc
+renderAggr :: (AggrType, ResAttr) -> Doc
 renderAggr (aggr, res) = text $ res ++ ":" ++ show aggr
 
-renderSortInf :: (SortAttrName, SortDir) -> Doc
+renderSortInf :: SortSpec -> Doc
 renderSortInf (attr, Desc) = text $ attr ++ "/desc"
 renderSortInf (attr, Asc)  = text attr
 
@@ -40,14 +40,14 @@ renderJoinArgs :: (Expr, Expr, JoinRel) -> Doc
 renderJoinArgs (left, right, joinR) =
     (text $ show left) <+> (text $ show joinR) <+> (text $ show right)
 
-renderOptCol :: Maybe AttrName -> Doc
+renderOptCol :: Maybe Attr -> Doc
 renderOptCol Nothing  = empty
 renderOptCol (Just c) = text "/" <> text c
 
 renderKey :: Key -> Doc
 renderKey (Key k) = brackets $ commas text k
 
-renderColumn :: (AttrName, ATy) -> Doc
+renderColumn :: (Attr, ATy) -> Doc
 renderColumn (c, t) = text c <> text "::" <> (text $ show t)
 
 renderTuple :: Tuple -> Doc
@@ -57,7 +57,7 @@ renderData :: [Tuple] -> Doc
 renderData [] = empty
 renderData xs = sep $ punctuate semi $ map renderTuple xs
 
-renderTableInfo :: TableName -> [(AttrName, ATy)] -> [Key] -> Doc
+renderTableInfo :: TableName -> [(Attr, ATy)] -> [Key] -> Doc
 renderTableInfo tableName cols keys =
     (text tableName)
     <> text "\\n"
@@ -255,21 +255,21 @@ renderDot ns es = text "digraph" <> (braces $ preamble $$ nodeSection $$ edgeSec
 
 -- | Labels (to collect all operations (nullary, unary,binary))
 data TALabel = LitTableL [Tuple] SchemaInfos
-             | TableRefL SemInfTableRef    -- nullops
-             | AggrL SemInfAggr
+             | TableRefL (TableName, [TypedAttr], [Key])
+             | AggrL ([(AggrType, ResAttr)], [(PartAttr, Expr)])
              | DistinctL ()
              | ProjectL [Proj]
-             | RankL SemInfRank
-             | RowNumL SemInfRowNum
-             | RowRankL SemInfRank
+             | RankL (ResAttr, [SortSpec])
+             | RowNumL (Attr, [SortSpec], Maybe PartAttr)
+             | RowRankL (ResAttr, [SortSpec])
              | SelL Expr
              | CrossL ()
              | DifferenceL ()
              | DisjUnionL ()
-             | EqJoinL SemInfEqJoin
-             | ThetaJoinL SemInfJoin  -- binops
-             | SemiJoinL SemInfJoin
-             | AntiJoinL SemInfJoin
+             | EqJoinL (LeftAttr,RightAttr)
+             | ThetaJoinL [(Expr, Expr, JoinRel)]
+             | SemiJoinL [(Expr, Expr, JoinRel)]
+             | AntiJoinL [(Expr, Expr, JoinRel)]
              | SerializeL (Maybe DescrCol, SerializeOrder, [PayloadCol])
 
 labelOfOp :: TableAlgebra -> TALabel
