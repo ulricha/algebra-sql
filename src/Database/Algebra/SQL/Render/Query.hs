@@ -33,6 +33,7 @@ import Text.PrettyPrint.ANSI.Leijen ( (<$>)
                                     , sep
                                     , squotes
                                     , text
+                                    , vcat
                                     )
 
 import Database.Algebra.SQL.Query
@@ -142,7 +143,9 @@ renderSelectStmt compat stmt =
            fromParts ->
                linebreak
                <> kw "FROM"
-               <+> align (enlist $ map (renderFromPart compat) fromParts)
+               <+> align ( vcat . punctuate comma
+                                $ map (renderFromPart compat) fromParts
+                         )
     <> case whereClause stmt of
            []             -> empty
            l              -> linebreak
@@ -223,6 +226,7 @@ renderSelectColumn :: CompatMode -> SelectColumn -> Doc
 renderSelectColumn compat (SCAlias expr name) = renderExtendedExpr compat expr
                                                 <+> kw "AS"
                                                 <+> text name
+renderSelectColumn compat (SCExpr expr)       = renderExtendedExpr compat expr
 
 renderExtendedExpr :: CompatMode -> ExtendedExpr -> Doc
 renderExtendedExpr compat (EEBase v)                  = renderExtendedExprBase compat v

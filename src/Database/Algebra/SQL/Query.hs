@@ -122,7 +122,9 @@ data SelectColumn = -- | @SELECT foo AS bar ...@
                     SCAlias
                   { sExpr    :: ExtendedExpr -- ^ The value expression aliased.
                   , sName    :: String       -- ^ The name of the alias.
-                  } deriving Show
+                  }
+                  | SCExpr ExtendedExpr
+                  deriving Show
 
 -- | Basic value expressions extended by aggregates and window functions.
 data ExtendedExpr =

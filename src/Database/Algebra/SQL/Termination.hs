@@ -7,22 +7,22 @@ module Database.Algebra.SQL.Termination
     , filterF
     , tableF
     , dupElimF
-    , orderingF
+    , sortF
     , windowFunctionF
     , aggrAndGroupingF
     , module Data.Monoid
     ) where
 
+import           Data.List   (intercalate)
 import           Data.Monoid
 import qualified Data.Set    as S
-import           Data.List   (intercalate)
 
 -- | Specifies a part in a SQL statement which is currently in use.
 data Feature = ProjectionF -- ^ Projection of columns.
              | TableF -- ^ Physical or virtual table.
              | FilterF -- ^ Filtering of rows.
              | DupElimF
-             | OrderingF
+             | SortF
              | WindowFunctionF
              | AggrAndGroupingF
              deriving (Eq, Ord, Show)
@@ -33,13 +33,13 @@ newtype FeatureSet = F { unF :: S.Set Feature }
 wrap :: Feature -> FeatureSet
 wrap = F . S.singleton
 
-noneF, projectF, filterF, tableF, dupElimF, orderingF, windowFunctionF, aggrAndGroupingF :: FeatureSet
+noneF, projectF, filterF, tableF, dupElimF, sortF, windowFunctionF, aggrAndGroupingF :: FeatureSet
 noneF = F S.empty
 projectF = wrap ProjectionF
 filterF = wrap FilterF
 tableF = wrap TableF
 dupElimF = wrap DupElimF
-orderingF = wrap OrderingF
+sortF = wrap SortF
 windowFunctionF = wrap WindowFunctionF
 aggrAndGroupingF = wrap AggrAndGroupingF
 
@@ -72,7 +72,7 @@ terminatingFeatures bottomF = F $ case bottomF of
     --
     DupElimF         -> S.fromList [ProjectionF, AggrAndGroupingF]
     -- The ORDER BY clause will only be used on top.
-    OrderingF        -> S.empty
+    SortF            -> S.empty
     -- Problematic cases:
     --
     --     * Filtering: May change the intermediate result set.
