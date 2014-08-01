@@ -11,6 +11,7 @@ module Database.Algebra.Table.Lang where
 import           Data.List
 import           Numeric                     (showFFloat)
 import           Text.Printf
+import           Data.List.NonEmpty          (NonEmpty)
 
 import           Database.Algebra.Aux
 import           Database.Algebra.Dag        (Operator, opChildren,
@@ -228,6 +229,28 @@ instance Show JoinRel where
   show LeJ = "le"
   show NeJ = "ne"
 
+-- | Window frame start specification
+data FrameStart = FSUnboundPrec  -- ^ UNBOUNDED PRECEDING
+                | FSValPrec Int  -- ^ <value> PRECEDING
+                | FSCurrRow      -- ^ CURRENT ROW
+                deriving (Eq, Ord, Show, Generic)
+
+-- | Window frame end specification
+data FrameEnd = FECurrRow    -- ^ CURRENT ROW
+              | FEValFol Int -- ^ <value> FOLLOWING
+              | FEUnboundFol -- ^ UNBOUNDED FOLLOWING
+              deriving (Eq, Ord, Show, Generic)
+
+data FrameBounds = HalfOpenFrame FrameStart
+                 | ClosedFrame FrameStart FrameEnd 
+                 deriving (Eq, Ord, Show, Generic)
+
+data WinFun      = WinMax Expr
+                 | WinMin Expr
+                 | WinSum Expr
+                 deriving (Eq, Ord, Show, Generic)
+
+
 data NullOp = LitTable [Tuple] SchemaInfos
             | TableRef (TableName, [TypedAttr], [Key])
             deriving (Ord, Eq, Show, Generic)
@@ -259,6 +282,7 @@ instance Show PayloadCol where
 
 data UnOp = RowNum (Attr, [SortSpec], Maybe PartAttr)
           | RowRank (ResAttr, [SortSpec])
+          | WinFun (NonEmpty (ResAttr, WinFun), [PartAttr], [SortSpec], Maybe FrameBounds)
           | Rank (ResAttr, [SortSpec])
           | Project [(Attr, Expr)]
           | Select Expr

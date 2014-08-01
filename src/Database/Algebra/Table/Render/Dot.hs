@@ -2,6 +2,7 @@ module Database.Algebra.Table.Render.Dot(renderTADot) where
 
 import qualified Data.IntMap                 as Map
 import           Data.List
+import           Data.List.NonEmpty          (NonEmpty, toList)
 
 import           Text.PrettyPrint
 
@@ -117,6 +118,45 @@ opDotLabel tags i (SerializeL (mDescr, mPos, cols)) = labelToDoc i
                  <+> (text $ show mPos)
                  <+> (brackets $ commas (text . show) cols))
     (lookupTags i tags)
+opDotLabel tags i (WinFunL (winFuns, partSpec, sortSpec, mFrameBounds)) = labelToDoc i
+     "WIN" (vcat [ renderWinFuns winFuns
+                 , renderPartSpec partSpec
+                 , renderSortSpec sortSpec
+                 , maybe empty renderFrameBounds mFrameBounds
+                 ])
+     (lookupTags i tags)
+
+renderWinFun :: WinFun -> Doc
+renderWinFun (WinMax e) = text "MAX" <> (parens $ text $ show e)
+renderWinFun (WinMin e) = text "MAX" <> (parens $ text $ show e)
+renderWinFun (WinSum e) = text "MAX" <> (parens $ text $ show e)
+
+renderWinFuns :: NonEmpty (ResAttr, WinFun) -> Doc
+renderWinFuns ws = commas (\(c, f) -> renderWinFun f <+> text "AS" <+> text c) $ toList ws
+
+renderPartSpec :: [PartAttr] -> Doc
+renderPartSpec []       = empty
+renderPartSpec as@(_:_) = text "PARTITION BY" <+> commas text as
+
+renderSortSpec :: [SortSpec] -> Doc
+renderSortSpec [] = empty
+renderSortSpec ss@(_:_) = text "ORDER BY" <+> commas renderSortInf ss
+
+renderFrameBounds :: FrameBounds -> Doc
+renderFrameBounds (HalfOpenFrame fs)  = renderFrameStart fs
+renderFrameBounds (ClosedFrame fs fe) = renderFrameStart fs 
+                                        <+> text "AND" 
+                                        <+> renderFrameEnd fe
+
+renderFrameStart :: FrameStart -> Doc
+renderFrameStart FSUnboundPrec = text "UNBOUNDED PRECEDING"
+renderFrameStart (FSValPrec i) = int i <+> text "PRECEDING"
+renderFrameStart FSCurrRow     = text "CURRENT ROW"
+
+renderFrameEnd :: FrameEnd -> Doc
+renderFrameEnd FEUnboundFol = text "UNBOUNDED FOLLOWING"
+renderFrameEnd (FEValFol i) = int i <+> text "FOLLOWING"
+renderFrameEnd FECurrRow    = text "CURRENT ROW"
 
 renderSerCol :: Show c => Maybe c -> Doc
 renderSerCol Nothing  = empty
@@ -177,6 +217,7 @@ opDotColor (AggrL _)         = DCGold
 opDotColor (RankL _)         = DCTomato
 opDotColor (RowNumL _)       = DCRed
 opDotColor (RowRankL _)      = DCRed
+opDotColor (WinFunL _)       = DCSalmon
 
 -- | Binops
 opDotColor (CrossL     _)    = DCOrangeDCRed
@@ -257,6 +298,7 @@ renderDot ns es = text "digraph" <> (braces $ preamble $$ nodeSection $$ edgeSec
 data TALabel = LitTableL [Tuple] SchemaInfos
              | TableRefL (TableName, [TypedAttr], [Key])
              | AggrL ([(AggrType, ResAttr)], [(PartAttr, Expr)])
+             | WinFunL (NonEmpty (ResAttr, WinFun), [PartAttr], [SortSpec], Maybe FrameBounds)
              | DistinctL ()
              | ProjectL [Proj]
              | RankL (ResAttr, [SortSpec])
@@ -288,6 +330,7 @@ labelOfBinOp (SemiJoin info)    = SemiJoinL info
 labelOfBinOp (AntiJoin info)    = AntiJoinL info
 
 labelOfUnOp :: UnOp -> TALabel
+labelOfUnOp (WinFun info)    = WinFunL info
 labelOfUnOp (Aggr info)      = AggrL info
 labelOfUnOp (Distinct info)  = DistinctL  info
 labelOfUnOp (Project info)   = ProjectL info
