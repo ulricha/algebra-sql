@@ -14,8 +14,7 @@ module Database.Algebra.SQL.Tile.Flatten
     ) where
 
 import qualified Data.IntMap.Lazy as IntMap
-    ( IntMap
-    , empty
+    ( empty
     , insert
     , lookup
     )

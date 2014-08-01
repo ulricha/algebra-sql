@@ -132,18 +132,16 @@ data ExtendedExpr =
       EEBase
     { valueExpr   :: ValueExprTemplate ExtendedExpr -- ^ The value expression.
     }
-      -- | @ROW_NUMBER() OVER (PARTITION BY p ORDER BY ...)@
-    | EERowNum
-    { -- | The expression to partition by.
-      optPartCol  :: Maybe AggrExpr
-    , orderBy     :: [WindowOrderExpr]  -- ^ Order information.
-    }
-      -- | @DENSE_RANK() OVER (ORDER BY ...)@
-    | EEDenseRank
-    { orderBy     :: [WindowOrderExpr]
-    }
-    | EERank
-    { orderBy     :: [WindowOrderExpr]
+      -- | @f() OVER (PARTITION BY p ORDER BY s framespec)@
+    | EEWinFun
+    { -- | Function to be computed over the window
+      winFun    :: WindowFunction
+      -- | The expressions to partition by
+    , partCols  :: [AggrExpr]
+      -- | Optional partition ordering
+    , orderBy   :: [WindowOrderExpr]
+      -- | Optional frame specification
+    , frameSpec :: Maybe FrameSpec
     }
       -- | Aggregate function expression. 
     | EEAggrExpr
@@ -161,6 +159,35 @@ data WindowOrderExpr = WOE
                        , wSortDirection :: SortDirection
                        } deriving Show
 
+data FrameSpec = FHalfOpen FrameStart
+               | FClosed FrameStart FrameEnd
+               deriving (Show)
+
+-- | Window frame start specification
+data FrameStart = FSUnboundPrec  -- ^ UNBOUNDED PRECEDING
+                | FSValPrec Int  -- ^ <value> PRECEDING
+                | FSCurrRow      -- ^ CURRENT ROW
+                deriving (Show)
+
+-- | Window frame end specification
+data FrameEnd = FECurrRow    -- ^ CURRENT ROW
+              | FEValFol Int -- ^ <value> FOLLOWING
+              | FEUnboundFol -- ^ UNBOUNDED FOLLOWING
+              deriving (Show)
+
+-- | Window functions
+data WindowFunction = WFMax AggrExpr
+                    | WFMin AggrExpr
+                    | WFSum AggrExpr
+                    | WFAvg AggrExpr
+                    | WFAll AggrExpr
+                    | WFAny AggrExpr
+                    | WFCount
+                    | WFRank
+                    | WFDenseRank
+                    | WFRowNumber
+                    deriving (Show)
+
 -- | Basic value expressions extended only by aggregates.
 data AggrExpr = AEBase (ValueExprTemplate AggrExpr)
               | AEAggregate
@@ -170,6 +197,7 @@ data AggrExpr = AEBase (ValueExprTemplate AggrExpr)
 
 -- | Shorthand for the value expression base part of 'AggrExpr'.
 type AggrExprBase = ValueExprTemplate AggrExpr
+
 
 -- | Aggregate functions.
 data AggregateFunction = AFAvg

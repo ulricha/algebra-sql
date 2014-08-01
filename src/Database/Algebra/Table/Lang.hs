@@ -11,7 +11,6 @@ module Database.Algebra.Table.Lang where
 import           Data.List
 import           Numeric                     (showFFloat)
 import           Text.Printf
-import           Data.List.NonEmpty          (NonEmpty)
 
 import           Database.Algebra.Aux
 import           Database.Algebra.Dag        (Operator, opChildren,
@@ -282,7 +281,7 @@ instance Show PayloadCol where
 
 data UnOp = RowNum (Attr, [SortSpec], Maybe PartAttr)
           | RowRank (ResAttr, [SortSpec])
-          | WinFun (NonEmpty (ResAttr, WinFun), [PartAttr], [SortSpec], Maybe FrameBounds)
+          | WinFun ((ResAttr, WinFun), [PartAttr], [SortSpec], Maybe FrameBounds)
           | Rank (ResAttr, [SortSpec])
           | Project [(Attr, Expr)]
           | Select Expr

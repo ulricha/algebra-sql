@@ -2,7 +2,6 @@ module Database.Algebra.Table.Render.Dot(renderTADot) where
 
 import qualified Data.IntMap                 as Map
 import           Data.List
-import           Data.List.NonEmpty          (NonEmpty, toList)
 
 import           Text.PrettyPrint
 
@@ -131,8 +130,8 @@ renderWinFun (WinMax e) = text "MAX" <> (parens $ text $ show e)
 renderWinFun (WinMin e) = text "MAX" <> (parens $ text $ show e)
 renderWinFun (WinSum e) = text "MAX" <> (parens $ text $ show e)
 
-renderWinFuns :: NonEmpty (ResAttr, WinFun) -> Doc
-renderWinFuns ws = commas (\(c, f) -> renderWinFun f <+> text "AS" <+> text c) $ toList ws
+renderWinFuns :: (ResAttr, WinFun) -> Doc
+renderWinFuns (c, f) = renderWinFun f <+> text "AS" <+> text c
 
 renderPartSpec :: [PartAttr] -> Doc
 renderPartSpec []       = empty
@@ -298,7 +297,7 @@ renderDot ns es = text "digraph" <> (braces $ preamble $$ nodeSection $$ edgeSec
 data TALabel = LitTableL [Tuple] SchemaInfos
              | TableRefL (TableName, [TypedAttr], [Key])
              | AggrL ([(AggrType, ResAttr)], [(PartAttr, Expr)])
-             | WinFunL (NonEmpty (ResAttr, WinFun), [PartAttr], [SortSpec], Maybe FrameBounds)
+             | WinFunL ((ResAttr, WinFun), [PartAttr], [SortSpec], Maybe FrameBounds)
              | DistinctL ()
              | ProjectL [Proj]
              | RankL (ResAttr, [SortSpec])

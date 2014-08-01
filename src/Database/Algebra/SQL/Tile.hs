@@ -277,23 +277,23 @@ transformNullaryOp (A.TableRef (name, typedSchema, _))   = do
 
 -- | Abstraction for rank operators.
 transformUnOpRank :: -- ExtendedExpr constructor.
-                     ([Q.WindowOrderExpr] -> Q.ExtendedExpr)
+                     Q.WindowFunction
                   -> (String, [A.SortSpec])
                   -> C.AlgNode
                   -> Transform TileTree
-transformUnOpRank rankConstructor (name, sortList) =
+transformUnOpRank rankFun (name, sortList) =
     attachColFunUnOp colFun $ projectF <> windowFunctionF
   where
-    colFun sClause = Q.SCAlias
-                     ( rankConstructor $ asWindowOrderExprList
-                                         sClause
-                                         sortList
-                     )
-                     name
+    colFun sClause = Q.SCAlias rankExpr name
+
+      where
+        rankExpr = Q.EEWinFun rankFun
+                              []
+                              (asWindowOrderExprList sClause sortList)
+                              Nothing
 
 transformUnOp :: A.UnOp -> C.AlgNode -> Transform TileTree
 transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
-
     (ctor, select, children) <- transformTerminated' c $ projectF <> sortF
 
     let inline                      = inlineEE $ Q.selectClause select
@@ -346,11 +346,17 @@ transformUnOp (A.RowNum (name, sortList, optPart)) c =
   where
     colFun sClause = Q.SCAlias rowNumExpr name
         where
-          rowNumExpr = Q.EERowNum (liftM (inlineAE sClause) optPart)
-                                  $ asWindowOrderExprList sClause sortList
+          -- ROW_NUMBER() OVER (PARTITION BY p ORDER BY s)
+          rowNumExpr = Q.EEWinFun Q.WFRowNumber
+                                  (maybe [] (\p -> [inlineAE sClause p]) optPart)
+                                  (asWindowOrderExprList sClause sortList)
+                                  Nothing
 
-transformUnOp (A.RowRank inf) c = transformUnOpRank Q.EEDenseRank inf c
-transformUnOp (A.Rank inf) c = transformUnOpRank Q.EERank inf c
+transformUnOp (A.WinFun ((name, fun), partExprs, sortExprs, mFrameSpec)) c =
+    $unimplemented
+
+transformUnOp (A.RowRank inf) c = transformUnOpRank Q.WFDenseRank inf c
+transformUnOp (A.Rank inf) c = transformUnOpRank Q.WFRank inf c
 transformUnOp (A.Project projList) c = do
     
     (ctor, select, children) <- transformTerminated' c projectF

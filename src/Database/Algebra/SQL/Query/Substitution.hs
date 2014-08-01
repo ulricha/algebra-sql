@@ -42,14 +42,12 @@ replaceReferencesExtendedExpr r (Q.EEBase v)        =
     Q.EEBase $ replaceReferencesValueExprTemplate replaceReferencesExtendedExpr
                                                   r
                                                   v
-replaceReferencesExtendedExpr r (Q.EERowNum p o)    =
-    Q.EERowNum (liftM (replaceReferencesAggrExpr r) p)
-               (map (replaceReferencesWindowOrderExpr r) o)
 
-replaceReferencesExtendedExpr r (Q.EEDenseRank o)   =
-    Q.EEDenseRank (map (replaceReferencesWindowOrderExpr r) o)
-replaceReferencesExtendedExpr r (Q.EERank o)        =
-    Q.EERank (map (replaceReferencesWindowOrderExpr r) o)
+replaceReferencesExtendedExpr r (Q.EEWinFun fun part ord frame) =
+    Q.EEWinFun (replaceReferencesWindowFunction r fun)
+               (liftM (replaceReferencesAggrExpr r) part)
+               (map (replaceReferencesWindowOrderExpr r) ord)
+               frame
 replaceReferencesExtendedExpr r (Q.EEAggrExpr ae) =
     Q.EEAggrExpr $ replaceReferencesAggrExpr r ae
 
@@ -140,3 +138,36 @@ replaceReferencesWindowOrderExpr :: SubstitutionFunction
 replaceReferencesWindowOrderExpr r (Q.WOE ae d) =
     Q.WOE (replaceReferencesAggrExpr r ae) d
 
+
+replaceReferencesWindowFunction :: SubstitutionFunction
+                                -> Q.WindowFunction
+                                -> Q.WindowFunction
+replaceReferencesWindowFunction r (Q.WFMax a) = 
+    Q.WFMax (replaceReferencesAggrExpr r a)
+
+replaceReferencesWindowFunction r (Q.WFMin a)   = 
+    Q.WFMin (replaceReferencesAggrExpr r a)
+
+replaceReferencesWindowFunction r (Q.WFSum a)   = 
+    Q.WFSum (replaceReferencesAggrExpr r a)
+
+replaceReferencesWindowFunction r (Q.WFAvg a)   = 
+    Q.WFAvg (replaceReferencesAggrExpr r a)
+
+replaceReferencesWindowFunction r (Q.WFAll a)   = 
+    Q.WFAll (replaceReferencesAggrExpr r a)
+
+replaceReferencesWindowFunction r (Q.WFAny a)   = 
+    Q.WFAny (replaceReferencesAggrExpr r a)
+
+replaceReferencesWindowFunction _ Q.WFCount     = 
+    Q.WFCount
+
+replaceReferencesWindowFunction _ Q.WFRank      = 
+    Q.WFRank
+
+replaceReferencesWindowFunction _ Q.WFDenseRank = 
+    Q.WFDenseRank
+
+replaceReferencesWindowFunction _ Q.WFRowNumber = 
+    Q.WFRowNumber
