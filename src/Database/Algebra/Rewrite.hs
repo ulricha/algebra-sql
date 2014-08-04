@@ -15,7 +15,7 @@ module Database.Algebra.Rewrite
 
 import           Database.Algebra.Rewrite.DagRewrite
 import           Database.Algebra.Rewrite.Match
-import           Database.Algebra.Rewrite.PatternConstruction (pattern, v)
+import           Database.Algebra.Rewrite.PatternConstruction (dagPatMatch, v)
 import           Database.Algebra.Rewrite.Properties
 import           Database.Algebra.Rewrite.Rule
 import           Database.Algebra.Rewrite.Traversal
