@@ -127,8 +127,12 @@ opDotLabel tags i (WinFunL (winFuns, partSpec, sortSpec, mFrameBounds)) = labelT
 
 renderWinFun :: WinFun -> Doc
 renderWinFun (WinMax e) = text "MAX" <> (parens $ text $ show e)
-renderWinFun (WinMin e) = text "MAX" <> (parens $ text $ show e)
-renderWinFun (WinSum e) = text "MAX" <> (parens $ text $ show e)
+renderWinFun (WinMin e) = text "MIN" <> (parens $ text $ show e)
+renderWinFun (WinSum e) = text "SUM" <> (parens $ text $ show e)
+renderWinFun (WinAvg e) = text "AVG" <> (parens $ text $ show e)
+renderWinFun (WinAll e) = text "ALL" <> (parens $ text $ show e)
+renderWinFun (WinAny e) = text "ANY" <> (parens $ text $ show e)
+renderWinFun WinCount   = text "COUNT()"
 
 renderWinFuns :: (ResAttr, WinFun) -> Doc
 renderWinFuns (c, f) = renderWinFun f <+> text "AS" <+> text c
