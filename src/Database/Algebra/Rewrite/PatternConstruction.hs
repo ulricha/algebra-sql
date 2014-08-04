@@ -1,6 +1,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Database.Algebra.Rewrite.PatternConstruction( pattern, v ) where
+module Database.Algebra.Rewrite.PatternConstruction
+    ( dagPatMatch
+    , v 
+    ) where
 
 import           Control.Applicative
 import           Control.Monad.Writer
@@ -368,8 +371,8 @@ assembleStatements patternStatements userExpr = do
 -- a string description of the pattern and the body of the match
 -- and return the complete match statement. The body has to be a quoted ([| ...|])
 -- do-block.
-pattern :: Name -> String -> Q Exp -> Q Exp
-pattern rootName patternString userExpr = do
+dagPatMatch :: Name -> String -> Q Exp -> Q Exp
+dagPatMatch rootName patternString userExpr = do
 
   let pat = parsePattern patternString
 
