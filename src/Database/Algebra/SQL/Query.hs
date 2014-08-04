@@ -176,12 +176,12 @@ data FrameEnd = FECurrRow    -- ^ CURRENT ROW
               deriving (Show)
 
 -- | Window functions
-data WindowFunction = WFMax AggrExpr
-                    | WFMin AggrExpr
-                    | WFSum AggrExpr
-                    | WFAvg AggrExpr
-                    | WFAll AggrExpr
-                    | WFAny AggrExpr
+data WindowFunction = WFMax ColumnExpr
+                    | WFMin ColumnExpr
+                    | WFSum ColumnExpr
+                    | WFAvg ColumnExpr
+                    | WFAll ColumnExpr
+                    | WFAny ColumnExpr
                     | WFCount
                     | WFRank
                     | WFDenseRank

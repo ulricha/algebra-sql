@@ -143,22 +143,22 @@ replaceReferencesWindowFunction :: SubstitutionFunction
                                 -> Q.WindowFunction
                                 -> Q.WindowFunction
 replaceReferencesWindowFunction r (Q.WFMax a) = 
-    Q.WFMax (replaceReferencesAggrExpr r a)
+    Q.WFMax (replaceReferencesColumnExpr r a)
 
 replaceReferencesWindowFunction r (Q.WFMin a)   = 
-    Q.WFMin (replaceReferencesAggrExpr r a)
+    Q.WFMin (replaceReferencesColumnExpr r a)
 
 replaceReferencesWindowFunction r (Q.WFSum a)   = 
-    Q.WFSum (replaceReferencesAggrExpr r a)
+    Q.WFSum (replaceReferencesColumnExpr r a)
 
 replaceReferencesWindowFunction r (Q.WFAvg a)   = 
-    Q.WFAvg (replaceReferencesAggrExpr r a)
+    Q.WFAvg (replaceReferencesColumnExpr r a)
 
 replaceReferencesWindowFunction r (Q.WFAll a)   = 
-    Q.WFAll (replaceReferencesAggrExpr r a)
+    Q.WFAll (replaceReferencesColumnExpr r a)
 
 replaceReferencesWindowFunction r (Q.WFAny a)   = 
-    Q.WFAny (replaceReferencesAggrExpr r a)
+    Q.WFAny (replaceReferencesColumnExpr r a)
 
 replaceReferencesWindowFunction _ Q.WFCount     = 
     Q.WFCount

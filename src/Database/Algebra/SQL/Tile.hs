@@ -303,7 +303,7 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
         payloadProjs                =
             zipWith (\(A.PayloadCol col) i -> project col $ itemi i)
                     payloadCols
-                    [1..]
+                    ([1..] :: [Integer])
 
         (posOrderList, posProjList) = case pos of
             A.NoPos       -> ([], [])
@@ -353,7 +353,19 @@ transformUnOp (A.RowNum (name, sortList, optPart)) c =
                                   Nothing
 
 transformUnOp (A.WinFun ((name, fun), partExprs, sortExprs, mFrameSpec)) c =
-    $unimplemented
+    attachColFunUnOp colFun
+                     (projectF <> windowFunctionF)
+                     c
+
+  where
+    colFun sClause = Q.SCAlias winFunExpr name
+      where
+        winFunExpr = Q.EEWinFun (translateWindowFunction translateE fun)
+                                (map (inlineAE sClause) partExprs)
+                                (asWindowOrderExprList sClause sortExprs)
+                                (fmap translateFrameSpec mFrameSpec)
+
+        translateE = translateExprCE $ Just sClause
 
 transformUnOp (A.RowRank inf) c = transformUnOpRank Q.WFDenseRank inf c
 transformUnOp (A.Rank inf) c = transformUnOpRank Q.WFRank inf c
@@ -808,6 +820,31 @@ translateJoinRel rel = case rel of
     A.LtJ -> Q.BFLowerThan
     A.LeJ -> Q.BFLowerEqual
     A.NeJ -> Q.BFNotEqual
+
+translateFrameSpec :: A.FrameBounds -> Q.FrameSpec
+translateFrameSpec (A.HalfOpenFrame fs)  = Q.FHalfOpen $ translateFrameStart fs
+translateFrameSpec (A.ClosedFrame fs fe) = Q.FClosed (translateFrameStart fs)
+                                                     (translateFrameEnd fe)
+
+translateFrameStart :: A.FrameStart -> Q.FrameStart
+translateFrameStart A.FSUnboundPrec = Q.FSUnboundPrec
+translateFrameStart (A.FSValPrec i) = Q.FSValPrec i
+translateFrameStart A.FSCurrRow     = Q.FSCurrRow
+
+translateFrameEnd :: A.FrameEnd -> Q.FrameEnd
+translateFrameEnd A.FEUnboundFol = Q.FEUnboundFol
+translateFrameEnd (A.FEValFol i) = Q.FEValFol i
+translateFrameEnd A.FECurrRow    = Q.FECurrRow
+
+translateWindowFunction :: (A.Expr -> Q.ColumnExpr) -> A.WinFun -> Q.WindowFunction
+translateWindowFunction translateExpr wfun = case wfun of
+    A.WinMax e -> Q.WFMax $ translateExpr e
+    A.WinMin e -> Q.WFMin $ translateExpr e
+    A.WinSum e -> Q.WFSum $ translateExpr e
+    A.WinAvg e -> Q.WFAvg $ translateExpr e
+    A.WinAll e -> Q.WFAll $ translateExpr e
+    A.WinAny e -> Q.WFAny $ translateExpr e
+    A.WinCount -> Q.WFCount
 
 translateAggrType :: A.AggrType
                   -> (Q.AggregateFunction, Maybe A.Expr)
