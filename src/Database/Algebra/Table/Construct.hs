@@ -6,12 +6,12 @@ module Database.Algebra.Table.Construct
       -- * Smart constructors for algebraic operators
     , dbTable, litTable, litTable', eqJoin, thetaJoin
     , semiJoin, antiJoin, rank, difference, rowrank
-    , select, distinct, cross, union, proj, aggr
+    , select, distinct, cross, union, proj, aggr, winFun
     , rownum, rownum'
       -- * Lifted smart constructors for table algebra operators
     , thetaJoinM, semiJoinM, antiJoinM, eqJoinM, rankM, differenceM
     , rowrankM, selectM, distinctM, crossM, unionM, projM
-    , aggrM, rownumM, rownum'M
+    , aggrM, winFunM, rownumM, rownum'M
     ) where
 
 import           Database.Algebra.Dag.Build
@@ -124,6 +124,14 @@ proj ps c = insertNode $ UnOp (Project ps) c
 aggr :: [(AggrType, ResAttr)] -> [(Attr, Expr)] -> AlgNode -> Build TableAlgebra AlgNode
 aggr aggrs part c1 = insertNode $ UnOp (Aggr (aggrs, part)) c1
 
+winFun :: (ResAttr, WinFun) 
+       -> [PartAttr] 
+       -> [SortSpec] 
+       -> Maybe FrameBounds
+       -> AlgNode 
+       -> Build TableAlgebra AlgNode
+winFun fun part sort frame c = insertNode $ UnOp (WinFun (fun, part, sort, frame)) c
+
 -- | Similar to rowrank but this will assign a \emph{unique} number to every row
 -- (even if two rows are equal)
 rownum :: Attr -> [Attr] -> Maybe Attr -> AlgNode -> Build TableAlgebra AlgNode
@@ -198,6 +206,14 @@ projM cols = bind1 (proj cols)
 -- | Apply aggregate functions to a plan
 aggrM :: [(AggrType, ResAttr)] -> [(Attr, Expr)] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 aggrM aggrs part = bind1 (aggr aggrs part)
+
+winFunM :: (ResAttr, WinFun) 
+        -> [PartAttr] 
+        -> [SortSpec] 
+        -> Maybe FrameBounds
+        -> Build TableAlgebra AlgNode 
+        -> Build TableAlgebra AlgNode
+winFunM fun part sort frame = bind1 (winFun fun part sort frame)
 
 -- | Similar to rowrank but this will assign a \emph{unique} number to every row
 -- (even if two rows are equal)
