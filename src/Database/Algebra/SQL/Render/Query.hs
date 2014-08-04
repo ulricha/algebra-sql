@@ -186,10 +186,11 @@ renderWindowOrderByList compat wos =
     kw "ORDER BY" <+> renderGenericOrderByList renderWindowOrderExpr compat wos
 
 renderFrameSpec :: FrameSpec -> Doc
-renderFrameSpec (FHalfOpen fs)  = renderFrameStart fs
-renderFrameSpec (FClosed fs fe) = renderFrameStart fs 
-                                        <+> text "AND" 
-                                        <+> renderFrameEnd fe
+renderFrameSpec (FHalfOpen fs)  = kw "ROWS" <+> renderFrameStart fs
+renderFrameSpec (FClosed fs fe) = kw "ROWS BETWEEN"
+                                  <+> renderFrameStart fs 
+                                  <+> kw "AND" 
+                                  <+> renderFrameEnd fe
 
 renderFrameStart :: FrameStart -> Doc
 renderFrameStart FSUnboundPrec = text "UNBOUNDED PRECEDING"
