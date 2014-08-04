@@ -19,6 +19,7 @@ module Database.Algebra.Rewrite.DagRewrite
        , exposeDag
        , getExtras
        , updateExtras
+       , condRewrite
        , insert
        , insertNoShare
        , replaceChild
@@ -161,6 +162,18 @@ exposeDag = R $ gets dag
 getExtras :: Rewrite o e e
 getExtras = R $ gets extras
 
+-- | Preserve the effects of a rewrite only if the rewrite signals
+-- success by returning True. Otherwise, the state before the rewrite
+-- is put in place again.
+condRewrite :: Rewrite o e Bool -> Rewrite o e Bool
+condRewrite r =
+  R $ do
+      s       <- get
+      success <- unwrapR r
+      if success
+          then return success
+          else trace "Rollback" $ put s >> return success
+
 updateExtras :: e -> Rewrite o e ()
 updateExtras e =
   R $ do
@@ -239,3 +252,4 @@ replaceRoot oldRoot newRoot =
     if not $ IM.member newRoot $ Dag.nodeMap $ dag s
       then error "replaceRootM: new root node is not present in the DAG"
       else unwrapR $ putDag $ Dag.replaceRoot (dag s) oldRoot newRoot
+
