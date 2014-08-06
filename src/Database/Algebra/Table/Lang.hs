@@ -244,10 +244,14 @@ data FrameBounds = HalfOpenFrame FrameStart
                  | ClosedFrame FrameStart FrameEnd 
                  deriving (Eq, Ord, Show, Generic)
 
-data WinFun      = WinMax Expr
-                 | WinMin Expr
-                 | WinSum Expr
-                 deriving (Eq, Ord, Show, Generic)
+data WinFun = WinMax Expr
+            | WinMin Expr
+            | WinSum Expr
+            | WinAvg Expr
+            | WinAll Expr
+            | WinAny Expr
+            | WinCount
+            deriving (Eq, Ord, Show, Generic)
 
 
 data NullOp = LitTable [Tuple] SchemaInfos
