@@ -2,7 +2,7 @@
 
 module Database.Algebra.Rewrite.PatternConstruction
     ( dagPatMatch
-    , v
+    , v 
     ) where
 
 import           Control.Applicative
