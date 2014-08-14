@@ -339,7 +339,7 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
 
 
-transformUnOp (A.RowNum (name, sortList, optPart)) c =
+transformUnOp (A.RowNum (name, sortList, partExprs)) c =
     attachColFunUnOp colFun
                      (projectF <> windowFunctionF)
                      c
@@ -348,8 +348,7 @@ transformUnOp (A.RowNum (name, sortList, optPart)) c =
         where
           -- ROW_NUMBER() OVER (PARTITION BY p ORDER BY s)
           rowNumExpr = Q.EEWinFun Q.WFRowNumber
-                                  (maybe [] (\p -> [inlineAE sClause p]) optPart)
-                                  (map 
+                                  (map (translateExprAE $ Just sClause) partExprs)
                                   (asWindowOrderExprList sClause sortList)
                                   Nothing
 
@@ -362,7 +361,7 @@ transformUnOp (A.WinFun ((name, fun), partExprs, sortExprs, mFrameSpec)) c =
     colFun sClause = Q.SCAlias winFunExpr name
       where
         winFunExpr = Q.EEWinFun (translateWindowFunction translateE fun)
-                                (map (inlineAE sClause) partExprs)
+                                (map (translateExprAE $ Just sClause) partExprs)
                                 (asWindowOrderExprList sClause sortExprs)
                                 (fmap translateFrameSpec mFrameSpec)
 
@@ -706,7 +705,7 @@ asWindowOrderExprList :: [Q.SelectColumn]
                       -> [Q.WindowOrderExpr]
 asWindowOrderExprList sClause si =
     filter (affectsSortOrderAE . Q.woExpr)
-           $ translateSortInf si (inlineAE sClause)
+           $ translateSortInf si (translateExprAE $ Just sClause)
 
 -- | Search the select clause for a specific column definition and return it as
 -- 'Q.ColumnExpr'.
@@ -904,6 +903,7 @@ translateExprEE :: Maybe [Q.SelectColumn] -> A.Expr -> Q.ExtendedExpr
 translateExprEE = translateExprValueExprTemplate translateExprEE Q.EEBase inlineEE
 
 translateExprAE :: Maybe [Q.SelectColumn] -> A.Expr -> Q.AggrExpr
+translateExprAE = translateExprValueExprTemplate translateExprAE Q.AEBase inlineAE
 
 translateBinFun :: A.BinFun -> Q.BinaryFunction
 translateBinFun f = case f of
@@ -928,11 +928,11 @@ translateBinFun f = case f of
 -- | Translate sort information into '[Q.WindowOrderExpr]', using the column
 -- function, which takes a 'String'.
 translateSortInf :: [A.SortSpec]
-                 -> (String -> Q.AggrExpr)
+                 -> (A.Expr -> Q.AggrExpr)
                  -> [Q.WindowOrderExpr]
 translateSortInf sortInfos colFun = map toWOE sortInfos
   where
-    toWOE (n, d) = Q.WOE (colFun n) $ translateSortDir d
+    toWOE (n, d) = Q.WOE (colFun n) (translateSortDir d)
 
 
 -- | Translate a single join condition into it's 'Q.ColumnExpr' equivalent.
