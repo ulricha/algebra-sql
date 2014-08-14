@@ -125,20 +125,20 @@ aggr :: [(AggrType, ResAttr)] -> [(Attr, Expr)] -> AlgNode -> Build TableAlgebra
 aggr aggrs part c1 = insertNode $ UnOp (Aggr (aggrs, part)) c1
 
 winFun :: (ResAttr, WinFun) 
-       -> [PartAttr] 
+       -> [PartExpr] 
        -> [SortSpec] 
        -> Maybe FrameBounds
        -> AlgNode 
        -> Build TableAlgebra AlgNode
 winFun fun part sort frame c = insertNode $ UnOp (WinFun (fun, part, sort, frame)) c
 
--- | Similar to rowrank but this will assign a \emph{unique} number to every row
--- (even if two rows are equal)
-rownum :: Attr -> [Attr] -> Maybe Attr -> AlgNode -> Build TableAlgebra AlgNode
-rownum res sort part c1 = insertNode $ UnOp (RowNum (res, zip sort $ repeat Asc, part)) c1
+-- | Similar to rowrank but this will assign a unique number to every
+-- row (even if two rows are equal)
+rownum :: Attr -> [Attr] -> [PartExpr] -> AlgNode -> Build TableAlgebra AlgNode
+rownum res sort part c1 = insertNode $ UnOp (RowNum (res, map (\c -> (ColE c, Asc)) sort, part)) c1
 
 -- | Same as rownum but columns can be assigned an ordering direction
-rownum' :: Attr -> [(Attr, SortDir)] -> Maybe Attr -> AlgNode -> Build TableAlgebra AlgNode
+rownum' :: Attr -> [SortSpec] -> [PartExpr] -> AlgNode -> Build TableAlgebra AlgNode
 rownum' res sort part c1 = insertNode $ UnOp (RowNum (res, sort, part)) c1
 
 --------------------------------------------------------------------------------
@@ -208,7 +208,7 @@ aggrM :: [(AggrType, ResAttr)] -> [(Attr, Expr)] -> Build TableAlgebra AlgNode -
 aggrM aggrs part = bind1 (aggr aggrs part)
 
 winFunM :: (ResAttr, WinFun) 
-        -> [PartAttr] 
+        -> [PartExpr] 
         -> [SortSpec] 
         -> Maybe FrameBounds
         -> Build TableAlgebra AlgNode 
@@ -217,9 +217,9 @@ winFunM fun part sort frame = bind1 (winFun fun part sort frame)
 
 -- | Similar to rowrank but this will assign a \emph{unique} number to every row
 -- (even if two rows are equal)
-rownumM :: Attr -> [Attr] -> Maybe Attr -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
+rownumM :: Attr -> [Attr] -> [PartExpr] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 rownumM res sort part = bind1 (rownum res sort part)
 
 -- | Same as rownum but columns can be assigned an ordering direction
-rownum'M :: Attr -> [(Attr, SortDir)] -> Maybe Attr -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
+rownum'M :: Attr -> [SortSpec] -> [PartExpr] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 rownum'M res sort part = bind1 (rownum' res sort part)

@@ -349,6 +349,7 @@ transformUnOp (A.RowNum (name, sortList, optPart)) c =
           -- ROW_NUMBER() OVER (PARTITION BY p ORDER BY s)
           rowNumExpr = Q.EEWinFun Q.WFRowNumber
                                   (maybe [] (\p -> [inlineAE sClause p]) optPart)
+                                  (map 
                                   (asWindowOrderExprList sClause sortList)
                                   Nothing
 
@@ -901,6 +902,8 @@ translateExprCE = translateExprValueExprTemplate translateExprCE Q.CEBase inline
 
 translateExprEE :: Maybe [Q.SelectColumn] -> A.Expr -> Q.ExtendedExpr
 translateExprEE = translateExprValueExprTemplate translateExprEE Q.EEBase inlineEE
+
+translateExprAE :: Maybe [Q.SelectColumn] -> A.Expr -> Q.AggrExpr
 
 translateBinFun :: A.BinFun -> Q.BinaryFunction
 translateBinFun f = case f of

@@ -118,7 +118,7 @@ type TypedAttr = (Attr, ATy)
 newtype Key = Key [Attr] deriving (Eq, Ord, Show, Generic)
 
 -- | Sorting information
-type SortSpec              = (Attr, SortDir)
+type SortSpec              = (Expr, SortDir)
 
 -- | Binary functions and operators in expressions
 data BinFun = Gt
@@ -193,6 +193,10 @@ data Expr = BinAppE BinFun Expr Expr
           | ConstE AVal
           | IfE Expr Expr Expr
           deriving (Eq, Ord, Generic)
+
+-- | Expressions which are used to specify partitioning in window
+-- functions.
+type PartExpr = Expr
 
 instance Show Expr where
   show (BinAppE f e1 e2) = "(" ++ show e1 ++ ") " ++ show f ++ " (" ++ show e2 ++ ")"
@@ -283,9 +287,9 @@ newtype PayloadCol = PayloadCol Attr deriving (Ord, Eq, Generic)
 instance Show PayloadCol where
     show (PayloadCol c) = c
 
-data UnOp = RowNum (Attr, [SortSpec], Maybe PartAttr)
+data UnOp = RowNum (Attr, [SortSpec], [PartExpr])
           | RowRank (ResAttr, [SortSpec])
-          | WinFun ((ResAttr, WinFun), [PartAttr], [SortSpec], Maybe FrameBounds)
+          | WinFun ((ResAttr, WinFun), [PartExpr], [SortSpec], Maybe FrameBounds)
           | Rank (ResAttr, [SortSpec])
           | Project [(Attr, Expr)]
           | Select Expr

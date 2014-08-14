@@ -33,16 +33,16 @@ renderAggr :: (AggrType, ResAttr) -> Doc
 renderAggr (aggr, res) = text $ res ++ ":" ++ show aggr
 
 renderSortInf :: SortSpec -> Doc
-renderSortInf (attr, Desc) = text $ attr ++ "/desc"
-renderSortInf (attr, Asc)  = text attr
+renderSortInf (expr, Desc) = (parens $ text (show expr)) <> text "/desc"
+renderSortInf (expr, Asc)  = (parens $ text (show expr)) <> text "/asc"
 
 renderJoinArgs :: (Expr, Expr, JoinRel) -> Doc
 renderJoinArgs (left, right, joinR) =
     (text $ show left) <+> (text $ show joinR) <+> (text $ show right)
 
-renderOptCol :: Maybe Attr -> Doc
-renderOptCol Nothing  = empty
-renderOptCol (Just c) = text "/" <> text c
+renderPartExprs :: [PartExpr] -> Doc
+renderPartExprs []       = empty
+renderPartExprs es@(_:_) = text "/" <> commas (text . show) es
 
 renderKey :: Key -> Doc
 renderKey (Key k) = brackets $ commas text k
@@ -91,7 +91,7 @@ opDotLabel tags i (RowNumL (res,sortI,attr))  = labelToDoc i
     "ROWNUM" ((text $ res ++ ":<")
               <> (commas renderSortInf sortI)
               <> text ">"
-              <> renderOptCol attr)
+              <> renderPartExprs attr)
     (lookupTags i tags)
 opDotLabel tags i (RowRankL (res,sortInf))    = labelToDoc i
     "ROWRANK" ((text $ res ++ ":<")
@@ -137,9 +137,9 @@ renderWinFun WinCount   = text "COUNT()"
 renderWinFuns :: (ResAttr, WinFun) -> Doc
 renderWinFuns (c, f) = renderWinFun f <+> text "AS" <+> text c
 
-renderPartSpec :: [PartAttr] -> Doc
+renderPartSpec :: [PartExpr] -> Doc
 renderPartSpec []       = empty
-renderPartSpec as@(_:_) = text "PARTITION BY" <+> commas text as
+renderPartSpec as@(_:_) = text "PARTITION BY" <+> commas (text . show) as
 
 renderSortSpec :: [SortSpec] -> Doc
 renderSortSpec [] = empty
@@ -301,11 +301,11 @@ renderDot ns es = text "digraph" <> (braces $ preamble $$ nodeSection $$ edgeSec
 data TALabel = LitTableL [Tuple] SchemaInfos
              | TableRefL (TableName, [TypedAttr], [Key])
              | AggrL ([(AggrType, ResAttr)], [(PartAttr, Expr)])
-             | WinFunL ((ResAttr, WinFun), [PartAttr], [SortSpec], Maybe FrameBounds)
+             | WinFunL ((ResAttr, WinFun), [PartExpr], [SortSpec], Maybe FrameBounds)
              | DistinctL ()
              | ProjectL [Proj]
              | RankL (ResAttr, [SortSpec])
-             | RowNumL (Attr, [SortSpec], Maybe PartAttr)
+             | RowNumL (Attr, [SortSpec], [PartExpr])
              | RowRankL (ResAttr, [SortSpec])
              | SelL Expr
              | CrossL ()
