@@ -17,7 +17,7 @@ tagsToDoc :: [Tag] -> Doc
 tagsToDoc ts = vcat $ map text ts
 
 labelToDoc :: AlgNode -> String -> Doc -> [Tag] -> Doc
-labelToDoc n s as ts = (nodeToDoc n) <> text "\\n" <> ((text s) <> (parens as)) <+> (tagsToDoc $ nub ts)
+labelToDoc n s as ts = (nodeToDoc n) <> text "\\n" <> ((text s) <> (parens as)) $$ (tagsToDoc $ nub ts)
 
 lookupTags :: AlgNode -> NodeMap [Tag] -> [Tag]
 lookupTags n m = Map.findWithDefault [] n m
@@ -33,8 +33,10 @@ renderAggr :: (AggrType, ResAttr) -> Doc
 renderAggr (aggr, res) = text $ res ++ ":" ++ show aggr
 
 renderSortInf :: SortSpec -> Doc
-renderSortInf (expr, Desc) = (parens $ text (show expr)) <> text "/desc"
-renderSortInf (expr, Asc)  = (parens $ text (show expr)) <> text "/asc"
+renderSortInf (ColE c, Desc) = text c <> text "/desc"
+renderSortInf (expr, Desc)   = (parens $ text (show expr)) <> text "/desc"
+renderSortInf (ColE c, Asc)  = text c
+renderSortInf (expr, Asc)    = parens $ text (show expr)
 
 renderJoinArgs :: (Expr, Expr, JoinRel) -> Doc
 renderJoinArgs (left, right, joinR) =
