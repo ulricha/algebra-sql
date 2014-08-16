@@ -182,6 +182,8 @@ data WindowFunction = WFMax ColumnExpr
                     | WFAvg ColumnExpr
                     | WFAll ColumnExpr
                     | WFAny ColumnExpr
+                    | WFFirstValue ColumnExpr
+                    | WFLastValue ColumnExpr
                     | WFCount
                     | WFRank
                     | WFDenseRank

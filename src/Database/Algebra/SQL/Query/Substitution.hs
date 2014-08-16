@@ -160,6 +160,12 @@ replaceReferencesWindowFunction r (Q.WFAll a)   =
 replaceReferencesWindowFunction r (Q.WFAny a)   = 
     Q.WFAny (replaceReferencesColumnExpr r a)
 
+replaceReferencesWindowFunction r (Q.WFFirstValue a)   = 
+    Q.WFFirstValue (replaceReferencesColumnExpr r a)
+
+replaceReferencesWindowFunction r (Q.WFLastValue a)   = 
+    Q.WFLastValue (replaceReferencesColumnExpr r a)
+
 replaceReferencesWindowFunction _ Q.WFCount     = 
     Q.WFCount
 

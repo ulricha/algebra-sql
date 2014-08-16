@@ -838,13 +838,15 @@ translateFrameEnd A.FECurrRow    = Q.FECurrRow
 
 translateWindowFunction :: (A.Expr -> Q.ColumnExpr) -> A.WinFun -> Q.WindowFunction
 translateWindowFunction translateExpr wfun = case wfun of
-    A.WinMax e -> Q.WFMax $ translateExpr e
-    A.WinMin e -> Q.WFMin $ translateExpr e
-    A.WinSum e -> Q.WFSum $ translateExpr e
-    A.WinAvg e -> Q.WFAvg $ translateExpr e
-    A.WinAll e -> Q.WFAll $ translateExpr e
-    A.WinAny e -> Q.WFAny $ translateExpr e
-    A.WinCount -> Q.WFCount
+    A.WinMax e        -> Q.WFMax $ translateExpr e
+    A.WinMin e        -> Q.WFMin $ translateExpr e
+    A.WinSum e        -> Q.WFSum $ translateExpr e
+    A.WinAvg e        -> Q.WFAvg $ translateExpr e
+    A.WinAll e        -> Q.WFAll $ translateExpr e
+    A.WinAny e        -> Q.WFAny $ translateExpr e
+    A.WinFirstValue e -> Q.WFFirstValue $ translateExpr e
+    A.WinLastValue e  -> Q.WFLastValue $ translateExpr e
+    A.WinCount        -> Q.WFCount
 
 translateAggrType :: A.AggrType
                   -> (Q.AggregateFunction, Maybe A.Expr)

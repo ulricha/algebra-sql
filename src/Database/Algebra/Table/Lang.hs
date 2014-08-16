@@ -254,6 +254,8 @@ data WinFun = WinMax Expr
             | WinAvg Expr
             | WinAll Expr
             | WinAny Expr
+            | WinFirstValue Expr
+            | WinLastValue Expr
             | WinCount
             deriving (Eq, Ord, Show, Generic)
 

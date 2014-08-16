@@ -339,23 +339,25 @@ renderFunCall :: String -> Doc -> Doc
 renderFunCall funName funArg = kw funName <> parens funArg
 
 renderWindowFunction :: CompatMode -> WindowFunction -> Doc
-renderWindowFunction _          WFRowNumber = renderFunCall "ROW_NUMBER" empty
-renderWindowFunction _          WFDenseRank = renderFunCall "DENSE_RANK" empty
-renderWindowFunction _          WFRank      = renderFunCall "RANK" empty
-renderWindowFunction MonetDB    _           = error "MonetDB does not support window aggregates"
-renderWindowFunction c          (WFAvg a)   = renderFunCall "AVG" (renderColumnExpr c a)
-renderWindowFunction c          (WFMax a)   = renderFunCall "MAX" (renderColumnExpr c a)
-renderWindowFunction c          (WFMin a)   = renderFunCall "MIN" (renderColumnExpr c a)
-renderWindowFunction c          (WFSum a)   = renderFunCall "SUM" (renderColumnExpr c a)
-renderWindowFunction _          WFCount     = renderFunCall "COUNT" (text "*")
-renderWindowFunction PostgreSQL (WFAll a)   = renderFunCall "bool_and" 
-                                                            (renderColumnExpr PostgreSQL a)
-renderWindowFunction SQL99      (WFAll a)   = renderFunCall "EVERY" 
-                                                            (renderColumnExpr SQL99 a)
-renderWindowFunction PostgreSQL (WFAny a)   = renderFunCall "bool_or" 
-                                                            (renderColumnExpr PostgreSQL a)
-renderWindowFunction SQL99      (WFAny a)   = renderFunCall "SOME" 
-                                                            (renderColumnExpr SQL99 a)
+renderWindowFunction _          WFRowNumber      = renderFunCall "ROW_NUMBER" empty
+renderWindowFunction _          WFDenseRank      = renderFunCall "DENSE_RANK" empty
+renderWindowFunction _          WFRank           = renderFunCall "RANK" empty
+renderWindowFunction MonetDB    _                = error "MonetDB does not support window aggregates"
+renderWindowFunction c          (WFAvg a)        = renderFunCall "AVG" (renderColumnExpr c a)
+renderWindowFunction c          (WFMax a)        = renderFunCall "MAX" (renderColumnExpr c a)
+renderWindowFunction c          (WFMin a)        = renderFunCall "MIN" (renderColumnExpr c a)
+renderWindowFunction c          (WFSum a)        = renderFunCall "SUM" (renderColumnExpr c a)
+renderWindowFunction c          (WFFirstValue a) = renderFunCall "first_value" (renderColumnExpr c a)
+renderWindowFunction c          (WFLastValue a)  = renderFunCall "last_value" (renderColumnExpr c a)
+renderWindowFunction _          WFCount          = renderFunCall "COUNT" (text "*")
+renderWindowFunction PostgreSQL (WFAll a)        = renderFunCall "bool_and" 
+                                                                 (renderColumnExpr PostgreSQL a)
+renderWindowFunction SQL99      (WFAll a)        = renderFunCall "EVERY" 
+                                                                 (renderColumnExpr SQL99 a)
+renderWindowFunction PostgreSQL (WFAny a)        = renderFunCall "bool_or" 
+                                                                 (renderColumnExpr PostgreSQL a)
+renderWindowFunction SQL99      (WFAny a)        = renderFunCall "SOME" 
+                                                                 (renderColumnExpr SQL99 a)
 
 renderColumnExpr :: CompatMode -> ColumnExpr -> Doc
 renderColumnExpr compat (CEBase e) = renderColumnExprBase compat e
