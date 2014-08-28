@@ -41,7 +41,7 @@ instance Show AggrType where
     show (Sum c)  = printf "sum(%s)" (show c)
     show Count    = "count"
     show (All c)  = printf "all(%s)" (show c)
-    show (Any c)  = printf "all(%s)" (show c)
+    show (Any c)  = printf "any(%s)" (show c)
 
 -- | The show instance results in values that are accepted in the xml plan.
 instance Show SortDir where
