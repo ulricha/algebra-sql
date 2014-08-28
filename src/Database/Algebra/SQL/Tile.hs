@@ -24,6 +24,7 @@ import           Control.Monad.Trans.RWS.Strict
 import qualified Data.DList                       as DL (DList, singleton)
 import qualified Data.IntMap                      as IntMap
 import           Data.Maybe
+import GHC.Exts
 
 import qualified Database.Algebra.Dag             as D
 import qualified Database.Algebra.Dag.Common      as C
@@ -470,11 +471,16 @@ transformBinSetOp setOp c0 c1 = do
     (_, select0, children0) <- transformTerminated c0 noneF
     (_, select1, children1) <- transformTerminated c1 noneF
 
+    -- Impose a canonical order on entries in the SELECT clauses to
+    -- ensure that schemata of the set operator inputs match.
+    let select0' = select0 { Q.selectClause = sortWith Q.sName $ Q.selectClause select0 }
+        select1' = select1 { Q.selectClause = sortWith Q.sName $ Q.selectClause select1 }
+
     tableAlias <- freshAlias
 
     -- Take the schema of the first one, but could also be from the second one,
     -- since we assume they are equal.
-    let schema = getSchemaSelectStmt select0
+    let schema = getSchemaSelectStmt select0'
 
     return $ TileNode (projectF <> tableF)
                       emptySelectStmt
@@ -483,8 +489,8 @@ transformBinSetOp setOp c0 c1 = do
                       , Q.fromClause =
                             [ Q.FPAlias ( Q.FESubQuery
                                           $ Q.VQBinarySetOperation
-                                            (Q.VQSelect select0)
-                                            (Q.VQSelect select1)
+                                            (Q.VQSelect select0')
+                                            (Q.VQSelect select1')
                                             setOp
                                         )
                                         tableAlias
