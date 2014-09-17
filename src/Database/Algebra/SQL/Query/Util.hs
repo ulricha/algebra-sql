@@ -56,9 +56,7 @@ affectsSortOrderCE (Q.CEBase e) =
 affectsSortOrderEE :: Q.ExtendedExpr -> Bool
 affectsSortOrderEE e = case e of
     EEBase ve         -> affectsSortOrderValueExprTemplate affectsSortOrderEE ve
-    EERowNum _ _      -> True
-    EEDenseRank _     -> True
-    EERank _          -> True
+    EEWinFun{}        -> True
     EEAggrExpr ae     -> affectsSortOrderAE ae
 
 affectsSortOrderAE :: Q.AggrExpr -> Bool

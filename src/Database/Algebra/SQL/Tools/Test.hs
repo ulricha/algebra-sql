@@ -266,7 +266,7 @@ singleTests = [ tLitTable
               ]
   where
     joinInfo          = [(A.ColE "a", A.ColE "c", A.EqJ), (A.ColE "b", A.ColE "d", A.LeJ)]
-    sortInfo          = [("a", A.Asc)]
+    sortInfo          = [(A.ColE "a", A.Asc)]
     colTypes          = [("a", A.AInt), ("b", A.AStr)]
     colTypes2         = [("c", A.AInt), ("d", A.AInt)]
     mapping op        = [ (0, C.NullaryOp (A.LitTable [] colTypes))
@@ -288,7 +288,7 @@ singleTests = [ tLitTable
     singletonU op = singletonGraph $ C.UnOp op 0
 
     tSerialize    = singletonU (A.Serialize (Just $ A.DescrCol "a", A.NoPos, [A.PayloadCol "a"]))
-    tRowNum       = singletonU (A.RowNum ("c", sortInfo, Just "b"))
+    tRowNum       = singletonU (A.RowNum ("c", sortInfo, [A.ColE "b"]))
     tRowRank      = singletonU (A.RowRank ("c", sortInfo))
     tRank         = singletonU (A.Rank ("c", sortInfo))
     tProject      =

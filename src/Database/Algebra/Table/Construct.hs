@@ -6,12 +6,12 @@ module Database.Algebra.Table.Construct
       -- * Smart constructors for algebraic operators
     , dbTable, litTable, litTable', eqJoin, thetaJoin
     , semiJoin, antiJoin, rank, difference, rowrank
-    , select, distinct, cross, union, proj, aggr
+    , select, distinct, cross, union, proj, aggr, winFun
     , rownum, rownum'
       -- * Lifted smart constructors for table algebra operators
     , thetaJoinM, semiJoinM, antiJoinM, eqJoinM, rankM, differenceM
     , rowrankM, selectM, distinctM, crossM, unionM, projM
-    , aggrM, rownumM, rownum'M
+    , aggrM, winFunM, rownumM, rownum'M
     ) where
 
 import           Database.Algebra.Dag.Build
@@ -63,75 +63,83 @@ natT    = ANat
 -- The third argument describes the database keys (one table key can
 -- span over multiple columns).
 dbTable :: String -> [(Attr, ATy)] -> [Key] -> Build TableAlgebra AlgNode
-dbTable n cs ks = insertNode $ NullaryOp $ TableRef (n, cs, ks)
+dbTable n cs ks = insert $ NullaryOp $ TableRef (n, cs, ks)
 
 -- | Construct a table with one value
 litTable :: AVal -> String -> ATy -> Build TableAlgebra AlgNode
-litTable v s t = insertNode $ NullaryOp $ LitTable [[v]] [(s, t)]
+litTable v s t = insert $ NullaryOp $ LitTable [[v]] [(s, t)]
 
 -- | Construct a literal table with multiple columns and rows
 litTable' :: [[AVal]] -> [(String, ATy)] -> Build TableAlgebra AlgNode
-litTable' v s = insertNode $ NullaryOp $ LitTable v s
+litTable' v s = insert $ NullaryOp $ LitTable v s
 
 -- | Join two plans where the columns n1 of table 1 and columns n2 of table
 --  2 are equal.
 eqJoin :: LeftAttr -> RightAttr -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
-eqJoin n1 n2 c1 c2 = insertNode $ BinOp (EqJoin (n1, n2)) c1 c2
+eqJoin n1 n2 c1 c2 = insert $ BinOp (EqJoin (n1, n2)) c1 c2
 
 thetaJoin :: [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
-thetaJoin cond c1 c2 = insertNode $ BinOp (ThetaJoin cond) c1 c2
+thetaJoin cond c1 c2 = insert $ BinOp (ThetaJoin cond) c1 c2
 
 semiJoin :: [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
-semiJoin cond c1 c2 = insertNode $ BinOp (SemiJoin cond) c1 c2
+semiJoin cond c1 c2 = insert $ BinOp (SemiJoin cond) c1 c2
 
 antiJoin :: [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
-antiJoin cond c1 c2 = insertNode $ BinOp (AntiJoin cond) c1 c2
+antiJoin cond c1 c2 = insert $ BinOp (AntiJoin cond) c1 c2
 
 -- | Assign a number to each row in column 'ResAttr' incrementally
 -- sorted by `sort'. The numbering is not dense!
 rank :: ResAttr -> [SortSpec] -> AlgNode -> Build TableAlgebra AlgNode
-rank res sort c1 = insertNode $ UnOp (Rank (res, sort)) c1
+rank res sort c1 = insert $ UnOp (Rank (res, sort)) c1
 
 -- | Compute the difference between two plans.
 difference :: AlgNode -> AlgNode -> Build TableAlgebra AlgNode
-difference q1 q2 = insertNode $ BinOp (Difference ()) q1 q2
+difference q1 q2 = insert $ BinOp (Difference ()) q1 q2
 
 -- | Same as rank but provides a dense numbering.
 rowrank :: ResAttr -> [SortSpec] -> AlgNode -> Build TableAlgebra AlgNode
-rowrank res sort c1 = insertNode $ UnOp (RowRank (res, sort)) c1
+rowrank res sort c1 = insert $ UnOp (RowRank (res, sort)) c1
 
 -- | Select rows where the column `SelAttr' contains True.
 select :: Expr -> AlgNode -> Build TableAlgebra AlgNode
-select sel c1 = insertNode $ UnOp (Select sel) c1
+select sel c1 = insert $ UnOp (Select sel) c1
 
 -- | Remove duplicate rows
 distinct :: AlgNode -> Build TableAlgebra AlgNode
-distinct c1 = insertNode $ UnOp (Distinct ()) c1
+distinct c1 = insert $ UnOp (Distinct ()) c1
 
 -- | Make cross product from two plans
 cross :: AlgNode -> AlgNode -> Build TableAlgebra AlgNode
-cross c1 c2 = insertNode $ BinOp (Cross ()) c1 c2
+cross c1 c2 = insert $ BinOp (Cross ()) c1 c2
 
 -- | Union between two plans
 union :: AlgNode -> AlgNode -> Build TableAlgebra AlgNode
-union c1 c2 = insertNode $ BinOp (DisjUnion ()) c1 c2
+union c1 c2 = insert $ BinOp (DisjUnion ()) c1 c2
 
 -- | Project/rename certain column out of a plan
 proj :: [Proj] -> AlgNode -> Build TableAlgebra AlgNode
-proj ps c = insertNode $ UnOp (Project ps) c
+proj ps c = insert $ UnOp (Project ps) c
 
 -- | Apply aggregate functions to a plan
 aggr :: [(AggrType, ResAttr)] -> [(Attr, Expr)] -> AlgNode -> Build TableAlgebra AlgNode
-aggr aggrs part c1 = insertNode $ UnOp (Aggr (aggrs, part)) c1
+aggr aggrs part c1 = insert $ UnOp (Aggr (aggrs, part)) c1
 
--- | Similar to rowrank but this will assign a \emph{unique} number to every row
--- (even if two rows are equal)
-rownum :: Attr -> [Attr] -> Maybe Attr -> AlgNode -> Build TableAlgebra AlgNode
-rownum res sort part c1 = insertNode $ UnOp (RowNum (res, zip sort $ repeat Asc, part)) c1
+winFun :: (ResAttr, WinFun) 
+       -> [PartExpr] 
+       -> [SortSpec] 
+       -> Maybe FrameBounds
+       -> AlgNode 
+       -> Build TableAlgebra AlgNode
+winFun fun part sort frame c = insert $ UnOp (WinFun (fun, part, sort, frame)) c
+
+-- | Similar to rowrank but this will assign a unique number to every
+-- row (even if two rows are equal)
+rownum :: Attr -> [Attr] -> [PartExpr] -> AlgNode -> Build TableAlgebra AlgNode
+rownum res sort part c1 = insert $ UnOp (RowNum (res, map (\c -> (ColE c, Asc)) sort, part)) c1
 
 -- | Same as rownum but columns can be assigned an ordering direction
-rownum' :: Attr -> [(Attr, SortDir)] -> Maybe Attr -> AlgNode -> Build TableAlgebra AlgNode
-rownum' res sort part c1 = insertNode $ UnOp (RowNum (res, sort, part)) c1
+rownum' :: Attr -> [SortSpec] -> [PartExpr] -> AlgNode -> Build TableAlgebra AlgNode
+rownum' res sort part c1 = insert $ UnOp (RowNum (res, sort, part)) c1
 
 --------------------------------------------------------------------------------
 -- Lifted smart constructors for table algebra operators
@@ -199,11 +207,19 @@ projM cols = bind1 (proj cols)
 aggrM :: [(AggrType, ResAttr)] -> [(Attr, Expr)] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 aggrM aggrs part = bind1 (aggr aggrs part)
 
+winFunM :: (ResAttr, WinFun) 
+        -> [PartExpr] 
+        -> [SortSpec] 
+        -> Maybe FrameBounds
+        -> Build TableAlgebra AlgNode 
+        -> Build TableAlgebra AlgNode
+winFunM fun part sort frame = bind1 (winFun fun part sort frame)
+
 -- | Similar to rowrank but this will assign a \emph{unique} number to every row
 -- (even if two rows are equal)
-rownumM :: Attr -> [Attr] -> Maybe Attr -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
+rownumM :: Attr -> [Attr] -> [PartExpr] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 rownumM res sort part = bind1 (rownum res sort part)
 
 -- | Same as rownum but columns can be assigned an ordering direction
-rownum'M :: Attr -> [(Attr, SortDir)] -> Maybe Attr -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
+rownum'M :: Attr -> [SortSpec] -> [PartExpr] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 rownum'M res sort part = bind1 (rownum' res sort part)

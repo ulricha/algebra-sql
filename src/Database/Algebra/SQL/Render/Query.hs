@@ -185,6 +185,23 @@ renderWindowOrderByList :: CompatMode -> [WindowOrderExpr] -> Doc
 renderWindowOrderByList compat wos =
     kw "ORDER BY" <+> renderGenericOrderByList renderWindowOrderExpr compat wos
 
+renderFrameSpec :: FrameSpec -> Doc
+renderFrameSpec (FHalfOpen fs)  = kw "ROWS" <+> renderFrameStart fs
+renderFrameSpec (FClosed fs fe) = kw "ROWS BETWEEN"
+                                  <+> renderFrameStart fs 
+                                  <+> kw "AND" 
+                                  <+> renderFrameEnd fe
+
+renderFrameStart :: FrameStart -> Doc
+renderFrameStart FSUnboundPrec = text "UNBOUNDED PRECEDING"
+renderFrameStart (FSValPrec i) = int i <+> text "PRECEDING"
+renderFrameStart FSCurrRow     = text "CURRENT ROW"
+
+renderFrameEnd :: FrameEnd -> Doc
+renderFrameEnd FEUnboundFol = text "UNBOUNDED FOLLOWING"
+renderFrameEnd (FEValFol i) = int i <+> text "FOLLOWING"
+renderFrameEnd FECurrRow    = text "CURRENT ROW"
+
 renderSortDirection :: SortDirection -> Doc
 renderSortDirection Ascending  = kw "ASC"
 renderSortDirection Descending = kw "DESC"
@@ -228,28 +245,26 @@ renderSelectColumn compat (SCAlias expr name) = renderExtendedExpr compat expr
                                                 <+> text name
 renderSelectColumn compat (SCExpr expr)       = renderExtendedExpr compat expr
 
+
 renderExtendedExpr :: CompatMode -> ExtendedExpr -> Doc
 renderExtendedExpr compat (EEBase v)                  = renderExtendedExprBase compat v
-renderExtendedExpr compat (EERowNum partColumn order) =
-    kw "ROW_NUMBER() OVER"
-    <+> parens ( partitionByDoc 
-                 <>
-                 case order of
-                     [] -> empty
-                     _  -> renderWindowOrderByList compat order
-               )
-  where
-    partitionByDoc = maybe empty
-                           ( \c -> kw "PARTITION BY"
-                                   </> renderAggrExpr compat c
-                                   <> linebreak
-                           ) 
-                           partColumn
+renderExtendedExpr compat (EEWinFun wfun partExprs order mFrameSpec) =
+    renderWindowFunction compat wfun
+    <+> kw "OVER"
+    <+> parens (partitionByDoc <> orderByDoc <> frameSpecDoc) 
 
-renderExtendedExpr compat (EEDenseRank order)         =
-    renderRank compat "DENSE_RANK() OVER" order
-renderExtendedExpr compat (EERank order)              =
-    renderRank compat "RANK() OVER" order
+  where
+    partitionByDoc = case partExprs of
+                         [] -> empty
+                         _  -> kw "PARTITION BY"
+                               </> enlist (map (renderAggrExpr compat) partExprs)
+                               <> linebreak
+
+    orderByDoc = case order of
+                     [] -> empty
+                     _  -> renderWindowOrderByList compat order <> linebreak
+               
+    frameSpecDoc = maybe empty (\fs -> renderFrameSpec fs) mFrameSpec
 
 renderExtendedExpr compat (EEAggrExpr ae)             =
     renderAggrExpr compat ae
@@ -307,12 +322,6 @@ renderExtendedExprBase = renderValueExprTemplate renderExtendedExpr
 renderColumnExprBase :: CompatMode -> ColumnExprBase -> Doc
 renderColumnExprBase = renderValueExprTemplate renderColumnExpr
 
-
--- | Render the postfix part of a rank operator.
-renderRank :: CompatMode -> String -> [WindowOrderExpr] -> Doc
-renderRank compat prefix order =
-    kw prefix <+> parens (renderWindowOrderByList compat order)
-
 renderAggregateFunction :: CompatMode -> AggregateFunction -> Doc
 renderAggregateFunction _          AFAvg   = kw "AVG"
 renderAggregateFunction _          AFMax   = kw "MAX"
@@ -325,6 +334,30 @@ renderAggregateFunction MonetDB    AFAll   = kw "MIN"
 renderAggregateFunction PostgreSQL AFAny   = kw "BOOL_OR"
 renderAggregateFunction SQL99      AFAny   = kw "SOME"
 renderAggregateFunction MonetDB    AFAny   = kw "MAX"
+
+renderFunCall :: String -> Doc -> Doc
+renderFunCall funName funArg = kw funName <> parens funArg
+
+renderWindowFunction :: CompatMode -> WindowFunction -> Doc
+renderWindowFunction _          WFRowNumber      = renderFunCall "ROW_NUMBER" empty
+renderWindowFunction _          WFDenseRank      = renderFunCall "DENSE_RANK" empty
+renderWindowFunction _          WFRank           = renderFunCall "RANK" empty
+renderWindowFunction MonetDB    _                = error "MonetDB does not support window aggregates"
+renderWindowFunction c          (WFAvg a)        = renderFunCall "AVG" (renderColumnExpr c a)
+renderWindowFunction c          (WFMax a)        = renderFunCall "MAX" (renderColumnExpr c a)
+renderWindowFunction c          (WFMin a)        = renderFunCall "MIN" (renderColumnExpr c a)
+renderWindowFunction c          (WFSum a)        = renderFunCall "SUM" (renderColumnExpr c a)
+renderWindowFunction c          (WFFirstValue a) = renderFunCall "first_value" (renderColumnExpr c a)
+renderWindowFunction c          (WFLastValue a)  = renderFunCall "last_value" (renderColumnExpr c a)
+renderWindowFunction _          WFCount          = renderFunCall "COUNT" (text "*")
+renderWindowFunction PostgreSQL (WFAll a)        = renderFunCall "bool_and" 
+                                                                 (renderColumnExpr PostgreSQL a)
+renderWindowFunction SQL99      (WFAll a)        = renderFunCall "EVERY" 
+                                                                 (renderColumnExpr SQL99 a)
+renderWindowFunction PostgreSQL (WFAny a)        = renderFunCall "bool_or" 
+                                                                 (renderColumnExpr PostgreSQL a)
+renderWindowFunction SQL99      (WFAny a)        = renderFunCall "SOME" 
+                                                                 (renderColumnExpr SQL99 a)
 
 renderColumnExpr :: CompatMode -> ColumnExpr -> Doc
 renderColumnExpr compat (CEBase e) = renderColumnExprBase compat e
@@ -359,6 +392,7 @@ renderUnaryFunction UFExp  = kw "exp"
 renderUnaryFunction UFASin = kw "asin"
 renderUnaryFunction UFACos = kw "acos"
 renderUnaryFunction UFATan = kw "atan"
+
 
 renderDataType :: DataType -> Doc
 renderDataType DTInteger         = kw "INTEGER"

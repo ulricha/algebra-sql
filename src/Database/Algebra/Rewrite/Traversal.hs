@@ -4,7 +4,8 @@ module Database.Algebra.Rewrite.Traversal
        , applyToAll
        , topologically
        , iteratively
-       , sequenceRewrites ) where
+       , sequenceRewrites
+       ) where
 
 import           Control.Applicative
 import           Control.Monad
@@ -168,7 +169,4 @@ iteratively rewrite = aux False
 -- | Sequence a list of rewrites and propagate information about
 -- wether one of them applied.
 sequenceRewrites :: [Rewrite o e Bool] -> Rewrite o e Bool
-sequenceRewrites rewrites = do
-  changed <- sequence rewrites
-  return $ or changed
-
+sequenceRewrites rewrites = or <$> sequence rewrites

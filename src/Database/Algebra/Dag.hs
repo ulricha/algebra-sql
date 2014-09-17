@@ -6,6 +6,8 @@ module Database.Algebra.Dag
        , nodeMap
        , rootNodes
        , mkDag
+       , emptyDag
+       , addRootNodes
          -- * Query functions for topological and operator information
        , parents
          -- FIXME is topological sorting still necessary?
@@ -38,7 +40,7 @@ data AlgebraDag a = AlgebraDag
   , nextNodeID  :: AlgNode         -- ^ the next node id to be used when inserting a node
   , graph       :: UGr             -- ^ Auxilliary representation for topological information
   , rootNodes   :: [AlgNode]       -- ^ Return the (possibly modified) list of root nodes from a DAG
-  , refCountMap :: NodeMap Int     -- ^ A map storing the number of parents for each nod e.
+  , refCountMap :: NodeMap Int     -- ^ A map storing the number of parents for each node.
   }
 
 class (Ord a, Show a) => Operator a where
@@ -51,14 +53,16 @@ class (Ord a, Show a) => Operator a where
 -- nodes are not pruned if they don't have any incoming edges.
 initRefCount :: Operator o => [AlgNode] -> NodeMap o -> NodeMap Int
 initRefCount rs nm = L.foldl' incParents (IM.foldr' insertEdge IM.empty nm) (L.nub rs)
-  where insertEdge op rm = L.foldl' incParents rm (L.nub $ opChildren op)
-        incParents rm n  = IM.insert n ((IM.findWithDefault 0 n rm) + 1) rm
+  where 
+    insertEdge op rm = L.foldl' incParents rm (L.nub $ opChildren op)
+    incParents rm n  = IM.insert n ((IM.findWithDefault 0 n rm) + 1) rm
 
 initOpMap :: Ord o => NodeMap o -> M.Map o AlgNode
 initOpMap nm = IM.foldrWithKey (\n o om -> M.insert o n om) M.empty nm
 
--- | Create a DAG from a map of NodeIDs and algebra operators and a
--- list of root nodes.
+-- | Create a DAG from a node map of algebra operators and a list of
+-- root nodes. Nodes which are not reachable from the root nodes
+-- provided will be pruned!
 mkDag :: Operator a => NodeMap a -> [AlgNode] -> AlgebraDag a
 mkDag m rs = AlgebraDag { nodeMap = mNormalized
                         , graph = g
@@ -67,10 +71,45 @@ mkDag m rs = AlgebraDag { nodeMap = mNormalized
                         , opMap = initOpMap mNormalized
                         , nextNodeID = 1 + (fst $ IM.findMax mNormalized)
                         }
-    where mNormalized = normalizeMap rs m
-          g =  uncurry G.mkUGraph $ IM.foldrWithKey aux ([], []) mNormalized
-          aux n op (allNodes, allEdges) = (n : allNodes, es ++ allEdges)
-              where es = map (\v -> (n, v)) $ opChildren op
+  where 
+    mNormalized = normalizeMap rs m
+    g =  uncurry G.mkUGraph $ IM.foldrWithKey aux ([], []) mNormalized
+    aux n op (allNodes, allEdges) = (n : allNodes, es ++ allEdges)
+      where 
+        es = map (\v -> (n, v)) $ opChildren op
+
+-- | Construct an empty DAG with no root nodes. Beware: before any
+-- collections are performed, root nodes must be added. Otherwise, all
+-- nodes will be considered unreachable.
+emptyDag :: AlgebraDag a
+emptyDag = 
+    AlgebraDag { nodeMap     = IM.empty
+               , opMap       = M.empty
+               , nextNodeID  = 0
+               , graph       = G.mkUGraph [] []
+               , rootNodes   = []
+               , refCountMap = IM.empty
+               }
+
+-- | Add a list of root nodes to a DAG, all of which must be present
+-- in the DAG. The node map is normalized by removing all nodes which
+-- are not reachable from the root nodes.
+-- FIXME re-use graph, opmap etc, only remove pruned nodes.
+addRootNodes :: Operator a => AlgebraDag a -> [AlgNode] -> AlgebraDag a
+addRootNodes d rs = assert (all (\n -> IM.member n $ nodeMap d) rs) $
+    d { rootNodes = rs
+      , nodeMap     = mNormalized
+      , refCountMap = initRefCount rs mNormalized
+      , opMap       = initOpMap mNormalized
+      , graph       =  uncurry G.mkUGraph $ IM.foldrWithKey aux ([], []) mNormalized
+      }
+
+  where
+    mNormalized     = normalizeMap rs (nodeMap d)
+
+    aux n op (allNodes, allEdges) = (n : allNodes, es ++ allEdges)
+      where 
+        es = map (\v -> (n, v)) $ opChildren op
 
 reachable :: Operator a => NodeMap a -> [AlgNode] -> S.Set AlgNode
 reachable m rs = L.foldl' traverse S.empty rs
@@ -172,25 +211,13 @@ insert op d =
   -- check if an equivalent operator is already present
   case M.lookup op $ opMap d of
     Just n  -> (n, d)
-    Nothing ->
-      -- no operator can be reused, insert a new one
-      let cs     = L.nub $ opChildren op
-          n      = nextNodeID d
-          g'     = G.insEdges (map (\c -> (n, c, ())) cs) $ G.insNode (n, ()) $ graph d
-          m'     = IM.insert n op $ nodeMap d
-          rc'    = IM.insert n 0 $ refCountMap d
-          opMap' = M.insert op n $ opMap d
-          d'     = d { nodeMap = m'
-                     , graph = g'
-                     , refCountMap = rc'
-                     , opMap = opMap'
-                     , nextNodeID = n + 1
-                     }
-      in (n, L.foldl' addRefTo d' cs)
+    -- no operator can be reused, insert a new one
+    Nothing -> insertNoShare op d
 
+-- | Insert an operator without checking if an equivalent operator is
+-- already present.
 insertNoShare :: Operator a => a -> AlgebraDag a -> (AlgNode, AlgebraDag a)
 insertNoShare op d =
-  -- check if an equivalent operator is already present
   let cs     = L.nub $ opChildren op
       n      = nextNodeID d
       g'     = G.insEdges (map (\c -> (n, c, ())) cs) $ G.insNode (n, ()) $ graph d

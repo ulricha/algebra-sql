@@ -4,7 +4,6 @@ module Database.Algebra.SQL.Materialization.CTE
     , legacyMaterialize
     ) where
 
-import Control.Monad (filterM)
 import Control.Monad.State
 import Control.Monad.Reader
 import qualified Data.IntSet as IntSet

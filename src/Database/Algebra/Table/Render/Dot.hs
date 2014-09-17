@@ -17,7 +17,7 @@ tagsToDoc :: [Tag] -> Doc
 tagsToDoc ts = vcat $ map text ts
 
 labelToDoc :: AlgNode -> String -> Doc -> [Tag] -> Doc
-labelToDoc n s as ts = (nodeToDoc n) <> text "\\n" <> ((text s) <> (parens as)) <+> (tagsToDoc $ nub ts)
+labelToDoc n s as ts = (nodeToDoc n) <> text "\\n" <> ((text s) <> (parens as)) $$ (tagsToDoc $ nub ts)
 
 lookupTags :: AlgNode -> NodeMap [Tag] -> [Tag]
 lookupTags n m = Map.findWithDefault [] n m
@@ -33,16 +33,18 @@ renderAggr :: (AggrType, ResAttr) -> Doc
 renderAggr (aggr, res) = text $ res ++ ":" ++ show aggr
 
 renderSortInf :: SortSpec -> Doc
-renderSortInf (attr, Desc) = text $ attr ++ "/desc"
-renderSortInf (attr, Asc)  = text attr
+renderSortInf (ColE c, Desc) = text c <> text "/desc"
+renderSortInf (expr, Desc)   = (parens $ text (show expr)) <> text "/desc"
+renderSortInf (ColE c, Asc)  = text c
+renderSortInf (expr, Asc)    = parens $ text (show expr)
 
 renderJoinArgs :: (Expr, Expr, JoinRel) -> Doc
 renderJoinArgs (left, right, joinR) =
     (text $ show left) <+> (text $ show joinR) <+> (text $ show right)
 
-renderOptCol :: Maybe Attr -> Doc
-renderOptCol Nothing  = empty
-renderOptCol (Just c) = text "/" <> text c
+renderPartExprs :: [PartExpr] -> Doc
+renderPartExprs []       = empty
+renderPartExprs es@(_:_) = text "/" <> commas (text . show) es
 
 renderKey :: Key -> Doc
 renderKey (Key k) = brackets $ commas text k
@@ -91,7 +93,7 @@ opDotLabel tags i (RowNumL (res,sortI,attr))  = labelToDoc i
     "ROWNUM" ((text $ res ++ ":<")
               <> (commas renderSortInf sortI)
               <> text ">"
-              <> renderOptCol attr)
+              <> renderPartExprs attr)
     (lookupTags i tags)
 opDotLabel tags i (RowRankL (res,sortInf))    = labelToDoc i
     "ROWRANK" ((text $ res ++ ":<")
@@ -117,6 +119,51 @@ opDotLabel tags i (SerializeL (mDescr, mPos, cols)) = labelToDoc i
                  <+> (text $ show mPos)
                  <+> (brackets $ commas (text . show) cols))
     (lookupTags i tags)
+opDotLabel tags i (WinFunL (winFuns, partSpec, sortSpec, mFrameBounds)) = labelToDoc i
+     "WIN" (vcat [ renderWinFuns winFuns
+                 , renderPartSpec partSpec
+                 , renderSortSpec sortSpec
+                 , maybe empty renderFrameBounds mFrameBounds
+                 ])
+     (lookupTags i tags)
+
+renderWinFun :: WinFun -> Doc
+renderWinFun (WinMax e)        = text "MAX" <> (parens $ text $ show e)
+renderWinFun (WinMin e)        = text "MIN" <> (parens $ text $ show e)
+renderWinFun (WinSum e)        = text "SUM" <> (parens $ text $ show e)
+renderWinFun (WinAvg e)        = text "AVG" <> (parens $ text $ show e)
+renderWinFun (WinAll e)        = text "ALL" <> (parens $ text $ show e)
+renderWinFun (WinAny e)        = text "ANY" <> (parens $ text $ show e)
+renderWinFun (WinFirstValue e) = text "first_value" <> (parens $ text $ show e)
+renderWinFun (WinLastValue e)  = text "last_value" <> (parens $ text $ show e)
+renderWinFun WinCount          = text "COUNT()"
+
+renderWinFuns :: (ResAttr, WinFun) -> Doc
+renderWinFuns (c, f) = renderWinFun f <+> text "AS" <+> text c
+
+renderPartSpec :: [PartExpr] -> Doc
+renderPartSpec []       = empty
+renderPartSpec as@(_:_) = text "PARTITION BY" <+> commas (text . show) as
+
+renderSortSpec :: [SortSpec] -> Doc
+renderSortSpec [] = empty
+renderSortSpec ss@(_:_) = text "ORDER BY" <+> commas renderSortInf ss
+
+renderFrameBounds :: FrameBounds -> Doc
+renderFrameBounds (HalfOpenFrame fs)  = renderFrameStart fs
+renderFrameBounds (ClosedFrame fs fe) = renderFrameStart fs 
+                                        <+> text "AND" 
+                                        <+> renderFrameEnd fe
+
+renderFrameStart :: FrameStart -> Doc
+renderFrameStart FSUnboundPrec = text "UNBOUNDED PRECEDING"
+renderFrameStart (FSValPrec i) = int i <+> text "PRECEDING"
+renderFrameStart FSCurrRow     = text "CURRENT ROW"
+
+renderFrameEnd :: FrameEnd -> Doc
+renderFrameEnd FEUnboundFol = text "UNBOUNDED FOLLOWING"
+renderFrameEnd (FEValFol i) = int i <+> text "FOLLOWING"
+renderFrameEnd FECurrRow    = text "CURRENT ROW"
 
 renderSerCol :: Show c => Maybe c -> Doc
 renderSerCol Nothing  = empty
@@ -177,6 +224,7 @@ opDotColor (AggrL _)         = DCGold
 opDotColor (RankL _)         = DCTomato
 opDotColor (RowNumL _)       = DCRed
 opDotColor (RowRankL _)      = DCRed
+opDotColor (WinFunL _)       = DCSalmon
 
 -- | Binops
 opDotColor (CrossL     _)    = DCOrangeDCRed
@@ -257,10 +305,11 @@ renderDot ns es = text "digraph" <> (braces $ preamble $$ nodeSection $$ edgeSec
 data TALabel = LitTableL [Tuple] SchemaInfos
              | TableRefL (TableName, [TypedAttr], [Key])
              | AggrL ([(AggrType, ResAttr)], [(PartAttr, Expr)])
+             | WinFunL ((ResAttr, WinFun), [PartExpr], [SortSpec], Maybe FrameBounds)
              | DistinctL ()
              | ProjectL [Proj]
              | RankL (ResAttr, [SortSpec])
-             | RowNumL (Attr, [SortSpec], Maybe PartAttr)
+             | RowNumL (Attr, [SortSpec], [PartExpr])
              | RowRankL (ResAttr, [SortSpec])
              | SelL Expr
              | CrossL ()
@@ -288,6 +337,7 @@ labelOfBinOp (SemiJoin info)    = SemiJoinL info
 labelOfBinOp (AntiJoin info)    = AntiJoinL info
 
 labelOfUnOp :: UnOp -> TALabel
+labelOfUnOp (WinFun info)    = WinFunL info
 labelOfUnOp (Aggr info)      = AggrL info
 labelOfUnOp (Distinct info)  = DistinctL  info
 labelOfUnOp (Project info)   = ProjectL info

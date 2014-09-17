@@ -41,7 +41,7 @@ instance Show AggrType where
     show (Sum c)  = printf "sum(%s)" (show c)
     show Count    = "count"
     show (All c)  = printf "all(%s)" (show c)
-    show (Any c)  = printf "all(%s)" (show c)
+    show (Any c)  = printf "any(%s)" (show c)
 
 -- | The show instance results in values that are accepted in the xml plan.
 instance Show SortDir where
@@ -118,7 +118,7 @@ type TypedAttr = (Attr, ATy)
 newtype Key = Key [Attr] deriving (Eq, Ord, Show, Generic)
 
 -- | Sorting information
-type SortSpec              = (Attr, SortDir)
+type SortSpec              = (Expr, SortDir)
 
 -- | Binary functions and operators in expressions
 data BinFun = Gt
@@ -194,6 +194,10 @@ data Expr = BinAppE BinFun Expr Expr
           | IfE Expr Expr Expr
           deriving (Eq, Ord, Generic)
 
+-- | Expressions which are used to specify partitioning in window
+-- functions.
+type PartExpr = Expr
+
 instance Show Expr where
   show (BinAppE f e1 e2) = "(" ++ show e1 ++ ") " ++ show f ++ " (" ++ show e2 ++ ")"
   show (UnAppE f e)      = show f ++ "(" ++ show e ++ ")"
@@ -228,6 +232,34 @@ instance Show JoinRel where
   show LeJ = "le"
   show NeJ = "ne"
 
+-- | Window frame start specification
+data FrameStart = FSUnboundPrec  -- ^ UNBOUNDED PRECEDING
+                | FSValPrec Int  -- ^ <value> PRECEDING
+                | FSCurrRow      -- ^ CURRENT ROW
+                deriving (Eq, Ord, Show, Generic)
+
+-- | Window frame end specification
+data FrameEnd = FECurrRow    -- ^ CURRENT ROW
+              | FEValFol Int -- ^ <value> FOLLOWING
+              | FEUnboundFol -- ^ UNBOUNDED FOLLOWING
+              deriving (Eq, Ord, Show, Generic)
+
+data FrameBounds = HalfOpenFrame FrameStart
+                 | ClosedFrame FrameStart FrameEnd 
+                 deriving (Eq, Ord, Show, Generic)
+
+data WinFun = WinMax Expr
+            | WinMin Expr
+            | WinSum Expr
+            | WinAvg Expr
+            | WinAll Expr
+            | WinAny Expr
+            | WinFirstValue Expr
+            | WinLastValue Expr
+            | WinCount
+            deriving (Eq, Ord, Show, Generic)
+
+
 data NullOp = LitTable [Tuple] SchemaInfos
             | TableRef (TableName, [TypedAttr], [Key])
             deriving (Ord, Eq, Show, Generic)
@@ -257,8 +289,9 @@ newtype PayloadCol = PayloadCol Attr deriving (Ord, Eq, Generic)
 instance Show PayloadCol where
     show (PayloadCol c) = c
 
-data UnOp = RowNum (Attr, [SortSpec], Maybe PartAttr)
+data UnOp = RowNum (Attr, [SortSpec], [PartExpr])
           | RowRank (ResAttr, [SortSpec])
+          | WinFun ((ResAttr, WinFun), [PartExpr], [SortSpec], Maybe FrameBounds)
           | Rank (ResAttr, [SortSpec])
           | Project [(Attr, Expr)]
           | Select Expr

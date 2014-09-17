@@ -24,6 +24,7 @@ import           Control.Monad.Trans.RWS.Strict
 import qualified Data.DList                       as DL (DList, singleton)
 import qualified Data.IntMap                      as IntMap
 import           Data.Maybe
+import GHC.Exts
 
 import qualified Database.Algebra.Dag             as D
 import qualified Database.Algebra.Dag.Common      as C
@@ -277,23 +278,23 @@ transformNullaryOp (A.TableRef (name, typedSchema, _))   = do
 
 -- | Abstraction for rank operators.
 transformUnOpRank :: -- ExtendedExpr constructor.
-                     ([Q.WindowOrderExpr] -> Q.ExtendedExpr)
+                     Q.WindowFunction
                   -> (String, [A.SortSpec])
                   -> C.AlgNode
                   -> Transform TileTree
-transformUnOpRank rankConstructor (name, sortList) =
+transformUnOpRank rankFun (name, sortList) =
     attachColFunUnOp colFun $ projectF <> windowFunctionF
   where
-    colFun sClause = Q.SCAlias
-                     ( rankConstructor $ asWindowOrderExprList
-                                         sClause
-                                         sortList
-                     )
-                     name
+    colFun sClause = Q.SCAlias rankExpr name
+
+      where
+        rankExpr = Q.EEWinFun rankFun
+                              []
+                              (asWindowOrderExprList sClause sortList)
+                              Nothing
 
 transformUnOp :: A.UnOp -> C.AlgNode -> Transform TileTree
 transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
-
     (ctor, select, children) <- transformTerminated' c $ projectF <> sortF
 
     let inline                      = inlineEE $ Q.selectClause select
@@ -303,7 +304,7 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
         payloadProjs                =
             zipWith (\(A.PayloadCol col) i -> project col $ itemi i)
                     payloadCols
-                    [1..]
+                    ([1..] :: [Integer])
 
         (posOrderList, posProjList) = case pos of
             A.NoPos       -> ([], [])
@@ -339,18 +340,36 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
 
 
 
-transformUnOp (A.RowNum (name, sortList, optPart)) c =
+transformUnOp (A.RowNum (name, sortList, partExprs)) c =
     attachColFunUnOp colFun
                      (projectF <> windowFunctionF)
                      c
   where
     colFun sClause = Q.SCAlias rowNumExpr name
         where
-          rowNumExpr = Q.EERowNum (liftM (inlineAE sClause) optPart)
-                                  $ asWindowOrderExprList sClause sortList
+          -- ROW_NUMBER() OVER (PARTITION BY p ORDER BY s)
+          rowNumExpr = Q.EEWinFun Q.WFRowNumber
+                                  (map (translateExprAE $ Just sClause) partExprs)
+                                  (asWindowOrderExprList sClause sortList)
+                                  Nothing
 
-transformUnOp (A.RowRank inf) c = transformUnOpRank Q.EEDenseRank inf c
-transformUnOp (A.Rank inf) c = transformUnOpRank Q.EERank inf c
+transformUnOp (A.WinFun ((name, fun), partExprs, sortExprs, mFrameSpec)) c =
+    attachColFunUnOp colFun
+                     (projectF <> windowFunctionF)
+                     c
+
+  where
+    colFun sClause = Q.SCAlias winFunExpr name
+      where
+        winFunExpr = Q.EEWinFun (translateWindowFunction translateE fun)
+                                (map (translateExprAE $ Just sClause) partExprs)
+                                (asWindowOrderExprList sClause sortExprs)
+                                (fmap translateFrameSpec mFrameSpec)
+
+        translateE = translateExprCE $ Just sClause
+
+transformUnOp (A.RowRank inf) c = transformUnOpRank Q.WFDenseRank inf c
+transformUnOp (A.Rank inf) c = transformUnOpRank Q.WFRank inf c
 transformUnOp (A.Project projList) c = do
     
     (ctor, select, children) <- transformTerminated' c projectF
@@ -452,11 +471,16 @@ transformBinSetOp setOp c0 c1 = do
     (_, select0, children0) <- transformTerminated c0 noneF
     (_, select1, children1) <- transformTerminated c1 noneF
 
+    -- Impose a canonical order on entries in the SELECT clauses to
+    -- ensure that schemata of the set operator inputs match.
+    let select0' = select0 { Q.selectClause = sortWith Q.sName $ Q.selectClause select0 }
+        select1' = select1 { Q.selectClause = sortWith Q.sName $ Q.selectClause select1 }
+
     tableAlias <- freshAlias
 
     -- Take the schema of the first one, but could also be from the second one,
     -- since we assume they are equal.
-    let schema = getSchemaSelectStmt select0
+    let schema = getSchemaSelectStmt select0'
 
     return $ TileNode (projectF <> tableF)
                       emptySelectStmt
@@ -465,8 +489,8 @@ transformBinSetOp setOp c0 c1 = do
                       , Q.fromClause =
                             [ Q.FPAlias ( Q.FESubQuery
                                           $ Q.VQBinarySetOperation
-                                            (Q.VQSelect select0)
-                                            (Q.VQSelect select1)
+                                            (Q.VQSelect select0')
+                                            (Q.VQSelect select1')
                                             setOp
                                         )
                                         tableAlias
@@ -687,7 +711,7 @@ asWindowOrderExprList :: [Q.SelectColumn]
                       -> [Q.WindowOrderExpr]
 asWindowOrderExprList sClause si =
     filter (affectsSortOrderAE . Q.woExpr)
-           $ translateSortInf si (inlineAE sClause)
+           $ translateSortInf si (translateExprAE $ Just sClause)
 
 -- | Search the select clause for a specific column definition and return it as
 -- 'Q.ColumnExpr'.
@@ -803,6 +827,33 @@ translateJoinRel rel = case rel of
     A.LeJ -> Q.BFLowerEqual
     A.NeJ -> Q.BFNotEqual
 
+translateFrameSpec :: A.FrameBounds -> Q.FrameSpec
+translateFrameSpec (A.HalfOpenFrame fs)  = Q.FHalfOpen $ translateFrameStart fs
+translateFrameSpec (A.ClosedFrame fs fe) = Q.FClosed (translateFrameStart fs)
+                                                     (translateFrameEnd fe)
+
+translateFrameStart :: A.FrameStart -> Q.FrameStart
+translateFrameStart A.FSUnboundPrec = Q.FSUnboundPrec
+translateFrameStart (A.FSValPrec i) = Q.FSValPrec i
+translateFrameStart A.FSCurrRow     = Q.FSCurrRow
+
+translateFrameEnd :: A.FrameEnd -> Q.FrameEnd
+translateFrameEnd A.FEUnboundFol = Q.FEUnboundFol
+translateFrameEnd (A.FEValFol i) = Q.FEValFol i
+translateFrameEnd A.FECurrRow    = Q.FECurrRow
+
+translateWindowFunction :: (A.Expr -> Q.ColumnExpr) -> A.WinFun -> Q.WindowFunction
+translateWindowFunction translateExpr wfun = case wfun of
+    A.WinMax e        -> Q.WFMax $ translateExpr e
+    A.WinMin e        -> Q.WFMin $ translateExpr e
+    A.WinSum e        -> Q.WFSum $ translateExpr e
+    A.WinAvg e        -> Q.WFAvg $ translateExpr e
+    A.WinAll e        -> Q.WFAll $ translateExpr e
+    A.WinAny e        -> Q.WFAny $ translateExpr e
+    A.WinFirstValue e -> Q.WFFirstValue $ translateExpr e
+    A.WinLastValue e  -> Q.WFLastValue $ translateExpr e
+    A.WinCount        -> Q.WFCount
+
 translateAggrType :: A.AggrType
                   -> (Q.AggregateFunction, Maybe A.Expr)
 translateAggrType aggr = case aggr of
@@ -859,6 +910,9 @@ translateExprCE = translateExprValueExprTemplate translateExprCE Q.CEBase inline
 translateExprEE :: Maybe [Q.SelectColumn] -> A.Expr -> Q.ExtendedExpr
 translateExprEE = translateExprValueExprTemplate translateExprEE Q.EEBase inlineEE
 
+translateExprAE :: Maybe [Q.SelectColumn] -> A.Expr -> Q.AggrExpr
+translateExprAE = translateExprValueExprTemplate translateExprAE Q.AEBase inlineAE
+
 translateBinFun :: A.BinFun -> Q.BinaryFunction
 translateBinFun f = case f of
     A.Gt        -> Q.BFGreaterThan
@@ -882,11 +936,11 @@ translateBinFun f = case f of
 -- | Translate sort information into '[Q.WindowOrderExpr]', using the column
 -- function, which takes a 'String'.
 translateSortInf :: [A.SortSpec]
-                 -> (String -> Q.AggrExpr)
+                 -> (A.Expr -> Q.AggrExpr)
                  -> [Q.WindowOrderExpr]
 translateSortInf sortInfos colFun = map toWOE sortInfos
   where
-    toWOE (n, d) = Q.WOE (colFun n) $ translateSortDir d
+    toWOE (n, d) = Q.WOE (colFun n) (translateSortDir d)
 
 
 -- | Translate a single join condition into it's 'Q.ColumnExpr' equivalent.
