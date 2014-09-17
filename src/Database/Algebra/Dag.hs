@@ -85,7 +85,7 @@ emptyDag :: AlgebraDag a
 emptyDag = 
     AlgebraDag { nodeMap     = IM.empty
                , opMap       = M.empty
-               , nextNodeID  = 0
+               , nextNodeID  = 1
                , graph       = G.mkUGraph [] []
                , rootNodes   = []
                , refCountMap = IM.empty
