@@ -5,6 +5,7 @@ module Database.Algebra.Dag
        , Operator(..)
        , nodeMap
        , rootNodes
+       , refCountMap
        , mkDag
        , emptyDag
        , addRootNodes
@@ -232,32 +233,36 @@ insertNoShare op d =
                  }
   in (n, L.foldl' addRefTo d' cs)
 
--- Update reference counters if nodes are not simply inserted or deleted but
--- edges are replaced by other edges.  We must not delete nodes before the new
--- edges have been taken into account. Only after that can we certainly say that
--- a node is no longer referenced (edges might be replaced by themselves).
-replaceEdgesRef :: Operator a => [AlgNode] -> [AlgNode] -> AlgebraDag a -> AlgebraDag a
-replaceEdgesRef oldChildren newChildren d =
-  let -- First, decrement refcounters for the old children
-      d'  = L.foldl' decrRefCount d (L.nub oldChildren)
-      -- Then, increment refcounters for the new children
-  in L.foldl' addRefTo d' (L.nub newChildren)
-
 -- | Return the list of parents of a node.
 parents :: AlgNode -> AlgebraDag a -> [AlgNode]
 parents n d = G.pre (graph d) n
 
 -- | 'replaceChild n old new' replaces all links from node n to node old with links to node new.
 replaceChild :: Operator a => AlgNode -> AlgNode -> AlgNode -> AlgebraDag a -> AlgebraDag a
-replaceChild n old new d =
-  let op = operator n d
+replaceChild parent old new d =
+  let op = operator parent d
   in if old `elem` opChildren op && old /= new
      then let op' = replaceOpChild op old new
-              m'  = IM.insert n op' $ nodeMap d
-              om' = M.insert op' n $ M.delete op $ opMap d
-              g'  = G.insEdge (n, new, ()) $ G.delEdge (n, old) $ graph d
+              m'  = IM.insert parent op' $ nodeMap d
+              om' = M.insert op' parent $ M.delete op $ opMap d
+              g'  = G.insEdge (parent, new, ()) $ G.delEdge (parent, old) $ graph d
               d'  = d { nodeMap = m', graph = g', opMap = om' }
-          in replaceEdgesRef [old] [new] d'
+
+              -- Update reference counters if nodes are not simply
+              -- inserted or deleted but edges are replaced by other
+              -- edges.  We must not delete nodes before the new edges
+              -- have been taken into account. Only after that can we
+              -- certainly say that a node is no longer referenced
+              -- (edges might be replaced by themselves).
+
+              -- First, decrement refcounters for the old child
+              d'' = decrRefCount d' old
+          in -- Then, increment refcounters for the new child if the link was
+             -- not already present (we do not count multi-edges separately)
+             if new `elem` G.suc (graph d) parent
+             then d''
+             else addRefTo d'' new
+          
      else d
 
 -- | Returns the operator for a node.
