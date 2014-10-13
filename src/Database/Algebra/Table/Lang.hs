@@ -8,6 +8,7 @@
 -- relations.
 module Database.Algebra.Table.Lang where
 
+import           Text.Printf
 import           Data.List
 import           Numeric                     (showFFloat)
 import           Text.Printf
@@ -171,20 +172,22 @@ data UnFun = Not
            | Sqrt
            | Log
            | Exp
+           | SubString Integer Integer
            deriving (Eq, Ord, Generic)
 
 instance Show UnFun where
-  show Not       = "not"
-  show (Cast ty) = "cast->" ++ show ty
-  show Sin       = "sin"
-  show Cos       = "cos"
-  show Tan       = "tan"
-  show Sqrt      = "sqrt"
-  show Exp       = "exp"
-  show Log       = "log"
-  show ASin      = "asin"
-  show ACos      = "acos"
-  show ATan      = "atan"
+  show Not             = "not"
+  show (Cast ty)       = "cast->" ++ show ty
+  show Sin             = "sin"
+  show Cos             = "cos"
+  show Tan             = "tan"
+  show Sqrt            = "sqrt"
+  show Exp             = "exp"
+  show Log             = "log"
+  show ASin            = "asin"
+  show ACos            = "acos"
+  show ATan            = "atan"
+  show (SubString f t) = printf "subString_%d,%d" f t
 
 -- | Projection expressions
 data Expr = BinAppE BinFun Expr Expr

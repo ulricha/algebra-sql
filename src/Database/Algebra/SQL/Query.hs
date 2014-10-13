@@ -299,6 +299,7 @@ data UnaryFunction = UFSin
                    | UFSqrt
                    | UFExp
                    | UFLog
+                   | UFSubString Integer Integer
                    deriving (Show)
 
 -- | Types of valid SQL 99 datatypes (most likely a small subset) as stated in

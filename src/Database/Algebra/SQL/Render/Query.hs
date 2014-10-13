@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 -- This file determines the semantics of the 'Query' data structure and all of
 -- its sub structures.
 module Database.Algebra.SQL.Render.Query
@@ -36,6 +38,7 @@ import Text.PrettyPrint.ANSI.Leijen ( (<$>)
                                     , vcat
                                     )
 
+import Database.Algebra.Impossible
 import Database.Algebra.SQL.Query
 import Database.Algebra.SQL.Compatibility
 
@@ -296,6 +299,7 @@ renderValueExprTemplate renderRec compat ve = case ve of
                             <+> renderBinaryFunction f
                             <+> renderRec compat b
 
+    VEUnApp (UFSubString f t) a -> renderSubString renderRec compat f t a
     VEUnApp f a          ->
         parens $ renderUnaryFunction f <> parens (renderRec compat a)
 
@@ -312,6 +316,26 @@ renderValueExprTemplate renderRec compat ve = case ve of
                          <+> text "ELSE"
                          <+> renderRec compat e
                          <+> text "END"
+
+renderSubString :: (CompatMode -> a -> Doc)
+                -> CompatMode 
+                -> Integer 
+                -> Integer 
+                -> a
+                -> Doc
+renderSubString renderRec compat from to argExpr =
+    case compat of
+        SQL99      -> kw "substring" <> parens (renderRec compat argExpr
+                                                <+> text "from" <+> integer from
+                                                <+> text "for" <+> integer to)
+        PostgreSQL -> kw "substr" <> parens (hsep $ punctuate comma [ renderRec compat argExpr
+                                                                    , integer from
+                                                                    , integer to
+                                                                    ])
+        MonetDB    -> kw "substring" <> parens (hsep $ punctuate comma [ renderRec compat argExpr
+                                                                       , integer from
+                                                                       , integer to
+                                                                       ])
 
 -- | Render a 'ExtendedExprBase' with the generic renderer.
 renderExtendedExprBase :: CompatMode -> ExtendedExprBase -> Doc
@@ -383,16 +407,17 @@ renderBinaryFunction BFAnd          = kw "AND"
 renderBinaryFunction BFOr           = kw "OR"
 
 renderUnaryFunction :: UnaryFunction -> Doc
-renderUnaryFunction UFSin  = kw "sin"
-renderUnaryFunction UFCos  = kw "cos"
-renderUnaryFunction UFTan  = kw "tan"
-renderUnaryFunction UFLog  = kw "log"
-renderUnaryFunction UFSqrt = kw "sqrt"
-renderUnaryFunction UFExp  = kw "exp"
-renderUnaryFunction UFASin = kw "asin"
-renderUnaryFunction UFACos = kw "acos"
-renderUnaryFunction UFATan = kw "atan"
-
+renderUnaryFunction UFSin         = kw "sin"
+renderUnaryFunction UFCos         = kw "cos"
+renderUnaryFunction UFTan         = kw "tan"
+renderUnaryFunction UFLog         = kw "log"
+renderUnaryFunction UFSqrt        = kw "sqrt"
+renderUnaryFunction UFExp         = kw "exp"
+renderUnaryFunction UFASin        = kw "asin"
+renderUnaryFunction UFACos        = kw "acos"
+renderUnaryFunction UFATan        = kw "atan"
+-- The substring combinator is rendered speciall
+renderUnaryFunction UFSubString{} = $impossible
 
 renderDataType :: DataType -> Doc
 renderDataType DTInteger         = kw "INTEGER"
