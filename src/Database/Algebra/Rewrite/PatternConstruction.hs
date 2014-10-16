@@ -37,7 +37,7 @@ unOpName :: Name
 unOpName = mkName "UnOp"
 
 nullOpName :: Name
-nullOpName = mkName "NullOp"
+nullOpName = mkName "NullaryOp"
 
 failName :: Name
 failName = mkName "fail"
