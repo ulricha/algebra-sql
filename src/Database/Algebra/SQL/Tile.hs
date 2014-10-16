@@ -227,7 +227,7 @@ transformNode n = do
     else transformOp
 
 transformNullaryOp :: A.NullOp -> Transform TileTree
-transformNullaryOp (A.LitTable tuples typedSchema) = do
+transformNullaryOp (A.LitTable (tuples, typedSchema)) = do
     tableAlias <- freshAlias
 
     let -- Abstracts over the differences.

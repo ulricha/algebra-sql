@@ -348,8 +348,8 @@ labelOfUnOp (Select info)    = SelL info
 labelOfUnOp (Serialize info) = SerializeL info
 
 labelOfNullaryOp :: NullOp -> TALabel
-labelOfNullaryOp (LitTable  info1 info2) = LitTableL info1 info2
-labelOfNullaryOp (TableRef  info)      	 = TableRefL info
+labelOfNullaryOp (LitTable  (tups, schema)) = LitTableL tups schema
+labelOfNullaryOp (TableRef  info)      	    = TableRefL info
 
 -- | extract the operator descriptions and list of edges from a DAG
 

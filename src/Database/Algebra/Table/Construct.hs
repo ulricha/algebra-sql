@@ -67,11 +67,11 @@ dbTable n cs ks = insert $ NullaryOp $ TableRef (n, cs, ks)
 
 -- | Construct a table with one value
 litTable :: AVal -> String -> ATy -> Build TableAlgebra AlgNode
-litTable v s t = insert $ NullaryOp $ LitTable [[v]] [(s, t)]
+litTable v s t = insert $ NullaryOp $ LitTable ([[v]], [(s, t)])
 
 -- | Construct a literal table with multiple columns and rows
 litTable' :: [[AVal]] -> [(String, ATy)] -> Build TableAlgebra AlgNode
-litTable' v s = insert $ NullaryOp $ LitTable v s
+litTable' v s = insert $ NullaryOp $ LitTable (v, s)
 
 -- | Join two plans where the columns n1 of table 1 and columns n2 of table
 --  2 are equal.

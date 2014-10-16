@@ -11,7 +11,6 @@ module Database.Algebra.Table.Lang where
 import           Text.Printf
 import           Data.List
 import           Numeric                     (showFFloat)
-import           Text.Printf
 
 import           Database.Algebra.Aux
 import           Database.Algebra.Dag        (Operator, opChildren,
@@ -263,7 +262,7 @@ data WinFun = WinMax Expr
             deriving (Eq, Ord, Show, Generic)
 
 
-data NullOp = LitTable [Tuple] SchemaInfos
+data NullOp = LitTable ([Tuple], SchemaInfos)
             | TableRef (TableName, [TypedAttr], [Key])
             deriving (Ord, Eq, Show, Generic)
 

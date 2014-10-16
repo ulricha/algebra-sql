@@ -25,8 +25,9 @@ test = D.mkDag ( IntMap.fromList [ (0, C.BinOp (A.Cross ()) 1 2)
                                  , (1, C.UnOp (A.Project [("x", A.ColE "y")]) 4)
                                  , (2, C.BinOp (A.Cross ()) 1 3)
                                  , (4, C.NullaryOp $ A.LitTable
-                                                     [[A.VStr "foo"]]
-                                                     [("y", A.AStr)]
+                                                     ( [[A.VStr "foo"]]
+                                                     , [("y", A.AStr)]
+                                                     )
                                    )
                                  , (3, C.UnOp (A.Project [("z", A.ColE "y")]) 4)
                                  , (5, C.UnOp (A.Project [("x", A.ColE "y")]) 4)
@@ -40,11 +41,12 @@ g1 :: T.TADag
 g1 = D.mkDag ( IntMap.fromList [ (0, C.UnOp (A.Project [("result", A.ColE "str")]) 1)
                                , (1, C.UnOp (A.Select eq) 2)
                                , (2, C.NullaryOp $ A.LitTable
-                                                   [ [A.VStr "0"]
-                                                   , [A.VStr "1"]
-                                                   , [A.VStr "2"]
-                                                   ]
-                                                   [("str", A.AStr)]
+                                                   ( [ [A.VStr "0"]
+                                                     , [A.VStr "1"]
+                                                     , [A.VStr "2"]
+                                                     ]
+                                                   , [("str", A.AStr)]
+                                                   )
                                  )
                                ]
 
@@ -63,17 +65,19 @@ g2 = D.mkDag ( IntMap.fromList [ (0, C.UnOp (A.Project [ ( "result"
                                                        ]) 2)
                                , (2, C.BinOp (A.EqJoin ("u", "v")) 3 4)
                                , (3, C.NullaryOp ( A.LitTable
-                                                   [ [A.VInt 0, A.VInt 50]
-                                                   , [A.VInt 1, A.VInt 60]
-                                                   ]
-                                                   [("u", A.AInt), ("a", A.AInt)]
+                                                   ( [ [A.VInt 0, A.VInt 50]
+                                                     , [A.VInt 1, A.VInt 60]
+                                                     ]
+                                                   , [("u", A.AInt), ("a", A.AInt)]
+                                                   )
                                                  )
                                  )
                                , (4, C.NullaryOp ( A.LitTable
-                                                   [ [A.VInt 0, A.VInt 4]
-                                                   , [A.VInt 1, A.VInt 23]
-                                                   ]
-                                                   [("v", A.AInt), ("b", A.AInt)]
+                                                   ( [ [A.VInt 0, A.VInt 4]
+                                                     , [A.VInt 1, A.VInt 23]
+                                                     ]
+                                                   , [("v", A.AInt), ("b", A.AInt)]
+                                                   )
                                                  )
                                  )
                                ]
@@ -137,17 +141,19 @@ g6 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.AntiJoin [ (A.ColE "a", A.ColE 
                                              2
                                  )
                                , (1, C.NullaryOp ( A.LitTable
-                                                   [ [A.VInt 1, A.VInt 2]
-                                                   , [A.VInt 1, A.VInt 1]
-                                                   ]
-                                                   [("a", A.AInt), ("b", A.AInt)]
+                                                   ( [ [A.VInt 1, A.VInt 2]
+                                                     , [A.VInt 1, A.VInt 1]
+                                                     ]
+                                                   , [("a", A.AInt), ("b", A.AInt)]
+                                                   )
                                                  )
                                  )
                                , (2, C.NullaryOp ( A.LitTable
-                                                   [ [A.VInt 1, A.VInt 2]
-                                                   , [A.VInt 1, A.VInt 1]
-                                                   ]
-                                                   [("c", A.AInt), ("d", A.AInt)]
+                                                   ( [ [A.VInt 1, A.VInt 2]
+                                                     , [A.VInt 1, A.VInt 1]
+                                                     ]
+                                                   , [("c", A.AInt), ("d", A.AInt)]
+                                                   )
                                                  )
                                  )
                                ]
@@ -163,17 +169,19 @@ g7 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.SemiJoin [ (A.ColE "a", A.ColE 
                                              2
                                  )
                                , (1, C.NullaryOp ( A.LitTable
-                                                   [ [A.VInt 1, A.VInt 2]
-                                                   , [A.VInt 1, A.VInt 1]
-                                                   ]
-                                                   [("a", A.AInt), ("b", A.AInt)]
+                                                   ( [ [A.VInt 1, A.VInt 2]
+                                                     , [A.VInt 1, A.VInt 1]
+                                                     ]
+                                                   , [("a", A.AInt), ("b", A.AInt)]
+                                                   )
                                                  )
                                  )
                                , (2, C.NullaryOp ( A.LitTable
-                                                   [ [A.VInt 1, A.VInt 2]
-                                                   , [A.VInt 1, A.VInt 1]
-                                                   ]
-                                                   [("c", A.AInt), ("d", A.AInt)]
+                                                   ( [ [A.VInt 1, A.VInt 2]
+                                                     , [A.VInt 1, A.VInt 1]
+                                                     ]
+                                                   , [("c", A.AInt), ("d", A.AInt)]
+                                                   )
                                                  )
                                  )
                                ]
@@ -189,17 +197,19 @@ g8 = D.mkDag ( IntMap.fromList [ (0, C.BinOp ( A.SemiJoin [ (A.ColE "b", A.ColE 
                                              2
                                  )
                                , (1, C.NullaryOp ( A.LitTable
-                                                   [ [A.VInt 1, A.VInt 2]
-                                                   , [A.VInt 1, A.VInt 1]
-                                                   ]
-                                                   [("a", A.AInt), ("b", A.AInt)]
+                                                   ( [ [A.VInt 1, A.VInt 2]
+                                                     , [A.VInt 1, A.VInt 1]
+                                                     ]
+                                                   , [("a", A.AInt), ("b", A.AInt)]
+                                                   )
                                                  )
                                  )
                                , (2, C.NullaryOp ( A.LitTable
-                                                   [ [A.VInt 1, A.VInt 2]
-                                                   , [A.VInt 1, A.VInt 1]
-                                                   ]
-                                                   [("c", A.AInt), ("d", A.AInt)]
+                                                   ( [ [A.VInt 1, A.VInt 2]
+                                                     , [A.VInt 1, A.VInt 1]
+                                                     ]
+                                                   , [("c", A.AInt), ("d", A.AInt)]
+                                                   )
                                                  )
                                  )
                                ]
@@ -216,7 +226,7 @@ g9 = D.mkDag ( IntMap.fromList [ (0, C.UnOp p 2)
                                , (6, C.UnOp (pc "a") 8)
                                , (7, C.UnOp p 8)
                                , (8, C.UnOp p 9)
-                               , (9, C.NullaryOp ( A.LitTable [] [("c", A.AInt), ("d", A.AInt)] )
+                               , (9, C.NullaryOp ( A.LitTable ([], [("c", A.AInt), ("d", A.AInt)] ))
                                  )
                                ]
              )
@@ -231,7 +241,7 @@ g10 :: T.TADag
 g10 = D.mkDag ( IntMap.fromList [ (0, C.BinOp eq 1 1)
                                 , (1, C.BinOp eq 2 2)
                                 , (2, C.UnOp p 3)
-                                , (3, C.NullaryOp ( A.LitTable [] [("c", A.AInt), ("d", A.AInt)] ))
+                                , (3, C.NullaryOp ( A.LitTable ([], [("c", A.AInt), ("d", A.AInt)] )))
                                 ]
               )
               [0]
@@ -269,8 +279,8 @@ singleTests = [ tLitTable
     sortInfo          = [(A.ColE "a", A.Asc)]
     colTypes          = [("a", A.AInt), ("b", A.AStr)]
     colTypes2         = [("c", A.AInt), ("d", A.AInt)]
-    mapping op        = [ (0, C.NullaryOp (A.LitTable [] colTypes))
-                        , (1, C.NullaryOp (A.LitTable [] colTypes2))
+    mapping op        = [ (0, C.NullaryOp (A.LitTable ([], colTypes)))
+                        , (1, C.NullaryOp (A.LitTable ([], colTypes2)))
                         , (2, op)
                         ]
     singletonGraph :: A.TableAlgebra -> T.TADag
@@ -280,8 +290,8 @@ singleTests = [ tLitTable
     -- nullary operators
     singletonN    = singletonGraph . C.NullaryOp
     tLitTable     =
-        singletonN $ A.LitTable [[A.VInt 0, A.VStr "test"]] colTypes
-    tEmptyTable   = singletonN $ A.LitTable [] colTypes
+        singletonN $ A.LitTable ([[A.VInt 0, A.VStr "test"]], colTypes)
+    tEmptyTable   = singletonN $ A.LitTable ([], colTypes)
     tTableRef     = singletonN $ A.TableRef ("foo", colTypes, [])
 
     -- unary operators
