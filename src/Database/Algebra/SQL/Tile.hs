@@ -612,11 +612,29 @@ transformExistsJoin conditions c0 c1 wrapFun = do
                 leftCond    =
                     wrapFun . Q.CEBase
                             . Q.VEIn (translateExprCE (Just lSClause) l)
-                            $ Q.VQSelect rightSelect
+                            $ rightSelect'
+    
+                -- If the nested query is a simple selection from a
+                -- literal table, use the literal table directly:
+                -- SELECT t.c FROM (VALUES ...) AS t(c)
+                -- =>
+                -- VALUES ...
+                rightSelect' = 
+                    case rightSelect of
+                        Q.VQSelect 
+                          (Q.SelectStmt
+                            [Q.SCExpr (Q.EEBase (Q.VEColumn colName (Just tabName)))] 
+                            False 
+                            [Q.FPAlias (Q.FESubQuery (Q.VQLiteral rows)) tabName' (Just [colName'])]
+                            []
+                            []
+                            []) | colName == colName' && tabName == tabName' -> Q.VQLiteral rows
+                        _ -> rightSelect
+                    
                 -- Embedd all conditions in the right select, and set select
                 -- clause to the right part of the equal join condition.
-                rightSelect = appendAllToWhere innerConds select1
-                              { Q.selectClause = [rightSCol] }
+                rightSelect = Q.VQSelect $ appendAllToWhere innerConds select1
+                                           { Q.selectClause = [rightSCol] }
                 innerConds  = map f conditions'
                 f           = translateJoinCond lSClause rSClause
                 rightSCol   = Q.SCExpr (translateExprEE (Just rSClause) r)
@@ -810,6 +828,8 @@ appendToWhere :: Q.ColumnExpr -- ^ The expression added with logical and.
 appendToWhere cond select =
     select { Q.whereClause = cond : Q.whereClause select }
 
+-- | Append predicate expressions to the WHERE clause of a select
+-- statement.
 appendAllToWhere :: [Q.ColumnExpr]
                  -> Q.SelectStmt
                  -> Q.SelectStmt
