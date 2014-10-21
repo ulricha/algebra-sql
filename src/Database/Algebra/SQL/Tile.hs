@@ -297,23 +297,40 @@ transformUnOp :: A.UnOp -> C.AlgNode -> Transform TileTree
 transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
     (ctor, select, children) <- transformTerminated' c $ projectF <> sortF
 
-    let inline                      = inlineEE $ Q.selectClause select
+    let inline :: String -> Q.ExtendedExpr
+        inline                      = inlineEE $ Q.selectClause select
+
         -- Inline a column and alias the result.
-        project                     = Q.SCAlias . inline
+        project :: String -> String -> Q.SelectColumn
+        project col alias = Q.SCAlias (inline col) alias
+
         itemi i                     = "item" ++ show i
+    
+        payloadProjs :: [Q.SelectColumn]
         payloadProjs                =
             zipWith (\(A.PayloadCol col) i -> project col $ itemi i)
                     payloadCols
                     ([1..] :: [Integer])
 
+        boundNames = map itemi [1..length payloadCols]
+
+        inlineOrderBy col = if col `elem` boundNames
+                            then Q.EEBase $ Q.VEColumn col Nothing
+                            else inline col
+
         (posOrderList, posProjList) = case pos of
             A.NoPos       -> ([], [])
-            -- Sort and project (avoid inlining, because not necessary).
+            -- Sort and project (avoid inlining, because not
+            -- necessary: The pos column will appear in the select
+            -- clause and can be referenced in the order by clause).
             A.AbsPos col  -> ([Q.EEBase $ mkCol "pos"], [(col, "pos")])
             -- Sort but do not project. It is not necessary because
             -- relative positions are not needed to reconstruct nested
-            -- results.
-            A.RelPos cols -> (map inline cols, [])
+            -- results. But: only inline those sorting columns that do
+            -- not appear in the select clause. Names bound in the
+            -- select clause are visible in the order by clause and
+            -- can be referenced.
+            A.RelPos cols -> (map inlineOrderBy cols, [])
 
     return $ ctor
              select
