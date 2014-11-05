@@ -120,11 +120,11 @@ opDotLabel tags i (SerializeL (mDescr, mPos, cols)) = labelToDoc i
                  <+> (brackets $ commas (text . show) cols))
     (lookupTags i tags)
 opDotLabel tags i (WinFunL (winFuns, partSpec, sortSpec, mFrameBounds)) = labelToDoc i
-     "WIN" (vcat [ renderWinFuns winFuns
-                 , renderPartSpec partSpec
-                 , renderSortSpec sortSpec
-                 , maybe empty renderFrameBounds mFrameBounds
-                 ])
+     "WIN" (hcat $ intersperse (text "\\n") [ renderWinFuns winFuns
+                                            , renderPartSpec partSpec
+                                            , renderSortSpec sortSpec
+                                            , maybe empty renderFrameBounds mFrameBounds
+                                            ])
      (lookupTags i tags)
 
 renderWinFun :: WinFun -> Doc
