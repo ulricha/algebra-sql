@@ -111,9 +111,9 @@ altSep = space >> char '|' >> space >> return ()
 -- [Op1 | Op2 | ...]
 altOps :: Parser [UIdent]
 altOps = do { char '['
-           ; ops <- sepBy1 uident altSep
-           ; char ']'
-           ; return ops }
+            ; ops <- sepBy1 uident altSep
+            ; char ']'
+            ; return ops }
        
 operator :: Parser Op
 operator = try (do { ops <- altOps
