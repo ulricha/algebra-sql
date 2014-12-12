@@ -1,3 +1,5 @@
+module Main where
+
 import           Control.Monad                                       (forM_,
                                                                       when)
 import qualified Data.IntMap                                         as IntMap (fromList)

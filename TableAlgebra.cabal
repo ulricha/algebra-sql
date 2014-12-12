@@ -27,23 +27,21 @@ Build-Type:     Simple
 
 library
     buildable:        True
-    build-depends:    base >= 4.2 && < 5,  
-                      mtl >= 2.0.1.0, 
-                      containers >= 0.3.0.0, 
-                      template-haskell >= 2.4.0.0, 
-                      pretty >= 1.0.1.1, 
-                      fgl >= 5.4, 
-                      transformers >= 0.2, 
-                      parsec >= 3.1,
-                      aeson >= 0.6,
-                      ghc-prim >= 0.2,
-                      bytestring >= 0.9,
-                      errors >= 1.0.0,
-                      dlist,
-                      ansi-wl-pprint,
-                      multiset,
-                      template-haskell,
-                      semigroups
+    build-depends:    base               >= 4.7 && < 5,  
+                      mtl                >= 2.1, 
+                      containers         >= 0.5, 
+                      template-haskell   >= 2.9, 
+                      pretty             >= 1.1, 
+                      fgl                >= 5.5, 
+                      transformers       >= 0.7, 
+                      parsec             >= 3.1,
+                      ghc-prim           >= 0.3,
+                      bytestring         >= 0.10,
+                      errors             >= 1.0,
+                      dlist              >= 0.7,
+                      ansi-wl-pprint     >= 0.6,
+                      multiset           >= 0.2,
+                      semigroups         >= 0.16
 
     exposed-modules:  Database.Algebra.Dag
                       Database.Algebra.Dag.Build
@@ -105,73 +103,74 @@ library
 
 executable x100dot
     Main-is: Database/Algebra/X100/Tools/DotGen.hs
-    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind
+    GHC-Options:       -Wall -fno-warn-orphans
     hs-source-dirs:   src
-    build-depends:    base >= 4.2 && < 5, 
-                      aeson >= 0.6, 
-                      mtl >= 2.0.1.0, 
-                      containers >= 0.3.0.0,
-                      transformers,
-                      parsec,
-                      template-haskell >= 2.4.0.0, 
-                      pretty >= 1.0.1.1, 
-                      fgl, 
-                      ghc-prim >= 0.2,
-                      bytestring >= 0.9
-
+    build-depends:    base               >= 4.7 && < 5,  
+                      mtl                >= 2.1, 
+                      containers         >= 0.5, 
+                      template-haskell   >= 2.9, 
+                      pretty             >= 1.1, 
+                      fgl                >= 5.5, 
+                      transformers       >= 0.7, 
+                      parsec             >= 3.1,
+                      ghc-prim           >= 0.3,
+                      bytestring         >= 0.10
 
 executable tadot
     Main-is: Database/Algebra/Table/Tools/DotGen.hs
-    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind
+    GHC-Options:       -Wall -fno-warn-orphans
     hs-source-dirs:   src
-    build-depends:    base >= 4.2 && < 5, 
-                      aeson >= 0.6, 
-                      mtl >= 2.0.1.0, 
-                      containers >= 0.3.0.0, 
-                      parsec,
-                      transformers,
-                      template-haskell >= 2.4.0.0, 
-                      pretty >= 1.0.1.1, 
-                      fgl, 
-                      ghc-prim >= 0.2,
-                      bytestring >= 0.9,
-                      semigroups
+    build-depends:    base               >= 4.7 && < 5,  
+                      mtl                >= 2.1, 
+                      containers         >= 0.5, 
+                      template-haskell   >= 2.9, 
+                      pretty             >= 1.1, 
+                      fgl                >= 5.5, 
+                      transformers       >= 0.7, 
+                      parsec             >= 3.1,
+                      ghc-prim           >= 0.3,
+                      bytestring         >= 0.10,
+                      semigroups         >= 0.16,
+                      aeson              >= 0.8
 
 executable x100gen
     Main-is: Database/Algebra/X100/Tools/CodeGen.hs
-    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind
+    GHC-Options:       -Wall -fno-warn-orphans
     hs-source-dirs:   src
-    build-depends:    base >= 4.2 && < 5, 
-                      aeson >= 0.6, 
-                      mtl >= 2.0.1.0, 
-                      containers >= 0.3.0.0, 
-                      parsec,
-                      transformers,
-                      template-haskell >= 2.4.0.0, 
-                      pretty >= 1.0.1.1, 
-                      fgl, 
-                      ghc-prim >= 0.2,
-                      bytestring >= 0.9
+    build-depends:    base               >= 4.7 && < 5,  
+                      mtl                >= 2.1, 
+                      containers         >= 0.5, 
+                      template-haskell   >= 2.9, 
+                      pretty             >= 1.1, 
+                      fgl                >= 5.5, 
+                      transformers       >= 0.7, 
+                      parsec             >= 3.1,
+                      ghc-prim           >= 0.3,
+                      bytestring         >= 0.10,
+                      errors             >= 1.0,
+                      dlist              >= 0.7,
+                      ansi-wl-pprint     >= 0.6,
+                      multiset           >= 0.2,
+                      semigroups         >= 0.16
 
-executable sqlcodegentest
-    Main-is: Database/Algebra/SQL/Tools/Test.hs
-    GHC-Options:       -Wall -fno-warn-orphans -fno-warn-type-defaults -fno-warn-unused-do-bind
+executable sqlgen
+    Main-is: Database/Algebra/SQL/Tools/Gen
+    GHC-Options:       -Wall -fno-warn-orphans
     hs-source-dirs:   src
-    build-depends:    base >= 4.2 && < 5,
-                      aeson >= 0.6,
-                      mtl >= 2.0.1.0,
-                      containers >= 0.3.0.0,
-                      parsec,
-                      transformers,
-                      pretty >= 1.0.1.1, 
-                      fgl,
-                      ghc-prim >= 0.2,
-                      bytestring >= 0.9,
-                      dlist,
-                      ansi-wl-pprint,
-                      process,
-                      filepath,
-                      multiset,
-                      template-haskell,
-                      semigroups
-
+    build-depends:    base               >= 4.7 && < 5,  
+                      mtl                >= 2.1, 
+                      containers         >= 0.5, 
+                      template-haskell   >= 2.9, 
+                      pretty             >= 1.1, 
+                      fgl                >= 5.5, 
+                      filepath           >= 1.3,
+                      process            >= 1.2,
+                      transformers       >= 0.7, 
+                      parsec             >= 3.1,
+                      ghc-prim           >= 0.3,
+                      bytestring         >= 0.10,
+                      errors             >= 1.0,
+                      dlist              >= 0.7,
+                      ansi-wl-pprint     >= 0.6,
+                      multiset           >= 0.2,
+                      semigroups         >= 0.16
