@@ -12,7 +12,6 @@ import           Text.Printf
 import           Data.List
 import           Numeric                     (showFFloat)
 
-import           Database.Algebra.Aux
 import           Database.Algebra.Dag        (Operator, opChildren,
                                               replaceOpChild)
 import           Database.Algebra.Dag.Common
@@ -318,6 +317,9 @@ data BinOp = Cross ()
            deriving (Ord, Eq, Show, Generic)
 
 type TableAlgebra = Algebra () BinOp UnOp NullOp AlgNode
+
+replace :: Eq a => a -> a -> a -> a
+replace orig new x = if x == orig then new else x
 
 replaceChild :: forall t b u n c. Eq c => c -> c -> Algebra t b u n c -> Algebra t b u n c
 replaceChild o n (TerOp op c1 c2 c3) = TerOp op (replace o n c1) (replace o n c2) (replace o n c3)

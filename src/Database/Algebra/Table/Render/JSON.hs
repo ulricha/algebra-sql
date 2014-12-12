@@ -12,15 +12,12 @@ module Database.Algebra.Table.Render.JSON
 import           Control.Monad
 import           GHC.Generics                (Generic)
 
-import           Data.Aeson                  (FromJSON, ToJSON, decode, encode,
-                                              parseJSON, toJSON)
+import           Data.Aeson                  (FromJSON, ToJSON, decode, encode)
 import qualified Data.ByteString.Lazy.Char8  as BL
 import qualified Data.IntMap                 as M
-import           Data.List.NonEmpty          (NonEmpty (..))
 
 import           Database.Algebra.Dag.Common
 import           Database.Algebra.Table.Lang
-
 
 instance ToJSON ATy where
 instance ToJSON AVal where
@@ -42,8 +39,6 @@ instance ToJSON PayloadCol where
 instance ToJSON FrameBounds where
 instance ToJSON FrameEnd where
 instance ToJSON FrameStart where
-instance ToJSON a => ToJSON (NonEmpty a) where
-    toJSON (n :| nl) = toJSON (n, nl)
 
 instance FromJSON ATy where
 instance FromJSON AVal where
@@ -65,8 +60,6 @@ instance FromJSON PayloadCol where
 instance FromJSON FrameBounds where
 instance FromJSON FrameEnd where
 instance FromJSON FrameStart where
-instance FromJSON a => FromJSON (NonEmpty a) where
-    parseJSON doc = parseJSON doc >>= \(n, nl) -> return $ n :| nl
 
 instance ToJSON Plan where
 instance FromJSON Plan where
