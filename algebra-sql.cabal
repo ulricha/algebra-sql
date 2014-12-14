@@ -2,7 +2,7 @@ cabal-version: >=1.8
 Name:           algebra-sql
 synopsis:       Relational Algebra and SQL Code Generation
 Category:       Database
-Version:        0.1.0.0
+Version:        0.1.0.1
 Description:    This library contains data types for relational table algebra operators. DAG plans
                 (<http://hackage.haskell.org/package/algebra-dag algebra-dag>) over these operators
                 can be compiled into compact SQL:2003 queries.
@@ -49,6 +49,7 @@ library
                       Database.Algebra.SQL.Query.Util
                       Database.Algebra.SQL.Termination
                       Database.Algebra.SQL.Tile
+                      Database.Algebra.SQL.File
                       Database.Algebra.SQL.Tile.Flatten
                       Database.Algebra.SQL.Render
                       Database.Algebra.SQL.Render.Tile
