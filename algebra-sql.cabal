@@ -100,3 +100,7 @@ executable sqlgen
                       multiset           >= 0.2,
                       aeson              >= 0.8,
                       algebra-dag        >= 0.1
+
+source-repository head
+    type:     git
+    location: https://github.com/ulricha/algebra-sql
