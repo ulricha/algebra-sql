@@ -2,20 +2,21 @@
 -- line or standard input and renders it into a GraphViz file.
 module Main where
 
-import System.Console.GetOpt
-import System.Environment
-import System.Exit
-import System.IO
+import           System.Console.GetOpt
+import           System.Environment
+import           System.Exit
+import           System.IO
 
-import Data.Maybe
+import           Data.Aeson
+import           Data.ByteString.Lazy.Char8        (pack)
+import qualified Data.IntMap                       as M
+import           Data.Maybe
 
-import Data.ByteString.Lazy.Char8                (pack)
+import           Database.Algebra.Dag
+import           Database.Algebra.Table.Render.Dot
 
-import Database.Algebra.Table.Render.Dot
-import Database.Algebra.Table.Render.JSON
-
-data Options = Options { optInput          :: IO String
-                       , optRootNodes      :: Maybe [Int]
+data Options = Options { optInput     :: IO String
+                       , optRootNodes :: Maybe [Int]
                        }
 
 startOptions :: Options
@@ -53,9 +54,9 @@ main = do
 
     plan <- input
 
-    let (tags, rs, m) = deserializePlan $ pack plan
-        rs'           = fromMaybe rs mRootNodes 
+    let dag = fromJust $ decode $ pack plan
+        rs  = fromMaybe (rootNodes dag) mRootNodes
 
-    let dot = renderTADot tags rs' m
+    let dot = renderTADot M.empty rs (nodeMap dag)
 
     putStr dot

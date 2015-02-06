@@ -2,25 +2,27 @@
 -- files.
 module Database.Algebra.SQL.File where
 
+import           Control.Applicative
 import           Control.Monad.Error.Class
-import qualified Data.IntMap                        as IntMap
+import           Data.Aeson
+import qualified Data.ByteString.Lazy.Char8        as BL
+import qualified Data.IntMap                       as IntMap
 import           System.FilePath
 import           System.Process
 
-import qualified Database.Algebra.Dag               as D
+import qualified Database.Algebra.Dag              as D
 import           Database.Algebra.Table.Render.Dot
-import qualified Database.Algebra.Table.Render.JSON as JSON
 
-import qualified Database.Algebra.SQL.Tile          as T
+import qualified Database.Algebra.SQL.Tile         as T
 
 readDagFromFile :: FilePath -> IO (Either String T.TADag)
 readDagFromFile filename = case takeExtension filename of
     ".plan" -> do
         -- FIXME This function is a mess, does an unchecked fromJust, which
         -- easily fails.
-        (_, rootNodes, nodeMap) <- JSON.planFromFile filename
+        Just dag <- decode <$> BL.readFile filename
 
-        return $ return $ D.mkDag nodeMap rootNodes
+        return $ return dag
 
     format ->
         return $ throwError $ "unkown file format '" ++ format ++ "'"

@@ -8,9 +8,10 @@
 -- relations.
 module Database.Algebra.Table.Lang where
 
-import           Text.Printf
+import           Data.Aeson
 import           Data.List
 import           Numeric                     (showFFloat)
+import           Text.Printf
 
 import           Database.Algebra.Dag        (Operator, opChildren,
                                               replaceOpChild)
@@ -246,7 +247,7 @@ data FrameEnd = FECurrRow    -- ^ CURRENT ROW
               deriving (Eq, Ord, Show, Generic)
 
 data FrameBounds = HalfOpenFrame FrameStart
-                 | ClosedFrame FrameStart FrameEnd 
+                 | ClosedFrame FrameStart FrameEnd
                  deriving (Eq, Ord, Show, Generic)
 
 data WinFun = WinMax Expr
@@ -334,3 +335,46 @@ instance Operator TableAlgebra where
     opChildren (NullaryOp _) = []
 
     replaceOpChild op old new = replaceChild old new op
+
+-- FIXME use TH derivation to improve compilation time.
+instance ToJSON ATy where
+instance ToJSON AVal where
+instance ToJSON SortDir where
+instance ToJSON JoinRel where
+instance ToJSON SortSpec where
+instance ToJSON AggrType where
+instance ToJSON NullOp where
+instance ToJSON WinFun where
+instance ToJSON UnOp where
+instance ToJSON BinOp where
+instance ToJSON Expr where
+instance ToJSON UnFun where
+instance ToJSON BinFun where
+instance ToJSON Key where
+instance ToJSON DescrCol where
+instance ToJSON SerializeOrder where
+instance ToJSON PayloadCol where
+instance ToJSON FrameBounds where
+instance ToJSON FrameEnd where
+instance ToJSON FrameStart where
+
+instance FromJSON ATy where
+instance FromJSON AVal where
+instance FromJSON SortDir where
+instance FromJSON JoinRel where
+instance FromJSON SortSpec where
+instance FromJSON AggrType where
+instance FromJSON NullOp where
+instance FromJSON WinFun where
+instance FromJSON UnOp where
+instance FromJSON BinOp where
+instance FromJSON Expr where
+instance FromJSON UnFun where
+instance FromJSON BinFun where
+instance FromJSON Key where
+instance FromJSON DescrCol where
+instance FromJSON SerializeOrder where
+instance FromJSON PayloadCol where
+instance FromJSON FrameBounds where
+instance FromJSON FrameEnd where
+instance FromJSON FrameStart where
