@@ -177,6 +177,9 @@ data UnFun = Not
            | Sqrt
            | Log
            | Exp
+           | DateDay
+           | DateYear
+           | DateMonth
            | SubString Integer Integer
            deriving (Eq, Ord, Generic)
 
@@ -192,6 +195,9 @@ instance Show UnFun where
   show ASin            = "asin"
   show ACos            = "acos"
   show ATan            = "atan"
+  show DateDay         = "date_day"
+  show DateYear        = "date_year"
+  show DateMonth       = "date_month"
   show (SubString f t) = printf "subString_%d,%d" f t
 
 -- | Projection expressions

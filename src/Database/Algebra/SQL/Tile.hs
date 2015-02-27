@@ -924,25 +924,28 @@ translateExprValueExprTemplate rec wrap inline optSelectClause expr =
             wrap $ Q.VECase (rec optSelectClause c)
                             (rec optSelectClause t)
                             (rec optSelectClause e)
-                               
+
         A.BinAppE f e1 e2 ->
             wrap $ Q.VEBinApp (translateBinFun f)
                               (rec optSelectClause e1)
                               $ rec optSelectClause e2
         A.UnAppE f e      ->
             wrap $ case f of
-                A.Not           -> Q.VENot tE
-                A.Cast t        -> Q.VECast tE $ translateATy t
-                A.Sin           -> Q.VEUnApp Q.UFSin tE
-                A.Cos           -> Q.VEUnApp Q.UFCos tE
-                A.Tan           -> Q.VEUnApp Q.UFTan tE
-                A.ASin          -> Q.VEUnApp Q.UFASin tE
-                A.ACos          -> Q.VEUnApp Q.UFACos tE
-                A.ATan          -> Q.VEUnApp Q.UFATan tE
-                A.Sqrt          -> Q.VEUnApp Q.UFSqrt tE
-                A.Log           -> Q.VEUnApp Q.UFLog tE
-                A.Exp           -> Q.VEUnApp Q.UFExp tE
+                A.Not               -> Q.VENot tE
+                A.Cast t            -> Q.VECast tE $ translateATy t
+                A.Sin               -> Q.VEUnApp Q.UFSin tE
+                A.Cos               -> Q.VEUnApp Q.UFCos tE
+                A.Tan               -> Q.VEUnApp Q.UFTan tE
+                A.ASin              -> Q.VEUnApp Q.UFASin tE
+                A.ACos              -> Q.VEUnApp Q.UFACos tE
+                A.ATan              -> Q.VEUnApp Q.UFATan tE
+                A.Sqrt              -> Q.VEUnApp Q.UFSqrt tE
+                A.Log               -> Q.VEUnApp Q.UFLog tE
+                A.Exp               -> Q.VEUnApp Q.UFExp tE
                 A.SubString from to -> Q.VEUnApp (Q.UFSubString from to) tE
+                A.DateDay           -> Q.VEUnApp (Q.UFExtract Q.ExtractDay) tE
+                A.DateYear          -> Q.VEUnApp (Q.UFExtract Q.ExtractYear) tE
+                A.DateMonth         -> Q.VEUnApp (Q.UFExtract Q.ExtractMonth) tE
 
           where
             tE = rec optSelectClause e

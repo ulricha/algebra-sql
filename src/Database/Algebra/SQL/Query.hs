@@ -301,7 +301,14 @@ data UnaryFunction = UFSin
                    | UFExp
                    | UFLog
                    | UFSubString Integer Integer
+                   | UFExtract ExtractField
                    deriving (Show)
+
+-- | Fields that can be extracted from date/time types
+data ExtractField = ExtractDay
+                  | ExtractMonth
+                  | ExtractYear
+                  deriving (Show)
 
 -- | Types of valid SQL 99 datatypes (most likely a small subset) as stated in
 -- 'SQL 1999: Understanding Relational Language Components' (Melton, Simon)

@@ -281,7 +281,7 @@ renderValueExprTemplate renderRec compat ve = case ve of
 
     VEUnApp (UFSubString f t) a -> renderSubString renderRec compat f t a
     VEUnApp f a          ->
-        parens $ renderUnaryFunction f <> parens (renderRec compat a)
+        parens $ renderUnaryFunction f (renderRec compat a)
 
     VENot a              -> parens $ kw "NOT" <+> renderRec compat a
     VEExists q           -> kw "EXISTS" <+> renderSubQuery compat q
@@ -386,18 +386,28 @@ renderBinaryFunction BFNotEqual     = kw "<>"
 renderBinaryFunction BFAnd          = kw "AND"
 renderBinaryFunction BFOr           = kw "OR"
 
-renderUnaryFunction :: UnaryFunction -> Doc
-renderUnaryFunction UFSin         = kw "sin"
-renderUnaryFunction UFCos         = kw "cos"
-renderUnaryFunction UFTan         = kw "tan"
-renderUnaryFunction UFLog         = kw "log"
-renderUnaryFunction UFSqrt        = kw "sqrt"
-renderUnaryFunction UFExp         = kw "exp"
-renderUnaryFunction UFASin        = kw "asin"
-renderUnaryFunction UFACos        = kw "acos"
-renderUnaryFunction UFATan        = kw "atan"
--- The substring combinator is rendered speciall
-renderUnaryFunction UFSubString{} = $impossible
+renderRegularUnary :: String -> Doc -> Doc
+renderRegularUnary f a = kw f <> parens a
+
+renderUnaryFunction :: UnaryFunction -> Doc -> Doc
+renderUnaryFunction UFSin             a = renderRegularUnary "sin" a
+renderUnaryFunction UFCos             a = renderRegularUnary "cos" a
+renderUnaryFunction UFTan             a = renderRegularUnary "tan" a
+renderUnaryFunction UFLog             a = renderRegularUnary "log" a
+renderUnaryFunction UFSqrt            a = renderRegularUnary "sqrt" a
+renderUnaryFunction UFExp             a = renderRegularUnary "exp" a
+renderUnaryFunction UFASin            a = renderRegularUnary "asin" a
+renderUnaryFunction UFACos            a = renderRegularUnary "acos" a
+renderUnaryFunction UFATan            a = renderRegularUnary "atan" a
+renderUnaryFunction (UFExtract field) a =
+    kw "EXTRACT" <> parens (renderExtractField field <+> kw "FROM" <+> a)
+-- The substring combinator is rendered special
+renderUnaryFunction UFSubString{} _     = $impossible
+
+renderExtractField :: ExtractField -> Doc
+renderExtractField ExtractDay   = kw "day"
+renderExtractField ExtractMonth = kw "month"
+renderExtractField ExtractYear  = kw "year"
 
 renderDataType :: DataType -> Doc
 renderDataType DTInteger         = kw "INTEGER"
