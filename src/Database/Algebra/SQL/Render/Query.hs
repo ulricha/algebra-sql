@@ -7,40 +7,20 @@ module Database.Algebra.SQL.Render.Query
     , renderSelectStmt
     ) where
 
-import Text.PrettyPrint.ANSI.Leijen ( (<$>)
-                                    , (<+>)
-                                    , (</>)
-                                    , (<>)
-                                    , Doc
-                                    , align
-                                    , bold
-                                    , char
-                                    , comma
-                                    , double
-                                    , empty
-                                    , fillSep
-                                    , float
-                                    , hang
-                                    , hsep
-                                    , indent
-                                    , int
-                                    , integer
-                                    , linebreak
-                                    , lparen
-                                    , ondullblue
-                                    , parens
-                                    , punctuate
-                                    , red
-                                    , rparen
-                                    , sep
-                                    , squotes
-                                    , text
-                                    , vcat
-                                    )
+import qualified Data.Time.Calendar                 as C
+import           Text.PrettyPrint.ANSI.Leijen       (Doc, align, bold, char,
+                                                     comma, double, empty,
+                                                     fillSep, float, hang, hsep,
+                                                     indent, int, integer,
+                                                     linebreak, lparen,
+                                                     ondullblue, parens,
+                                                     punctuate, red, rparen,
+                                                     sep, squotes, text, vcat,
+                                                     (<$>), (<+>), (</>), (<>))
 
-import Database.Algebra.Impossible
-import Database.Algebra.SQL.Query
-import Database.Algebra.SQL.Compatibility
+import           Database.Algebra.Impossible
+import           Database.Algebra.SQL.Compatibility
+import           Database.Algebra.SQL.Query
 
 enlist :: [Doc] -> Doc
 enlist = fillSep . punctuate comma
@@ -84,7 +64,7 @@ renderDefinitionQuery compat (DQTemporaryTable query name) =
             <+> as
             <$> indentedQuery
 
-        -- Default implementation for SQL:1999 compliant DBMS. 
+        -- Default implementation for SQL:1999 compliant DBMS.
         _          ->
             as
             <$> indentedQuery
@@ -140,7 +120,7 @@ renderSelectStmt compat stmt =
                    then kw "DISTINCT" <+> sC
                    else sC
               )
-               
+
     <> case fromClause stmt of
            []        -> empty
            fromParts ->
@@ -166,7 +146,7 @@ renderSelectStmt compat stmt =
                     <+> align ( renderGenericOrderByList renderOrderExpr
                                                          compat
                                                          order
-                              ) 
+                              )
 
 
 renderOrderExpr :: CompatMode -> OrderExpr -> Doc
@@ -191,8 +171,8 @@ renderWindowOrderByList compat wos =
 renderFrameSpec :: FrameSpec -> Doc
 renderFrameSpec (FHalfOpen fs)  = kw "ROWS" <+> renderFrameStart fs
 renderFrameSpec (FClosed fs fe) = kw "ROWS BETWEEN"
-                                  <+> renderFrameStart fs 
-                                  <+> kw "AND" 
+                                  <+> renderFrameStart fs
+                                  <+> kw "AND"
                                   <+> renderFrameEnd fe
 
 renderFrameStart :: FrameStart -> Doc
@@ -254,7 +234,7 @@ renderExtendedExpr compat (EEBase v)                  = renderExtendedExprBase c
 renderExtendedExpr compat (EEWinFun wfun partExprs order mFrameSpec) =
     renderWindowFunction compat wfun
     <+> kw "OVER"
-    <+> parens (partitionByDoc <> orderByDoc <> frameSpecDoc) 
+    <+> parens (partitionByDoc <> orderByDoc <> frameSpecDoc)
 
   where
     partitionByDoc = case partExprs of
@@ -266,7 +246,7 @@ renderExtendedExpr compat (EEWinFun wfun partExprs order mFrameSpec) =
     orderByDoc = case order of
                      [] -> empty
                      _  -> renderWindowOrderByList compat order <> linebreak
-               
+
     frameSpecDoc = maybe empty (\fs -> renderFrameSpec fs) mFrameSpec
 
 renderExtendedExpr compat (EEAggrExpr ae)             =
@@ -277,7 +257,7 @@ renderAggrExpr compat e = case e of
     AEBase ve              ->
         renderValueExprTemplate renderAggrExpr compat ve
 
-    AEAggregate optVE aggr -> 
+    AEAggregate optVE aggr ->
         renderAggregateFunction compat aggr
         <> parens (maybe (char '*') (renderColumnExpr compat) optVE)
 
@@ -318,9 +298,9 @@ renderValueExprTemplate renderRec compat ve = case ve of
                          <+> text "END"
 
 renderSubString :: (CompatMode -> a -> Doc)
-                -> CompatMode 
-                -> Integer 
-                -> Integer 
+                -> CompatMode
+                -> Integer
+                -> Integer
                 -> a
                 -> Doc
 renderSubString renderRec compat from to argExpr =
@@ -340,7 +320,7 @@ renderSubString renderRec compat from to argExpr =
 -- | Render a 'ExtendedExprBase' with the generic renderer.
 renderExtendedExprBase :: CompatMode -> ExtendedExprBase -> Doc
 renderExtendedExprBase = renderValueExprTemplate renderExtendedExpr
-    
+
 
 -- | Render a 'ColumnExprBase' with the generic renderer.
 renderColumnExprBase :: CompatMode -> ColumnExprBase -> Doc
@@ -374,13 +354,13 @@ renderWindowFunction c          (WFSum a)        = renderFunCall "SUM" (renderCo
 renderWindowFunction c          (WFFirstValue a) = renderFunCall "first_value" (renderColumnExpr c a)
 renderWindowFunction c          (WFLastValue a)  = renderFunCall "last_value" (renderColumnExpr c a)
 renderWindowFunction _          WFCount          = renderFunCall "COUNT" (text "*")
-renderWindowFunction PostgreSQL (WFAll a)        = renderFunCall "bool_and" 
+renderWindowFunction PostgreSQL (WFAll a)        = renderFunCall "bool_and"
                                                                  (renderColumnExpr PostgreSQL a)
-renderWindowFunction SQL99      (WFAll a)        = renderFunCall "EVERY" 
+renderWindowFunction SQL99      (WFAll a)        = renderFunCall "EVERY"
                                                                  (renderColumnExpr SQL99 a)
-renderWindowFunction PostgreSQL (WFAny a)        = renderFunCall "bool_or" 
+renderWindowFunction PostgreSQL (WFAny a)        = renderFunCall "bool_or"
                                                                  (renderColumnExpr PostgreSQL a)
-renderWindowFunction SQL99      (WFAny a)        = renderFunCall "SOME" 
+renderWindowFunction SQL99      (WFAny a)        = renderFunCall "SOME"
                                                                  (renderColumnExpr SQL99 a)
 
 renderColumnExpr :: CompatMode -> ColumnExpr -> Doc
@@ -424,7 +404,8 @@ renderDataType DTInteger         = kw "INTEGER"
 renderDataType DTDecimal         = kw "DECIMAL"
 renderDataType DTDoublePrecision = kw "DOUBLE PRECISION"
 renderDataType DTText            = kw "TEXT"
-renderDataType DTBoolean         = kw "BOOLEAN" 
+renderDataType DTBoolean         = kw "BOOLEAN"
+renderDataType DTDate            = kw "DATE"
 
 literal :: Doc -> Doc
 literal = bold
@@ -436,5 +417,7 @@ renderValue v = case v of
     VDoublePrecision d -> literal $ double d
     VText str          -> literal $ squotes $ text str
     VBoolean b         -> kw $ if b then "TRUE" else "FALSE"
-    VNull              -> literal $ text "null"
-
+    VNull              -> literal $ text "NULL"
+    VDate d            -> literal $ text "DATE"
+                                         <+>
+                                         (squotes $ text $ C.showGregorian d)

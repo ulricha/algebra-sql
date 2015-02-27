@@ -8,8 +8,10 @@
 -- relations.
 module Database.Algebra.Table.Lang where
 
+import           Control.Applicative
 import           Data.Aeson
 import           Data.List
+import qualified Data.Time.Calendar          as C
 import           Numeric                     (showFFloat)
 import           Text.Printf
 
@@ -57,12 +59,14 @@ data ATy where
     ABool :: ATy
     ADec :: ATy
     ADouble :: ATy
+    ADate :: ATy
     ANat :: ATy
     deriving (Eq, Ord, Generic)
 
 -- | Show the table algebra types in a way that is compatible with
 --  the xml plan.
 instance Show ATy where
+  show ADate    = "date"
   show AInt     = "int"
   show AStr     = "str"
   show ABool    = "bool"
@@ -78,6 +82,7 @@ data AVal where
   VDouble :: Double -> AVal
   VDec    :: Float -> AVal
   VNat    :: Integer -> AVal
+  VDate   :: C.Day -> AVal
     deriving (Eq, Ord, Generic)
 
 -- | Show the values in the way compatible with the xml plan.
@@ -89,6 +94,7 @@ instance Show AVal where
   show (VDouble x)     =  show x
   show (VDec x)     = showFFloat (Just 2) x ""
   show (VNat x)     = show x
+  show (VDate d)    = C.showGregorian d
 
 -- | Attribute name or column name
 type Attr            = String
@@ -335,6 +341,13 @@ instance Operator TableAlgebra where
     opChildren (NullaryOp _) = []
 
     replaceOpChild op old new = replaceChild old new op
+
+instance FromJSON C.Day where
+    parseJSON o = (\(y, m, d) -> C.fromGregorian y m d) <$> parseJSON o
+
+instance ToJSON C.Day where
+    toJSON = toJSON . C.toGregorian
+
 
 -- FIXME use TH derivation to improve compilation time.
 instance ToJSON ATy where

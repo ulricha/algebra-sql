@@ -1016,6 +1016,7 @@ translateAVal v = case v of
     A.VDouble d -> Q.VDoublePrecision d
     A.VDec d    -> Q.VDecimal d
     A.VNat n    -> Q.VInteger n
+    A.VDate d   -> Q.VDate d
 
 translateATy :: A.ATy -> Q.DataType
 translateATy t = case t of
@@ -1025,4 +1026,4 @@ translateATy t = case t of
     A.ADec    -> Q.DTDecimal
     A.ADouble -> Q.DTDoublePrecision
     A.ANat    -> Q.DTInteger
-
+    A.ADate   -> Q.DTDate

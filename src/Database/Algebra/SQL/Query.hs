@@ -1,5 +1,6 @@
 module Database.Algebra.SQL.Query where
 
+import qualified Data.Time.Calendar as C
 -- TODO Do we have to check for validity of types?
 -- TODO is window clause standard?
 
@@ -313,18 +314,22 @@ data DataType = -- | @INTEGER@
               | DTText
                 -- | @BOOLEAN@
               | DTBoolean
+                -- | @DATE@
+              | DTDate
               deriving Show
 
 data Value = -- | @42@
              VInteger Integer
-             -- | Numeric data type with fixed precision and scale (e.g. @1.4@) 
+             -- | Numeric data type with fixed precision and scale (e.g. @1.4@)
            | VDecimal Float
-             -- | A double precision floating point number. 
+             -- | A double precision floating point number.
            | VDoublePrecision Double
              -- | e.g. @'foo'@
            | VText String
              -- | e.g. @TRUE@, @FALSE@ (but not UNKOWN in this variant)
            | VBoolean Bool
+             -- | Standard SQL dates (Gregorian calendar)
+           | VDate C.Day
              -- | Representation of a null value. (While this can basically be
              -- part of any nullable type, it is added here for simplicity.
              -- Values aren't linked to types anyways.)
