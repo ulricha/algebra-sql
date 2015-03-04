@@ -1,8 +1,8 @@
 -- | This module contains smart constructors for table algebra plans.
 module Database.Algebra.Table.Construct
     ( -- * Value and type constructors
-      int, string, bool, double, dec, nat, date
-    , intT, stringT, boolT, decT, doubleT, natT, dateT
+      int, string, bool, double, dec, date
+    , intT, stringT, boolT, decT, doubleT, dateT
       -- * Smart constructors for algebraic operators
     , dbTable, litTable, litTable', eqJoin, thetaJoin
     , semiJoin, antiJoin, rank, difference, rowrank
@@ -42,21 +42,16 @@ double = VDouble
 dec :: Float -> AVal
 dec = VDec
 
--- | Create a TA nat value
-nat :: Integer -> AVal
-nat = VNat
-
 date :: C.Day -> AVal
 date = VDate
 
 -- | Types of atomic  values
-intT, stringT, boolT, decT, doubleT, natT, dateT :: ATy
+intT, stringT, boolT, decT, doubleT, dateT :: ATy
 intT    = AInt
 stringT = AStr
 boolT   = ABool
 decT    = ADec
 doubleT = ADouble
-natT    = ANat
 dateT   = ADate
 
 --------------------------------------------------------------------------------

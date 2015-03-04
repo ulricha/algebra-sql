@@ -60,7 +60,6 @@ data ATy where
     ADec :: ATy
     ADouble :: ATy
     ADate :: ATy
-    ANat :: ATy
     deriving (Eq, Ord, Generic)
 
 -- | Show the table algebra types in a way that is compatible with
@@ -72,7 +71,6 @@ instance Show ATy where
   show ABool    = "bool"
   show ADec     = "dec"
   show ADouble  = "dbl"
-  show ANat     = "nat"
 
 -- | Wrapper around values that can occur in an table algebra plan
 data AVal where
@@ -81,20 +79,18 @@ data AVal where
   VBool   :: Bool -> AVal
   VDouble :: Double -> AVal
   VDec    :: Float -> AVal
-  VNat    :: Integer -> AVal
   VDate   :: C.Day -> AVal
     deriving (Eq, Ord, Generic)
 
 -- | Show the values in the way compatible with the xml plan.
 instance Show AVal where
-  show (VInt x)     = show x
-  show (VStr x)     = x
+  show (VInt x)      = show x
+  show (VStr x)      = x
   show (VBool True)  = "true"
   show (VBool False) = "false"
-  show (VDouble x)     =  show x
-  show (VDec x)     = showFFloat (Just 2) x ""
-  show (VNat x)     = show x
-  show (VDate d)    = C.showGregorian d
+  show (VDouble x)   =  show x
+  show (VDec x)      = showFFloat (Just 2) x ""
+  show (VDate d)     = C.showGregorian d
 
 -- | Attribute name or column name
 type Attr            = String
