@@ -1,8 +1,8 @@
 -- | This module contains smart constructors for table algebra plans.
 module Database.Algebra.Table.Construct
     ( -- * Value and type constructors
-      int, string, bool, double, dec, nat
-    , intT, stringT, boolT, decT, doubleT, natT
+      int, string, bool, double, dec, nat, date
+    , intT, stringT, boolT, decT, doubleT, natT, dateT
       -- * Smart constructors for algebraic operators
     , dbTable, litTable, litTable', eqJoin, thetaJoin
     , semiJoin, antiJoin, rank, difference, rowrank
@@ -14,6 +14,7 @@ module Database.Algebra.Table.Construct
     , aggrM, winFunM, rownumM, rownum'M
     ) where
 
+import qualified Data.Time.Calendar          as C
 import           Database.Algebra.Dag.Build
 import           Database.Algebra.Dag.Common
 import           Database.Algebra.Table.Lang
@@ -45,14 +46,18 @@ dec = VDec
 nat :: Integer -> AVal
 nat = VNat
 
+date :: C.Day -> AVal
+date = VDate
+
 -- | Types of atomic  values
-intT, stringT, boolT, decT, doubleT, natT :: ATy
+intT, stringT, boolT, decT, doubleT, natT, dateT :: ATy
 intT    = AInt
 stringT = AStr
 boolT   = ABool
 decT    = ADec
 doubleT = ADouble
 natT    = ANat
+dateT   = ADate
 
 --------------------------------------------------------------------------------
 -- Smart constructors for algebraic operators
@@ -124,11 +129,11 @@ proj ps c = insert $ UnOp (Project ps) c
 aggr :: [(AggrType, ResAttr)] -> [(Attr, Expr)] -> AlgNode -> Build TableAlgebra AlgNode
 aggr aggrs part c1 = insert $ UnOp (Aggr (aggrs, part)) c1
 
-winFun :: (ResAttr, WinFun) 
-       -> [PartExpr] 
-       -> [SortSpec] 
+winFun :: (ResAttr, WinFun)
+       -> [PartExpr]
+       -> [SortSpec]
        -> Maybe FrameBounds
-       -> AlgNode 
+       -> AlgNode
        -> Build TableAlgebra AlgNode
 winFun fun part sort frame c = insert $ UnOp (WinFun (fun, part, sort, frame)) c
 
@@ -207,11 +212,11 @@ projM cols = bind1 (proj cols)
 aggrM :: [(AggrType, ResAttr)] -> [(Attr, Expr)] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 aggrM aggrs part = bind1 (aggr aggrs part)
 
-winFunM :: (ResAttr, WinFun) 
-        -> [PartExpr] 
-        -> [SortSpec] 
+winFunM :: (ResAttr, WinFun)
+        -> [PartExpr]
+        -> [SortSpec]
         -> Maybe FrameBounds
-        -> Build TableAlgebra AlgNode 
+        -> Build TableAlgebra AlgNode
         -> Build TableAlgebra AlgNode
 winFunM fun part sort frame = bind1 (winFun fun part sort frame)
 
