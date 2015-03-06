@@ -1,12 +1,13 @@
 module Database.Algebra.SQL.Query where
 
+import           Data.Decimal
 import qualified Data.Time.Calendar as C
 -- TODO Do we have to check for validity of types?
 -- TODO is window clause standard?
 
 -- | Mixed datatype for sequences of both types of queries.
 data Query = QValueQuery
-           { valueQuery      :: ValueQuery
+           { valueQuery :: ValueQuery
            }
            | QDefinitionQuery
            { definitionQuery :: DefinitionQuery
@@ -32,15 +33,15 @@ data ValueQuery = VQSelect
                 }
                   -- Literal tables (e.g. "VALUES (1, 2), (2, 4)").
                 | VQLiteral
-                { rows       :: [[ColumnExpr]] -- ^ The values contained.
+                { rows :: [[ColumnExpr]] -- ^ The values contained.
                 }
                   -- The with query to bind value queries to names.
                 | VQWith
                 { -- | The bindings of the with query as a list of tuples, each
                   -- containing the table alias, the optional column names and
                   -- the used query.
-                  cBindings  :: [(String, Maybe [String], ValueQuery)]
-                , cBody      :: ValueQuery
+                  cBindings :: [(String, Maybe [String], ValueQuery)]
+                , cBody     :: ValueQuery
                 }
                   -- A binary set operation
                   -- (e.g. "TABLE foo UNION ALL TABLE bar").
@@ -67,7 +68,7 @@ data SelectStmt = SelectStmt -- TODO do we need a window clause ?
                 , -- | Indicates whether duplicates are removed.
                   distinct      :: Bool
                 , -- | The constituents of the from clause.
-                  fromClause    :: [FromPart]   
+                  fromClause    :: [FromPart]
                 , -- | A list of conjunctive column expression.
                   whereClause   :: [ColumnExpr]
                 , -- | The values to group by.
@@ -93,9 +94,9 @@ data SortDirection = Ascending
 data FromPart = -- Used as "... FROM foo AS bar ...", but also as
                 -- "... FROM foo ...", where the table reference is the alias.
                 FPAlias
-              { fExpr          :: FromExpr        -- ^ The aliased expression.
-              , fName          :: String          -- ^ The name of the alias.
-              , optColumns     :: Maybe [String]  -- ^ Optional column names.
+              { fExpr      :: FromExpr        -- ^ The aliased expression.
+              , fName      :: String          -- ^ The name of the alias.
+              , optColumns :: Maybe [String]  -- ^ Optional column names.
               } deriving Show
 
 -- A reference type used for placeholders.
@@ -104,25 +105,25 @@ type ReferenceType = Int
 data FromExpr = -- Contains a subquery (e.g. "SELECT * FROM (TABLE foo) f;"),
                 -- where "TABLE foo" is the sub query.
                 FESubQuery
-              { subQuery           :: ValueQuery  -- ^ The sub query.
+              { subQuery :: ValueQuery  -- ^ The sub query.
               }
               | -- A placeholder which is substituted later.
                 FEVariable
-              { vIdentifier        :: ReferenceType
+              { vIdentifier :: ReferenceType
               }
                 -- Reference to an existing table.
               | FETableReference
               { tableReferenceName :: String      -- ^ The name of the table.
               } deriving Show
 
-              
+
 
 -- | Represents a subset of possible statements which can occur in a
 -- select clause.
 data SelectColumn = -- | @SELECT foo AS bar ...@
                     SCAlias
-                  { sExpr    :: ExtendedExpr -- ^ The value expression aliased.
-                  , sName    :: String       -- ^ The name of the alias.
+                  { sExpr :: ExtendedExpr -- ^ The value expression aliased.
+                  , sName :: String       -- ^ The name of the alias.
                   }
                   | SCExpr ExtendedExpr
                   deriving Show
@@ -131,7 +132,7 @@ data SelectColumn = -- | @SELECT foo AS bar ...@
 data ExtendedExpr =
       -- | Encapsulates the base cases.
       EEBase
-    { valueExpr   :: ValueExprTemplate ExtendedExpr -- ^ The value expression.
+    { valueExpr :: ValueExprTemplate ExtendedExpr -- ^ The value expression.
     }
       -- | @f() OVER (PARTITION BY p ORDER BY s framespec)@
     | EEWinFun
@@ -144,9 +145,9 @@ data ExtendedExpr =
       -- | Optional frame specification
     , frameSpec :: Maybe FrameSpec
     }
-      -- | Aggregate function expression. 
+      -- | Aggregate function expression.
     | EEAggrExpr
-    { aggrExpr    :: AggrExpr
+    { aggrExpr :: AggrExpr
     } deriving Show
 
 -- | Shorthand for the value expression base part of 'ExtendedExpr'.
@@ -218,47 +219,47 @@ data AggregateFunction = AFAvg
 data ValueExprTemplate rec =
       -- | Encapsulates a representation of a SQL value.
       VEValue
-    { value        :: Value          -- ^ The value contained.
+    { value :: Value          -- ^ The value contained.
     }
       -- | A column.
     | VEColumn
-    { cName        :: String         -- ^ The name of the column.
+    { cName   :: String         -- ^ The name of the column.
       -- | The optional prefix of the column.
-    , cPrefix      :: Maybe String
+    , cPrefix :: Maybe String
     }
       -- | A type cast (e.g. @CAST(1 AS DOUBLE PRECISION)@).
     | VECast
-    { target       :: rec            -- ^ The target of the cast.
-    , type_        :: DataType       -- ^ The type to cast into.
+    { target :: rec            -- ^ The target of the cast.
+    , type_  :: DataType       -- ^ The type to cast into.
     }
      -- | Application of a binary function.
     | VEBinApp
-    { binFun       :: BinaryFunction -- ^ The applied function.
-    , firstExpr    :: rec            -- ^ The first operand.
-    , secondExpr   :: rec            -- ^ The second operand.
+    { binFun     :: BinaryFunction -- ^ The applied function.
+    , firstExpr  :: rec            -- ^ The first operand.
+    , secondExpr :: rec            -- ^ The second operand.
     }
     | VEUnApp
-    { unFun        :: UnaryFunction  -- ^ The applied function
-    , arg          :: rec            -- ^ The operand
+    { unFun :: UnaryFunction  -- ^ The applied function
+    , arg   :: rec            -- ^ The operand
     }
       -- | Application of the not function.
     | VENot
-    { nTarget      :: rec            -- ^ The expression to negate.
+    { nTarget :: rec            -- ^ The expression to negate.
     }
       -- | e.g. @EXISTS (VALUES (1))@
     | VEExists
-    { existsQuery  :: ValueQuery     -- ^ The query to check on.
+    { existsQuery :: ValueQuery     -- ^ The query to check on.
     }
       -- | e.g. @1 IN (VALUES (1))@
     | VEIn
-    { inExpr       :: rec            -- ^ The value to check for.
-    , inQuery      :: ValueQuery     -- ^ The query to check in.
+    { inExpr  :: rec            -- ^ The value to check for.
+    , inQuery :: ValueQuery     -- ^ The query to check in.
     }
       -- | CASE WHEN ELSE (restricted to one WHEN branch)
     | VECase
-    { condExpr     :: rec
-    , thenBranch   :: rec
-    , elseBranch   :: rec
+    { condExpr   :: rec
+    , thenBranch :: rec
+    , elseBranch :: rec
     } deriving Show
 -- FIXME merge VECast and VENot into UnaryFunction (maybe not possible)
 
@@ -328,7 +329,7 @@ data DataType = -- | @INTEGER@
 data Value = -- | @42@
              VInteger Integer
              -- | Numeric data type with fixed precision and scale (e.g. @1.4@)
-           | VDecimal Float
+           | VDecimal Decimal
              -- | A double precision floating point number.
            | VDoublePrecision Double
              -- | e.g. @'foo'@

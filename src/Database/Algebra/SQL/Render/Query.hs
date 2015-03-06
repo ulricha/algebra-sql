@@ -10,7 +10,7 @@ module Database.Algebra.SQL.Render.Query
 import qualified Data.Time.Calendar                 as C
 import           Text.PrettyPrint.ANSI.Leijen       (Doc, align, bold, char,
                                                      comma, double, empty,
-                                                     fillSep, float, hang, hsep,
+                                                     fillSep, hang, hsep,
                                                      indent, int, integer,
                                                      linebreak, lparen,
                                                      ondullblue, parens,
@@ -423,7 +423,7 @@ literal = bold
 renderValue :: Value -> Doc
 renderValue v = case v of
     VInteger i         -> literal $ integer i
-    VDecimal d         -> literal $ float d
+    VDecimal d         -> literal $ text $ show d
     VDoublePrecision d -> literal $ double d
     VText str          -> literal $ squotes $ text str
     VBoolean b         -> kw $ if b then "TRUE" else "FALSE"

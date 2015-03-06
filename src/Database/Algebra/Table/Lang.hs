@@ -10,9 +10,9 @@ module Database.Algebra.Table.Lang where
 
 import           Control.Applicative
 import           Data.Aeson
+import           Data.Decimal
 import           Data.List
 import qualified Data.Time.Calendar          as C
-import           Numeric                     (showFFloat)
 import           Text.Printf
 
 import           Database.Algebra.Dag        (Operator, opChildren,
@@ -78,7 +78,7 @@ data AVal where
   VStr    :: String -> AVal
   VBool   :: Bool -> AVal
   VDouble :: Double -> AVal
-  VDec    :: Float -> AVal
+  VDec    :: Decimal -> AVal
   VDate   :: C.Day -> AVal
     deriving (Eq, Ord, Generic)
 
@@ -88,8 +88,8 @@ instance Show AVal where
   show (VStr x)      = x
   show (VBool True)  = "true"
   show (VBool False) = "false"
-  show (VDouble x)   =  show x
-  show (VDec x)      = showFFloat (Just 2) x ""
+  show (VDouble x)   = show x
+  show (VDec d)      = show d
   show (VDate d)     = C.showGregorian d
 
 -- | Attribute name or column name
@@ -350,6 +350,11 @@ instance FromJSON C.Day where
 instance ToJSON C.Day where
     toJSON = toJSON . C.toGregorian
 
+instance ToJSON Decimal where
+    toJSON = toJSON . show
+
+instance FromJSON Decimal where
+    parseJSON s = read <$> parseJSON s
 
 -- FIXME use TH derivation to improve compilation time.
 instance ToJSON ATy where

@@ -15,6 +15,7 @@ module Database.Algebra.Table.Construct
     ) where
 
 import qualified Data.Time.Calendar          as C
+import           Data.Decimal
 import           Database.Algebra.Dag.Build
 import           Database.Algebra.Dag.Common
 import           Database.Algebra.Table.Lang
@@ -39,7 +40,7 @@ double :: Double -> AVal
 double = VDouble
 
 -- | Create a TA decimal value
-dec :: Float -> AVal
+dec :: Decimal -> AVal
 dec = VDec
 
 date :: C.Day -> AVal
