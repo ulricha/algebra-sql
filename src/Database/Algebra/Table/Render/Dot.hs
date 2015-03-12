@@ -84,6 +84,8 @@ opDotLabel tags i (DisjUnionL _)              = labelToDoc i
     "UNION" empty (lookupTags i tags)
 opDotLabel tags i (ThetaJoinL info)           = labelToDoc i
     "THETAJOIN" (commas renderJoinArgs info) (lookupTags i tags)
+opDotLabel tags i (LeftOuterJoinL info)       = labelToDoc i
+    "LEFTOUTERJOIN" (commas renderJoinArgs info) (lookupTags i tags)
 opDotLabel tags i (SemiJoinL info)           = labelToDoc i
     "SEMIJOIN" (commas renderJoinArgs info) (lookupTags i tags)
 opDotLabel tags i (AntiJoinL info)           = labelToDoc i
@@ -151,8 +153,8 @@ renderSortSpec ss@(_:_) = text "ORDER BY" <+> commas renderSortInf ss
 
 renderFrameBounds :: FrameBounds -> Doc
 renderFrameBounds (HalfOpenFrame fs)  = renderFrameStart fs
-renderFrameBounds (ClosedFrame fs fe) = renderFrameStart fs 
-                                        <+> text "AND" 
+renderFrameBounds (ClosedFrame fs fe) = renderFrameStart fs
+                                        <+> text "AND"
                                         <+> renderFrameEnd fe
 
 renderFrameStart :: FrameStart -> Doc
@@ -185,10 +187,10 @@ renderDotEdge (DotEdge u v) = int u <+> text "->" <+> int v <> semi
 renderColor :: DotColor -> Doc
 renderColor DCTomato       = text "tomato"
 renderColor DCRed          = text "red"
-renderColor DCOrangeDCRed    = text "orangered"
+renderColor DCOrangeDCRed  = text "orangered"
 renderColor DCSalmon       = text "salmon"
 renderColor DCGray         = text "gray"
-renderColor DCDimDCGray      = text "dimgray"
+renderColor DCDimDCGray    = text "dimgray"
 renderColor DCGold         = text "gold"
 renderColor DCTan          = text "tan"
 renderColor DCCrimson      = text "crimson"
@@ -197,9 +199,10 @@ renderColor DCSienna       = text "sienna"
 renderColor DCBeige        = text "beige"
 renderColor DCDodgerBlue   = text "dodgerblue"
 renderColor DCLightSkyBlue = text "lightskyblue"
+renderColor DCDeepSkyBlue  = text "deepskyblue"
 renderColor DCGray52       = text "gray52"
 renderColor DCGray91       = text "gray91"
-renderColor DCDarkDCOrange   = text "darkorange"
+renderColor DCDarkDCOrange = text "darkorange"
 renderColor DCOrange       = text "orange"
 renderColor DCWhite        = text "white"
 renderColor DCCyan         = text "cyan"
@@ -209,34 +212,35 @@ renderColor DCHotPink      = text "hotpink"
 opDotColor :: TALabel -> DotColor
 
 -- | Nullaryops
-opDotColor (LitTableL _ _)   = DCGray52
-opDotColor (TableRefL _)     = DCGray52
+opDotColor (LitTableL _ _)    = DCGray52
+opDotColor (TableRefL _)      = DCGray52
 
 -- | Unops
-opDotColor (ProjectL _)      = DCGray91
-opDotColor (SerializeL _)    = DCHotPink
+opDotColor (ProjectL _)       = DCGray91
+opDotColor (SerializeL _)     = DCHotPink
 
-opDotColor (SelL _)          = DCCyan
+opDotColor (SelL _)           = DCCyan
 
-opDotColor (DistinctL _)     = DCTan
-opDotColor (AggrL _)         = DCGold
+opDotColor (DistinctL _)      = DCTan
+opDotColor (AggrL _)          = DCGold
 
-opDotColor (RankL _)         = DCTomato
-opDotColor (RowNumL _)       = DCRed
-opDotColor (RowRankL _)      = DCRed
-opDotColor (WinFunL _)       = DCSalmon
+opDotColor (RankL _)          = DCTomato
+opDotColor (RowNumL _)        = DCRed
+opDotColor (RowRankL _)       = DCRed
+opDotColor (WinFunL _)        = DCSalmon
 
 -- | Binops
-opDotColor (CrossL     _)    = DCOrangeDCRed
+opDotColor (CrossL     _)     = DCOrangeDCRed
 
-opDotColor (DifferenceL _)   = DCDarkDCOrange
-opDotColor (DisjUnionL _)    = DCOrange
+opDotColor (DifferenceL _)    = DCDarkDCOrange
+opDotColor (DisjUnionL _)     = DCOrange
 
-opDotColor (EqJoinL    _)    = DCGreen
+opDotColor (EqJoinL    _)     = DCGreen
 
-opDotColor (ThetaJoinL _)    = DCDodgerBlue
-opDotColor (SemiJoinL _)     = DCLightSkyBlue
-opDotColor (AntiJoinL _)     = DCLightSkyBlue
+opDotColor (ThetaJoinL _)     = DCDodgerBlue
+opDotColor (LeftOuterJoinL _) = DCDeepSkyBlue
+opDotColor (SemiJoinL _)      = DCLightSkyBlue
+opDotColor (AntiJoinL _)      = DCLightSkyBlue
 
 renderDotNode :: DotNode -> Doc
 renderDotNode (DotNode n l c s) =
@@ -271,6 +275,7 @@ data DotColor = DCTomato
               | DCBeige
               | DCDodgerBlue
               | DCLightSkyBlue
+              | DCDeepSkyBlue
               | DCGray91
               | DCGray52
               | DCDarkDCOrange
@@ -319,6 +324,7 @@ data TALabel = LitTableL [Tuple] SchemaInfos
              | ThetaJoinL [(Expr, Expr, JoinRel)]
              | SemiJoinL [(Expr, Expr, JoinRel)]
              | AntiJoinL [(Expr, Expr, JoinRel)]
+             | LeftOuterJoinL [(Expr, Expr, JoinRel)]
              | SerializeL (Maybe DescrCol, SerializeOrder, [PayloadCol])
 
 labelOfOp :: TableAlgebra -> TALabel
@@ -328,13 +334,14 @@ labelOfOp (Database.Algebra.Dag.Common.NullaryOp op) = labelOfNullaryOp op
 labelOfOp (TerOp _ _ _ _)                            = error "no tertiary operations"
 
 labelOfBinOp :: BinOp -> TALabel
-labelOfBinOp (Cross info)     	= CrossL info
-labelOfBinOp (Difference info)  = DifferenceL info
-labelOfBinOp (DisjUnion info) 	= DisjUnionL info
-labelOfBinOp (EqJoin info)	= EqJoinL info
-labelOfBinOp (ThetaJoin info)   = ThetaJoinL info
-labelOfBinOp (SemiJoin info)    = SemiJoinL info
-labelOfBinOp (AntiJoin info)    = AntiJoinL info
+labelOfBinOp (Cross info)           = CrossL info
+labelOfBinOp (Difference info)      = DifferenceL info
+labelOfBinOp (DisjUnion info)       = DisjUnionL info
+labelOfBinOp (EqJoin info)          = EqJoinL info
+labelOfBinOp (ThetaJoin info)       = ThetaJoinL info
+labelOfBinOp (SemiJoin info)        = SemiJoinL info
+labelOfBinOp (AntiJoin info)        = AntiJoinL info
+labelOfBinOp (LeftOuterJoin info)   = LeftOuterJoinL info
 
 labelOfUnOp :: UnOp -> TALabel
 labelOfUnOp (WinFun info)    = WinFunL info

@@ -79,7 +79,7 @@ import Database.Algebra.SQL.Materialization.Util
             v has no parents:
                 spa(v) = {}
 
-                    
+
                    spa(v) = {}
                 => \forall u \in spa(v): u is in every path to v
 
@@ -193,7 +193,7 @@ traverse graph v = do
     -- Check whether all parents have been processed.
     when (and processedList) $ do
         sfComputeSingleParentAncestors v parents
-        
+
         -- Recurse over its children.
         mapM_ (traverse graph) $ G.children v graph
 
@@ -210,7 +210,7 @@ findSPA :: Graph
 findSPA graph rootVertices =
     -- Collect the results with the SFinder MonadState.
     execState (mapM_ (traverse graph) rootVertices) IntMap.empty
-            
+
 -- | Chooses the lowest single parent ancestor for each vertex.
 chooseLowestSPA :: IntMap.IntMap [G.Vertex] -> IntMap.IntMap [G.Vertex]
 chooseLowestSPA = fmap $ take 1

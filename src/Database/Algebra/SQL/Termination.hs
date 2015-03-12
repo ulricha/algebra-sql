@@ -18,9 +18,9 @@ import           Data.Monoid
 import qualified Data.Set    as S
 
 -- | Specifies a part in a SQL statement which is currently in use.
-data Feature = ProjectionF -- ^ Projection of columns.
-             | TableF -- ^ Physical or virtual table.
-             | FilterF -- ^ Filtering of rows.
+data Feature = ProjectionF       -- ^ Projection of columns.
+             | TableF            -- ^ Physical or virtual table.
+             | FilterF           -- ^ Filtering of rows.
              | DupElimF
              | SortF
              | WindowFunctionF
@@ -87,7 +87,7 @@ terminatingFeatures bottomF = F $ case bottomF of
     WindowFunctionF  ->
         S.fromList [FilterF, DupElimF, WindowFunctionF, AggrAndGroupingF]
     -- Problematic cases:
-    -- 
+    --
     --     * Filtering: May change intermediate result set.
     --
     --     * Aggregate functions can not be stacked.

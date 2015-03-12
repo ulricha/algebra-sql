@@ -90,7 +90,7 @@ flattenTileTreeWith materializer substituter (TileNode fs body children) =
 flattenTileTreeWith materializer substituter (ReferenceLeaf tableId s)  =
     ( emptySelectStmt
       { Q.selectClause = map f s
-      , Q.fromClause = 
+      , Q.fromClause =
             [Q.FPAlias (substituter alias) aliasName $ Just s]
       }
     , MultiSet.singleton alias

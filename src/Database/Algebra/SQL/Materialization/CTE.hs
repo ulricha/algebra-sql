@@ -63,14 +63,14 @@ materialize transformResult =
             if IntMap.null bindings
             then VQSelect s
             else VQWith withQueryBindings $ VQSelect s
-                                         
+
         Nothing -> error "gather: v is not a root vertex"
       where
         withQueryBindings = IntMap.foldrWithKey toBinding [] bindings
 
         (mSelect, bindings) = runReader (runStateT (visit v) IntMap.empty)
                                         $ IntSet.fromList $ G.reachable v graph
-        
+
         -- TODO factor out
         toBinding ref select l = ('t' : show ref, Nothing, VQSelect select) : l
 
@@ -79,7 +79,7 @@ materialize transformResult =
     visit v = do
 
         alreadyBound <- hasBinding v
-        
+
         if alreadyBound
         -- Binding already added.
         then return Nothing
@@ -114,7 +114,7 @@ materialize transformResult =
                 addBinding v select
 
                 return Nothing
-                
+
     addBinding :: G.Vertex -> SelectStmt -> Gather ()
     addBinding v select =
         modify $ IntMap.insert v select

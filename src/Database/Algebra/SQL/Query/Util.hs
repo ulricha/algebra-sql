@@ -75,4 +75,4 @@ affectsSortOrderAE ae = case ae of
 -- | Search for references and try to merge a select stmt at that position.
 --deepMergeSelectStmt :: (Int -> (Bool, Q.SelectStmt)) -> Q.SelectStmt -> Q.SelectStmt
 --deepMergeSelectStmt lookupFun select =
-    
+

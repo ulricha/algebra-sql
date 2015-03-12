@@ -7,7 +7,7 @@ import Text.PrettyPrint.ANSI.Leijen ( (<$>)
                                     , (<+>)
                                     , (<>)
                                     , Doc
-                                    , align 
+                                    , align
                                     , black
                                     , bold
                                     , empty

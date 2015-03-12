@@ -103,6 +103,11 @@ replaceReferencesFromExpr r (Q.FESubQuery q) =
 
 replaceReferencesFromExpr r (Q.FEVariable v) = r v
 
+replaceReferencesFromExpr r (Q.FEExplicitJoin op leftArg rightArg) =
+    Q.FEExplicitJoin op
+                     (replaceReferencesFromPart r leftArg)
+                     (replaceReferencesFromPart r rightArg)
+
 replaceReferencesFromExpr _ t                = t
 
 replaceReferencesValueQuery :: SubstitutionFunction
@@ -140,38 +145,38 @@ replaceReferencesWindowOrderExpr r (Q.WOE ae d) =
 replaceReferencesWindowFunction :: SubstitutionFunction
                                 -> Q.WindowFunction
                                 -> Q.WindowFunction
-replaceReferencesWindowFunction r (Q.WFMax a) = 
+replaceReferencesWindowFunction r (Q.WFMax a) =
     Q.WFMax (replaceReferencesColumnExpr r a)
 
-replaceReferencesWindowFunction r (Q.WFMin a)   = 
+replaceReferencesWindowFunction r (Q.WFMin a)   =
     Q.WFMin (replaceReferencesColumnExpr r a)
 
-replaceReferencesWindowFunction r (Q.WFSum a)   = 
+replaceReferencesWindowFunction r (Q.WFSum a)   =
     Q.WFSum (replaceReferencesColumnExpr r a)
 
-replaceReferencesWindowFunction r (Q.WFAvg a)   = 
+replaceReferencesWindowFunction r (Q.WFAvg a)   =
     Q.WFAvg (replaceReferencesColumnExpr r a)
 
-replaceReferencesWindowFunction r (Q.WFAll a)   = 
+replaceReferencesWindowFunction r (Q.WFAll a)   =
     Q.WFAll (replaceReferencesColumnExpr r a)
 
-replaceReferencesWindowFunction r (Q.WFAny a)   = 
+replaceReferencesWindowFunction r (Q.WFAny a)   =
     Q.WFAny (replaceReferencesColumnExpr r a)
 
-replaceReferencesWindowFunction r (Q.WFFirstValue a)   = 
+replaceReferencesWindowFunction r (Q.WFFirstValue a)   =
     Q.WFFirstValue (replaceReferencesColumnExpr r a)
 
-replaceReferencesWindowFunction r (Q.WFLastValue a)   = 
+replaceReferencesWindowFunction r (Q.WFLastValue a)   =
     Q.WFLastValue (replaceReferencesColumnExpr r a)
 
-replaceReferencesWindowFunction _ Q.WFCount     = 
+replaceReferencesWindowFunction _ Q.WFCount     =
     Q.WFCount
 
-replaceReferencesWindowFunction _ Q.WFRank      = 
+replaceReferencesWindowFunction _ Q.WFRank      =
     Q.WFRank
 
-replaceReferencesWindowFunction _ Q.WFDenseRank = 
+replaceReferencesWindowFunction _ Q.WFDenseRank =
     Q.WFDenseRank
 
-replaceReferencesWindowFunction _ Q.WFRowNumber = 
+replaceReferencesWindowFunction _ Q.WFRowNumber =
     Q.WFRowNumber

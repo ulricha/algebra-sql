@@ -39,7 +39,7 @@ renderDebugOutput c dag matFun debug =
         dBegin  = showString "----- debug output: tile\n"
         begin   = showString "----- graph output begin   -->\n"
         end     = showString "\n----- graph output end     <--\n"
-        mid     = showString "\n----- additional query\n" 
+        mid     = showString "\n----- additional query\n"
         (r, (tqs, rqs))
                 = resultFromDAG dag matFun
 

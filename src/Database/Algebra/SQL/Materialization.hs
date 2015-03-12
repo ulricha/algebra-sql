@@ -1,5 +1,5 @@
 -- Provides a basic toolset for materialization functions.
-module Database.Algebra.SQL.Materialization 
+module Database.Algebra.SQL.Materialization
     ( MatFun
     ) where
 

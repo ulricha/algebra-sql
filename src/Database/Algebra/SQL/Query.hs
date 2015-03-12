@@ -114,7 +114,17 @@ data FromExpr = -- Contains a subquery (e.g. "SELECT * FROM (TABLE foo) f;"),
                 -- Reference to an existing table.
               | FETableReference
               { tableReferenceName :: String      -- ^ The name of the table.
-              } deriving Show
+              }
+                -- Explicit join syntax
+              | FEExplicitJoin
+              { joinType :: JoinOperator
+              , leftArg  :: FromPart
+              , rightArg :: FromPart
+              }
+              deriving Show
+
+data JoinOperator = LeftOuterJoin ColumnExpr
+                  deriving Show
 
 
 
@@ -280,6 +290,7 @@ data BinaryFunction = BFPlus
                     | BFNotEqual
                     | BFAnd
                     | BFOr
+                    | BFCoalesce
                     deriving Show
 
 -- | Types of unary functions
@@ -297,6 +308,7 @@ data UnaryFunction = UFSin
                    | UFNot
                    -- A type cast (e.g. @CAST(1 AS DOUBLE PRECISION)@).
                    | UFCast DataType
+                   | UFIsNull
                    deriving (Show)
 
 -- | Fields that can be extracted from date/time types

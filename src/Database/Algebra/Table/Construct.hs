@@ -7,11 +7,11 @@ module Database.Algebra.Table.Construct
     , dbTable, litTable, litTable', eqJoin, thetaJoin
     , semiJoin, antiJoin, rank, difference, rowrank
     , select, distinct, cross, union, proj, aggr, winFun
-    , rownum, rownum'
+    , rownum, rownum', leftOuterJoin
       -- * Lifted smart constructors for table algebra operators
     , thetaJoinM, semiJoinM, antiJoinM, eqJoinM, rankM, differenceM
     , rowrankM, selectM, distinctM, crossM, unionM, projM
-    , aggrM, winFunM, rownumM, rownum'M
+    , aggrM, winFunM, rownumM, rownum'M, leftOuterJoinM
     ) where
 
 import qualified Data.Time.Calendar          as C
@@ -81,6 +81,9 @@ eqJoin n1 n2 c1 c2 = insert $ BinOp (EqJoin (n1, n2)) c1 c2
 
 thetaJoin :: [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
 thetaJoin cond c1 c2 = insert $ BinOp (ThetaJoin cond) c1 c2
+
+leftOuterJoin :: [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
+leftOuterJoin cond c1 c2 = insert $ BinOp (LeftOuterJoin cond) c1 c2
 
 semiJoin :: [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
 semiJoin cond c1 c2 = insert $ BinOp (SemiJoin cond) c1 c2
@@ -157,6 +160,9 @@ bind2 f a b = do
 -- | Perform theta join on two plans
 thetaJoinM :: [(Expr, Expr, JoinRel)] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 thetaJoinM cond = bind2 (thetaJoin cond)
+
+leftOuterJoinM :: [(Expr, Expr, JoinRel)] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
+leftOuterJoinM cond = bind2 (leftOuterJoin cond)
 
 -- | Perform a semi join on two plans
 semiJoinM :: [(Expr, Expr, JoinRel)] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode

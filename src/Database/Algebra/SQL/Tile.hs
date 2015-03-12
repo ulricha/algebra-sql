@@ -18,9 +18,11 @@ module Database.Algebra.SQL.Tile
 -- correlated?)? (reader?)
 -- TODO isMultiReferenced special case: check for same parent !!
 
+
 import           Control.Arrow                    (second)
 import           Control.Monad.RWS.Strict
 import qualified Data.DList                       as DL (DList, singleton)
+import qualified Data.List                        as L
 import qualified Data.IntMap                      as IntMap
 import           Data.Maybe
 import           GHC.Exts                         hiding (inline)
@@ -304,7 +306,7 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
         project col alias = Q.SCAlias (inline col) alias
 
         itemi i                     = "item" ++ show i
-    
+
         payloadProjs :: [Q.SelectColumn]
         payloadProjs                =
             zipWith (\(A.PayloadCol col) i -> project col $ itemi i)
@@ -387,7 +389,7 @@ transformUnOp (A.WinFun ((name, fun), partExprs, sortExprs, mFrameSpec)) c =
 transformUnOp (A.RowRank inf) c = transformUnOpRank Q.WFDenseRank inf c
 transformUnOp (A.Rank inf) c = transformUnOpRank Q.WFRank inf c
 transformUnOp (A.Project projList) c = do
-    
+
     (ctor, select, children) <- transformTerminated' c projectF
 
     let -- Inlining is obligatory here, since we possibly eliminate referenced
@@ -406,7 +408,7 @@ transformUnOp (A.Project projList) c = do
 transformUnOp (A.Select expr) c = do
 
     (ctor, select, children) <- transformTerminated' c filterF
-    
+
     return $ ctor ( appendToWhere ( translateExprCE
                                     (Just $ Q.selectClause select)
                                     expr
@@ -425,12 +427,12 @@ transformUnOp (A.Distinct ()) c = do
 transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
 
     (ctor, select, children) <- transformTerminated' c $ projectF <> aggrAndGroupingF
-    
+
     let justSClause       = Just $ Q.selectClause select
         translateE        = translateExprCE justSClause
         -- Inlining here is obligatory, since we could eliminate referenced
         -- columns. (This is similar to projection.)
-        aggrToEE (a, n)   = 
+        aggrToEE (a, n)   =
             Q.SCAlias ( let (fun, optExpr) = translateAggrType a
                         in Q.EEAggrExpr
                            $ Q.AEAggregate (liftM translateE optExpr)
@@ -477,7 +479,7 @@ attachColFunUnOp colFun opFeatures c = do
                  col@(Q.SCAlias _ name) ->
                      ctor select { Q.selectClause = col : pruneCol name sClause }
                           children
-                 col@Q.SCExpr{}         -> 
+                 col@Q.SCExpr{}         ->
                      ctor select { Q.selectClause = col : sClause }
                           children
 
@@ -500,6 +502,8 @@ transformBinSetOp setOp c0 c1 = do
 
     -- Impose a canonical order on entries in the SELECT clauses to
     -- ensure that schemata of the set operator inputs match.
+
+    -- FIXME 'Q.sName' is a partial function!
     let select0' = select0 { Q.selectClause = sortWith Q.sName $ Q.selectClause select0 }
         select1' = select1 { Q.selectClause = sortWith Q.sName $ Q.selectClause select1 }
 
@@ -582,12 +586,45 @@ transformBinOp (A.ThetaJoin conditions) c0 c1  = do
     (childrenFeatures, select, children) <- transformBinCrossJoin c0 c1
 
     let sClause = Q.selectClause select
-        conds   = map f conditions
-        f       = translateJoinCond sClause sClause
+        conds   = map (translateJoinCond sClause sClause) conditions
 
     return $ TileNode childrenFeatures
                         (appendAllToWhere conds select)
                         children
+
+transformBinOp (A.LeftOuterJoin conditions) c0 c1 = do
+    (_, select0, children0) <- transformTerminated c0 noneF
+    (_, select1, children1) <- transformTerminated c1 noneF
+
+    let q0 = Q.FESubQuery $ Q.VQSelect select0
+    let q1 = Q.FESubQuery $ Q.VQSelect select1
+
+    fpAlias0 <- freshAlias
+    fpAlias1 <- freshAlias
+
+    let schema0 = map Q.sName $ Q.selectClause select0
+    let schema1 = map Q.sName $ Q.selectClause select1
+
+    let fp0 = Q.FPAlias q0 fpAlias0 Nothing
+    let fp1 = Q.FPAlias q1 fpAlias1 Nothing
+
+    joinAlias <- freshAlias
+
+    let joinCond = translateExplJoinConds fpAlias0 fpAlias1 conditions
+    let joinOp   = Q.LeftOuterJoin joinCond
+
+    return $ TileNode (projectF <> tableF)
+                      emptySelectStmt
+                          { Q.selectClause =
+                              (columnsFromSchema joinAlias $ schema0 ++ schema1)
+                              ++
+                              (columnsFromSchema fpAlias1 schema1)
+                          , Q.fromClause =
+                              [ Q.FPAlias (Q.FEExplicitJoin joinOp fp0 fp1)
+                                          joinAlias
+                                          (Just $ schema0 ++ schema1) ]
+                          }
+                      (children0 ++ children1)
 
 transformBinOp (A.SemiJoin cs) c0 c1          =
     transformExistsJoin cs c0 c1 id
@@ -614,7 +651,7 @@ transformExistsJoin conditions c0 c1 wrapFun = do
     (_, select1, children1) <- transformTerminated c1 noneF
 
     let ctor s = ctor0 s $ children0 ++ children1
-    
+
     -- Split the conditions into the first equality condition found and the
     -- remaining ones.
     case foldr findEq (Nothing, []) conditions of
@@ -634,30 +671,30 @@ transformExistsJoin conditions c0 c1 wrapFun = do
             return $ ctor (appendToWhere outerCond select0)
         -- We did find an equality condition, use it with the IN construct.
         (Just (l, r), conditions') -> do
-           
+
             let -- Embedd the right query into the where clause of the left one.
                 leftCond    =
                     wrapFun . Q.CEBase
                             . Q.VEIn (translateExprCE (Just lSClause) l)
                             $ rightSelect'
-    
+
                 -- If the nested query is a simple selection from a
                 -- literal table, use the literal table directly:
                 -- SELECT t.c FROM (VALUES ...) AS t(c)
                 -- =>
                 -- VALUES ...
-                rightSelect' = 
+                rightSelect' =
                     case rightSelect of
-                        Q.VQSelect 
+                        Q.VQSelect
                           (Q.SelectStmt
-                            [Q.SCExpr (Q.EEBase (Q.VEColumn colName (Just tabName)))] 
-                            False 
+                            [Q.SCExpr (Q.EEBase (Q.VEColumn colName (Just tabName)))]
+                            False
                             [Q.FPAlias (Q.FESubQuery (Q.VQLiteral rows)) tabName' (Just [colName'])]
                             []
                             []
                             []) | colName == colName' && tabName == tabName' -> Q.VQLiteral rows
                         _ -> rightSelect
-                    
+
                 -- Embedd all conditions in the right select, and set select
                 -- clause to the right part of the equal join condition.
                 rightSelect = Q.VQSelect $ appendAllToWhere innerConds select1
@@ -683,7 +720,7 @@ transformTerminated :: C.AlgNode
                     -> Transform (FeatureSet, Q.SelectStmt, TileChildren)
 transformTerminated n topFs = do
     tile <- transformNode n
-    
+
     case tile of
         TileNode bottomFs body children
             | topFs `terminatesOver` bottomFs -> do
@@ -902,13 +939,14 @@ translateAggrType aggr = case aggr of
     A.All e  -> (Q.AFAll, Just e)
     A.Any e  -> (Q.AFAny, Just e)
 
-translateExprValueExprTemplate :: (Maybe [Q.SelectColumn] -> A.Expr -> a)
-                               -> (Q.ValueExprTemplate a -> a)
-                               -> ([Q.SelectColumn] -> String -> a)
-                               -> Maybe [Q.SelectColumn]
-                               -> A.Expr
-                               -> a
-translateExprValueExprTemplate rec wrap inline optSelectClause expr =
+translateExprTempl :: (Maybe [Q.SelectColumn] -> A.Expr -> a)
+                   -> (Q.ValueExprTemplate a -> a)
+                   -> ([Q.SelectColumn] -> String -> a)
+                   -> Maybe String
+                   -> Maybe [Q.SelectColumn]
+                   -> A.Expr
+                   -> a
+translateExprTempl rec wrap inline mPrefix optSelectClause expr =
     case expr of
         A.IfE c t e       ->
             wrap $ Q.VECase (rec optSelectClause c)
@@ -920,39 +958,87 @@ translateExprValueExprTemplate rec wrap inline optSelectClause expr =
                               (rec optSelectClause e1)
                               $ rec optSelectClause e2
         A.UnAppE f e      ->
-            wrap $ case f of
-                A.Not               -> Q.VEUnApp Q.UFNot tE
-                A.Cast t            -> Q.VEUnApp (Q.UFCast $ translateATy t) tE
-                A.Sin               -> Q.VEUnApp Q.UFSin tE
-                A.Cos               -> Q.VEUnApp Q.UFCos tE
-                A.Tan               -> Q.VEUnApp Q.UFTan tE
-                A.ASin              -> Q.VEUnApp Q.UFASin tE
-                A.ACos              -> Q.VEUnApp Q.UFACos tE
-                A.ATan              -> Q.VEUnApp Q.UFATan tE
-                A.Sqrt              -> Q.VEUnApp Q.UFSqrt tE
-                A.Log               -> Q.VEUnApp Q.UFLog tE
-                A.Exp               -> Q.VEUnApp Q.UFExp tE
-                A.SubString from to -> Q.VEUnApp (Q.UFSubString from to) tE
-                A.DateDay           -> Q.VEUnApp (Q.UFExtract Q.ExtractDay) tE
-                A.DateYear          -> Q.VEUnApp (Q.UFExtract Q.ExtractYear) tE
-                A.DateMonth         -> Q.VEUnApp (Q.UFExtract Q.ExtractMonth) tE
-
-          where
-            tE = rec optSelectClause e
+            wrap $ Q.VEUnApp (translateUnFun f) (rec optSelectClause e)
 
         A.ColE n          -> case optSelectClause of
             Just s  -> inline s n
-            Nothing -> wrap $ mkCol n
+            Nothing -> wrap $ Q.VEColumn n mPrefix
         A.ConstE v        -> wrap $ Q.VEValue $ translateAVal v
 
 translateExprCE :: Maybe [Q.SelectColumn] -> A.Expr -> Q.ColumnExpr
-translateExprCE = translateExprValueExprTemplate translateExprCE Q.CEBase inlineCE
+translateExprCE = translateExprTempl translateExprCE Q.CEBase inlineCE Nothing
 
 translateExprEE :: Maybe [Q.SelectColumn] -> A.Expr -> Q.ExtendedExpr
-translateExprEE = translateExprValueExprTemplate translateExprEE Q.EEBase inlineEE
+translateExprEE = translateExprTempl translateExprEE Q.EEBase inlineEE Nothing
 
 translateExprAE :: Maybe [Q.SelectColumn] -> A.Expr -> Q.AggrExpr
-translateExprAE = translateExprValueExprTemplate translateExprAE Q.AEBase inlineAE
+translateExprAE = translateExprTempl translateExprAE Q.AEBase inlineAE Nothing
+
+--------------------------------------------------------------------------------
+-- Translation of join conditions for explicit join syntax.
+
+-- | Translate an expression that occurs in the join condition of an
+-- explicit join (e.g. LEFT OUTER JOIN). No expressions are inlined
+-- and all column references are prefixed with the subquery alias of
+-- the respective join argument.
+translateJoinExpr :: String -> A.Expr -> Q.ColumnExpr
+translateJoinExpr prefix expr =
+    case expr of
+        A.IfE c t e       ->
+            Q.CEBase $ Q.VECase (translateJoinExpr prefix c)
+                                (translateJoinExpr prefix t)
+                                (translateJoinExpr prefix e)
+
+        A.BinAppE f e1 e2 ->
+            Q.CEBase $ Q.VEBinApp (translateBinFun f)
+                                  (translateJoinExpr prefix e1)
+                                  (translateJoinExpr prefix e2)
+        A.UnAppE f e      ->
+            Q.CEBase $ Q.VEUnApp (translateUnFun f) (translateJoinExpr prefix e)
+
+        A.ColE n          -> Q.CEBase (Q.VEColumn n (Just prefix) )
+        A.ConstE v        -> Q.CEBase $ Q.VEValue $ translateAVal v
+
+translateExplJoinConds :: String
+                       -> String
+                       -> [(A.Expr, A.Expr, A.JoinRel)]
+                       -> Q.ColumnExpr
+translateExplJoinConds leftPrefix rightPrefix (jc : jcs) =
+    L.foldl' (\ae e -> Q.CEBase $ Q.VEBinApp Q.BFAnd ae e)
+             (translateExplJoinCond leftPrefix rightPrefix jc)
+             (map (translateExplJoinCond leftPrefix rightPrefix) jcs)
+translateExplJoinConds _          _           []         =
+    $impossible
+
+translateExplJoinCond :: String
+                      -> String
+                      -> (A.Expr, A.Expr, A.JoinRel)
+                      -> Q.ColumnExpr
+translateExplJoinCond leftPrefix rightPrefix (l, r, j) =
+    Q.CEBase $ Q.VEBinApp (translateJoinRel j)
+                          (translateJoinExpr leftPrefix l)
+                          (translateJoinExpr rightPrefix r)
+
+--------------------------------------------------------------------------------
+
+translateUnFun :: A.UnFun -> Q.UnaryFunction
+translateUnFun f = case f of
+    A.Not               -> Q.UFNot
+    A.Cast t            -> (Q.UFCast $ translateATy t)
+    A.Sin               -> Q.UFSin
+    A.Cos               -> Q.UFCos
+    A.Tan               -> Q.UFTan
+    A.ASin              -> Q.UFASin
+    A.ACos              -> Q.UFACos
+    A.ATan              -> Q.UFATan
+    A.Sqrt              -> Q.UFSqrt
+    A.Log               -> Q.UFLog
+    A.Exp               -> Q.UFExp
+    A.SubString from to -> (Q.UFSubString from to)
+    A.DateDay           -> (Q.UFExtract Q.ExtractDay)
+    A.DateYear          -> (Q.UFExtract Q.ExtractYear)
+    A.DateMonth         -> (Q.UFExtract Q.ExtractMonth)
+    A.IsNull            -> Q.UFIsNull
 
 translateBinFun :: A.BinFun -> Q.BinaryFunction
 translateBinFun f = case f of
@@ -973,6 +1059,7 @@ translateBinFun f = case f of
     A.SimilarTo -> Q.BFSimilarTo
     A.Like      -> Q.BFLike
     A.Concat    -> Q.BFConcat
+    A.Coalesce  -> Q.BFCoalesce
 
 -- | Translate sort information into '[Q.WindowOrderExpr]', using the column
 -- function, which takes a 'String'.
@@ -985,8 +1072,8 @@ translateSortInf sortInfos colFun = map toWOE sortInfos
 
 
 -- | Translate a single join condition into it's 'Q.ColumnExpr' equivalent.
--- 'A.Expr' contained within the join condition are inlined with the according
--- select clauses.
+-- 'A.Expr' contained within the join condition are inlined with the
+-- corresponding select clauses.
 translateJoinCond :: [Q.SelectColumn] -- ^ Left select clause.
                   -> [Q.SelectColumn] -- ^ Right select clause.
                   -> (A.Expr, A.Expr, A.JoinRel)

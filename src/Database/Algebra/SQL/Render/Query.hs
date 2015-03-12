@@ -212,9 +212,17 @@ renderSubQuery :: CompatMode -> ValueQuery -> Doc
 renderSubQuery compat q = lparen <+> align (renderValueQuery compat q) <$> rparen
 
 renderFromExpr :: CompatMode -> FromExpr -> Doc
-renderFromExpr compat (FESubQuery q)       = renderSubQuery compat q
-renderFromExpr _      (FEVariable v)       = ondullblue $ int v
-renderFromExpr _      (FETableReference n) = text n
+renderFromExpr compat (FESubQuery q)           = renderSubQuery compat q
+renderFromExpr _      (FEVariable v)           = ondullblue $ int v
+renderFromExpr _      (FETableReference n)     = text n
+renderFromExpr compat (FEExplicitJoin jop l r) = renderJoinOp compat jop l r
+
+renderJoinOp :: CompatMode -> JoinOperator -> FromPart -> FromPart -> Doc
+renderJoinOp compat (LeftOuterJoin e) l r =
+    renderFromPart compat l
+    <$> kw "LEFT OUTER JOIN"
+    <$> renderFromPart compat r
+    <$> kw "ON" <+> renderColumnExpr compat e
 
 -- | Renders an optional prefix.
 renderOptPrefix :: Maybe String -> Doc
@@ -269,6 +277,10 @@ renderValueExprTemplate renderRec compat ve = case ve of
     VEValue v            -> renderValue v
     VEColumn n optPrefix -> renderOptPrefix optPrefix
                             <> text n
+    VEBinApp BFCoalesce a b -> kw "COALESCE"
+                               <> parens (renderRec compat a
+                                          <> comma
+                                          <+> renderRec compat b)
     VEBinApp f a b       -> parens $ renderRec compat a
                             <+> renderBinaryFunction f
                             <+> renderRec compat b
@@ -358,6 +370,7 @@ renderBinaryFunction BFEqual        = op '='
 renderBinaryFunction BFNotEqual     = kw "<>"
 renderBinaryFunction BFAnd          = kw "AND"
 renderBinaryFunction BFOr           = kw "OR"
+renderBinaryFunction BFCoalesce     = kw "COALESCE"
 
 renderRegularUnary :: String -> Doc -> Doc
 renderRegularUnary f a = kw f <> parens a
@@ -399,7 +412,8 @@ renderUnaryFunction renderRec compat fun argExpr =
         UFSubString f t   -> renderSubString compat f t ra
         UFCast ty         -> kw "CAST"
                              <> parens (ra <+> kw "AS" <+> renderDataType ty)
-        UFNot              -> parens $ kw "NOT" <+> ra
+        UFNot             -> parens $ kw "NOT" <+> ra
+        UFIsNull          -> parens ra <+> kw "IS NULL"
 
   where
     ra = renderRec compat argExpr

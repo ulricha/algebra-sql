@@ -80,7 +80,7 @@ data AVal where
   VDouble :: Double -> AVal
   VDec    :: Decimal -> AVal
   VDate   :: C.Day -> AVal
-    deriving (Eq, Ord, Generic)
+  deriving (Eq, Ord, Generic)
 
 -- | Show the values in the way compatible with the xml plan.
 instance Show AVal where
@@ -140,6 +140,7 @@ data BinFun = Gt
             | SimilarTo
             | Like
             | Concat
+            | Coalesce
             deriving (Eq, Ord, Generic)
 
 instance Show BinFun where
@@ -160,6 +161,7 @@ instance Show BinFun where
   show NEq       = "<>"
   show And       = "&&"
   show Or        = "||"
+  show Coalesce  = "coalesce"
 
 -- | Unary functions/operators in expressions
 data UnFun = Not
@@ -177,6 +179,7 @@ data UnFun = Not
            | DateYear
            | DateMonth
            | SubString Integer Integer
+           | IsNull
            deriving (Eq, Ord, Generic)
 
 instance Show UnFun where
@@ -194,6 +197,7 @@ instance Show UnFun where
   show DateDay         = "date_day"
   show DateYear        = "date_year"
   show DateMonth       = "date_month"
+  show IsNull          = "is_null"
   show (SubString f t) = printf "subString_%d,%d" f t
 
 -- | Projection expressions
@@ -319,6 +323,7 @@ data UnOp = RowNum (Attr, [SortSpec], [PartExpr])
 data BinOp = Cross ()
            | EqJoin (LeftAttr,RightAttr)
            | ThetaJoin [(Expr, Expr, JoinRel)]
+           | LeftOuterJoin [(Expr, Expr, JoinRel)]
            | SemiJoin [(Expr, Expr, JoinRel)]
            | AntiJoin [(Expr, Expr, JoinRel)]
            | DisjUnion ()
