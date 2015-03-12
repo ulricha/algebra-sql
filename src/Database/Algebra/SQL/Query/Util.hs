@@ -38,10 +38,8 @@ affectsSortOrderValueExprTemplate affectsSortOrderRec ve = case ve of
     -- A constant value won't affect the sort order.
     Q.VEValue _        -> False
     Q.VEColumn _ _     -> True
-    Q.VECast e1 _      -> affectsSortOrderRec e1
     Q.VEBinApp _ e1 e2 -> affectsSortOrderRec e1 || affectsSortOrderRec e2
     Q.VEUnApp _ e1     -> affectsSortOrderRec e1
-    Q.VENot e1         -> affectsSortOrderRec e1
     -- We have no correlated queries (in open tiles), but in case we get some,
     -- this is the most flexible solution.
     Q.VEExists _       -> True

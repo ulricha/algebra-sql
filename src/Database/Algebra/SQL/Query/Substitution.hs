@@ -57,13 +57,11 @@ replaceReferencesValueExprTemplate :: (SubstitutionFunction -> a -> a)
                                    -> Q.ValueExprTemplate a
                                    -> Q.ValueExprTemplate a
 replaceReferencesValueExprTemplate replaceReferencesRec r ve = case ve of
-    Q.VECast tE t       -> Q.VECast (replaceReferencesRec r tE) t
     Q.VEBinApp bf fe se ->
         Q.VEBinApp bf
                    (replaceReferencesRec r fe)
                    (replaceReferencesRec r se)
     Q.VEUnApp uf e      -> Q.VEUnApp uf (replaceReferencesRec r e)
-    Q.VENot e           -> Q.VENot (replaceReferencesRec r e)
     Q.VECase cE tE eE   -> Q.VECase (replaceReferencesRec r cE)
                                     (replaceReferencesRec r tE)
                                     (replaceReferencesRec r eE)

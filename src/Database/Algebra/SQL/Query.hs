@@ -227,11 +227,6 @@ data ValueExprTemplate rec =
       -- | The optional prefix of the column.
     , cPrefix :: Maybe String
     }
-      -- | A type cast (e.g. @CAST(1 AS DOUBLE PRECISION)@).
-    | VECast
-    { target :: rec            -- ^ The target of the cast.
-    , type_  :: DataType       -- ^ The type to cast into.
-    }
      -- | Application of a binary function.
     | VEBinApp
     { binFun     :: BinaryFunction -- ^ The applied function.
@@ -241,10 +236,6 @@ data ValueExprTemplate rec =
     | VEUnApp
     { unFun :: UnaryFunction  -- ^ The applied function
     , arg   :: rec            -- ^ The operand
-    }
-      -- | Application of the not function.
-    | VENot
-    { nTarget :: rec            -- ^ The expression to negate.
     }
       -- | e.g. @EXISTS (VALUES (1))@
     | VEExists
@@ -303,6 +294,9 @@ data UnaryFunction = UFSin
                    | UFLog
                    | UFSubString Integer Integer
                    | UFExtract ExtractField
+                   | UFNot
+                   -- A type cast (e.g. @CAST(1 AS DOUBLE PRECISION)@).
+                   | UFCast DataType
                    deriving (Show)
 
 -- | Fields that can be extracted from date/time types

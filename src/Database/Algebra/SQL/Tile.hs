@@ -252,8 +252,8 @@ transformNullaryOp (A.LitTable (tuples, typedSchema)) = do
                    []
   where
     schema        = map fst typedSchema
-    castedNull ty = Q.CEBase $ Q.VECast (Q.CEBase $ Q.VEValue Q.VNull)
-                                         (translateATy ty)
+    castedNull ty = Q.CEBase $ Q.VEUnApp (Q.UFCast $ translateATy ty)
+                                         (Q.CEBase $ Q.VEValue Q.VNull)
     translateLit  = Q.CEBase . Q.VEValue . translateAVal
 
 transformNullaryOp (A.TableRef (name, typedSchema, _))   = do
@@ -592,14 +592,14 @@ transformBinOp (A.ThetaJoin conditions) c0 c1  = do
 transformBinOp (A.SemiJoin cs) c0 c1          =
     transformExistsJoin cs c0 c1 id
 transformBinOp (A.AntiJoin cs) c0 c1          =
-    transformExistsJoin cs c0 c1 (Q.CEBase . Q.VENot)
+    transformExistsJoin cs c0 c1 (Q.CEBase . Q.VEUnApp Q.UFNot)
 transformBinOp (A.DisjUnion ()) c0 c1         =
     transformBinSetOp Q.SOUnionAll c0 c1
 transformBinOp (A.Difference ()) c0 c1        =
     transformBinSetOp Q.SOExceptAll c0 c1
 
 transformExistsJoin :: [(A.Expr, A.Expr, A.JoinRel)]
-                    -> C.AlgNode 
+                    -> C.AlgNode
                     -> C.AlgNode
                     -> (Q.ColumnExpr -> Q.ColumnExpr)
                     -> Transform TileTree
@@ -797,23 +797,13 @@ convertEEBaseTemplate :: (Q.ExtendedExpr -> Maybe a)
 convertEEBaseTemplate convertEEBaseRec eeb = case eeb of
     Q.VEValue v             -> return $ Q.VEValue v
     Q.VEColumn n p          -> return $ Q.VEColumn n p
-    Q.VECast rec t          -> do
-        e <- convertEEBaseRec rec
-        return $ Q.VECast e t
-
     Q.VEBinApp f lrec rrec  -> do
         l <- convertEEBaseRec lrec
         r <- convertEEBaseRec rrec
         return $ Q.VEBinApp f l r
-
     Q.VEUnApp f rec         -> do
         e <- convertEEBaseRec rec
         return $ Q.VEUnApp f e
-
-    Q.VENot rec             -> do
-        e <- convertEEBaseRec rec
-        return $ Q.VENot e
-
     Q.VEExists q            -> return $ Q.VEExists q
     Q.VEIn rec q            -> do
         e <- convertEEBaseRec rec
@@ -931,8 +921,8 @@ translateExprValueExprTemplate rec wrap inline optSelectClause expr =
                               $ rec optSelectClause e2
         A.UnAppE f e      ->
             wrap $ case f of
-                A.Not               -> Q.VENot tE
-                A.Cast t            -> Q.VECast tE $ translateATy t
+                A.Not               -> Q.VEUnApp Q.UFNot tE
+                A.Cast t            -> Q.VEUnApp (Q.UFCast $ translateATy t) tE
                 A.Sin               -> Q.VEUnApp Q.UFSin tE
                 A.Cos               -> Q.VEUnApp Q.UFCos tE
                 A.Tan               -> Q.VEUnApp Q.UFTan tE

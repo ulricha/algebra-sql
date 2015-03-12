@@ -18,7 +18,6 @@ import           Text.PrettyPrint.ANSI.Leijen       (Doc, align, bold, char,
                                                      sep, squotes, text, vcat,
                                                      (<$>), (<+>), (</>), (<>))
 
-import           Database.Algebra.Impossible
 import           Database.Algebra.SQL.Compatibility
 import           Database.Algebra.SQL.Query
 
@@ -270,20 +269,13 @@ renderValueExprTemplate renderRec compat ve = case ve of
     VEValue v            -> renderValue v
     VEColumn n optPrefix -> renderOptPrefix optPrefix
                             <> text n
-    VECast v ty          ->
-        kw "CAST" <> parens castDoc
-      where castDoc = renderRec compat v
-                      <+> kw "AS" <+> renderDataType ty
-
     VEBinApp f a b       -> parens $ renderRec compat a
                             <+> renderBinaryFunction f
                             <+> renderRec compat b
 
-    VEUnApp (UFSubString f t) a -> renderSubString renderRec compat f t a
     VEUnApp f a          ->
-        parens $ renderUnaryFunction f (renderRec compat a)
+        parens $ renderUnaryFunction renderRec compat f a
 
-    VENot a              -> parens $ kw "NOT" <+> renderRec compat a
     VEExists q           -> kw "EXISTS" <+> renderSubQuery compat q
 
     VEIn v q             -> parens $ renderRec compat v
@@ -297,25 +289,6 @@ renderValueExprTemplate renderRec compat ve = case ve of
                          <+> renderRec compat e
                          <+> text "END"
 
-renderSubString :: (CompatMode -> a -> Doc)
-                -> CompatMode
-                -> Integer
-                -> Integer
-                -> a
-                -> Doc
-renderSubString renderRec compat from to argExpr =
-    case compat of
-        SQL99      -> kw "substring" <> parens (renderRec compat argExpr
-                                                <+> text "from" <+> integer from
-                                                <+> text "for" <+> integer to)
-        PostgreSQL -> kw "substr" <> parens (hsep $ punctuate comma [ renderRec compat argExpr
-                                                                    , integer from
-                                                                    , integer to
-                                                                    ])
-        MonetDB    -> kw "substring" <> parens (hsep $ punctuate comma [ renderRec compat argExpr
-                                                                       , integer from
-                                                                       , integer to
-                                                                       ])
 
 -- | Render a 'ExtendedExprBase' with the generic renderer.
 renderExtendedExprBase :: CompatMode -> ExtendedExprBase -> Doc
@@ -389,20 +362,47 @@ renderBinaryFunction BFOr           = kw "OR"
 renderRegularUnary :: String -> Doc -> Doc
 renderRegularUnary f a = kw f <> parens a
 
-renderUnaryFunction :: UnaryFunction -> Doc -> Doc
-renderUnaryFunction UFSin             a = renderRegularUnary "sin" a
-renderUnaryFunction UFCos             a = renderRegularUnary "cos" a
-renderUnaryFunction UFTan             a = renderRegularUnary "tan" a
-renderUnaryFunction UFLog             a = renderRegularUnary "log" a
-renderUnaryFunction UFSqrt            a = renderRegularUnary "sqrt" a
-renderUnaryFunction UFExp             a = renderRegularUnary "exp" a
-renderUnaryFunction UFASin            a = renderRegularUnary "asin" a
-renderUnaryFunction UFACos            a = renderRegularUnary "acos" a
-renderUnaryFunction UFATan            a = renderRegularUnary "atan" a
-renderUnaryFunction (UFExtract field) a =
-    kw "EXTRACT" <> parens (renderExtractField field <+> kw "FROM" <+> a)
--- The substring combinator is rendered special
-renderUnaryFunction UFSubString{} _     = $impossible
+renderSubString :: CompatMode -> Integer -> Integer -> Doc -> Doc
+renderSubString compat from to ra =
+    case compat of
+        SQL99      -> kw "substring" <> parens (ra
+                                                <+> text "from" <+> integer from
+                                                <+> text "for" <+> integer to)
+        PostgreSQL -> kw "substr" <> parens (hsep $ punctuate comma [ ra
+                                                                    , integer from
+                                                                    , integer to
+                                                                    ])
+        MonetDB    -> kw "substring" <> parens (hsep $ punctuate comma [ ra
+                                                                       , integer from
+                                                                       , integer to
+                                                                       ])
+
+renderUnaryFunction :: (CompatMode -> a -> Doc)
+                    -> CompatMode
+                    -> UnaryFunction
+                    -> a
+                    -> Doc
+renderUnaryFunction renderRec compat fun argExpr =
+    case fun of
+        UFSin             -> renderRegularUnary "sin" ra
+        UFCos             -> renderRegularUnary "cos" ra
+        UFTan             -> renderRegularUnary "tan" ra
+        UFLog             -> renderRegularUnary "log" ra
+        UFSqrt            -> renderRegularUnary "sqrt" ra
+        UFExp             -> renderRegularUnary "exp" ra
+        UFASin            -> renderRegularUnary "asin" ra
+        UFACos            -> renderRegularUnary "acos" ra
+        UFATan            -> renderRegularUnary "atan" ra
+        (UFExtract field) ->
+            kw "EXTRACT" <> parens (renderExtractField field <+> kw "FROM" <+> ra)
+        -- The substring combinator is rendered special
+        UFSubString f t   -> renderSubString compat f t ra
+        UFCast ty         -> kw "CAST"
+                             <> parens (ra <+> kw "AS" <+> renderDataType ty)
+        UFNot              -> parens $ kw "NOT" <+> ra
+
+  where
+    ra = renderRec compat argExpr
 
 renderExtractField :: ExtractField -> Doc
 renderExtractField ExtractDay   = kw "day"
