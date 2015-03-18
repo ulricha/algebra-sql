@@ -2,7 +2,6 @@
 -- files.
 module Database.Algebra.SQL.File where
 
-import           Control.Applicative
 import           Control.Monad.Error.Class
 import           Data.Aeson
 import qualified Data.ByteString.Lazy.Char8        as BL

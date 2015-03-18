@@ -8,7 +8,6 @@
 -- relations.
 module Database.Algebra.Table.Lang where
 
-import           Control.Applicative
 import           Data.Aeson
 import           Data.Decimal
 import           Data.List

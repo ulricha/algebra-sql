@@ -184,10 +184,10 @@ sfComputeSingleParentAncestors v []       =
 sfVertexProcessed :: G.Vertex -> SFinder Bool
 sfVertexProcessed v = gets $ isJust . IntMap.lookup v
 
-traverse :: Graph    -- ^ The used graph.
-         -> G.Vertex -- ^ The current vertex.
-         -> SFinder ()
-traverse graph v = do
+traverseGraph :: Graph    -- ^ The used graph.
+              -> G.Vertex -- ^ The current vertex.
+              -> SFinder ()
+traverseGraph graph v = do
     processedList <- mapM sfVertexProcessed parents
 
     -- Check whether all parents have been processed.
@@ -195,7 +195,7 @@ traverse graph v = do
         sfComputeSingleParentAncestors v parents
 
         -- Recurse over its children.
-        mapM_ (traverse graph) $ G.children v graph
+        mapM_ (traverseGraph graph) $ G.children v graph
 
   where parents = G.parents v graph
 
@@ -209,7 +209,7 @@ findSPA :: Graph
         -> IntMap.IntMap [G.Vertex]
 findSPA graph rootVertices =
     -- Collect the results with the SFinder MonadState.
-    execState (mapM_ (traverse graph) rootVertices) IntMap.empty
+    execState (mapM_ (traverseGraph graph) rootVertices) IntMap.empty
 
 -- | Chooses the lowest single parent ancestor for each vertex.
 chooseLowestSPA :: IntMap.IntMap [G.Vertex] -> IntMap.IntMap [G.Vertex]

@@ -18,6 +18,7 @@ import           Text.PrettyPrint.ANSI.Leijen       (Doc, align, bold, char,
                                                      sep, squotes, text, vcat,
                                                      (<$>), (<+>), (</>), (<>))
 
+import           Prelude hiding                     ((<$>))
 import           Database.Algebra.SQL.Compatibility
 import           Database.Algebra.SQL.Query
 
