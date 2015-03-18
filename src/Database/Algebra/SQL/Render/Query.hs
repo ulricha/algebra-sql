@@ -218,7 +218,7 @@ renderFromExpr _      (FETableReference n)     = text n
 renderFromExpr compat (FEExplicitJoin jop l r) = renderJoinOp compat jop l r
 
 renderJoinOp :: CompatMode -> JoinOperator -> FromPart -> FromPart -> Doc
-renderJoinOp compat (LeftOuterJoin e) l r =
+renderJoinOp compat (LeftOuterJoin e) l r = parens $
     renderFromPart compat l
     <$> kw "LEFT OUTER JOIN"
     <$> renderFromPart compat r
