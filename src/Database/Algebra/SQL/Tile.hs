@@ -295,7 +295,9 @@ transformUnOpRank rankFun (name, sortList) =
                               Nothing
 
 transformUnOp :: A.UnOp -> C.AlgNode -> Transform TileTree
-transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
+transformUnOp (A.Serialize (ref, key, ord, items)) c = do
+    $unimplemented
+{-
     (ctor, select, children) <- transformTerminated' c $ projectF <> sortF
 
     let inline :: String -> Q.ExtendedExpr
@@ -355,6 +357,8 @@ transformUnOp (A.Serialize (mDescr, pos, payloadCols)) c = do
         Just (A.DescrCol col) -> ( (:) $ Q.EEBase $ mkCol "descr"
                                  , (:) (col, "descr")
                                  )
+
+-}
 
 
 

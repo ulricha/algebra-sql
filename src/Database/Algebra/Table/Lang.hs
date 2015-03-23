@@ -23,8 +23,7 @@ import           Database.Algebra.Dag.Common
 import           GHC.Generics                (Generic)
 
 -- | Sorting rows in a direction
-data SortDir = Asc
-             | Desc
+data SortDir = Asc | Desc
     deriving (Eq, Ord, Generic, Read)
 
 data AggrType = Avg Expr
@@ -299,9 +298,21 @@ instance Show SerializeOrder where
     show NoPos       = "NoPos"
 
 newtype PayloadCol = PayloadCol Attr deriving (Ord, Eq, Generic)
+newtype OrdCol     = OrdCol Attr deriving (Ord, Eq, Generic)
+newtype KeyCol     = KeyCol Attr deriving (Ord, Eq, Generic)
+newtype RefCol     = RefCol Attr deriving (Ord, Eq, Generic)
 
 instance Show PayloadCol where
     show (PayloadCol c) = c
+
+instance Show OrdCol where
+    show (OrdCol c) = c
+
+instance Show KeyCol where
+    show (KeyCol c) = c
+
+instance Show RefCol where
+    show (RefCol c) = c
 
 data UnOp = RowNum (Attr, [SortSpec], [PartExpr])
           | RowRank (ResAttr, [SortSpec])
@@ -312,12 +323,10 @@ data UnOp = RowNum (Attr, [SortSpec], [PartExpr])
           | Distinct ()
           | Aggr ([(AggrType, ResAttr)], [(PartAttr, Expr)])
 
-          -- Serialize must only occur as the root node of a
-          -- query. It defines physical order of the query result:
-          -- Vertically, the result is ordered by descr and pos
-          -- columns. Columns must occur in the order defined by the
-          -- list of payload column names.
-          | Serialize (Maybe DescrCol, SerializeOrder, [PayloadCol])
+          -- Serialize must only occur as the root node of a query. It
+          -- defines physical order, natural key and reference columns
+          -- of the query result.
+          | Serialize ([RefCol], [KeyCol], [OrdCol], [PayloadCol])
           deriving (Ord, Eq, Show, Generic)
 
 data BinOp = Cross ()
@@ -379,6 +388,9 @@ instance ToJSON Key where
 instance ToJSON DescrCol where
 instance ToJSON SerializeOrder where
 instance ToJSON PayloadCol where
+instance ToJSON OrdCol where
+instance ToJSON KeyCol where
+instance ToJSON RefCol where
 instance ToJSON FrameBounds where
 instance ToJSON FrameEnd where
 instance ToJSON FrameStart where
@@ -400,6 +412,9 @@ instance FromJSON Key where
 instance FromJSON DescrCol where
 instance FromJSON SerializeOrder where
 instance FromJSON PayloadCol where
+instance FromJSON OrdCol where
+instance FromJSON KeyCol where
+instance FromJSON RefCol where
 instance FromJSON FrameBounds where
 instance FromJSON FrameEnd where
 instance FromJSON FrameStart where

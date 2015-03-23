@@ -116,10 +116,11 @@ opDotLabel tags i (DistinctL _)               = labelToDoc i
 opDotLabel tags i (AggrL (aggrList, attr))    = labelToDoc i
     "AGGR" ((commas renderAggr aggrList) <+> (brackets $ commas renderProj attr))
     (lookupTags i tags)
-opDotLabel tags i (SerializeL (mDescr, mPos, cols)) = labelToDoc i
-    "SERIALIZE" (renderSerCol mDescr
-                 <+> (text $ show mPos)
-                 <+> (brackets $ commas (text . show) cols))
+opDotLabel tags i (SerializeL (ref, key, ord, item)) = labelToDoc i
+    "SERIALIZE" (serializeArg "ref" ref <> text "\n"
+                 <> serializeArg "key" key <> text "\n"
+                 <> serializeArg "ord" ord <> text "\n"
+                 <> serializeArg "items" item <> text "\n")
     (lookupTags i tags)
 opDotLabel tags i (WinFunL (winFuns, partSpec, sortSpec, mFrameBounds)) = labelToDoc i
      "WIN" (hcat $ intersperse (text "\\n") [ renderWinFuns winFuns
@@ -128,6 +129,9 @@ opDotLabel tags i (WinFunL (winFuns, partSpec, sortSpec, mFrameBounds)) = labelT
                                             , maybe empty renderFrameBounds mFrameBounds
                                             ])
      (lookupTags i tags)
+
+serializeArg :: Show a => String -> [a] -> Doc
+serializeArg desc cols = text desc <+> equals <+> brackets (commas (text . show) cols)
 
 renderWinFun :: WinFun -> Doc
 renderWinFun (WinMax e)        = text "MAX" <> (parens $ text $ show e)
@@ -166,10 +170,6 @@ renderFrameEnd :: FrameEnd -> Doc
 renderFrameEnd FEUnboundFol = text "UNBOUNDED FOLLOWING"
 renderFrameEnd (FEValFol i) = int i <+> text "FOLLOWING"
 renderFrameEnd FECurrRow    = text "CURRENT ROW"
-
-renderSerCol :: Show c => Maybe c -> Doc
-renderSerCol Nothing  = empty
-renderSerCol (Just c) = (text $ show c) <> comma
 
 constructDotNode :: NodeMap [Tag] -> (AlgNode, TALabel) -> DotNode
 constructDotNode tags (n, op) =
@@ -325,7 +325,7 @@ data TALabel = LitTableL [Tuple] SchemaInfos
              | SemiJoinL [(Expr, Expr, JoinRel)]
              | AntiJoinL [(Expr, Expr, JoinRel)]
              | LeftOuterJoinL [(Expr, Expr, JoinRel)]
-             | SerializeL (Maybe DescrCol, SerializeOrder, [PayloadCol])
+             | SerializeL ([RefCol], [KeyCol], [OrdCol], [PayloadCol])
 
 labelOfOp :: TableAlgebra -> TALabel
 labelOfOp (Database.Algebra.Dag.Common.BinOp op _ _) = labelOfBinOp op
@@ -356,7 +356,7 @@ labelOfUnOp (Serialize info) = SerializeL info
 
 labelOfNullaryOp :: NullOp -> TALabel
 labelOfNullaryOp (LitTable  (tups, schema)) = LitTableL tups schema
-labelOfNullaryOp (TableRef  info)      	    = TableRefL info
+labelOfNullaryOp (TableRef  info)           = TableRefL info
 
 -- | extract the operator descriptions and list of edges from a DAG
 
