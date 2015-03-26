@@ -296,8 +296,6 @@ transformUnOpRank rankFun (name, sortList) =
 
 transformUnOp :: A.UnOp -> C.AlgNode -> Transform TileTree
 transformUnOp (A.Serialize (ref, key, ord, items)) c = do
-    $unimplemented
-{-
     (ctor, select, children) <- transformTerminated' c $ projectF <> sortF
 
     let inline :: String -> Q.ExtendedExpr
@@ -307,60 +305,20 @@ transformUnOp (A.Serialize (ref, key, ord, items)) c = do
         project :: String -> String -> Q.SelectColumn
         project col alias = Q.SCAlias (inline col) alias
 
-        itemi i                     = "item" ++ show i
+    let sortExprs = [ Q.OE (Q.EEBase $ mkCol oc)
+                           (translateSortDir d)
+                    | A.OrdCol (oc, d) <- ord
+                    ]
 
-        payloadProjs :: [Q.SelectColumn]
-        payloadProjs                =
-            zipWith (\(A.PayloadCol col) i -> project col $ itemi i)
-                    payloadCols
-                    ([1..] :: [Integer])
-
-        boundNames = map itemi [1..length payloadCols]
-
-        inlineOrderBy col = if col `elem` boundNames
-                            then Q.EEBase $ Q.VEColumn col Nothing
-                            else inline col
-
-        (posOrderList, posProjList) = case pos of
-            A.NoPos       -> ([], [])
-            -- Sort and project (avoid inlining, because not
-            -- necessary: The pos column will appear in the select
-            -- clause and can be referenced in the order by clause).
-            A.AbsPos col  -> ([Q.EEBase $ mkCol "pos"], [(col, "pos")])
-            -- Sort but do not project. It is not necessary because
-            -- relative positions are not needed to reconstruct nested
-            -- results. But: only inline those sorting columns that do
-            -- not appear in the select clause. Names bound in the
-            -- select clause are visible in the order by clause and
-            -- can be referenced.
-            A.RelPos cols -> (map inlineOrderBy cols, [])
+        cols      = [ rc | A.RefCol rc <- ref ]
+                    ++ [ kc | A.KeyCol kc <- key ]
+                    ++ [ oc | A.OrdCol (oc, _) <- ord ]
+                    ++ [ pc | A.PayloadCol pc <- items]
+        projs     = zipWith project cols cols
 
     return $ ctor
-             select
-             { Q.selectClause =
-                   map (uncurry project) (descrProjAdder posProjList)
-                   ++ payloadProjs
-             , -- Order by optional columns. Remove constant column expressions,
-               -- since SQL99 defines different semantics.
-               Q.orderByClause =
-                   map (`Q.OE` Q.Ascending)
-                       . filter affectsSortOrderEE
-                       . descrColAdder
-                       $ posOrderList
-             }
+             select { Q.selectClause = projs , Q.orderByClause = sortExprs }
              children
-  where
-    (descrColAdder, descrProjAdder) = case mDescr of
-        Nothing               -> (id, id)
-        -- Project and sort. Since descr gets added as new alias we can use it
-        -- in the ORDER BY clause (also avoid inlining).
-        Just (A.DescrCol col) -> ( (:) $ Q.EEBase $ mkCol "descr"
-                                 , (:) (col, "descr")
-                                 )
-
--}
-
-
 
 transformUnOp (A.RowNum (name, sortList, partExprs)) c =
     attachColFunUnOp colFun

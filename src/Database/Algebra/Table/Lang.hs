@@ -11,7 +11,7 @@ module Database.Algebra.Table.Lang where
 import           Control.Applicative
 import           Data.Aeson
 import           Data.Decimal
-import           Data.List
+-- import           Data.List
 import qualified Data.Time.Calendar          as C
 import           Text.Printf
 
@@ -277,26 +277,6 @@ data NullOp = LitTable ([Tuple], SchemaInfos)
             | TableRef (TableName, [TypedAttr], [Key])
             deriving (Ord, Eq, Show, Generic)
 
-newtype DescrCol   = DescrCol Attr deriving (Ord, Eq, Generic)
-
-instance Show DescrCol where
-    show (DescrCol c) = "Descr " ++ c
-
--- | Declare need for position columns in the query result. The
--- distinction between AbsPos and RelPos is only relevant for the
--- optimizer: AbsPos signals that the actual pos values are
--- required. RelPos signals that only the order induced by the pos
--- column is relevant.
-data SerializeOrder = AbsPos Attr
-                    | RelPos [Attr]
-                    | NoPos
-                    deriving (Ord, Eq, Generic)
-
-instance Show SerializeOrder where
-    show (AbsPos c)  = "AbsPos " ++ c
-    show (RelPos cs) = "RelPos " ++ (intercalate ", " cs)
-    show NoPos       = "NoPos"
-
 newtype PayloadCol = PayloadCol Attr deriving (Ord, Eq, Generic)
 newtype OrdCol     = OrdCol (Attr, SortDir) deriving (Ord, Eq, Generic)
 newtype KeyCol     = KeyCol Attr deriving (Ord, Eq, Generic)
@@ -386,8 +366,6 @@ instance ToJSON Expr where
 instance ToJSON UnFun where
 instance ToJSON BinFun where
 instance ToJSON Key where
-instance ToJSON DescrCol where
-instance ToJSON SerializeOrder where
 instance ToJSON PayloadCol where
 instance ToJSON OrdCol where
 instance ToJSON KeyCol where
@@ -410,8 +388,6 @@ instance FromJSON Expr where
 instance FromJSON UnFun where
 instance FromJSON BinFun where
 instance FromJSON Key where
-instance FromJSON DescrCol where
-instance FromJSON SerializeOrder where
 instance FromJSON PayloadCol where
 instance FromJSON OrdCol where
 instance FromJSON KeyCol where
