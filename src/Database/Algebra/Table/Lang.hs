@@ -298,7 +298,7 @@ instance Show SerializeOrder where
     show NoPos       = "NoPos"
 
 newtype PayloadCol = PayloadCol Attr deriving (Ord, Eq, Generic)
-newtype OrdCol     = OrdCol Attr deriving (Ord, Eq, Generic)
+newtype OrdCol     = OrdCol (Attr, SortDir) deriving (Ord, Eq, Generic)
 newtype KeyCol     = KeyCol Attr deriving (Ord, Eq, Generic)
 newtype RefCol     = RefCol Attr deriving (Ord, Eq, Generic)
 
@@ -306,7 +306,8 @@ instance Show PayloadCol where
     show (PayloadCol c) = c
 
 instance Show OrdCol where
-    show (OrdCol c) = c
+    show (OrdCol (c, Asc))  = c ++ ".asc"
+    show (OrdCol (c, Desc)) = c ++ ".desc"
 
 instance Show KeyCol where
     show (KeyCol c) = c
