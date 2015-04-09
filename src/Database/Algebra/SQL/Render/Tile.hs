@@ -3,6 +3,7 @@ module Database.Algebra.SQL.Render.Tile
     ) where
 
 
+import Prelude hiding               ( (<$>) )
 import Text.PrettyPrint.ANSI.Leijen ( (<$>)
                                     , (<+>)
                                     , (<>)

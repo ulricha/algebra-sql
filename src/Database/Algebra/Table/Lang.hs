@@ -1,15 +1,15 @@
-{-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TemplateHaskell      #-}
 
 -- | A representation of table algebra operators over multiset
 -- relations.
 module Database.Algebra.Table.Lang where
 
-import           Control.Applicative
 import           Data.Aeson
+import           Data.Aeson.TH
 import           Data.Decimal
 -- import           Data.List
 import qualified Data.Time.Calendar          as C
@@ -19,12 +19,10 @@ import           Database.Algebra.Dag        (Operator, opChildren,
                                               replaceOpChild)
 import           Database.Algebra.Dag.Common
 
--- required for JSON
-import           GHC.Generics                (Generic)
-
 -- | Sorting rows in a direction
-data SortDir = Asc | Desc
-    deriving (Eq, Ord, Generic, Read)
+data SortDir = Asc
+             | Desc
+    deriving (Eq, Ord, Read)
 
 data AggrType = Avg Expr
               | Max Expr
@@ -33,7 +31,8 @@ data AggrType = Avg Expr
               | Count
               | All Expr
               | Any Expr
-    deriving (Eq, Ord, Generic)
+    deriving (Eq, Ord)
+
 
 instance Show AggrType where
     show (Avg c)  = printf "avg(%s)" (show c)
@@ -59,7 +58,7 @@ data ATy where
     ADec :: ATy
     ADouble :: ATy
     ADate :: ATy
-    deriving (Eq, Ord, Generic)
+    deriving (Eq, Ord)
 
 -- | Show the table algebra types in a way that is compatible with
 --  the xml plan.
@@ -79,7 +78,7 @@ data AVal where
   VDouble :: Double -> AVal
   VDec    :: Decimal -> AVal
   VDate   :: C.Day -> AVal
-  deriving (Eq, Ord, Generic)
+  deriving (Eq, Ord)
 
 -- | Show the values in the way compatible with the xml plan.
 instance Show AVal where
@@ -116,7 +115,7 @@ type TableName           = String
 type TypedAttr = (Attr, ATy)
 
 -- | Key of a database table, a key consists of multiple column names
-newtype Key = Key [Attr] deriving (Eq, Ord, Show, Generic)
+newtype Key = Key [Attr] deriving (Eq, Ord, Show)
 
 -- | Sorting information
 type SortSpec              = (Expr, SortDir)
@@ -140,7 +139,7 @@ data BinFun = Gt
             | Like
             | Concat
             | Coalesce
-            deriving (Eq, Ord, Generic)
+            deriving (Eq, Ord)
 
 instance Show BinFun where
   show Minus     = "-"
@@ -179,7 +178,7 @@ data UnFun = Not
            | DateMonth
            | SubString Integer Integer
            | IsNull
-           deriving (Eq, Ord, Generic)
+           deriving (Eq, Ord)
 
 instance Show UnFun where
   show Not             = "not"
@@ -205,7 +204,7 @@ data Expr = BinAppE BinFun Expr Expr
           | ColE Attr
           | ConstE AVal
           | IfE Expr Expr Expr
-          deriving (Eq, Ord, Generic)
+          deriving (Eq, Ord)
 
 -- | Expressions which are used to specify partitioning in window
 -- functions.
@@ -235,7 +234,7 @@ data JoinRel = EqJ -- equal
              | LtJ -- less than
              | LeJ -- less equal
              | NeJ -- not equal
-             deriving (Eq, Ord, Generic)
+             deriving (Eq, Ord)
 
 instance Show JoinRel where
   show EqJ = "eq"
@@ -249,17 +248,17 @@ instance Show JoinRel where
 data FrameStart = FSUnboundPrec  -- ^ UNBOUNDED PRECEDING
                 | FSValPrec Int  -- ^ <value> PRECEDING
                 | FSCurrRow      -- ^ CURRENT ROW
-                deriving (Eq, Ord, Show, Generic)
+                deriving (Eq, Ord, Show)
 
 -- | Window frame end specification
 data FrameEnd = FECurrRow    -- ^ CURRENT ROW
               | FEValFol Int -- ^ <value> FOLLOWING
               | FEUnboundFol -- ^ UNBOUNDED FOLLOWING
-              deriving (Eq, Ord, Show, Generic)
+              deriving (Eq, Ord, Show)
 
 data FrameBounds = HalfOpenFrame FrameStart
                  | ClosedFrame FrameStart FrameEnd
-                 deriving (Eq, Ord, Show, Generic)
+                 deriving (Eq, Ord, Show)
 
 data WinFun = WinMax Expr
             | WinMin Expr
@@ -270,17 +269,17 @@ data WinFun = WinMax Expr
             | WinFirstValue Expr
             | WinLastValue Expr
             | WinCount
-            deriving (Eq, Ord, Show, Generic)
+            deriving (Eq, Ord, Show)
 
 
 data NullOp = LitTable ([Tuple], SchemaInfos)
             | TableRef (TableName, [TypedAttr], [Key])
-            deriving (Ord, Eq, Show, Generic)
+            deriving (Ord, Eq, Show)
 
-newtype PayloadCol = PayloadCol Attr deriving (Ord, Eq, Generic)
-newtype OrdCol     = OrdCol (Attr, SortDir) deriving (Ord, Eq, Generic)
-newtype KeyCol     = KeyCol Attr deriving (Ord, Eq, Generic)
-newtype RefCol     = RefCol Attr deriving (Ord, Eq, Generic)
+newtype PayloadCol = PayloadCol Attr deriving (Ord, Eq)
+newtype OrdCol     = OrdCol (Attr, SortDir) deriving (Ord, Eq)
+newtype KeyCol     = KeyCol Attr deriving (Ord, Eq)
+newtype RefCol     = RefCol Attr deriving (Ord, Eq)
 
 instance Show PayloadCol where
     show (PayloadCol c) = c
@@ -308,7 +307,7 @@ data UnOp = RowNum (Attr, [SortSpec], [PartExpr])
           -- defines physical order, natural key and reference columns
           -- of the query result.
           | Serialize ([RefCol], [KeyCol], [OrdCol], [PayloadCol])
-          deriving (Ord, Eq, Show, Generic)
+          deriving (Ord, Eq, Show)
 
 data BinOp = Cross ()
            | EqJoin (LeftAttr,RightAttr)
@@ -318,7 +317,7 @@ data BinOp = Cross ()
            | AntiJoin [(Expr, Expr, JoinRel)]
            | DisjUnion ()
            | Difference ()
-           deriving (Ord, Eq, Show, Generic)
+           deriving (Ord, Eq, Show)
 
 type TableAlgebra = Algebra () BinOp UnOp NullOp AlgNode
 
@@ -351,47 +350,26 @@ instance ToJSON Decimal where
 instance FromJSON Decimal where
     parseJSON s = read <$> parseJSON s
 
--- FIXME use TH derivation to improve compilation time.
-instance ToJSON ATy where
-instance ToJSON AVal where
-instance ToJSON SortDir where
-instance ToJSON JoinRel where
-instance ToJSON SortSpec where
-instance ToJSON AggrType where
-instance ToJSON NullOp where
-instance ToJSON WinFun where
-instance ToJSON UnOp where
-instance ToJSON BinOp where
-instance ToJSON Expr where
-instance ToJSON UnFun where
-instance ToJSON BinFun where
-instance ToJSON Key where
-instance ToJSON PayloadCol where
-instance ToJSON OrdCol where
-instance ToJSON KeyCol where
-instance ToJSON RefCol where
-instance ToJSON FrameBounds where
-instance ToJSON FrameEnd where
-instance ToJSON FrameStart where
+--------------------------------------------------------------------------------
+-- Aeson instances for JSON serialization
 
-instance FromJSON ATy where
-instance FromJSON AVal where
-instance FromJSON SortDir where
-instance FromJSON JoinRel where
-instance FromJSON SortSpec where
-instance FromJSON AggrType where
-instance FromJSON NullOp where
-instance FromJSON WinFun where
-instance FromJSON UnOp where
-instance FromJSON BinOp where
-instance FromJSON Expr where
-instance FromJSON UnFun where
-instance FromJSON BinFun where
-instance FromJSON Key where
-instance FromJSON PayloadCol where
-instance FromJSON OrdCol where
-instance FromJSON KeyCol where
-instance FromJSON RefCol where
-instance FromJSON FrameBounds where
-instance FromJSON FrameEnd where
-instance FromJSON FrameStart where
+deriveJSON defaultOptions ''AggrType
+deriveJSON defaultOptions ''ATy
+deriveJSON defaultOptions ''AVal
+deriveJSON defaultOptions ''SortDir
+deriveJSON defaultOptions ''JoinRel
+deriveJSON defaultOptions ''NullOp
+deriveJSON defaultOptions ''WinFun
+deriveJSON defaultOptions ''UnOp
+deriveJSON defaultOptions ''BinOp
+deriveJSON defaultOptions ''Expr
+deriveJSON defaultOptions ''UnFun
+deriveJSON defaultOptions ''BinFun
+deriveJSON defaultOptions ''Key
+deriveJSON defaultOptions ''RefCol
+deriveJSON defaultOptions ''KeyCol
+deriveJSON defaultOptions ''OrdCol
+deriveJSON defaultOptions ''PayloadCol
+deriveJSON defaultOptions ''FrameBounds
+deriveJSON defaultOptions ''FrameEnd
+deriveJSON defaultOptions ''FrameStart

@@ -14,7 +14,7 @@ Build-Type:     Simple
 
 library
     buildable:        True
-    build-depends:    base               >= 4.7 && < 5,
+    build-depends:    base               >= 4.8 && < 5,
                       mtl                >= 2.1,
                       containers         >= 0.5,
                       template-haskell   >= 2.9,
@@ -26,7 +26,7 @@ library
                       bytestring         >= 0.10,
                       errors             >= 1.0,
                       dlist              >= 0.7,
-                      ansi-wl-pprint     >= 0.6,
+                      ansi-wl-pprint     >= 0.6.7.2,
                       multiset           >= 0.2,
                       aeson              >= 0.8,
                       time               >= 1.4,
@@ -66,7 +66,7 @@ executable tadot
     Main-is: Database/Algebra/Table/Tools/DotGen.hs
     GHC-Options:      -Wall -fno-warn-orphans
     hs-source-dirs:   src
-    build-depends:    base               >= 4.7 && < 5,
+    build-depends:    base               >= 4.8 && < 5,
                       mtl                >= 2.1,
                       containers         >= 0.5,
                       template-haskell   >= 2.9,
@@ -85,7 +85,7 @@ executable sqlgen
     Main-is: Database/Algebra/SQL/Tools/Gen.hs
     GHC-Options:       -Wall -fno-warn-orphans
     hs-source-dirs:   src
-    build-depends:    base               >= 4.7 && < 5,
+    build-depends:    base               >= 4.8 && < 5,
                       mtl                >= 2.1,
                       containers         >= 0.5,
                       template-haskell   >= 2.9,
@@ -99,7 +99,7 @@ executable sqlgen
                       bytestring         >= 0.10,
                       errors             >= 1.0,
                       dlist              >= 0.7,
-                      ansi-wl-pprint     >= 0.6,
+                      ansi-wl-pprint     >= 0.6.7.2,
                       multiset           >= 0.2,
                       Decimal            >= 0.4,
                       aeson              >= 0.8,
