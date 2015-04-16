@@ -305,7 +305,11 @@ transformUnOp (A.Serialize (ref, key, ord, items)) c = do
         project :: String -> String -> Q.SelectColumn
         project col alias = Q.SCAlias (inline col) alias
 
-    let sortExprs = [ Q.OE (Q.EEBase $ mkCol oc)
+    let sortExprs = [ Q.OE (Q.EEBase $ mkCol rc) Q.Ascending
+                    | A.RefCol rc <- ref
+                    ]
+                    ++
+                    [ Q.OE (Q.EEBase $ mkCol oc)
                            (translateSortDir d)
                     | A.OrdCol (oc, d) <- ord
                     ]
