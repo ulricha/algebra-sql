@@ -1,6 +1,7 @@
 module Database.Algebra.SQL.Query where
 
 import           Data.Decimal
+import qualified Data.Text          as T
 import qualified Data.Time.Calendar as C
 -- TODO Do we have to check for validity of types?
 -- TODO is window clause standard?
@@ -339,7 +340,7 @@ data Value = -- | @42@
              -- | A double precision floating point number.
            | VDoublePrecision Double
              -- | e.g. @'foo'@
-           | VText String
+           | VText T.Text
              -- | e.g. @TRUE@, @FALSE@ (but not UNKOWN in this variant)
            | VBoolean Bool
              -- | Standard SQL dates (Gregorian calendar)

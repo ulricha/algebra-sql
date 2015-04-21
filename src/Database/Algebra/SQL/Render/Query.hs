@@ -1,4 +1,5 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- This file determines the semantics of the 'Query' data structure and all of
 -- its sub structures.
@@ -7,6 +8,7 @@ module Database.Algebra.SQL.Render.Query
     , renderSelectStmt
     ) where
 
+import qualified Data.Text                          as T
 import qualified Data.Time.Calendar                 as C
 import           Text.PrettyPrint.ANSI.Leijen       (Doc, align, bold, char,
                                                      comma, double, empty,
@@ -18,9 +20,9 @@ import           Text.PrettyPrint.ANSI.Leijen       (Doc, align, bold, char,
                                                      sep, squotes, text, vcat,
                                                      (<$>), (<+>), (</>), (<>))
 
-import           Prelude hiding                     ((<$>))
 import           Database.Algebra.SQL.Compatibility
 import           Database.Algebra.SQL.Query
+import           Prelude                            hiding ((<$>))
 
 enlist :: [Doc] -> Doc
 enlist = fillSep . punctuate comma
@@ -275,7 +277,7 @@ renderValueExprTemplate :: (CompatMode -> a -> Doc)
                         -> ValueExprTemplate a
                         -> Doc
 renderValueExprTemplate renderRec compat ve = case ve of
-    VEValue v            -> renderValue v
+    VEValue v            -> renderValue compat v
     VEColumn n optPrefix -> renderOptPrefix optPrefix
                             <> text n
     VEBinApp BFCoalesce a b -> kw "COALESCE"
@@ -435,12 +437,24 @@ renderDataType DTDate            = kw "DATE"
 literal :: Doc -> Doc
 literal = bold
 
-renderValue :: Value -> Doc
-renderValue v = case v of
+-- | Escape a string literal.
+-- FIXME no idea if the PostgreSQL mode works for other systems.
+escape :: CompatMode -> T.Text -> T.Text
+escape _ t = escapePostgreSQL t
+
+-- | With PostgreSQL, single quotes can be escaped by doubling them.
+escapePostgreSQL :: T.Text -> T.Text
+escapePostgreSQL t = T.concatMap f t
+  where
+    f '\'' = "''"
+    f c    = T.singleton c
+
+renderValue :: CompatMode -> Value -> Doc
+renderValue c v = case v of
     VInteger i         -> literal $ integer i
     VDecimal d         -> literal $ text $ show d
     VDoublePrecision d -> literal $ double d
-    VText str          -> literal $ squotes $ text str
+    VText str          -> literal $ squotes $ text $ T.unpack $ escape c str
     VBoolean b         -> kw $ if b then "TRUE" else "FALSE"
     VNull              -> literal $ text "NULL"
     VDate d            -> literal $ text "DATE"
