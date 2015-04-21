@@ -1,8 +1,8 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 -- | A representation of table algebra operators over multiset
 -- relations.
@@ -11,7 +11,8 @@ module Database.Algebra.Table.Lang where
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Decimal
--- import           Data.List
+
+import qualified Data.Text                   as T
 import qualified Data.Time.Calendar          as C
 import           Text.Printf
 
@@ -32,7 +33,6 @@ data AggrType = Avg Expr
               | All Expr
               | Any Expr
     deriving (Eq, Ord)
-
 
 instance Show AggrType where
     show (Avg c)  = printf "avg(%s)" (show c)
@@ -73,7 +73,7 @@ instance Show ATy where
 -- | Wrapper around values that can occur in an table algebra plan
 data AVal where
   VInt    :: Integer -> AVal
-  VStr    :: String -> AVal
+  VStr    :: T.Text -> AVal
   VBool   :: Bool -> AVal
   VDouble :: Double -> AVal
   VDec    :: Decimal -> AVal
@@ -83,7 +83,7 @@ data AVal where
 -- | Show the values in the way compatible with the xml plan.
 instance Show AVal where
   show (VInt x)      = show x
-  show (VStr x)      = x
+  show (VStr x)      = T.unpack x
   show (VBool True)  = "true"
   show (VBool False) = "false"
   show (VDouble x)   = show x

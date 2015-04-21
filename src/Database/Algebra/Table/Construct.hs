@@ -14,8 +14,9 @@ module Database.Algebra.Table.Construct
     , aggrM, winFunM, rownumM, rownum'M, leftOuterJoinM
     ) where
 
-import qualified Data.Time.Calendar          as C
 import           Data.Decimal
+import qualified Data.Text                   as T
+import qualified Data.Time.Calendar          as C
 import           Database.Algebra.Dag.Build
 import           Database.Algebra.Dag.Common
 import           Database.Algebra.Table.Lang
@@ -28,7 +29,7 @@ int :: Integer -> AVal
 int = VInt
 
 -- | Create a TA string value
-string :: String -> AVal
+string :: T.Text -> AVal
 string = VStr
 
 -- | Create a TA boolean value
