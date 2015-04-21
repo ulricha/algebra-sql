@@ -446,6 +446,8 @@ escape _ t = escapePostgreSQL t
 escapePostgreSQL :: T.Text -> T.Text
 escapePostgreSQL t = T.concatMap f t
   where
+    -- Filter out null ('\0') characters
+    f '\0' = T.empty
     f '\'' = "''"
     f c    = T.singleton c
 
