@@ -931,13 +931,14 @@ translateWindowFunction translateExpr wfun = case wfun of
 translateAggrType :: A.AggrType
                   -> (Q.AggregateFunction, Maybe A.Expr)
 translateAggrType aggr = case aggr of
-    A.Avg e  -> (Q.AFAvg, Just e)
-    A.Max e  -> (Q.AFMax, Just e)
-    A.Min e  -> (Q.AFMin, Just e)
-    A.Sum e  -> (Q.AFSum, Just e)
-    A.Count  -> (Q.AFCount, Nothing)
-    A.All e  -> (Q.AFAll, Just e)
-    A.Any e  -> (Q.AFAny, Just e)
+    A.Avg e     -> (Q.AFAvg, Just e)
+    A.Max e     -> (Q.AFMax, Just e)
+    A.Min e     -> (Q.AFMin, Just e)
+    A.Sum e     -> (Q.AFSum, Just e)
+    A.Count e   -> (Q.AFCount, Just e)
+    A.CountStar -> (Q.AFCount, Nothing)
+    A.All e     -> (Q.AFAll, Just e)
+    A.Any e     -> (Q.AFAny, Just e)
 
 translateExprTempl :: (Maybe [Q.SelectColumn] -> A.Expr -> a)
                    -> (Q.ValueExprTemplate a -> a)

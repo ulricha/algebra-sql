@@ -315,17 +315,17 @@ renderColumnExprBase :: CompatMode -> ColumnExprBase -> Doc
 renderColumnExprBase = renderValueExprTemplate renderColumnExpr
 
 renderAggregateFunction :: CompatMode -> AggregateFunction -> Doc
-renderAggregateFunction _          AFAvg   = kw "AVG"
-renderAggregateFunction _          AFMax   = kw "MAX"
-renderAggregateFunction _          AFMin   = kw "MIN"
-renderAggregateFunction _          AFSum   = kw "SUM"
-renderAggregateFunction _          AFCount = kw "COUNT"
-renderAggregateFunction PostgreSQL AFAll   = kw "BOOL_AND"
-renderAggregateFunction SQL99      AFAll   = kw "EVERY"
-renderAggregateFunction MonetDB    AFAll   = kw "MIN"
-renderAggregateFunction PostgreSQL AFAny   = kw "BOOL_OR"
-renderAggregateFunction SQL99      AFAny   = kw "SOME"
-renderAggregateFunction MonetDB    AFAny   = kw "MAX"
+renderAggregateFunction _          AFAvg       = kw "AVG"
+renderAggregateFunction _          AFMax       = kw "MAX"
+renderAggregateFunction _          AFMin       = kw "MIN"
+renderAggregateFunction _          AFSum       = kw "SUM"
+renderAggregateFunction _          AFCount     = kw "COUNT"
+renderAggregateFunction PostgreSQL AFAll       = kw "BOOL_AND"
+renderAggregateFunction SQL99      AFAll       = kw "EVERY"
+renderAggregateFunction MonetDB    AFAll       = kw "MIN"
+renderAggregateFunction PostgreSQL AFAny       = kw "BOOL_OR"
+renderAggregateFunction SQL99      AFAny       = kw "SOME"
+renderAggregateFunction MonetDB    AFAny       = kw "MAX"
 
 renderFunCall :: String -> Doc -> Doc
 renderFunCall funName funArg = kw funName <> parens funArg

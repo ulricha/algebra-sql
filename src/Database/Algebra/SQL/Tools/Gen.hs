@@ -319,7 +319,7 @@ singleTests = [ tLitTable
     tDistinct     = singletonU $ A.Distinct ()
     tAggr         =
         singletonU
-        $ A.Aggr ([(A.Count, "count")], [("a", A.ColE "a")])
+        $ A.Aggr ([(A.CountStar, "count")], [("a", A.ColE "a")])
 
     -- binary operators
     singletonB op = singletonGraph $ C.BinOp op 0 1
