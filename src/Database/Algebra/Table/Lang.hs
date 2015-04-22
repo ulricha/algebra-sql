@@ -29,19 +29,21 @@ data AggrType = Avg Expr
               | Max Expr
               | Min Expr
               | Sum Expr
-              | Count
+              | CountStar
+              | Count Expr
               | All Expr
               | Any Expr
     deriving (Eq, Ord)
 
 instance Show AggrType where
-    show (Avg c)  = printf "avg(%s)" (show c)
-    show (Max c)  = printf "max(%s)" (show c)
-    show (Min c)  = printf "min(%s)" (show c)
-    show (Sum c)  = printf "sum(%s)" (show c)
-    show Count    = "count"
-    show (All c)  = printf "all(%s)" (show c)
-    show (Any c)  = printf "any(%s)" (show c)
+    show (Avg c)   = printf "avg(%s)" (show c)
+    show (Max c)   = printf "max(%s)" (show c)
+    show (Min c)   = printf "min(%s)" (show c)
+    show (Sum c)   = printf "sum(%s)" (show c)
+    show CountStar = "count(*)"
+    show (Count c) = printf "count(%s)" (show c)
+    show (All c)   = printf "all(%s)" (show c)
+    show (Any c)   = printf "any(%s)" (show c)
 
 -- | The show instance results in values that are accepted in the xml plan.
 instance Show SortDir where
