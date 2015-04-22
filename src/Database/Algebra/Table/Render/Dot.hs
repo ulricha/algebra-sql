@@ -59,18 +59,21 @@ renderData :: [Tuple] -> Doc
 renderData [] = empty
 renderData xs = sep $ punctuate semi $ map renderTuple xs
 
+renderSchema :: [TypedAttr] -> Doc
+renderSchema cols = commas renderColumn cols
+
 renderTableInfo :: TableName -> [(Attr, ATy)] -> [Key] -> Doc
 renderTableInfo tableName cols keys =
     (text tableName)
     <> text "\\n"
-    <> (brackets $ commas renderColumn cols)
+    <> (brackets $ renderSchema cols)
     <> text "\\n"
     <> (brackets $ commas renderKey keys)
 
 opDotLabel :: NodeMap [Tag] -> AlgNode -> TALabel -> Doc
 -- | Nullary operations
-opDotLabel tags i (LitTableL dat _schema)      = labelToDoc i
-    "LITTABLE" (renderData dat) (lookupTags i tags)
+opDotLabel tags i (LitTableL dat schema)      = labelToDoc i
+    "LITTABLE" (renderSchema schema <+> renderData dat) (lookupTags i tags)
 opDotLabel tags i (TableRefL (name, attrs, keys)) = labelToDoc i
     "TABLE" (renderTableInfo name attrs keys) (lookupTags i tags)
 -- |  Binary operations
@@ -307,7 +310,7 @@ renderDot ns es = text "digraph" <> (braces $ preamble $$ nodeSection $$ edgeSec
           edgeSection = vcat $ map renderDotEdge es
 
 -- | Labels (to collect all operations (nullary, unary,binary))
-data TALabel = LitTableL [Tuple] SchemaInfos
+data TALabel = LitTableL [Tuple] [TypedAttr]
              | TableRefL (TableName, [TypedAttr], [Key])
              | AggrL ([(AggrType, ResAttr)], [(PartAttr, Expr)])
              | WinFunL ((ResAttr, WinFun), [PartExpr], [SortSpec], Maybe FrameBounds)

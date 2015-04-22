@@ -223,10 +223,6 @@ type Proj                = (ResAttr, Expr)
 -- | A tuple is a list of values
 type Tuple = [AVal]
 
--- | Schema information, represents a table structure, the first element of the
--- tuple is the column name the second its type.
-type SchemaInfos = [(Attr, ATy)]
-
 -- | Comparison operators which can be used for ThetaJoins.
 data JoinRel = EqJ -- equal
              | GtJ -- greater than
@@ -272,7 +268,7 @@ data WinFun = WinMax Expr
             deriving (Eq, Ord, Show)
 
 
-data NullOp = LitTable ([Tuple], SchemaInfos)
+data NullOp = LitTable ([Tuple], [TypedAttr])
             | TableRef (TableName, [TypedAttr], [Key])
             deriving (Ord, Eq, Show)
 
