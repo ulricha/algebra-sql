@@ -233,10 +233,13 @@ renderOptPrefix = maybe empty $ (<> char '.') . text
 
 
 renderSelectColumn :: CompatMode -> SelectColumn -> Doc
-renderSelectColumn compat (SCAlias expr name) = renderExtendedExpr compat expr
-                                                <+> kw "AS"
-                                                <+> text name
-renderSelectColumn compat (SCExpr expr)       = renderExtendedExpr compat expr
+renderSelectColumn compat (SCAlias e@(EEBase (VEColumn n1 _)) n2)
+    | n1 == n2 = renderExtendedExpr compat e
+    | n1 /= n2 = renderExtendedExpr compat e <+> kw "AS" <+> text n2
+renderSelectColumn compat (SCAlias expr name)
+    = renderExtendedExpr compat expr <+> kw "AS" <+> text name
+renderSelectColumn compat (SCExpr expr)
+    = renderExtendedExpr compat expr
 
 
 renderExtendedExpr :: CompatMode -> ExtendedExpr -> Doc
