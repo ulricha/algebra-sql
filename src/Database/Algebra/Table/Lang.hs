@@ -235,12 +235,12 @@ data JoinRel = EqJ -- equal
              deriving (Eq, Ord)
 
 instance Show JoinRel where
-  show EqJ = "eq"
-  show GtJ = "gt"
-  show GeJ = "ge"
-  show LtJ = "lt"
-  show LeJ = "le"
-  show NeJ = "ne"
+  show EqJ = "=="
+  show GtJ = ">"
+  show GeJ = ">="
+  show LtJ = "<"
+  show LeJ = "<="
+  show NeJ = "/="
 
 -- | Window frame start specification
 data FrameStart = FSUnboundPrec  -- ^ UNBOUNDED PRECEDING

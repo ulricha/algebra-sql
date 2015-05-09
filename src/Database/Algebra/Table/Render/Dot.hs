@@ -38,9 +38,10 @@ renderSortInf (expr, Desc)   = (parens $ text (show expr)) <> text "/desc"
 renderSortInf (ColE c, Asc)  = text c
 renderSortInf (expr, Asc)    = parens $ text (show expr)
 
+
 renderJoinArgs :: (Expr, Expr, JoinRel) -> Doc
 renderJoinArgs (left, right, joinR) =
-    (text $ show left) <+> (text $ show joinR) <+> (text $ show right)
+    (text $ show left) <+> text (show joinR) <+> (text $ show right)
 
 renderPartExprs :: [PartExpr] -> Doc
 renderPartExprs []       = empty
