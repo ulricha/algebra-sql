@@ -81,7 +81,8 @@ executable tadot
                       Decimal            >= 0.4,
                       time               >= 1.4,
                       text               >= 1.2,
-                      algebra-dag        >= 0.1
+                      algebra-dag        >= 0.1,
+                      ansi-wl-pprint     >= 0.6.7.2
 
 executable sqlgen
     Main-is: Database/Algebra/SQL/Tools/Gen.hs

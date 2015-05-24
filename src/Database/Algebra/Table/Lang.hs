@@ -11,19 +11,21 @@ module Database.Algebra.Table.Lang where
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Decimal
-
-import qualified Data.Text                   as T
-import qualified Data.Time.Calendar          as C
+import           Text.PrettyPrint.ANSI.Leijen ((<+>), (<>))
+import qualified Text.PrettyPrint.ANSI.Leijen as P
 import           Text.Printf
 
-import           Database.Algebra.Dag        (Operator, opChildren,
-                                              replaceOpChild)
+import qualified Data.Text                    as T
+import qualified Data.Time.Calendar           as C
+
+import           Database.Algebra.Dag         (Operator, opChildren,
+                                               replaceOpChild)
 import           Database.Algebra.Dag.Common
 
 -- | Sorting rows in a direction
 data SortDir = Asc
              | Desc
-    deriving (Eq, Ord, Read)
+    deriving (Eq, Ord, Read, Show)
 
 data AggrType = Avg Expr
               | Max Expr
@@ -33,22 +35,22 @@ data AggrType = Avg Expr
               | Count Expr
               | All Expr
               | Any Expr
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Show)
 
-instance Show AggrType where
-    show (Avg c)   = printf "avg(%s)" (show c)
-    show (Max c)   = printf "max(%s)" (show c)
-    show (Min c)   = printf "min(%s)" (show c)
-    show (Sum c)   = printf "sum(%s)" (show c)
-    show CountStar = "count(*)"
-    show (Count c) = printf "count(%s)" (show c)
-    show (All c)   = printf "all(%s)" (show c)
-    show (Any c)   = printf "any(%s)" (show c)
+instance P.Pretty AggrType where
+    pretty (Avg c)   = P.text "avg" <> P.parens (P.pretty c)
+    pretty (Max c)   = P.text "max" <> P.parens (P.pretty c)
+    pretty (Min c)   = P.text "min" <> P.parens (P.pretty c)
+    pretty (Sum c)   = P.text "sum" <> P.parens (P.pretty c)
+    pretty CountStar = P.text "count(*)"
+    pretty (Count c) = P.text "count" <> P.parens (P.pretty c)
+    pretty (All c)   = P.text "all" <> P.parens (P.pretty c)
+    pretty (Any c)   = P.text "any" <> P.parens (P.pretty c)
 
 -- | The show instance results in values that are accepted in the xml plan.
-instance Show SortDir where
-    show Asc  = "ascending"
-    show Desc = "descending"
+instance P.Pretty SortDir where
+    pretty Asc  = P.text "ascending"
+    pretty Desc = P.text "descending"
 
 -- | table algebra types
 --  At this level we do not have any structural types anymore
@@ -60,37 +62,37 @@ data ATy where
     ADec :: ATy
     ADouble :: ATy
     ADate :: ATy
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Show)
 
 -- | Show the table algebra types in a way that is compatible with
 --  the xml plan.
-instance Show ATy where
-  show ADate    = "date"
-  show AInt     = "int"
-  show AStr     = "str"
-  show ABool    = "bool"
-  show ADec     = "dec"
-  show ADouble  = "dbl"
+instance P.Pretty ATy where
+    pretty ADate    = P.text "date"
+    pretty AInt     = P.text "int"
+    pretty AStr     = P.text "str"
+    pretty ABool    = P.text "bool"
+    pretty ADec     = P.text "dec"
+    pretty ADouble  = P.text "dbl"
 
 -- | Wrapper around values that can occur in an table algebra plan
 data AVal where
-  VInt    :: Integer -> AVal
-  VStr    :: T.Text -> AVal
-  VBool   :: Bool -> AVal
-  VDouble :: Double -> AVal
-  VDec    :: Decimal -> AVal
-  VDate   :: C.Day -> AVal
-  deriving (Eq, Ord)
+    VInt    :: Integer -> AVal
+    VStr    :: T.Text -> AVal
+    VBool   :: Bool -> AVal
+    VDouble :: Double -> AVal
+    VDec    :: Decimal -> AVal
+    VDate   :: C.Day -> AVal
+    deriving (Eq, Ord, Show)
 
 -- | Show the values in the way compatible with the xml plan.
-instance Show AVal where
-  show (VInt x)      = show x
-  show (VStr x)      = T.unpack x
-  show (VBool True)  = "true"
-  show (VBool False) = "false"
-  show (VDouble x)   = show x
-  show (VDec d)      = show d
-  show (VDate d)     = C.showGregorian d
+instance P.Pretty AVal where
+    pretty (VInt x)      = P.integer x
+    pretty (VStr x)      = P.text $ T.unpack x
+    pretty (VBool True)  = P.text "true"
+    pretty (VBool False) = P.text "false"
+    pretty (VDouble x)   = P.double x
+    pretty (VDec d)      = P.text $ show d
+    pretty (VDate d)     = P.text $ C.showGregorian d
 
 -- | Attribute name or column name
 type Attr            = String
@@ -141,27 +143,27 @@ data BinFun = Gt
             | Like
             | Concat
             | Coalesce
-            deriving (Eq, Ord)
+            deriving (Eq, Ord, Show)
 
-instance Show BinFun where
-  show Minus     = "-"
-  show Plus      = "+"
-  show Times     = "*"
-  show Div       = "/"
-  show Modulo    = "%"
-  show Contains  = "fn:contains"
-  show Concat    = "fn:concat"
-  show SimilarTo = "fn:similar_to"
-  show Like      = "fn:like"
-  show Gt        = ">"
-  show Lt        = "<"
-  show GtE       = ">="
-  show LtE       = "<="
-  show Eq        = "=="
-  show NEq       = "<>"
-  show And       = "&&"
-  show Or        = "||"
-  show Coalesce  = "coalesce"
+instance P.Pretty BinFun where
+    pretty Minus     = P.text $ "-"
+    pretty Plus      = P.text $ "+"
+    pretty Times     = P.text $ "*"
+    pretty Div       = P.text $ "/"
+    pretty Modulo    = P.text $ "%"
+    pretty Contains  = P.text $ "fn:contains"
+    pretty Concat    = P.text $ "fn:concat"
+    pretty SimilarTo = P.text $ "fn:similar_to"
+    pretty Like      = P.text $ "fn:like"
+    pretty Gt        = P.text $ ">"
+    pretty Lt        = P.text $ "<"
+    pretty GtE       = P.text $ ">="
+    pretty LtE       = P.text $ "<="
+    pretty Eq        = P.text $ "=="
+    pretty NEq       = P.text $ "<>"
+    pretty And       = P.text $ "&&"
+    pretty Or        = P.text $ "||"
+    pretty Coalesce  = P.text $ "coalesce"
 
 -- | Unary functions/operators in expressions
 data UnFun = Not
@@ -180,25 +182,25 @@ data UnFun = Not
            | DateMonth
            | SubString Integer Integer
            | IsNull
-           deriving (Eq, Ord)
+           deriving (Eq, Ord, Show)
 
-instance Show UnFun where
-  show Not             = "not"
-  show (Cast ty)       = "cast->" ++ show ty
-  show Sin             = "sin"
-  show Cos             = "cos"
-  show Tan             = "tan"
-  show Sqrt            = "sqrt"
-  show Exp             = "exp"
-  show Log             = "log"
-  show ASin            = "asin"
-  show ACos            = "acos"
-  show ATan            = "atan"
-  show DateDay         = "date_day"
-  show DateYear        = "date_year"
-  show DateMonth       = "date_month"
-  show IsNull          = "is_null"
-  show (SubString f t) = printf "subString_%d,%d" f t
+instance P.Pretty UnFun where
+    pretty Not             = P.text $ "not"
+    pretty (Cast ty)       = P.text "cast->" <> P.pretty ty
+    pretty Sin             = P.text $ "sin"
+    pretty Cos             = P.text $ "cos"
+    pretty Tan             = P.text $ "tan"
+    pretty Sqrt            = P.text $ "sqrt"
+    pretty Exp             = P.text $ "exp"
+    pretty Log             = P.text $ "log"
+    pretty ASin            = P.text $ "asin"
+    pretty ACos            = P.text $ "acos"
+    pretty ATan            = P.text $ "atan"
+    pretty DateDay         = P.text $ "date_day"
+    pretty DateYear        = P.text $ "date_year"
+    pretty DateMonth       = P.text $ "date_month"
+    pretty IsNull          = P.text $ "is_null"
+    pretty (SubString f t) = P.text $ printf "subString_%d,%d" f t
 
 -- | Projection expressions
 data Expr = BinAppE BinFun Expr Expr
@@ -206,18 +208,27 @@ data Expr = BinAppE BinFun Expr Expr
           | ColE Attr
           | ConstE AVal
           | IfE Expr Expr Expr
-          deriving (Eq, Ord)
+          deriving (Eq, Ord, Show)
 
 -- | Expressions which are used to specify partitioning in window
 -- functions.
 type PartExpr = Expr
 
-instance Show Expr where
-  show (BinAppE f e1 e2) = "(" ++ show e1 ++ ") " ++ show f ++ " (" ++ show e2 ++ ")"
-  show (UnAppE f e)      = show f ++ "(" ++ show e ++ ")"
-  show (ColE c)          = c
-  show (ConstE v)        = show v
-  show (IfE c t e)       = "if " ++ show c ++ " then " ++ show t ++ " else " ++ show e
+parenthize :: Expr -> P.Doc
+parenthize e =
+    case e of
+        ColE _   -> P.pretty e
+        ConstE _ -> P.pretty e
+        _        -> P.parens $ P.pretty e
+
+instance P.Pretty Expr where
+    pretty (BinAppE f e1 e2) = parenthize e1 <+> P.pretty f <+> parenthize e2
+    pretty (UnAppE f e)      = P.pretty f <+> (parenthize e)
+    pretty (ColE c)          = P.text c
+    pretty (ConstE v)        = P.pretty v
+    pretty (IfE c t e)       = P.text "if" <+> parenthize c
+                                           <+> parenthize t
+                                           <+> parenthize e
 
 -- | New column name and the expression that generates the new column
 type Proj                = (ResAttr, Expr)
@@ -232,15 +243,15 @@ data JoinRel = EqJ -- equal
              | LtJ -- less than
              | LeJ -- less equal
              | NeJ -- not equal
-             deriving (Eq, Ord)
+             deriving (Eq, Ord, Show)
 
-instance Show JoinRel where
-  show EqJ = "=="
-  show GtJ = ">"
-  show GeJ = ">="
-  show LtJ = "<"
-  show LeJ = "<="
-  show NeJ = "/="
+instance P.Pretty JoinRel where
+    pretty EqJ = P.text "=="
+    pretty GtJ = P.text ">"
+    pretty GeJ = P.text ">="
+    pretty LtJ = P.text "<"
+    pretty LeJ = P.text "<="
+    pretty NeJ = P.text "/="
 
 -- | Window frame start specification
 data FrameStart = FSUnboundPrec  -- ^ UNBOUNDED PRECEDING
@@ -274,23 +285,23 @@ data NullOp = LitTable ([Tuple], [TypedAttr])
             | TableRef (TableName, [TypedAttr], [Key])
             deriving (Ord, Eq, Show)
 
-data PayloadCol = PayloadCol Attr Expr deriving (Ord, Eq)
-data OrdCol     = OrdCol (Attr, SortDir) Expr deriving (Ord, Eq)
-data KeyCol     = KeyCol Attr Expr deriving (Ord, Eq)
-data RefCol     = RefCol Attr Expr deriving (Ord, Eq)
+data PayloadCol = PayloadCol Attr Expr deriving (Ord, Eq, Show)
+data OrdCol     = OrdCol (Attr, SortDir) Expr deriving (Ord, Eq, Show)
+data KeyCol     = KeyCol Attr Expr deriving (Ord, Eq, Show)
+data RefCol     = RefCol Attr Expr deriving (Ord, Eq, Show)
 
-instance Show PayloadCol where
-    show (PayloadCol c e) = c ++ ":" ++ show e
+instance P.Pretty PayloadCol where
+    pretty (PayloadCol c e) = P.text c <> P.colon <> P.pretty e
 
-instance Show OrdCol where
-    show (OrdCol (c, Asc) e)  = c ++ ".asc" ++ ":" ++ show e
-    show (OrdCol (c, Desc) e) = c ++ ".desc" ++ ":" ++ show e
+instance P.Pretty OrdCol where
+    pretty (OrdCol (c, Asc) e)  = P.text c <> P.text ".asc:" <> P.pretty e
+    pretty (OrdCol (c, Desc) e) = P.text c <> P.text ".desc:" <> P.pretty e
 
-instance Show KeyCol where
-    show (KeyCol c e) = c ++ ":" ++ show e
+instance P.Pretty KeyCol where
+    pretty (KeyCol c e) = P.text c <> P.text ":" <> P.pretty e
 
-instance Show RefCol where
-    show (RefCol c e) = c ++ ":" ++ show e
+instance P.Pretty RefCol where
+    pretty (RefCol c e) = P.text c <> P.text ":" <> P.pretty e
 
 data UnOp = RowNum (Attr, [SortSpec], [PartExpr])
           | RowRank (ResAttr, [SortSpec])
