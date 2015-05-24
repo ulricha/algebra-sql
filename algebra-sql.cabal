@@ -47,7 +47,7 @@ library
                       Database.Algebra.SQL.Materialization.Combined
 
     hs-source-dirs:   src
-    GHC-Options:      -Wall -fno-warn-orphans
+    GHC-Options:      -Wall -fno-warn-orphans -O2 -fprof-auto
     other-modules:    Database.Algebra.SQL.Query
                       Database.Algebra.SQL.Query.Substitution
                       Database.Algebra.SQL.Query.Util
