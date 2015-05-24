@@ -18,6 +18,8 @@ module Database.Algebra.SQL.Tile
 -- correlated?)? (reader?)
 -- TODO isMultiReferenced special case: check for same parent !!
 
+import Debug.Trace
+
 
 import           Control.Arrow                    (second)
 import           Control.Monad.RWS.Strict
@@ -194,7 +196,10 @@ transformNode n = do
                                    -- Ignore branching for nullary operators.
             (C.NullaryOp nop)   -> (False, transformNullaryOp nop)
             (C.UnOp uop c)      -> (True, transformUnOp uop c)
-            (C.BinOp bop c0 c1) -> (True, transformBinOp bop c0 c1)
+            (C.BinOp bop c0 c1) ->
+                case bop of
+                    A.ThetaJoin _ -> (False, transformBinOp bop c0 c1)
+                    _             -> (True, transformBinOp bop c0 c1)
             (C.TerOp () _ _ _)  -> $impossible
 
     multiRef <- asks $ isMultiReferenced n
@@ -298,27 +303,26 @@ transformUnOp :: A.UnOp -> C.AlgNode -> Transform TileTree
 transformUnOp (A.Serialize (ref, key, ord, items)) c = do
     (ctor, select, children) <- transformTerminated' c $ projectF <> sortF
 
-    let inline :: String -> Q.ExtendedExpr
-        inline                      = inlineEE $ Q.selectClause select
-
-        -- Inline a column and alias the result.
-        project :: String -> String -> Q.SelectColumn
-        project col alias = Q.SCAlias (inline col) alias
+    let -- Inlining is obligatory here, since we possibly eliminate referenced
+        -- columns. ('translateExpr' inlines columns.)
+        translateAlias :: (A.Attr, A.Expr) -> Q.SelectColumn
+        translateAlias (col, expr) = Q.SCAlias translatedExpr col
+          where
+            translatedExpr = translateExprEE (Just $ Q.selectClause select) expr
 
     let sortExprs = [ Q.OE (Q.EEBase $ mkCol rc) Q.Ascending
-                    | A.RefCol rc <- ref
+                    | A.RefCol rc _ <- ref
                     ]
                     ++
                     [ Q.OE (Q.EEBase $ mkCol oc)
                            (translateSortDir d)
-                    | A.OrdCol (oc, d) <- ord
+                    | A.OrdCol (oc, d) _ <- ord
                     ]
 
-        cols      = [ rc | A.RefCol rc <- ref ]
-                    ++ [ kc | A.KeyCol kc <- key ]
-                    ++ [ oc | A.OrdCol (oc, _) <- ord ]
-                    ++ [ pc | A.PayloadCol pc <- items]
-        projs     = zipWith project cols cols
+        projs      =    [ translateAlias (rc, e) | A.RefCol rc e <- ref ]
+                     ++ [ translateAlias (kc, e) | A.KeyCol kc e <- key ]
+                     ++ [ translateAlias (oc, e) | A.OrdCol (oc, _) e <- ord ]
+                     ++ [ translateAlias (pc, e) | A.PayloadCol pc e <- items]
 
     return $ ctor
              select { Q.selectClause = projs , Q.orderByClause = sortExprs }
@@ -690,6 +694,7 @@ transformTerminated n topFs = do
     case tile of
         TileNode bottomFs body children
             | topFs `terminatesOver` bottomFs -> do
+                trace ("terminatesOver " ++ show topFs ++ " " ++ show bottomFs) $ return ()
                 tableAlias <- freshAlias
 
                 let schema = getSchemaSelectStmt body

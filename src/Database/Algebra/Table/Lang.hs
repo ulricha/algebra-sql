@@ -274,23 +274,23 @@ data NullOp = LitTable ([Tuple], [TypedAttr])
             | TableRef (TableName, [TypedAttr], [Key])
             deriving (Ord, Eq, Show)
 
-newtype PayloadCol = PayloadCol Attr deriving (Ord, Eq)
-newtype OrdCol     = OrdCol (Attr, SortDir) deriving (Ord, Eq)
-newtype KeyCol     = KeyCol Attr deriving (Ord, Eq)
-newtype RefCol     = RefCol Attr deriving (Ord, Eq)
+data PayloadCol = PayloadCol Attr Expr deriving (Ord, Eq)
+data OrdCol     = OrdCol (Attr, SortDir) Expr deriving (Ord, Eq)
+data KeyCol     = KeyCol Attr Expr deriving (Ord, Eq)
+data RefCol     = RefCol Attr Expr deriving (Ord, Eq)
 
 instance Show PayloadCol where
-    show (PayloadCol c) = c
+    show (PayloadCol c e) = c ++ ":" ++ show e
 
 instance Show OrdCol where
-    show (OrdCol (c, Asc))  = c ++ ".asc"
-    show (OrdCol (c, Desc)) = c ++ ".desc"
+    show (OrdCol (c, Asc) e)  = c ++ ".asc" ++ ":" ++ show e
+    show (OrdCol (c, Desc) e) = c ++ ".desc" ++ ":" ++ show e
 
 instance Show KeyCol where
-    show (KeyCol c) = c
+    show (KeyCol c e) = c ++ ":" ++ show e
 
 instance Show RefCol where
-    show (RefCol c) = c
+    show (RefCol c e) = c ++ ":" ++ show e
 
 data UnOp = RowNum (Attr, [SortSpec], [PartExpr])
           | RowRank (ResAttr, [SortSpec])
