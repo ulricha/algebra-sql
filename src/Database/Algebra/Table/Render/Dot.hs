@@ -19,7 +19,7 @@ tagsToDoc :: [Tag] -> P.Doc
 tagsToDoc ts = P.vcat $ map P.text ts
 
 labelToDoc :: AlgNode -> String -> P.Doc -> [Tag] -> P.Doc
-labelToDoc n s as ts = (nodeToDoc n) P.<+> P.text "\\n" P.<+> ((P.text s) P.<+> (P.parens as)) P.<+> P.text "\\n" P.<+> (tagsToDoc $ nub ts)
+labelToDoc n s as ts = (nodeToDoc n) P.<+> P.text "\\n" P.<+> ((P.text s) P.<> (P.parens as))
 
 lookupTags :: AlgNode -> NodeMap [Tag] -> [Tag]
 lookupTags n m = Map.findWithDefault [] n m
