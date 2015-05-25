@@ -81,8 +81,8 @@ renderOutputDSHWith c matFun dag =
   where
     preludeString   = foldr (.) id renderedTQs ""
     (_, (tqs, rqs)) = resultFromDAG dag matFun
-    renderedRQs     = R.renderCompact c rqs
-    renderedTQs     = R.renderCompact c tqs
+    renderedRQs     = R.renderPlain c rqs
+    renderedTQs     = R.renderPlain c tqs
 
 -- | Produces output which allows further inspection with the psql command line
 -- utility (and possibly others too).
