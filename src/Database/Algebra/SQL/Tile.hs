@@ -18,9 +18,6 @@ module Database.Algebra.SQL.Tile
 -- correlated?)? (reader?)
 -- TODO isMultiReferenced special case: check for same parent !!
 
-import Debug.Trace
-
-
 import           Control.Arrow                    (second)
 import           Control.Monad.RWS.Strict
 import qualified Data.DList                       as DL (DList, singleton)
@@ -694,7 +691,6 @@ transformTerminated n topFs = do
     case tile of
         TileNode bottomFs body children
             | topFs `terminatesOver` bottomFs -> do
-                trace ("terminatesOver " ++ show topFs ++ " " ++ show bottomFs) $ return ()
                 tableAlias <- freshAlias
 
                 let schema = getSchemaSelectStmt body

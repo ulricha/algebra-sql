@@ -1,6 +1,6 @@
 module Database.Algebra.Table.Render.Dot(renderTADot) where
 
-import qualified Data.IntMap                  as Map
+
 import           Data.List
 
 import qualified Text.PrettyPrint.ANSI.Leijen as P
@@ -15,14 +15,8 @@ pp a = (P.displayS $ P.renderPretty 0.9 120 $ P.pretty a) ""
 nodeToDoc :: AlgNode -> P.Doc
 nodeToDoc n = (P.text "id:") P.<+> (P.int n)
 
-tagsToDoc :: [Tag] -> P.Doc
-tagsToDoc ts = P.vcat $ map P.text ts
-
-labelToDoc :: AlgNode -> String -> P.Doc -> [Tag] -> P.Doc
-labelToDoc n s as ts = (nodeToDoc n) P.<+> P.text "\\n" P.<+> ((P.text s) P.<> (P.parens as))
-
-lookupTags :: AlgNode -> NodeMap [Tag] -> [Tag]
-lookupTags n m = Map.findWithDefault [] n m
+labelToDoc :: AlgNode -> String -> P.Doc -> P.Doc
+labelToDoc n s as = (nodeToDoc n) P.<+> P.text "\\n" P.<+> ((P.text s) P.<> (P.parens as))
 
 commas :: (a -> P.Doc) -> [a] -> P.Doc
 commas f = P.hsep . P.punctuate P.comma . map f
@@ -73,62 +67,59 @@ renderTableInfo tableName cols keys =
     P.<+> P.text "\\n"
     P.<+> (P.brackets $ commas renderKey keys)
 
-opDotLabel :: NodeMap [Tag] -> AlgNode -> TALabel -> P.Doc
+opDotLabel :: AlgNode -> TALabel -> P.Doc
 -- | Nullary operations
-opDotLabel tags i (LitTableL dat schema)      = labelToDoc i
-    "LITTABLE" (renderSchema schema P.<+> renderData dat) (lookupTags i tags)
-opDotLabel tags i (TableRefL (name, attrs, keys)) = labelToDoc i
-    "TABLE" (renderTableInfo name attrs keys) (lookupTags i tags)
+opDotLabel i (LitTableL dat schema)      = labelToDoc i
+    "LITTABLE" (renderSchema schema P.<+> renderData dat)
+opDotLabel i (TableRefL (name, attrs, keys)) = labelToDoc i
+    "TABLE" (renderTableInfo name attrs keys)
 -- |  Binary operations
-opDotLabel tags i (CrossL _)                  = labelToDoc i
-    "CROSS" P.empty (lookupTags i tags)
-opDotLabel tags i (EqJoinL (left,right))      = labelToDoc i
-    "EQJOIN" (P.text $ left ++ "," ++ right) (lookupTags i tags)
-opDotLabel tags i (DifferenceL _)             = labelToDoc i
-    "DIFF" P.empty (lookupTags i tags)
-opDotLabel tags i (DisjUnionL _)              = labelToDoc i
-    "UNION" P.empty (lookupTags i tags)
-opDotLabel tags i (ThetaJoinL info)           = labelToDoc i
-    "THETAJOIN" (commas renderJoinArgs info) (lookupTags i tags)
-opDotLabel tags i (LeftOuterJoinL info)       = labelToDoc i
-    "LEFTOUTERJOIN" (commas renderJoinArgs info) (lookupTags i tags)
-opDotLabel tags i (SemiJoinL info)           = labelToDoc i
-    "SEMIJOIN" (commas renderJoinArgs info) (lookupTags i tags)
-opDotLabel tags i (AntiJoinL info)           = labelToDoc i
-    "ANTIJOIN" (commas renderJoinArgs info) (lookupTags i tags)
+opDotLabel i (CrossL _)                  = labelToDoc i
+    "CROSS" P.empty
+opDotLabel i (EqJoinL (left,right))      = labelToDoc i
+    "EQJOIN" (P.text $ left ++ "," ++ right)
+opDotLabel i (DifferenceL _)             = labelToDoc i
+    "DIFF" P.empty
+opDotLabel i (DisjUnionL _)              = labelToDoc i
+    "UNION" P.empty
+opDotLabel i (ThetaJoinL info)           = labelToDoc i
+    "THETAJOIN" (commas renderJoinArgs info)
+opDotLabel i (LeftOuterJoinL info)       = labelToDoc i
+    "LEFTOUTERJOIN" (commas renderJoinArgs info)
+opDotLabel i (SemiJoinL info)           = labelToDoc i
+    "SEMIJOIN" (commas renderJoinArgs info)
+opDotLabel i (AntiJoinL info)           = labelToDoc i
+    "ANTIJOIN" (commas renderJoinArgs info)
 -- | Unary operations
-opDotLabel tags i (RowNumL (res,sortI,attr))  = labelToDoc i
+opDotLabel i (RowNumL (res,sortI,attr))  = labelToDoc i
     "ROWNUM" ((P.text $ res ++ ":<")
               P.<+> (commas renderSortInf sortI)
               P.<+> P.text ">"
               P.<+> renderPartExprs attr)
-    (lookupTags i tags)
-opDotLabel tags i (RowRankL (res,sortInf))    = labelToDoc i
+opDotLabel i (RowRankL (res,sortInf))    = labelToDoc i
     "ROWRANK" ((P.text $ res ++ ":<")
                P.<+> (commas renderSortInf sortInf)
                P.<+> P.text ">")
-    (lookupTags i tags)
-opDotLabel tags i (RankL (res,sortInf))       = labelToDoc i
+opDotLabel i (RankL (res,sortInf))       = labelToDoc i
     "RANK" ((P.text $ res ++ ":<")
             P.<+> commas renderSortInf sortInf
             P.<+> P.text ">")
-    (lookupTags i tags)
-opDotLabel tags i (ProjectL info)                = labelToDoc i
-    "PROJECT" (commas renderProj info) (lookupTags i tags)
-opDotLabel tags i (SelL info)                 = labelToDoc i
-    "SELECT" (P.pretty info) (lookupTags i tags)
-opDotLabel tags i (DistinctL _)               = labelToDoc i
-    "DISTINCT" P.empty (lookupTags i tags)
-opDotLabel tags i (AggrL (aggrList, attr))    = labelToDoc i
-    "AGGR" ((commas renderAggr aggrList) P.<+> (P.brackets $ commas renderProj attr))
-    (lookupTags i tags)
-opDotLabel tags i (SerializeL (ref, key, ord, item)) = labelToDoc i
+opDotLabel i (ProjectL info)                = labelToDoc i
+    "PROJECT" (commas renderProj info)
+opDotLabel i (SelL info)                 = labelToDoc i
+    "SELECT" (P.pretty info)
+opDotLabel i (DistinctL _)               = labelToDoc i
+    "DISTINCT" P.empty
+opDotLabel i (AggrL (aggrList, attr))    = labelToDoc i
+    "AGGR" (commas renderAggr aggrList
+            P.<+>
+            (P.brackets $ commas renderProj attr))
+opDotLabel i (SerializeL (ref, key, ord, item)) = labelToDoc i
     "SERIALIZE" (serializeArg "ref" ref P.<+> P.text "\n"
                  P.<+> serializeArg "key" key P.<+> P.text "\n"
                  P.<+> serializeArg "ord" ord P.<+> P.text "\n"
                  P.<+> serializeArg "items" item P.<+> P.text "\n")
-    (lookupTags i tags)
-opDotLabel tags i (WinFunL (winFuns, partSpec, sortSpec, mFrameBounds)) = labelToDoc i
+opDotLabel i (WinFunL (winFuns, partSpec, sortSpec, mFrameBounds)) = labelToDoc i
      "WIN" (P.hcat $ intersperse (P.text "\\n") [ renderWinFuns winFuns
                                                 , renderPartSpec partSpec
                                                 , renderSortSpec sortSpec
@@ -136,7 +127,6 @@ opDotLabel tags i (WinFunL (winFuns, partSpec, sortSpec, mFrameBounds)) = labelT
                                                         renderFrameBounds
                                                         mFrameBounds
                                                 ])
-     (lookupTags i tags)
 
 serializeArg :: P.Pretty a => String -> [a] -> P.Doc
 serializeArg desc cols = P.text desc P.<+> P.equals
@@ -180,10 +170,10 @@ renderFrameEnd FEUnboundFol = P.text "UNBOUNDED FOLLOWING"
 renderFrameEnd (FEValFol i) = P.int i P.<+> P.text "FOLLOWING"
 renderFrameEnd FECurrRow    = P.text "CURRENT ROW"
 
-constructDotNode :: NodeMap [Tag] -> (AlgNode, TALabel) -> DotNode
-constructDotNode tags (n, op) =
+constructDotNode :: (AlgNode, TALabel) -> DotNode
+constructDotNode (n, op) =
     DotNode n l c Nothing
-      where l = pp $ opDotLabel tags n op
+      where l = pp $ opDotLabel n op
             c = opDotColor op
 
 -- | Create an abstract Dot edge
@@ -380,9 +370,9 @@ extractGraphStructure toLabel d = (labels, childs)
           childs = concat $ map (\(n, op) -> zip (repeat n) (Dag.opChildren op)) operators
 
 -- | Render an TableAlgebra plan into a dot file (GraphViz).
-renderTADot :: NodeMap [Tag] -> [AlgNode] -> NodeMap TableAlgebra -> String
-renderTADot ts roots m = pp $ renderDot dotNodes dotEdges
+renderTADot :: [AlgNode] -> NodeMap TableAlgebra -> String
+renderTADot roots m = pp $ renderDot dotNodes dotEdges
     where (opLabels, edges) = extractGraphStructure labelOfOp d
           d = Dag.mkDag m roots
-          dotNodes = map (constructDotNode ts) opLabels
+          dotNodes = map constructDotNode opLabels
           dotEdges = map constructDotEdge edges

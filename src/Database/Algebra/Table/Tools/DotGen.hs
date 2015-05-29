@@ -9,7 +9,7 @@ import           System.IO
 
 import           Data.Aeson
 import           Data.ByteString.Lazy.Char8        (pack)
-import qualified Data.IntMap                       as M
+
 import           Data.Maybe
 
 import           Database.Algebra.Dag
@@ -57,6 +57,6 @@ main = do
     let dag = fromJust $ decode $ pack plan
         rs  = fromMaybe (rootNodes dag) mRootNodes
 
-    let dot = renderTADot M.empty rs (nodeMap dag)
+    let dot = renderTADot rs (nodeMap dag)
 
     putStr dot

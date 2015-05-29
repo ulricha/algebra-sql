@@ -5,7 +5,7 @@ module Database.Algebra.SQL.File where
 import           Control.Monad.Error.Class
 import           Data.Aeson
 import qualified Data.ByteString.Lazy.Char8        as BL
-import qualified Data.IntMap                       as IntMap
+
 import           System.FilePath
 import           System.Process
 
@@ -30,7 +30,7 @@ outputDot :: FilePath -> T.TADag -> IO ()
 outputDot filename dag = do
     writeFile filename result
     putStrLn $ "Writing dot file to '" ++ filename ++ "'"
-  where result = renderTADot IntMap.empty (D.rootNodes dag) (D.nodeMap dag)
+  where result = renderTADot (D.rootNodes dag) (D.nodeMap dag)
 
 renderDot :: FilePath -> FilePath -> IO ()
 renderDot dotPath pdfPath = do
