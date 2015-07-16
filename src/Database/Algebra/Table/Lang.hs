@@ -74,6 +74,8 @@ instance P.Pretty ATy where
     pretty ADec     = P.text "dec"
     pretty ADouble  = P.text "dbl"
 
+newtype Date = Date { unDate :: C.Day } deriving (Eq, Ord, Show)
+
 -- | Wrapper around values that can occur in an table algebra plan
 data AVal where
     VInt    :: Integer -> AVal
@@ -81,7 +83,7 @@ data AVal where
     VBool   :: Bool -> AVal
     VDouble :: Double -> AVal
     VDec    :: Decimal -> AVal
-    VDate   :: C.Day -> AVal
+    VDate   :: Date -> AVal
     deriving (Eq, Ord, Show)
 
 -- | Show the values in the way compatible with the xml plan.
@@ -92,7 +94,7 @@ instance P.Pretty AVal where
     pretty (VBool False) = P.text "false"
     pretty (VDouble x)   = P.double x
     pretty (VDec d)      = P.text $ show d
-    pretty (VDate d)     = P.text $ C.showGregorian d
+    pretty (VDate d)     = P.text $ C.showGregorian $ unDate d
 
 -- | Attribute name or column name
 type Attr            = String
@@ -347,11 +349,11 @@ instance Operator TableAlgebra where
 
     replaceOpChild op old new = replaceChild old new op
 
-instance FromJSON C.Day where
-    parseJSON o = (\(y, m, d) -> C.fromGregorian y m d) <$> parseJSON o
+instance FromJSON Date where
+    parseJSON o = Date <$> (\(y, m, d) -> C.fromGregorian y m d) <$> parseJSON o
 
-instance ToJSON C.Day where
-    toJSON = toJSON . C.toGregorian
+instance ToJSON Date where
+    toJSON = toJSON . C.toGregorian . unDate
 
 instance ToJSON Decimal where
     toJSON = toJSON . show

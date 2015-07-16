@@ -45,7 +45,7 @@ dec :: Decimal -> AVal
 dec = VDec
 
 date :: C.Day -> AVal
-date = VDate
+date = VDate . Date
 
 -- | Types of atomic  values
 intT, stringT, boolT, decT, doubleT, dateT :: ATy

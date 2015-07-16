@@ -1063,7 +1063,7 @@ translateAVal v = case v of
     A.VBool b   -> Q.VBoolean b
     A.VDouble d -> Q.VDoublePrecision d
     A.VDec d    -> Q.VDecimal d
-    A.VDate d   -> Q.VDate d
+    A.VDate d   -> Q.VDate $ A.unDate d
 
 translateATy :: A.ATy -> Q.DataType
 translateATy t = case t of
