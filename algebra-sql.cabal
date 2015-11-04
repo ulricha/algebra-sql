@@ -83,6 +83,7 @@ executable tadot
                       text               >= 1.2,
                       algebra-dag        >= 0.1,
                       ansi-wl-pprint     >= 0.6.7.2
+    other-extensions: TemplateHaskell
 
 executable sqlgen
     Main-is: Database/Algebra/SQL/Tools/Gen.hs
@@ -109,6 +110,7 @@ executable sqlgen
                       time               >= 1.4,
                       text               >= 1.2,
                       algebra-dag        >= 0.1
+    other-extensions: TemplateHaskell
 
 source-repository head
     type:     git
