@@ -84,6 +84,8 @@ executable tadot
                       algebra-dag        >= 0.1,
                       ansi-wl-pprint     >= 0.6.7.2
     other-extensions: TemplateHaskell
+    other-modules:    Database.Algebra.Table.Lang
+                      Database.Algebra.Table.Render.Dot
 
 executable sqlgen
     Main-is: Database/Algebra/SQL/Tools/Gen.hs
@@ -111,6 +113,27 @@ executable sqlgen
                       text               >= 1.2,
                       algebra-dag        >= 0.1
     other-extensions: TemplateHaskell
+    other-modules:    Database.Algebra.Impossible
+                      Database.Algebra.SQL.Compatibility
+                      Database.Algebra.SQL.File
+                      Database.Algebra.SQL.Materialization
+                      Database.Algebra.SQL.Materialization.CTE
+                      Database.Algebra.SQL.Materialization.Combined
+                      Database.Algebra.SQL.Materialization.Graph
+                      Database.Algebra.SQL.Materialization.TemporaryTable
+                      Database.Algebra.SQL.Materialization.Util
+                      Database.Algebra.SQL.Query
+                      Database.Algebra.SQL.Query.Substitution
+                      Database.Algebra.SQL.Query.Util
+                      Database.Algebra.SQL.Render
+                      Database.Algebra.SQL.Render.Query
+                      Database.Algebra.SQL.Render.Tile
+                      Database.Algebra.SQL.Termination
+                      Database.Algebra.SQL.Tile
+                      Database.Algebra.SQL.Tile.Flatten
+                      Database.Algebra.SQL.Util
+                      Database.Algebra.Table.Lang
+                      Database.Algebra.Table.Render.Dot
 
 source-repository head
     type:     git
