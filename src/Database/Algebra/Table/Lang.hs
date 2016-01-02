@@ -178,6 +178,7 @@ data UnFun = Not
            | ATan
            | Sqrt
            | Log
+           | Ln
            | Exp
            | DateDay
            | DateYear
@@ -195,6 +196,7 @@ instance P.Pretty UnFun where
     pretty Sqrt            = P.text $ "sqrt"
     pretty Exp             = P.text $ "exp"
     pretty Log             = P.text $ "log"
+    pretty Ln              = P.text $ "ln"
     pretty ASin            = P.text $ "asin"
     pretty ACos            = P.text $ "acos"
     pretty ATan            = P.text $ "atan"

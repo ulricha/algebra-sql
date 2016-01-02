@@ -1001,6 +1001,7 @@ translateUnFun f = case f of
     A.ATan              -> Q.UFATan
     A.Sqrt              -> Q.UFSqrt
     A.Log               -> Q.UFLog
+    A.Ln                -> Q.UFLn
     A.Exp               -> Q.UFExp
     A.SubString from to -> (Q.UFSubString from to)
     A.DateDay           -> (Q.UFExtract Q.ExtractDay)

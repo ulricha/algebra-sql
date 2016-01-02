@@ -407,6 +407,7 @@ renderUnaryFunction renderRec compat fun argExpr =
         UFCos             -> renderRegularUnary "cos" ra
         UFTan             -> renderRegularUnary "tan" ra
         UFLog             -> renderRegularUnary "log" ra
+        UFLn              -> renderRegularUnary "ln" ra
         UFSqrt            -> renderRegularUnary "sqrt" ra
         UFExp             -> renderRegularUnary "exp" ra
         UFASin            -> renderRegularUnary "asin" ra

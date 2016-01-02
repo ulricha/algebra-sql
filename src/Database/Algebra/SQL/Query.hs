@@ -304,6 +304,7 @@ data UnaryFunction = UFSin
                    | UFSqrt
                    | UFExp
                    | UFLog
+                   | UFLn
                    | UFSubString Integer Integer
                    | UFExtract ExtractField
                    | UFNot
