@@ -56,7 +56,7 @@ instance Show FeatureSet where
 -- coming from an operator placed below.
 terminatingFeatures :: Feature -> FeatureSet
 terminatingFeatures bottomF = F $ case bottomF of
-    ProjectionF      -> S.empty
+    ProjectionF      -> S.fromList [AggrAndGroupingF]
     TableF           -> S.empty
     FilterF          -> S.empty
     -- Distinction has to occur before:
