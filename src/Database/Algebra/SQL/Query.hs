@@ -206,8 +206,7 @@ data WindowFunction = WFMax ColumnExpr
 -- | Basic value expressions extended only by aggregates.
 data AggrExpr = AEBase (ValueExprTemplate AggrExpr)
               | AEAggregate
-              { optValueExpr :: Maybe ColumnExpr
-              , aFunction    :: AggregateFunction
+              { aFunction    :: AggregateFunction
               } deriving Show
 
 -- | Shorthand for the value expression base part of 'AggrExpr'.
@@ -215,13 +214,15 @@ type AggrExprBase = ValueExprTemplate AggrExpr
 
 
 -- | Aggregate functions.
-data AggregateFunction = AFAvg
-                       | AFMax
-                       | AFMin
-                       | AFSum
-                       | AFCount
-                       | AFAll
-                       | AFAny
+data AggregateFunction = AFAvg ColumnExpr
+                       | AFMax ColumnExpr
+                       | AFMin ColumnExpr
+                       | AFSum ColumnExpr
+                       | AFCount ColumnExpr
+                       | AFCountDistinct ColumnExpr
+                       | AFCountStar
+                       | AFAll ColumnExpr
+                       | AFAny ColumnExpr
                        deriving Show
 
 -- | A template which allows the definition of a mutual recursive type for value

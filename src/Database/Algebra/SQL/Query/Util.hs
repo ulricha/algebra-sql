@@ -61,7 +61,7 @@ affectsSortOrderAE :: Q.AggrExpr -> Bool
 affectsSortOrderAE ae = case ae of
     AEBase ve -> affectsSortOrderValueExprTemplate affectsSortOrderAE ve
     -- TODO
-    AEAggregate _ _   -> True
+    AEAggregate _   -> True
 
 --isMergeable :: Q.SelectStmt -> Bool
 --isMergeable (Q.SelectStmt sClause d _ _ [] _) =

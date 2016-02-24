@@ -86,8 +86,8 @@ replaceReferencesAggrExpr r (Q.AEBase v)        =
     Q.AEBase $ replaceReferencesValueExprTemplate replaceReferencesAggrExpr
                                                   r
                                                   v
-replaceReferencesAggrExpr r (Q.AEAggregate v f) =
-    Q.AEAggregate (liftM (replaceReferencesColumnExpr r) v) f
+replaceReferencesAggrExpr r (Q.AEAggregate f) =
+    Q.AEAggregate (replaceReferencesAggrFunction r f)
 
 replaceReferencesFromPart :: SubstitutionFunction
                           -> Q.FromPart
@@ -180,3 +180,18 @@ replaceReferencesWindowFunction _ Q.WFDenseRank =
 
 replaceReferencesWindowFunction _ Q.WFRowNumber =
     Q.WFRowNumber
+
+replaceReferencesAggrFunction :: SubstitutionFunction
+                              -> Q.AggregateFunction
+                              -> Q.AggregateFunction
+replaceReferencesAggrFunction r af =
+    case af of
+        Q.AFAvg e           -> Q.AFAvg (replaceReferencesColumnExpr r e)
+        Q.AFMax e           -> Q.AFAvg (replaceReferencesColumnExpr r e)
+        Q.AFMin e           -> Q.AFMin (replaceReferencesColumnExpr r e)
+        Q.AFSum e           -> Q.AFSum (replaceReferencesColumnExpr r e)
+        Q.AFCount e         -> Q.AFCount (replaceReferencesColumnExpr r e)
+        Q.AFCountDistinct e -> Q.AFCountDistinct (replaceReferencesColumnExpr r e)
+        Q.AFAll e           -> Q.AFAll (replaceReferencesColumnExpr r e)
+        Q.AFAny e           -> Q.AFAny (replaceReferencesColumnExpr r e)
+        Q.AFCountStar       -> Q.AFCountStar

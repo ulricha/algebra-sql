@@ -270,9 +270,8 @@ renderAggrExpr compat e = case e of
     AEBase ve              ->
         renderValueExprTemplate renderAggrExpr compat ve
 
-    AEAggregate optVE aggr ->
+    AEAggregate aggr ->
         renderAggregateFunction compat aggr
-        <> parens (maybe (char '*') (renderColumnExpr compat) optVE)
 
 -- | Generic 'ValueExprTemplate' renderer.
 renderValueExprTemplate :: (CompatMode -> a -> Doc)
@@ -318,17 +317,19 @@ renderColumnExprBase :: CompatMode -> ColumnExprBase -> Doc
 renderColumnExprBase = renderValueExprTemplate renderColumnExpr
 
 renderAggregateFunction :: CompatMode -> AggregateFunction -> Doc
-renderAggregateFunction _          AFAvg       = kw "AVG"
-renderAggregateFunction _          AFMax       = kw "MAX"
-renderAggregateFunction _          AFMin       = kw "MIN"
-renderAggregateFunction _          AFSum       = kw "SUM"
-renderAggregateFunction _          AFCount     = kw "COUNT"
-renderAggregateFunction PostgreSQL AFAll       = kw "BOOL_AND"
-renderAggregateFunction SQL99      AFAll       = kw "EVERY"
-renderAggregateFunction MonetDB    AFAll       = kw "MIN"
-renderAggregateFunction PostgreSQL AFAny       = kw "BOOL_OR"
-renderAggregateFunction SQL99      AFAny       = kw "SOME"
-renderAggregateFunction MonetDB    AFAny       = kw "MAX"
+renderAggregateFunction c          (AFAvg e)           = renderFunCall "AVG" (renderColumnExpr c e)
+renderAggregateFunction c          (AFMax e)           = renderFunCall "MAX" (renderColumnExpr c e)
+renderAggregateFunction c          (AFMin e)           = renderFunCall "MIN" (renderColumnExpr c e)
+renderAggregateFunction c          (AFSum e)           = renderFunCall "SUM" (renderColumnExpr c e)
+renderAggregateFunction c          (AFCount e)         = renderFunCall "COUNT" (renderColumnExpr c e)
+renderAggregateFunction c          (AFCountDistinct e) = kw "COUNT" <> parens (kw "DISTINCT" <+> renderColumnExpr c e)
+renderAggregateFunction _          AFCountStar         = renderFunCall "COUNT" (kw "*")
+renderAggregateFunction PostgreSQL (AFAll e)           = renderFunCall "BOOL_AND" (renderColumnExpr PostgreSQL e)
+renderAggregateFunction SQL99      (AFAll e)           = renderFunCall "EVERY" (renderColumnExpr SQL99 e)
+renderAggregateFunction MonetDB    (AFAll e)           = renderFunCall "MIN" (renderColumnExpr MonetDB e)
+renderAggregateFunction PostgreSQL (AFAny e)           = renderFunCall "BOOL_OR" (renderColumnExpr PostgreSQL e)
+renderAggregateFunction SQL99      (AFAny e)           = renderFunCall "SOME" (renderColumnExpr SQL99 e)
+renderAggregateFunction MonetDB    (AFAny e)           = renderFunCall "MAX" (renderColumnExpr MonetDB e)
 
 renderFunCall :: String -> Doc -> Doc
 renderFunCall funName funArg = kw funName <> parens funArg

@@ -33,19 +33,21 @@ data AggrType = Avg Expr
               | Sum Expr
               | CountStar
               | Count Expr
+              | CountDistinct Expr
               | All Expr
               | Any Expr
     deriving (Eq, Ord, Show)
 
 instance P.Pretty AggrType where
-    pretty (Avg c)   = P.text "avg" <> P.parens (P.pretty c)
-    pretty (Max c)   = P.text "max" <> P.parens (P.pretty c)
-    pretty (Min c)   = P.text "min" <> P.parens (P.pretty c)
-    pretty (Sum c)   = P.text "sum" <> P.parens (P.pretty c)
-    pretty CountStar = P.text "count(*)"
-    pretty (Count c) = P.text "count" <> P.parens (P.pretty c)
-    pretty (All c)   = P.text "all" <> P.parens (P.pretty c)
-    pretty (Any c)   = P.text "any" <> P.parens (P.pretty c)
+    pretty (Avg c)           = P.text "avg" <> P.parens (P.pretty c)
+    pretty (Max c)           = P.text "max" <> P.parens (P.pretty c)
+    pretty (Min c)           = P.text "min" <> P.parens (P.pretty c)
+    pretty (Sum c)           = P.text "sum" <> P.parens (P.pretty c)
+    pretty CountStar         = P.text "count(*)"
+    pretty (Count c)         = P.text "count" <> P.parens (P.pretty c)
+    pretty (CountDistinct c) = P.text "count_distinct" <> P.parens (P.pretty c)
+    pretty (All c)           = P.text "all" <> P.parens (P.pretty c)
+    pretty (Any c)           = P.text "any" <> P.parens (P.pretty c)
 
 -- | The show instance results in values that are accepted in the xml plan.
 instance P.Pretty SortDir where

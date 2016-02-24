@@ -400,10 +400,8 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
         -- Inlining here is obligatory, since we could eliminate referenced
         -- columns. (This is similar to projection.)
         aggrToEE (a, n)   =
-            Q.SCAlias ( let (fun, optExpr) = translateAggrType a
-                        in Q.EEAggrExpr
-                           $ Q.AEAggregate (liftM translateE optExpr)
-                                           fun
+            Q.SCAlias ( let afun = translateAggrType translateE a
+                        in Q.EEAggrExpr $ Q.AEAggregate afun
                       )
                       n
 
@@ -895,17 +893,17 @@ translateWindowFunction translateExpr wfun = case wfun of
     A.WinLastValue e  -> Q.WFLastValue $ translateExpr e
     A.WinCount        -> Q.WFCount
 
-translateAggrType :: A.AggrType
-                  -> (Q.AggregateFunction, Maybe A.Expr)
-translateAggrType aggr = case aggr of
-    A.Avg e     -> (Q.AFAvg, Just e)
-    A.Max e     -> (Q.AFMax, Just e)
-    A.Min e     -> (Q.AFMin, Just e)
-    A.Sum e     -> (Q.AFSum, Just e)
-    A.Count e   -> (Q.AFCount, Just e)
-    A.CountStar -> (Q.AFCount, Nothing)
-    A.All e     -> (Q.AFAll, Just e)
-    A.Any e     -> (Q.AFAny, Just e)
+translateAggrType :: (A.Expr -> Q.ColumnExpr) -> A.AggrType -> Q.AggregateFunction
+translateAggrType translate aggr = case aggr of
+    A.Avg e           -> Q.AFAvg $ translate e
+    A.Max e           -> Q.AFMax $ translate e
+    A.Min e           -> Q.AFMin $ translate e
+    A.Sum e           -> Q.AFSum $ translate e
+    A.Count e         -> Q.AFCount $ translate e
+    A.CountStar       -> Q.AFCountStar
+    A.CountDistinct e -> Q.AFCountDistinct $ translate e
+    A.All e           -> Q.AFAll $ translate e
+    A.Any e           -> Q.AFAny $ translate e
 
 translateExprTempl :: (Maybe [Q.SelectColumn] -> A.Expr -> a)
                    -> (Q.ValueExprTemplate a -> a)
