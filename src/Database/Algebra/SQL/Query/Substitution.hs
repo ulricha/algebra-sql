@@ -187,7 +187,7 @@ replaceReferencesAggrFunction :: SubstitutionFunction
 replaceReferencesAggrFunction r af =
     case af of
         Q.AFAvg e           -> Q.AFAvg (replaceReferencesColumnExpr r e)
-        Q.AFMax e           -> Q.AFAvg (replaceReferencesColumnExpr r e)
+        Q.AFMax e           -> Q.AFMax (replaceReferencesColumnExpr r e)
         Q.AFMin e           -> Q.AFMin (replaceReferencesColumnExpr r e)
         Q.AFSum e           -> Q.AFSum (replaceReferencesColumnExpr r e)
         Q.AFCount e         -> Q.AFCount (replaceReferencesColumnExpr r e)
