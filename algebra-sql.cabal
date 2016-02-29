@@ -34,6 +34,7 @@ library
                       process            >= 1.2,
                       Decimal            >= 0.4,
                       text               >= 1.2,
+                      scientific         >= 0.3,
                       algebra-dag        >= 0.1
 
     exposed-modules:  Database.Algebra.Table.Render.Dot
@@ -81,6 +82,7 @@ executable tadot
                       Decimal            >= 0.4,
                       time               >= 1.4,
                       text               >= 1.2,
+                      scientific         >= 0.3,
                       algebra-dag        >= 0.1,
                       ansi-wl-pprint     >= 0.6.7.2
     other-extensions: TemplateHaskell
@@ -111,6 +113,7 @@ executable sqlgen
                       aeson              >= 0.8,
                       time               >= 1.4,
                       text               >= 1.2,
+                      scientific         >= 0.3,
                       algebra-dag        >= 0.1
     other-extensions: TemplateHaskell
     other-modules:    Database.Algebra.Impossible

@@ -1057,12 +1057,12 @@ translateSortDir d = case d of
 
 translateAVal :: A.AVal -> Q.Value
 translateAVal v = case v of
-    A.VInt i    -> Q.VInteger i
-    A.VStr s    -> Q.VText s
-    A.VBool b   -> Q.VBoolean b
-    A.VDouble d -> Q.VDoublePrecision d
-    A.VDec d    -> Q.VDecimal d
-    A.VDate d   -> Q.VDate $ A.unDate d
+    A.VInt i       -> Q.VInteger i
+    A.VStr s       -> Q.VText s
+    A.VBool b      -> Q.VBoolean b
+    A.VDouble d    -> Q.VDoublePrecision d
+    A.VDec d       -> Q.VDecimal d
+    A.VDate d      -> Q.VDate $ A.unDate d
 
 translateATy :: A.ATy -> Q.DataType
 translateATy t = case t of

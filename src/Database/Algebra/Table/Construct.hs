@@ -14,7 +14,7 @@ module Database.Algebra.Table.Construct
     , aggrM, winFunM, rownumM, rownum'M, leftOuterJoinM
     ) where
 
-import           Data.Decimal
+import           Data.Scientific
 import qualified Data.Text                   as T
 import qualified Data.Time.Calendar          as C
 import           Database.Algebra.Dag.Build
@@ -41,7 +41,7 @@ double :: Double -> AVal
 double = VDouble
 
 -- | Create a TA decimal value
-dec :: Decimal -> AVal
+dec :: Scientific -> AVal
 dec = VDec
 
 date :: C.Day -> AVal

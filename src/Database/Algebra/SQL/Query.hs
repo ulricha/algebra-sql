@@ -1,8 +1,9 @@
 module Database.Algebra.SQL.Query where
 
-import           Data.Decimal
+import           Data.Scientific
 import qualified Data.Text          as T
 import qualified Data.Time.Calendar as C
+
 -- TODO Do we have to check for validity of types?
 -- TODO is window clause standard?
 
@@ -206,7 +207,7 @@ data WindowFunction = WFMax ColumnExpr
 -- | Basic value expressions extended only by aggregates.
 data AggrExpr = AEBase (ValueExprTemplate AggrExpr)
               | AEAggregate
-              { aFunction    :: AggregateFunction
+              { aFunction :: AggregateFunction
               } deriving Show
 
 -- | Shorthand for the value expression base part of 'AggrExpr'.
@@ -337,8 +338,8 @@ data DataType = -- | @INTEGER@
 
 data Value = -- | @42@
              VInteger Integer
-             -- | Numeric data type with fixed precision and scale (e.g. @1.4@)
-           | VDecimal Decimal
+             -- | Arbitrary precision numeric type
+           | VDecimal Scientific
              -- | A double precision floating point number.
            | VDoublePrecision Double
              -- | e.g. @'foo'@

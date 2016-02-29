@@ -11,6 +11,7 @@ module Database.Algebra.Table.Lang where
 import           Data.Aeson
 import           Data.Aeson.TH
 import           Data.Decimal
+import           Data.Scientific
 import           Text.PrettyPrint.ANSI.Leijen ((<+>), (<>))
 import qualified Text.PrettyPrint.ANSI.Leijen as P
 import           Text.Printf
@@ -80,23 +81,23 @@ newtype Date = Date { unDate :: C.Day } deriving (Eq, Ord, Show)
 
 -- | Wrapper around values that can occur in an table algebra plan
 data AVal where
-    VInt    :: Integer -> AVal
-    VStr    :: T.Text -> AVal
-    VBool   :: Bool -> AVal
-    VDouble :: Double -> AVal
-    VDec    :: Decimal -> AVal
-    VDate   :: Date -> AVal
+    VInt        :: Integer -> AVal
+    VStr        :: T.Text -> AVal
+    VBool       :: Bool -> AVal
+    VDouble     :: Double -> AVal
+    VDec        :: Scientific -> AVal
+    VDate       :: Date -> AVal
     deriving (Eq, Ord, Show)
 
 -- | Show the values in the way compatible with the xml plan.
 instance P.Pretty AVal where
-    pretty (VInt x)      = P.integer x
-    pretty (VStr x)      = P.text $ T.unpack x
-    pretty (VBool True)  = P.text "true"
-    pretty (VBool False) = P.text "false"
-    pretty (VDouble x)   = P.double x
-    pretty (VDec d)      = P.text $ show d
-    pretty (VDate d)     = P.text $ C.showGregorian $ unDate d
+    pretty (VInt x)        = P.integer x
+    pretty (VStr x)        = P.text $ T.unpack x
+    pretty (VBool True)    = P.text "true"
+    pretty (VBool False)   = P.text "false"
+    pretty (VDouble x)     = P.double x
+    pretty (VDec d)        = P.text $ show d
+    pretty (VDate d)       = P.text $ C.showGregorian $ unDate d
 
 -- | Attribute name or column name
 type Attr            = String
