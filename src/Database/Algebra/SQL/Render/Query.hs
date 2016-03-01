@@ -1,5 +1,5 @@
-{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 -- This file determines the semantics of the 'Query' data structure and all of
 -- its sub structures.
@@ -8,6 +8,7 @@ module Database.Algebra.SQL.Render.Query
     , renderSelectStmt
     ) where
 
+import           Data.Scientific
 import qualified Data.Text                          as T
 import qualified Data.Time.Calendar                 as C
 import           Text.PrettyPrint.ANSI.Leijen       (Doc, align, bold, char,
@@ -432,12 +433,13 @@ renderExtractField ExtractMonth = kw "month"
 renderExtractField ExtractYear  = kw "year"
 
 renderDataType :: DataType -> Doc
-renderDataType DTInteger         = kw "INTEGER"
-renderDataType DTDecimal         = kw "DECIMAL"
-renderDataType DTDoublePrecision = kw "DOUBLE PRECISION"
-renderDataType DTText            = kw "TEXT"
-renderDataType DTBoolean         = kw "BOOLEAN"
-renderDataType DTDate            = kw "DATE"
+renderDataType DTInteger            = kw "INTEGER"
+renderDataType DTDecimal            = kw "DECIMAL"
+renderDataType (DTDecimalFixed p s) = kw "DECIMAL" <> parens (int p <> comma <> int s)
+renderDataType DTDoublePrecision    = kw "DOUBLE PRECISION"
+renderDataType DTText               = kw "TEXT"
+renderDataType DTBoolean            = kw "BOOLEAN"
+renderDataType DTDate               = kw "DATE"
 
 literal :: Doc -> Doc
 literal = bold
@@ -459,7 +461,14 @@ escapePostgreSQL t = T.concatMap f t
 renderValue :: CompatMode -> Value -> Doc
 renderValue c v = case v of
     VInteger i         -> literal $ integer i
-    VDecimal d         -> literal $ text $ show d
+    VDecimal d         -> literal rendered <> text "::" <> sqlType
+      where
+        rendered        = text $ formatScientific Fixed Nothing d
+        (digits, exp10) = toDecimalDigits d
+        len             = length digits
+        precision       = negPrecision exp10 len digits $ computePrecision len exp10
+        scale           = computeScale len exp10
+        sqlType         = renderDataType $ DTDecimalFixed precision scale
     VDoublePrecision d -> literal $ double d
     VText str          -> literal $ squotes $ text $ T.unpack $ escape c str
     VBoolean b         -> kw $ if b then "TRUE" else "FALSE"
@@ -467,3 +476,25 @@ renderValue c v = case v of
     VDate d            -> literal $ text "DATE"
                                          <+>
                                          (squotes $ text $ C.showGregorian d)
+
+-- | Compute precision for the SQL decimal type
+computePrecision :: Int -> Int -> Int
+computePrecision l e
+    | e == 0         = l
+    | e > 0 && l < e = l + (e - l)
+    | e > 0          = l
+    | otherwise      = l + (negate e)
+
+-- | Fix precision for negative values
+negPrecision :: Int -> Int -> [Int] -> Int -> Int
+negPrecision e l ds p
+    | e >= l && all (< 0) ds = p + 1
+    | otherwise              = p
+
+-- | Compute scale for the SQL decimal type
+computeScale :: Int -> Int -> Int
+computeScale l e
+    | e == 0 = l
+    | e > 0 && l > e = l - e
+    | e > 0          = 0
+    | otherwise      = l + negate e

@@ -327,6 +327,8 @@ data DataType = -- | @INTEGER@
                 DTInteger
                 -- | @DECIMAL@
               | DTDecimal
+                -- | @DECIMAL(precision, scale)@
+              | DTDecimalFixed Int Int
                 -- | @DOUBLE PRECISION@
               | DTDoublePrecision
               | DTText
