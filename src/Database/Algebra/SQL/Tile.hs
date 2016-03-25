@@ -816,6 +816,12 @@ convertEEBaseTemplate convertEEBaseRec eeb = case eeb of
         e <- convertEEBaseRec erec
 
         return $ Q.VECase c t e
+    Q.VEBetween erec lrec urec -> do
+        c <- convertEEBaseRec erec
+        t <- convertEEBaseRec lrec
+        e <- convertEEBaseRec urec
+
+        return $ Q.VEBetween c t e
 
 -- | Converts an 'Q.ExtendedExpr' to a 'Q.ColumnExpr', if possible.
 convertEEtoCE :: Q.ExtendedExpr -> Maybe Q.ColumnExpr
@@ -914,7 +920,11 @@ translateExprTempl :: (Maybe [Q.SelectColumn] -> A.Expr -> a)
                    -> a
 translateExprTempl rec wrap inline mPrefix optSelectClause expr =
     case expr of
-        A.IfE c t e       ->
+        A.TernaryAppE A.Between c t e       ->
+            wrap $ Q.VEBetween (rec optSelectClause c)
+                               (rec optSelectClause t)
+                               (rec optSelectClause e)
+        A.TernaryAppE A.If c t e       ->
             wrap $ Q.VECase (rec optSelectClause c)
                             (rec optSelectClause t)
                             (rec optSelectClause e)
@@ -950,10 +960,14 @@ translateExprAE = translateExprTempl translateExprAE Q.AEBase inlineAE Nothing
 translateJoinExpr :: String -> A.Expr -> Q.ColumnExpr
 translateJoinExpr prefix expr =
     case expr of
-        A.IfE c t e       ->
+        A.TernaryAppE A.If c t e       ->
             Q.CEBase $ Q.VECase (translateJoinExpr prefix c)
                                 (translateJoinExpr prefix t)
                                 (translateJoinExpr prefix e)
+        A.TernaryAppE A.Between e1 e2 e3      ->
+            Q.CEBase $ Q.VECase (translateJoinExpr prefix e1)
+                                (translateJoinExpr prefix e2)
+                                (translateJoinExpr prefix e3)
 
         A.BinAppE f e1 e2 ->
             Q.CEBase $ Q.VEBinApp (translateBinFun f)

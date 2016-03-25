@@ -259,7 +259,14 @@ data ValueExprTemplate rec =
     { inExpr  :: rec            -- ^ The value to check for.
     , inQuery :: ValueQuery     -- ^ The query to check in.
     }
-      -- | CASE WHEN ELSE (restricted to one WHEN branch)
+
+      -- | @testExpr BETWEEN lowerExpr AND upperExpr@
+    | VEBetween
+    { testExpr :: rec
+    , lowerExpr :: rec
+    , upperExpr :: rec
+    }
+      -- | @CASE WHEN ELSE@ (restricted to one WHEN branch)
     | VECase
     { condExpr   :: rec
     , thenBranch :: rec

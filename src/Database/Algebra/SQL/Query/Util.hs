@@ -36,16 +36,18 @@ affectsSortOrderValueExprTemplate :: (a -> Bool)
                                   -> Bool
 affectsSortOrderValueExprTemplate affectsSortOrderRec ve = case ve of
     -- A constant value won't affect the sort order.
-    Q.VEValue _        -> False
-    Q.VEColumn _ _     -> True
-    Q.VEBinApp _ e1 e2 -> affectsSortOrderRec e1 || affectsSortOrderRec e2
-    Q.VEUnApp _ e1     -> affectsSortOrderRec e1
+    Q.VEValue _          -> False
+    Q.VEColumn _ _       -> True
+    Q.VEBinApp _ e1 e2   -> affectsSortOrderRec e1 || affectsSortOrderRec e2
+    Q.VEUnApp _ e1       -> affectsSortOrderRec e1
     -- We have no correlated queries (in open tiles), but in case we get some,
     -- this is the most flexible solution.
-    Q.VEExists _       -> True
-    Q.VEIn _ _         -> True
-    Q.VECase c t e     ->
+    Q.VEExists _         -> True
+    Q.VEIn _ _           -> True
+    Q.VECase c t e       ->
         affectsSortOrderRec c || affectsSortOrderRec t || affectsSortOrderRec e
+    Q.VEBetween e1 e2 e3 ->
+        affectsSortOrderRec e1 || affectsSortOrderRec e2 || affectsSortOrderRec e3
 
 affectsSortOrderCE :: Q.ColumnExpr -> Bool
 affectsSortOrderCE (Q.CEBase e) =

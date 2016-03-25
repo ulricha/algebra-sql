@@ -209,12 +209,20 @@ instance P.Pretty UnFun where
     pretty IsNull          = P.text $ "is_null"
     pretty (SubString f t) = P.text $ printf "subString_%d,%d" f t
 
+data TernaryFun = If
+                | Between
+                deriving (Eq, Ord, Show)
+
+instance P.Pretty TernaryFun where
+    pretty If      = P.text "if"
+    pretty Between = P.text "between"
+
 -- | Projection expressions
 data Expr = BinAppE BinFun Expr Expr
           | UnAppE UnFun Expr
           | ColE Attr
           | ConstE AVal
-          | IfE Expr Expr Expr
+          | TernaryAppE TernaryFun Expr Expr Expr
           deriving (Eq, Ord, Show)
 
 -- | Expressions which are used to specify partitioning in window
@@ -229,13 +237,13 @@ parenthize e =
         _        -> P.parens $ P.pretty e
 
 instance P.Pretty Expr where
-    pretty (BinAppE f e1 e2) = parenthize e1 <+> P.pretty f <+> parenthize e2
-    pretty (UnAppE f e)      = P.pretty f <+> (parenthize e)
-    pretty (ColE c)          = P.text c
-    pretty (ConstE v)        = P.pretty v
-    pretty (IfE c t e)       = P.text "if" <+> parenthize c
-                                           <+> parenthize t
-                                           <+> parenthize e
+    pretty (BinAppE f e1 e2)        = parenthize e1 <+> P.pretty f <+> parenthize e2
+    pretty (UnAppE f e)             = P.pretty f <+> (parenthize e)
+    pretty (ColE c)                 = P.text c
+    pretty (ConstE v)               = P.pretty v
+    pretty (TernaryAppE f e1 e2 e3) = P.pretty f <+> parenthize e1
+                                                 <+> parenthize e2
+                                                 <+> parenthize e3
 
 -- | New column name and the expression that generates the new column
 type Proj                = (ResAttr, Expr)
@@ -381,6 +389,7 @@ deriveJSON defaultOptions ''BinOp
 deriveJSON defaultOptions ''Expr
 deriveJSON defaultOptions ''UnFun
 deriveJSON defaultOptions ''BinFun
+deriveJSON defaultOptions ''TernaryFun
 deriveJSON defaultOptions ''Key
 deriveJSON defaultOptions ''RefCol
 deriveJSON defaultOptions ''KeyCol

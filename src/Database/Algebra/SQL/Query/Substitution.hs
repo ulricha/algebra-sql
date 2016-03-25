@@ -61,15 +61,18 @@ replaceReferencesValueExprTemplate replaceReferencesRec r ve = case ve of
         Q.VEBinApp bf
                    (replaceReferencesRec r fe)
                    (replaceReferencesRec r se)
-    Q.VEUnApp uf e      -> Q.VEUnApp uf (replaceReferencesRec r e)
-    Q.VECase cE tE eE   -> Q.VECase (replaceReferencesRec r cE)
+    Q.VEUnApp uf e       -> Q.VEUnApp uf (replaceReferencesRec r e)
+    Q.VECase cE tE eE    -> Q.VECase (replaceReferencesRec r cE)
                                     (replaceReferencesRec r tE)
                                     (replaceReferencesRec r eE)
-    Q.VEExists q        -> Q.VEExists $ replaceReferencesValueQuery r q
-    Q.VEIn ae q         -> Q.VEIn (replaceReferencesRec r ae)
-                                  (replaceReferencesValueQuery r q)
-    Q.VEColumn _ _      -> ve
-    Q.VEValue _         -> ve
+    Q.VEBetween e1 e2 e3 -> Q.VEBetween (replaceReferencesRec r e1)
+                                        (replaceReferencesRec r e2)
+                                        (replaceReferencesRec r e3)
+    Q.VEExists q         -> Q.VEExists $ replaceReferencesValueQuery r q
+    Q.VEIn ae q          -> Q.VEIn (replaceReferencesRec r ae)
+                                   (replaceReferencesValueQuery r q)
+    Q.VEColumn _ _       -> ve
+    Q.VEValue _          -> ve
 
 replaceReferencesColumnExpr :: SubstitutionFunction
                             -> Q.ColumnExpr

@@ -300,12 +300,17 @@ renderValueExprTemplate renderRec compat ve = case ve of
                             <+> kw "IN"
                             <+> renderSubQuery compat q
     VECase c t e         ->
-        text "CASE WHEN" <+> renderRec compat c
-                         <+> text "THEN"
+        kw "CASE WHEN" <+> renderRec compat c
+                         <+> kw "THEN"
                          <+> renderRec compat t
-                         <+> text "ELSE"
+                         <+> kw "ELSE"
                          <+> renderRec compat e
-                         <+> text "END"
+                         <+> kw "END"
+    VEBetween e1 e2 e3   ->
+        parens (renderRec compat e1) <+> kw "BETWEEN"
+                                     <+> parens (renderRec compat e2)
+                                     <+> kw "AND"
+                                     <+> parens (renderRec compat e3)
 
 
 -- | Render a 'ExtendedExprBase' with the generic renderer.
