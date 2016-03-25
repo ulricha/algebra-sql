@@ -375,14 +375,10 @@ transformUnOp (A.Project projList) c = do
 transformUnOp (A.Select expr) c = do
 
     (ctor, select, children) <- transformTerminated' c filterF
+    let conjuncts = map (translateExprCE (Just $ Q.selectClause select)) $ splitConjuncts expr
+    let select' = foldr appendToWhere select conjuncts
 
-    return $ ctor ( appendToWhere ( translateExprCE
-                                    (Just $ Q.selectClause select)
-                                    expr
-                                  )
-                    select
-                  )
-                  children
+    return $ ctor select' children
 
 transformUnOp (A.Distinct ()) c = do
 
@@ -846,6 +842,10 @@ convertEEtoAE ee = case ee of
 mkCol :: String
       -> Q.ValueExprTemplate a
 mkCol c = Q.VEColumn c Nothing
+
+splitConjuncts :: A.Expr -> [A.Expr]
+splitConjuncts (A.BinAppE A.And e1 e2) = splitConjuncts e1 ++ splitConjuncts e2
+splitConjuncts e                       = [e]
 
 appendToWhere :: Q.ColumnExpr -- ^ The expression added with logical and.
               -> Q.SelectStmt -- ^ The select statement to add to.
