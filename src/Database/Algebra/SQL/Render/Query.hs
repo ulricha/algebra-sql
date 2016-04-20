@@ -222,8 +222,14 @@ renderFromExpr _      (FETableReference n)     = text n
 renderFromExpr compat (FEExplicitJoin jop l r) = renderJoinOp compat jop l r
 
 renderJoinOp :: CompatMode -> JoinOperator -> FromPart -> FromPart -> Doc
+renderJoinOp MonetDB (LeftOuterJoin e) l r = parens $
+    kw "SELECT" <$> kw "*" <$> kw "FROM" <$> parens
+        (renderFromPart MonetDB l
+    <$> kw "LEFT OUTER JOIN"
+    <$> renderFromPart MonetDB r
+    <$> kw "ON" <+> renderColumnExpr MonetDB e)
 renderJoinOp compat (LeftOuterJoin e) l r = parens $
-    renderFromPart compat l
+        renderFromPart compat l
     <$> kw "LEFT OUTER JOIN"
     <$> renderFromPart compat r
     <$> kw "ON" <+> renderColumnExpr compat e
