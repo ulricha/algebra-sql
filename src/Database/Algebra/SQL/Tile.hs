@@ -334,9 +334,12 @@ transformUnOp (A.RowNum (name, sortList, partExprs)) c =
         where
           -- ROW_NUMBER() OVER (PARTITION BY p ORDER BY s)
           rowNumExpr = Q.EEWinFun Q.WFRowNumber
-                                  (map (translateExprAE $ Just sClause) partExprs)
+                                  nonLitPartExprs
                                   (asWindowOrderExprList sClause sortList)
                                   Nothing
+
+          nonLitPartExprs = filter (not . Q.literalAggrExpr)
+                            $ map (translateExprAE $ Just sClause) partExprs
 
 transformUnOp (A.WinFun ((name, fun), partExprs, sortExprs, mFrameSpec)) c =
     attachColFunUnOp colFun

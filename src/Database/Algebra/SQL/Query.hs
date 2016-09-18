@@ -363,3 +363,12 @@ data Value = -- | @42@
            | VNull
            deriving Show
 
+--------------------------------------------------------------------------------
+
+literalBaseExpr :: ValueExprTemplate r -> Bool
+literalBaseExpr (VEValue _) = True
+literalBaseExpr _           = False
+
+literalAggrExpr :: AggrExpr -> Bool
+literalAggrExpr (AEBase b) = literalBaseExpr b
+literalAggrExpr _          = False
