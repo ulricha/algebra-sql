@@ -99,10 +99,12 @@ terminatingFeatures bottomF = F $ case bottomF of
     AggrAndGroupingF -> S.fromList [FilterF, AggrAndGroupingF]
 
 -- | Determines whether two feature sets collide and therefore whether we should
--- terminate a SQL fragment.
+-- terminate a SQL fragment. Returns 'True' iff the feature sets collide.
 terminatesOver :: FeatureSet -> FeatureSet -> Bool
 terminatesOver (F topFs) (F bottomFs) =
-    any (`S.member` conflictingFs) $ S.toList topFs
+    S.null $ conflictingFs `S.intersection` topFs
   where
-    (F conflictingFs) = mconcat $ map terminatingFeatures $ S.toList bottomFs
+    (F conflictingFs) = foldr (\feature conflictSet -> conflictSet <> terminatingFeatures feature)
+                              mempty
+                              bottomFs
 
