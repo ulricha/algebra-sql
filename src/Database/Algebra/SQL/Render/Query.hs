@@ -409,6 +409,10 @@ renderSubString compat from to ra =
                                                                        , integer to
                                                                        ])
 
+-- | Render a type cast on an expression
+renderCast :: Doc -> Doc -> Doc
+renderCast expr ty = kw "CAST" <> parens (expr <+> kw "AS" <+> ty)
+
 renderUnaryFunction :: (CompatMode -> a -> Doc)
                     -> CompatMode
                     -> UnaryFunction
@@ -430,13 +434,13 @@ renderUnaryFunction renderRec compat fun argExpr =
             kw "EXTRACT" <> parens (renderExtractField field <+> kw "FROM" <+> ra)
         -- The substring combinator is rendered special
         UFSubString f t   -> renderSubString compat f t ra
-        UFCast ty         -> kw "CAST"
-                             <> parens (ra <+> kw "AS" <+> renderDataType ty)
+        UFCast ty         -> renderCast ra (renderDataType ty)
         UFNot             -> parens $ kw "NOT" <+> ra
         UFIsNull          -> parens ra <+> kw "IS NULL"
 
   where
     ra = renderRec compat argExpr
+
 
 renderExtractField :: ExtractField -> Doc
 renderExtractField ExtractDay   = kw "day"
@@ -472,7 +476,7 @@ escapePostgreSQL t = T.concatMap f t
 renderValue :: CompatMode -> Value -> Doc
 renderValue c v = case v of
     VInteger i         -> literal $ integer i
-    VDecimal d         -> literal rendered <> text "::" <> sqlType
+    VDecimal d         -> renderCast (literal rendered) sqlType
       where
         rendered        = text $ formatScientific Fixed Nothing d
         (digits, exp10) = toDecimalDigits d
