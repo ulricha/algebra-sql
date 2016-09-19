@@ -605,6 +605,8 @@ tileExistsJoin :: [(A.Expr, A.Expr, A.JoinRel)]
                     -> TileM TileTree
 tileExistsJoin conditions c0 c1 wrapFun = do
 
+    dialect <- asks tDialect
+
     when (null conditions) $impossible
 
     (ctor0, select0, children0) <- terminateTile c0 filterF
@@ -646,6 +648,8 @@ tileExistsJoin conditions c0 c1 wrapFun = do
                 -- SELECT t.c FROM (VALUES ...) AS t(c)
                 -- =>
                 -- VALUES ...
+                --
+                -- Note: This is not supported on MonetDB!
                 rightSelect' =
                     case rightSelect of
                         Q.VQSelect
@@ -655,7 +659,9 @@ tileExistsJoin conditions c0 c1 wrapFun = do
                             [Q.FPAlias (Q.FESubQuery (Q.VQLiteral rows)) tabName' (Just [colName'])]
                             []
                             []
-                            []) | colName == colName' && tabName == tabName' -> Q.VQLiteral rows
+                            []) |    colName == colName'
+                                  && tabName == tabName'
+                                  && not (forMonetDB dialect) -> Q.VQLiteral rows
                         _ -> rightSelect
 
                 -- Embedd all conditions in the right select, and set select
