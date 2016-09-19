@@ -3,7 +3,8 @@ module Database.Algebra.SQL.Termination
     ( FeatureSet
     , terminatesOver
     , noneF
-    , projectF
+    , colProjectF
+    , exprProjectF
     , filterF
     , tableF
     , dupElimF
@@ -20,9 +21,10 @@ import qualified Data.Set                     as S
 import           Database.Algebra.SQL.Dialect
 
 -- | Specifies a part in a SQL statement which is currently in use.
-data Feature = ProjectionF       -- ^ Projection of columns.
-             | TableF            -- ^ Physical or virtual table.
-             | FilterF           -- ^ Filtering of rows.
+data Feature = ColumnProjectF   -- ^ Projection of columns.
+             | ExprProjectF     -- ^ Projection with arbitrary expressions
+             | TableF              -- ^ Physical or virtual table.
+             | FilterF             -- ^ Filtering of rows.
              | DupElimF
              | SortF
              | WindowFunctionF
@@ -35,9 +37,10 @@ newtype FeatureSet = F { unF :: S.Set Feature }
 wrap :: Feature -> FeatureSet
 wrap = F . S.singleton
 
-noneF, projectF, filterF, tableF, dupElimF, sortF, windowFunctionF, aggrAndGroupingF :: FeatureSet
+noneF, colProjectF, exprProjectF, filterF, tableF, dupElimF, sortF, windowFunctionF, aggrAndGroupingF :: FeatureSet
 noneF = F S.empty
-projectF = wrap ProjectionF
+colProjectF = wrap ColumnProjectF
+exprProjectF = wrap ExprProjectF
 filterF = wrap FilterF
 tableF = wrap TableF
 dupElimF = wrap DupElimF
@@ -64,11 +67,12 @@ terminatingFeatures SQL99      = undefined
 -- feature coming from an operator placed below.
 terminatingFeaturesM5 :: Feature -> FeatureSet
 terminatingFeaturesM5 bottomF = F $ case bottomF of
-    -- MonetDB/SQL allows only column references in sorting and partitioning
-    -- specifications for window clauses as well as in grouping specifications.
-    ProjectionF      -> S.fromList [AggrAndGroupingF, WindowFunctionF]
-    TableF           -> S.empty
-    FilterF          -> S.empty
+    -- MonetDB/SQL allows only column references in partitioning specifications
+    -- for window clauses as well as in grouping specifications.
+    ExprProjectF   -> S.fromList [AggrAndGroupingF, WindowFunctionF]
+    ColumnProjectF -> S.empty
+    TableF         -> S.empty
+    FilterF        -> S.empty
     -- Distinction has to occur before:
     --
     --     * Projection of columns: Because there exist cases where to much gets
@@ -80,7 +84,7 @@ terminatingFeaturesM5 bottomF = F $ case bottomF of
     --     * Grouping: Grouping could project away columns, which are needed for
     --       duplicate elimination.
     --
-    DupElimF         -> S.fromList [ProjectionF, AggrAndGroupingF]
+    DupElimF         -> S.fromList [ExprProjectF, ColumnProjectF, AggrAndGroupingF]
     -- The ORDER BY clause will only be used on top.
     SortF            -> S.empty
     -- Problematic cases:
@@ -112,9 +116,10 @@ terminatingFeaturesM5 bottomF = F $ case bottomF of
 -- feature coming from an operator placed below.
 terminatingFeaturesPg :: Feature -> FeatureSet
 terminatingFeaturesPg bottomF = F $ case bottomF of
-    ProjectionF      -> S.empty
-    TableF           -> S.empty
-    FilterF          -> S.empty
+    ExprProjectF   -> S.empty
+    ColumnProjectF -> S.empty
+    TableF         -> S.empty
+    FilterF        -> S.empty
     -- Distinction has to occur before:
     --
     --     * Projection of columns: Because there exist cases where to much gets
@@ -126,7 +131,7 @@ terminatingFeaturesPg bottomF = F $ case bottomF of
     --     * Grouping: Grouping could project away columns, which are needed for
     --       duplicate elimination.
     --
-    DupElimF         -> S.fromList [ProjectionF, AggrAndGroupingF]
+    DupElimF         -> S.fromList [ColumnProjectF, ExprProjectF, AggrAndGroupingF]
     -- The ORDER BY clause will only be used on top.
     SortF            -> S.empty
     -- Problematic cases:

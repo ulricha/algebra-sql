@@ -247,10 +247,10 @@ tileNullaryOp (A.LitTable (tuples, typedSchema)) = do
                      []
 
     return $ case tuples of
-        [] -> tile (projectF <> filterF)
+        [] -> tile (colProjectF <> filterF)
                    [map (castedNull . snd) typedSchema]
                    [Q.CEBase . Q.VEValue $ Q.VBoolean False]
-        _  -> tile projectF
+        _  -> tile colProjectF
                    (map (map translateLit) tuples)
                    []
   where
@@ -262,7 +262,7 @@ tileNullaryOp (A.LitTable (tuples, typedSchema)) = do
 tileNullaryOp (A.TableRef (name, typedSchema, _))   = do
     tableAlias <- freshAlias
 
-    return $ TileNode (projectF <> tableF)
+    return $ TileNode (colProjectF <> tableF)
                       emptySelectStmt
                       { -- Map the columns of the table reference to the given
                         -- column names.
@@ -285,7 +285,7 @@ tileUnOpRank :: -- ExtendedExpr constructor.
                   -> C.AlgNode
                   -> TileM TileTree
 tileUnOpRank rankFun (name, sortList) =
-    attachColFunUnOp colFun $ projectF <> windowFunctionF
+    attachColFunUnOp colFun $ exprProjectF <> windowFunctionF
   where
     colFun sClause = Q.SCAlias rankExpr name
 
@@ -297,7 +297,7 @@ tileUnOpRank rankFun (name, sortList) =
 
 tileUnOp :: A.UnOp -> C.AlgNode -> TileM TileTree
 tileUnOp (A.Serialize (ref, key, ord, items)) c = do
-    (ctor, select, children) <- terminateTile c $ projectF <> sortF
+    (ctor, select, children) <- terminateTile c $ exprProjectF <> sortF
 
     let -- Inlining is obligatory here, since we possibly eliminate referenced
         -- columns. ('translateExpr' inlines columns.)
@@ -326,7 +326,7 @@ tileUnOp (A.Serialize (ref, key, ord, items)) c = do
 
 tileUnOp (A.RowNum (name, sortList, partExprs)) c =
     attachColFunUnOp colFun
-                     (projectF <> windowFunctionF)
+                     (exprProjectF <> windowFunctionF)
                      c
   where
     colFun sClause = Q.SCAlias rowNumExpr name
@@ -342,7 +342,7 @@ tileUnOp (A.RowNum (name, sortList, partExprs)) c =
 
 tileUnOp (A.WinFun ((name, fun), partExprs, sortExprs, mFrameSpec)) c =
     attachColFunUnOp colFun
-                     (projectF <> windowFunctionF)
+                     (exprProjectF <> windowFunctionF)
                      c
 
   where
@@ -359,7 +359,7 @@ tileUnOp (A.RowRank inf) c = tileUnOpRank Q.WFDenseRank inf c
 tileUnOp (A.Rank inf) c = tileUnOpRank Q.WFRank inf c
 tileUnOp (A.Project projList) c = do
 
-    (ctor, select, children) <- terminateTile c projectF
+    (ctor, select, children) <- terminateTile c exprProjectF
 
     let -- Inlining is obligatory here, since we possibly eliminate referenced
         -- columns. ('translateExpr' inlines columns.)
@@ -391,7 +391,7 @@ tileUnOp (A.Distinct ()) c = do
 
 tileUnOp (A.Aggr (aggrs, partExprMapping)) c = do
 
-    (ctor, select, children) <- terminateTile c $ projectF <> aggrAndGroupingF
+    (ctor, select, children) <- terminateTile c $ exprProjectF <> aggrAndGroupingF
 
     let justSClause       = Just $ Q.selectClause select
         translateE        = translateExprCE justSClause
@@ -476,7 +476,7 @@ tileBinSetOp setOp c0 c1 = do
     -- since we assume they are equal.
     let schema = getSchemaSelectStmt select0'
 
-    return $ TileNode (projectF <> tableF)
+    return $ TileNode (exprProjectF <> tableF)
                       emptySelectStmt
                       { Q.selectClause =
                             columnsFromSchema tableAlias schema
@@ -520,7 +520,7 @@ tileBinCrossJoin c0 c1 = do
            )
   where
     tileF c = terminateOnCollision c opFeatures
-    opFeatures   = projectF <> tableF <> filterF
+    opFeatures   = exprProjectF <> tableF <> filterF
 
 tileBinOp :: A.BinOp
                -> C.AlgNode
@@ -576,7 +576,7 @@ tileBinOp (A.LeftOuterJoin conditions) c0 c1 = do
     let joinCond = translateExplJoinConds fpAlias0 fpAlias1 conditions
     let joinOp   = Q.LeftOuterJoin joinCond
 
-    return $ TileNode (projectF <> tableF)
+    return $ TileNode (exprProjectF <> tableF)
                       emptySelectStmt
                           { Q.selectClause =
                               (columnsFromSchema joinAlias $ schema0 ++ schema1)
@@ -692,7 +692,7 @@ terminateOnCollision n topFs = do
 
                 let schema = getSchemaSelectStmt body
 
-                return ( projectF <> tableF
+                return ( colProjectF <> tableF
                        , emptySelectStmt
                              { Q.selectClause =
                                    columnsFromSchema tableAlias schema
@@ -705,7 +705,7 @@ terminateOnCollision n topFs = do
                 return (bottomFs, body, children)
         ReferenceLeaf r s                     -> do
                 (sel, cs) <- embedExternalReference r s
-                return (projectF <> tableF, sel, cs)
+                return (colProjectF <> tableF, sel, cs)
 
 -- | Terminate a tile if features collide. Returns the old select statement if
 -- no collision occured or a fresh select statement over the terminated tile
