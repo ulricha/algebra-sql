@@ -1,4 +1,4 @@
--- | Datatypes and functions which determine termination of SQL fragements.
+-- | Datatypes and functions which determine termination of SQL fragments.
 module Database.Algebra.SQL.Termination
     ( FeatureSet
     , terminatesOver
@@ -16,6 +16,8 @@ module Database.Algebra.SQL.Termination
 import           Data.List   (intercalate)
 import           Data.Monoid
 import qualified Data.Set    as S
+
+-- import Database.Algebra.SQL.Dialect
 
 -- | Specifies a part in a SQL statement which is currently in use.
 data Feature = ProjectionF       -- ^ Projection of columns.

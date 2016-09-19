@@ -21,8 +21,9 @@ import Database.Algebra.SQL.Dialect
 -- TODO include materialization strategy depending on compat mode
 
 resultFromDAG :: T.TADag -> MatFun -> (([T.TileTree], [T.TileDep]), ([Query], [Query]))
-resultFromDAG dag matFun = (transformResult, matFun transformResult)
-  where transformResult = T.transform dag
+resultFromDAG dag matFun = (tiles, matFun tiles)
+  where
+    tiles = T.tilePlan dag
 
 -- | Produces pretty output, optionally with debug information.
 renderDebugOutput :: Dialect -> T.TADag -> MatFun -> Bool -> ShowS

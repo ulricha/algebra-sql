@@ -7,7 +7,7 @@ module Database.Algebra.SQL.Tile
     , ExternalReference
     , InternalReference
     , TileDep
-    , transform
+    , tilePlan
     , TADag
     ) where
 
@@ -165,30 +165,30 @@ getSchemaSelectStmt s = map Q.sName $ Q.selectClause s
 -- (nodes with more than one parent).
 -- A 'TADag' can have multiple root nodes, and therefore the function returns a
 -- list of root tiles and their dependencies.
-transform :: TADag -> ([TileTree], [TileDep])
-transform dag = (tiles, reverse $ depList sFinal)
+tilePlan :: TADag -> ([TileTree], [TileDep])
+tilePlan dag = (tiles, reverse $ depList sFinal)
   where
     rootNodes       = D.rootNodes dag
-    tileComp        = mapM transformNode rootNodes
+    tileComp        = mapM tileNode rootNodes
     (tiles, sFinal) = runState (runReaderT tileComp dag) sInitial
 
 -- | This function basically checks for already referenced nodes with more than
 -- one parent, returning a reference to already computed 'TileTree's.
-transformNode :: C.AlgNode -> TileM TileTree
-transformNode n = do
+tileNode :: C.AlgNode -> TileM TileTree
+tileNode n = do
 
     op <- asks $ D.operator n
 
     -- allowBranch indicates whether multi reference nodes shall be split
     -- for this operator, resulting in multiple equal branches. (Treeify)
-    let (allowBranch, transformOp) = case op of
-                                   -- Ignore branching for nullary operators.
-            (C.NullaryOp nop)   -> (False, transformNullaryOp nop)
-            (C.UnOp uop c)      -> (True, transformUnOp uop c)
+    let (allowBranch, tileOp) = case op of
+            -- Ignore branching for nullary operators.
+            (C.NullaryOp nop)   -> (False, tileNullaryOp nop)
+            (C.UnOp uop c)      -> (True, tileUnOp uop c)
             (C.BinOp bop c0 c1) ->
                 case bop of
-                    A.ThetaJoin _ -> (False, transformBinOp bop c0 c1)
-                    _             -> (True, transformBinOp bop c0 c1)
+                    A.ThetaJoin _ -> (False, tileBinOp bop c0 c1)
+                    _             -> (True, tileBinOp bop c0 c1)
             (C.TerOp () _ _ _)  -> $impossible
 
     multiRef <- asks $ isMultiReferenced n
@@ -205,7 +205,7 @@ transformNode n = do
             -- Otherwise add it.
             Nothing     -> do
 
-                resultingTile <- transformOp
+                resultingTile <- tileOp
 
                 -- Generate a name for the sub tree.
                 tableId <- freshTableId
@@ -219,10 +219,10 @@ transformNode n = do
                 modify $ sAddBinding n (tableId, schema)
 
                 return $ ReferenceLeaf tableId schema
-    else transformOp
+    else tileOp
 
-transformNullaryOp :: A.NullOp -> TileM TileTree
-transformNullaryOp (A.LitTable (tuples, typedSchema)) = do
+tileNullaryOp :: A.NullOp -> TileM TileTree
+tileNullaryOp (A.LitTable (tuples, typedSchema)) = do
     tableAlias <- freshAlias
 
     let -- Abstracts over the differences.
@@ -252,7 +252,7 @@ transformNullaryOp (A.LitTable (tuples, typedSchema)) = do
                                          (Q.CEBase $ Q.VEValue Q.VNull)
     translateLit  = Q.CEBase . Q.VEValue . translateAVal
 
-transformNullaryOp (A.TableRef (name, typedSchema, _))   = do
+tileNullaryOp (A.TableRef (name, typedSchema, _))   = do
     tableAlias <- freshAlias
 
     return $ TileNode (projectF <> tableF)
@@ -272,12 +272,12 @@ transformNullaryOp (A.TableRef (name, typedSchema, _))   = do
     schema = map fst typedSchema
 
 -- | Abstraction for rank operators.
-transformUnOpRank :: -- ExtendedExpr constructor.
+tileUnOpRank :: -- ExtendedExpr constructor.
                      Q.WindowFunction
                   -> (String, [A.SortSpec])
                   -> C.AlgNode
                   -> TileM TileTree
-transformUnOpRank rankFun (name, sortList) =
+tileUnOpRank rankFun (name, sortList) =
     attachColFunUnOp colFun $ projectF <> windowFunctionF
   where
     colFun sClause = Q.SCAlias rankExpr name
@@ -288,9 +288,9 @@ transformUnOpRank rankFun (name, sortList) =
                               (asWindowOrderExprList sClause sortList)
                               Nothing
 
-transformUnOp :: A.UnOp -> C.AlgNode -> TileM TileTree
-transformUnOp (A.Serialize (ref, key, ord, items)) c = do
-    (ctor, select, children) <- transformTerminated' c $ projectF <> sortF
+tileUnOp :: A.UnOp -> C.AlgNode -> TileM TileTree
+tileUnOp (A.Serialize (ref, key, ord, items)) c = do
+    (ctor, select, children) <- terminateTile c $ projectF <> sortF
 
     let -- Inlining is obligatory here, since we possibly eliminate referenced
         -- columns. ('translateExpr' inlines columns.)
@@ -317,7 +317,7 @@ transformUnOp (A.Serialize (ref, key, ord, items)) c = do
              select { Q.selectClause = projs , Q.orderByClause = sortExprs }
              children
 
-transformUnOp (A.RowNum (name, sortList, partExprs)) c =
+tileUnOp (A.RowNum (name, sortList, partExprs)) c =
     attachColFunUnOp colFun
                      (projectF <> windowFunctionF)
                      c
@@ -333,7 +333,7 @@ transformUnOp (A.RowNum (name, sortList, partExprs)) c =
           nonLitPartExprs = filter (not . Q.literalAggrExpr)
                             $ map (translateExprAE $ Just sClause) partExprs
 
-transformUnOp (A.WinFun ((name, fun), partExprs, sortExprs, mFrameSpec)) c =
+tileUnOp (A.WinFun ((name, fun), partExprs, sortExprs, mFrameSpec)) c =
     attachColFunUnOp colFun
                      (projectF <> windowFunctionF)
                      c
@@ -348,11 +348,11 @@ transformUnOp (A.WinFun ((name, fun), partExprs, sortExprs, mFrameSpec)) c =
 
         translateE = translateExprCE $ Just sClause
 
-transformUnOp (A.RowRank inf) c = transformUnOpRank Q.WFDenseRank inf c
-transformUnOp (A.Rank inf) c = transformUnOpRank Q.WFRank inf c
-transformUnOp (A.Project projList) c = do
+tileUnOp (A.RowRank inf) c = tileUnOpRank Q.WFDenseRank inf c
+tileUnOp (A.Rank inf) c = tileUnOpRank Q.WFRank inf c
+tileUnOp (A.Project projList) c = do
 
-    (ctor, select, children) <- transformTerminated' c projectF
+    (ctor, select, children) <- terminateTile c projectF
 
     let -- Inlining is obligatory here, since we possibly eliminate referenced
         -- columns. ('translateExpr' inlines columns.)
@@ -367,24 +367,24 @@ transformUnOp (A.Project projList) c = do
                   -- But use the old children.
                   children
 
-transformUnOp (A.Select expr) c = do
+tileUnOp (A.Select expr) c = do
 
-    (ctor, select, children) <- transformTerminated' c filterF
+    (ctor, select, children) <- terminateTile c filterF
     let conjuncts = map (translateExprCE (Just $ Q.selectClause select)) $ splitConjuncts expr
     let select' = foldr appendToWhere select conjuncts
 
     return $ ctor select' children
 
-transformUnOp (A.Distinct ()) c = do
+tileUnOp (A.Distinct ()) c = do
 
-    (ctor, select, children) <- transformTerminated' c dupElimF
+    (ctor, select, children) <- terminateTile c dupElimF
 
     -- Keep everything but set distinct.
     return $ ctor select { Q.distinct = True } children
 
-transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
+tileUnOp (A.Aggr (aggrs, partExprMapping)) c = do
 
-    (ctor, select, children) <- transformTerminated' c $ projectF <> aggrAndGroupingF
+    (ctor, select, children) <- terminateTile c $ projectF <> aggrAndGroupingF
 
     let justSClause       = Just $ Q.selectClause select
         translateE        = translateExprCE justSClause
@@ -425,7 +425,7 @@ attachColFunUnOp :: ([Q.SelectColumn] -> Q.SelectColumn)
                  -> TileM TileTree
 attachColFunUnOp colFun opFeatures c = do
 
-    (ctor, select, children) <- transformTerminated' c opFeatures
+    (ctor, select, children) <- terminateTile c opFeatures
 
     let sClause = Q.selectClause select
 
@@ -446,15 +446,15 @@ pruneCol n cols = filter namePred cols
     namePred _                          = True
 
 -- | Abstracts over binary set operation operators.
-transformBinSetOp :: Q.SetOperation
+tileBinSetOp :: Q.SetOperation
                   -> C.AlgNode
                   -> C.AlgNode
                   -> TileM TileTree
-transformBinSetOp setOp c0 c1 = do
+tileBinSetOp setOp c0 c1 = do
 
     -- Use one tile to get the schema information.
-    (_, select0, children0) <- transformTerminated c0 noneF
-    (_, select1, children1) <- transformTerminated c1 noneF
+    (select0, children0) <- terminateSelect c0 noneF
+    (select1, children1) <- terminateSelect c1 noneF
 
     -- Impose a canonical order on entries in the SELECT clauses to
     -- ensure that schemata of the set operator inputs match.
@@ -487,16 +487,16 @@ transformBinSetOp setOp c0 c1 = do
                       $ children0 ++ children1
 
 -- | Perform a cross join between two nodes.
-transformBinCrossJoin :: C.AlgNode
+tileBinCrossJoin :: C.AlgNode
                       -> C.AlgNode
                       -> TileM ( FeatureSet
                                    , Q.SelectStmt
                                    , TileChildren
                                    )
-transformBinCrossJoin c0 c1 = do
+tileBinCrossJoin c0 c1 = do
 
-    (childFeatures0, select0, children0) <- transformF c0
-    (childFeatures1, select1, children1) <- transformF c1
+    (childFeatures0, select0, children0) <- tileF c0
+    (childFeatures1, select1, children1) <- tileF c1
 
     -- We can simply concatenate everything, because all things are prefixed and
     -- cross join is associative.
@@ -512,34 +512,34 @@ transformBinCrossJoin c0 c1 = do
            , children0 ++ children1
            )
   where
-    transformF c = transformTerminated c opFeatures
+    tileF c = terminateOnCollision c opFeatures
     opFeatures   = projectF <> tableF <> filterF
 
-transformBinOp :: A.BinOp
+tileBinOp :: A.BinOp
                -> C.AlgNode
                -> C.AlgNode
                -> TileM TileTree
-transformBinOp (A.Cross ()) c0 c1 = do
-    (f, s, c) <- transformBinCrossJoin c0 c1
+tileBinOp (A.Cross ()) c0 c1 = do
+    (f, s, c) <- tileBinCrossJoin c0 c1
     return $ TileNode f s c
 
-transformBinOp (A.EqJoin (lName, rName)) c0 c1 = do
+tileBinOp (A.EqJoin (lName, rName)) c0 c1 = do
 
-    (childrenFeatures, select, children) <- transformBinCrossJoin c0 c1
+    (childrenFeatures, select, children) <- tileBinCrossJoin c0 c1
 
     let sClause = Q.selectClause select
         cond    = Q.CEBase $ Q.VEBinApp Q.BFEqual (inlineCE sClause lName)
                                                   $ inlineCE sClause rName
 
-    -- 'transformBinCrossJoin' already has the 'filterF' feature.
+    -- 'tileBinCrossJoin' already has the 'filterF' feature.
     return $ TileNode childrenFeatures (appendToWhere cond select) children
 
 
-transformBinOp (A.ThetaJoin conditions) c0 c1  = do
+tileBinOp (A.ThetaJoin conditions) c0 c1  = do
 
     when (null conditions) $impossible
 
-    (childrenFeatures, select, children) <- transformBinCrossJoin c0 c1
+    (childrenFeatures, select, children) <- tileBinCrossJoin c0 c1
 
     let sClause = Q.selectClause select
         conds   = map (translateJoinCond sClause sClause) conditions
@@ -548,9 +548,9 @@ transformBinOp (A.ThetaJoin conditions) c0 c1  = do
                         (appendAllToWhere conds select)
                         children
 
-transformBinOp (A.LeftOuterJoin conditions) c0 c1 = do
-    (_, select0, children0) <- transformTerminated c0 noneF
-    (_, select1, children1) <- transformTerminated c1 noneF
+tileBinOp (A.LeftOuterJoin conditions) c0 c1 = do
+    (select0, children0) <- terminateSelect c0 noneF
+    (select1, children1) <- terminateSelect c1 noneF
 
     let q0 = Q.FESubQuery $ Q.VQSelect select0
     let q1 = Q.FESubQuery $ Q.VQSelect select1
@@ -582,29 +582,29 @@ transformBinOp (A.LeftOuterJoin conditions) c0 c1 = do
                           }
                       (children0 ++ children1)
 
-transformBinOp (A.SemiJoin cs) c0 c1          =
-    transformExistsJoin cs c0 c1 id
-transformBinOp (A.AntiJoin cs) c0 c1          =
-    transformExistsJoin cs c0 c1 (Q.CEBase . Q.VEUnApp Q.UFNot)
-transformBinOp (A.DisjUnion ()) c0 c1         =
-    transformBinSetOp Q.SOUnionAll c0 c1
-transformBinOp (A.Difference ()) c0 c1        =
-    transformBinSetOp Q.SOExceptAll c0 c1
+tileBinOp (A.SemiJoin cs) c0 c1          =
+    tileExistsJoin cs c0 c1 id
+tileBinOp (A.AntiJoin cs) c0 c1          =
+    tileExistsJoin cs c0 c1 (Q.CEBase . Q.VEUnApp Q.UFNot)
+tileBinOp (A.DisjUnion ()) c0 c1         =
+    tileBinSetOp Q.SOUnionAll c0 c1
+tileBinOp (A.Difference ()) c0 c1        =
+    tileBinSetOp Q.SOExceptAll c0 c1
 
-transformExistsJoin :: [(A.Expr, A.Expr, A.JoinRel)]
+tileExistsJoin :: [(A.Expr, A.Expr, A.JoinRel)]
                     -> C.AlgNode
                     -> C.AlgNode
                     -> (Q.ColumnExpr -> Q.ColumnExpr)
                     -> TileM TileTree
-transformExistsJoin conditions c0 c1 wrapFun = do
+tileExistsJoin conditions c0 c1 wrapFun = do
 
     when (null conditions) $impossible
 
-    (ctor0, select0, children0) <- transformTerminated' c0 filterF
+    (ctor0, select0, children0) <- terminateTile c0 filterF
 
     -- Ignore operator features, since it will be nested and therefore
     -- terminated.
-    (_, select1, children1) <- transformTerminated c1 noneF
+    (select1, children1) <- terminateSelect c1 noneF
 
     let ctor s = ctor0 s $ children0 ++ children1
 
@@ -671,11 +671,11 @@ transformExistsJoin conditions c0 c1 wrapFun = do
 
 -- | Terminates a SQL fragment when suggested. Returns the resulting
 -- 'FeatureSet' of the child, the 'Q.SelectStmt' and its children.
-transformTerminated :: C.AlgNode
-                    -> FeatureSet
-                    -> TileM (FeatureSet, Q.SelectStmt, TileChildren)
-transformTerminated n topFs = do
-    tile <- transformNode n
+terminateOnCollision :: C.AlgNode
+                     -> FeatureSet
+                     -> TileM (FeatureSet, Q.SelectStmt, TileChildren)
+terminateOnCollision n topFs = do
+    tile <- tileNode n
 
     case tile of
         TileNode bottomFs body children
@@ -686,11 +686,11 @@ transformTerminated n topFs = do
 
                 return ( projectF <> tableF
                        , emptySelectStmt
-                         { Q.selectClause =
-                               columnsFromSchema tableAlias schema
-                         , Q.fromClause =
-                               [mkSubQuery body tableAlias $ Just schema]
-                         }
+                             { Q.selectClause =
+                                   columnsFromSchema tableAlias schema
+                             , Q.fromClause =
+                                   [mkSubQuery body tableAlias $ Just schema]
+                             }
                        , children
                        )
             | otherwise                       ->
@@ -699,16 +699,25 @@ transformTerminated n topFs = do
                 (sel, cs) <- embedExternalReference r s
                 return (projectF <> tableF, sel, cs)
 
--- | Does the same as 'transformTerminated', but further handles combining of
--- the 'FeatureSet' and applies it to the constructor.
-transformTerminated' :: C.AlgNode
-                     -> FeatureSet
-                     -> TileM ( Q.SelectStmt -> TileChildren -> TileTree
-                                  , Q.SelectStmt
-                                  , TileChildren
-                                  )
-transformTerminated' n topFs = do
-    (fs, select, cs) <- transformTerminated n topFs
+-- | Terminate a tile if features collide. Returns the old select statement if
+-- no collision occured or a fresh select statement over the terminated tile
+-- otherwise.
+terminateSelect :: C.AlgNode -> FeatureSet -> TileM (Q.SelectStmt, TileChildren)
+terminateSelect n topFs = do
+    (_, select, children) <- terminateOnCollision n topFs
+    pure (select, children)
+
+-- | Terminate a tile if feature sets collide. Returns a constructor for a new
+-- tile with the combined featureset, the select statement and the tile
+-- children.
+terminateTile :: C.AlgNode
+              -> FeatureSet
+              -> TileM ( Q.SelectStmt -> TileChildren -> TileTree
+                       , Q.SelectStmt
+                       , TileChildren
+                       )
+terminateTile n topFs = do
+    (fs, select, cs) <- terminateOnCollision n topFs
     return (TileNode $ fs <> topFs, select, cs)
 
 -- | Embeds an external reference into a 'Q.SelectStmt'.
