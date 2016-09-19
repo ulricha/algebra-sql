@@ -22,14 +22,10 @@ import Text.PrettyPrint.ANSI.Leijen ( (<$>)
                                     , vcat
                                     , vsep
                                     )
-import qualified Data.DList as DL
-    ( toList
-    )
-
 import qualified Database.Algebra.SQL.Render.Query as RQ
 import qualified Database.Algebra.SQL.Query as Q
 import Database.Algebra.SQL.Tile
-import Database.Algebra.SQL.Compatibility
+import Database.Algebra.SQL.Dialect
 
 intRef :: InternalReference -> Doc
 intRef = ondullblue . int
@@ -40,7 +36,7 @@ extRef = onwhite . black . bold . int
 type_ :: String -> Doc
 type_ = bold . text
 
-renderTileTreeNode :: CompatMode -> Q.SelectStmt ->  [(Int, TileTree)] -> Doc
+renderTileTreeNode :: Dialect -> Q.SelectStmt ->  [(Int, TileTree)] -> Doc
 renderTileTreeNode compat body children =
     type_ "tile"
     <$> RQ.renderSelectStmt compat body
@@ -51,7 +47,7 @@ renderTileTreeNode compat body children =
         f (vId, t) = intRef vId <+> align (renderTileTree compat t)
 
 
-renderTileTree :: CompatMode -> TileTree -> Doc
+renderTileTree :: Dialect -> TileTree -> Doc
 renderTileTree _ (ReferenceLeaf n _)                = type_ "references"
                                                     <+> extRef n
 renderTileTree compat (TileNode features body children) =
@@ -59,18 +55,17 @@ renderTileTree compat (TileNode features body children) =
           )
     <+> renderTileTreeNode compat body children
 
-renderTransformResult :: CompatMode -> ([TileTree], DependencyList) -> Doc
+renderTransformResult :: Dialect -> ([TileTree], [TileDep]) -> Doc
 renderTransformResult compat (ts, dl) =
     type_ "queries"
     <$> indent 4 (vcat (punctuate linebreak (map (renderTileTree compat) ts)))
-    <> if null depList
+    <> if null dl
        then empty
        else ( linebreak
               <> type_ "dependencies"
               <$> indent 4 deps
             )
-  where deps        = vsep $ map f depList
+  where deps        = vsep $ map f dl
         f (r, tree) = extRef r
                       <+> bold (text "as")
                       <+> align (renderTileTree compat tree)
-        depList     = DL.toList dl

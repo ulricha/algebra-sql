@@ -6,8 +6,7 @@ module Database.Algebra.SQL.Tile
     , TileChildren
     , ExternalReference
     , InternalReference
-    , DependencyList
-    , TransformResult
+    , TileDep
     , transform
     , TADag
     ) where
@@ -19,10 +18,10 @@ module Database.Algebra.SQL.Tile
 -- TODO isMultiReferenced special case: check for same parent !!
 
 import           Control.Arrow                    (second)
-import           Control.Monad.RWS.Strict
-import qualified Data.DList                       as DL (DList, singleton)
-import qualified Data.List                        as L
+import           Control.Monad.Reader
+import           Control.Monad.State
 import qualified Data.IntMap                      as IntMap
+import qualified Data.List                        as L
 import           Data.Maybe
 import           GHC.Exts                         hiding (inline)
 
@@ -32,8 +31,8 @@ import           Database.Algebra.Impossible
 import qualified Database.Algebra.Table.Lang      as A
 
 import qualified Database.Algebra.SQL.Query       as Q
+import           Database.Algebra.SQL.Query.Util
 import           Database.Algebra.SQL.Termination
-import Database.Algebra.SQL.Query.Util
 
 -- | A tile internal reference type.
 type InternalReference = Q.ReferenceType
@@ -57,9 +56,8 @@ data TileTree = -- | A tile: The first argument determines which features the
 -- | Table algebra DAGs
 type TADag = D.AlgebraDag A.TableAlgebra
 
--- | Association list (where dependencies should be ordered topologically).
-type DependencyList = DL.DList (ExternalReference, TileTree)
-
+-- | A dependency between two tiles
+type TileDep = (ExternalReference, TileTree)
 
 -- | A combination of types which need to be modified state wise while
 -- transforming:
@@ -69,49 +67,54 @@ type DependencyList = DL.DList (ExternalReference, TileTree)
 --
 --     * The current state of the variable id generator.
 --
-data TransformState = TS
-                    { multiParentNodes :: IntMap.IntMap ( ExternalReference
-                                                        , [String]
-                                                        )
-                    , tableIdGen       :: ExternalReference
-                    , aliasIdGen       :: Int
-                    , varIdGen         :: InternalReference
-                    }
+data TileState = TS
+    { multiParentNodes :: IntMap.IntMap ( ExternalReference , [String])
+    , tableIdGen       :: ExternalReference
+    , aliasIdGen       :: Int
+    , varIdGen         :: InternalReference
+    , depList          :: [TileDep]
+    }
 
 -- | The initial state.
-sInitial :: TransformState
-sInitial = TS IntMap.empty 0 0 0
+sInitial :: TileState
+sInitial = TS { multiParentNodes = IntMap.empty
+              , tableIdGen       = 0
+              , aliasIdGen       = 0
+              , varIdGen         = 0
+              , depList          = []
+              }
+
+sAddTileDep :: ExternalReference -> TileTree -> TileState -> TileState
+sAddTileDep r t s = s { depList = (r, t) : (depList s) }
 
 -- | Adds a new binding to the state.
 sAddBinding :: C.AlgNode          -- ^ The key as a node with multiple parents.
             -> ( ExternalReference
                , [String]
                )                  -- ^ Name of the reference and its columns.
-            -> TransformState
-            -> TransformState
+            -> TileState
+            -> TileState
 sAddBinding node t st =
     st { multiParentNodes = IntMap.insert node t $ multiParentNodes st}
 
 -- | Tries to look up a binding for a node.
 sLookupBinding :: C.AlgNode
-               -> TransformState
+               -> TileState
                -> Maybe (ExternalReference, [String])
 sLookupBinding n = IntMap.lookup n . multiParentNodes
 
--- | The transform monad is used for transforming DAGs into dense tiles, it
+-- | The 'TileM' monad is used for transforming DAGs into dense tiles, it
 -- is built from:
 --
 --     * A reader for the DAG
 --
---     * A writer for outputting the dependencies
---
 --     * A state for generating fresh names and maintain the mapping of nodes
 --
-type Transform = RWS TADag DependencyList TransformState
+type TileM a = ReaderT TADag (State TileState) a
 
 -- | A table expression id generator using the state within the
--- 'Transform' type.
-freshTableId :: Transform ExternalReference
+-- 'TileM' type.
+freshTableId :: TileM ExternalReference
 freshTableId = do
     st <- get
 
@@ -121,7 +124,7 @@ freshTableId = do
 
     return tid
 
-freshAlias :: Transform String
+freshAlias :: TileM String
 freshAlias = do
     st <- get
 
@@ -132,7 +135,7 @@ freshAlias = do
     return $ 'a' : show aid
 
 -- | A variable identifier generator.
-freshVariableId :: Transform InternalReference
+freshVariableId :: TileM InternalReference
 freshVariableId = do
     st <- get
 
@@ -142,17 +145,8 @@ freshVariableId = do
 
     return vid
 
--- | Unpack values (or run computation).
-runTransform :: Transform a
-             -> TADag               -- ^ The used DAG.
-             -> TransformState      -- ^ The inital state.
-             -> (a, DependencyList)
-runTransform = evalRWS
-
 -- | Check if node has more than one parent.
-isMultiReferenced :: C.AlgNode
-                  -> TADag
-                  -> Bool
+isMultiReferenced :: C.AlgNode -> TADag -> Bool
 isMultiReferenced n dag = case D.parents n dag of
     -- Has at least 2 parents.
     _:(_:_) -> True
@@ -167,22 +161,20 @@ getSchemaTileTree (TileNode _ body _) = getSchemaSelectStmt body
 getSchemaSelectStmt :: Q.SelectStmt -> [String]
 getSchemaSelectStmt s = map Q.sName $ Q.selectClause s
 
--- | The result of the 'transform' function.
-type TransformResult = ([TileTree], DependencyList)
-
 -- | Transform a 'TADag', while swapping out repeatedly used sub expressions
 -- (nodes with more than one parent).
 -- A 'TADag' can have multiple root nodes, and therefore the function returns a
 -- list of root tiles and their dependencies.
-transform :: TADag -> TransformResult
-transform dag = runTransform result dag sInitial
+transform :: TADag -> ([TileTree], [TileDep])
+transform dag = (tiles, reverse $ depList sFinal)
   where
-    rootNodes = D.rootNodes dag
-    result    = mapM transformNode rootNodes
+    rootNodes       = D.rootNodes dag
+    tileComp        = mapM transformNode rootNodes
+    (tiles, sFinal) = runState (runReaderT tileComp dag) sInitial
 
 -- | This function basically checks for already referenced nodes with more than
 -- one parent, returning a reference to already computed 'TileTree's.
-transformNode :: C.AlgNode -> Transform TileTree
+transformNode :: C.AlgNode -> TileM TileTree
 transformNode n = do
 
     op <- asks $ D.operator n
@@ -219,7 +211,7 @@ transformNode n = do
                 tableId <- freshTableId
 
                 -- Add the tree to the writer.
-                tell $ DL.singleton (tableId, resultingTile)
+                modify $ sAddTileDep tableId resultingTile
 
                 let schema = getSchemaTileTree resultingTile
 
@@ -229,7 +221,7 @@ transformNode n = do
                 return $ ReferenceLeaf tableId schema
     else transformOp
 
-transformNullaryOp :: A.NullOp -> Transform TileTree
+transformNullaryOp :: A.NullOp -> TileM TileTree
 transformNullaryOp (A.LitTable (tuples, typedSchema)) = do
     tableAlias <- freshAlias
 
@@ -284,7 +276,7 @@ transformUnOpRank :: -- ExtendedExpr constructor.
                      Q.WindowFunction
                   -> (String, [A.SortSpec])
                   -> C.AlgNode
-                  -> Transform TileTree
+                  -> TileM TileTree
 transformUnOpRank rankFun (name, sortList) =
     attachColFunUnOp colFun $ projectF <> windowFunctionF
   where
@@ -296,7 +288,7 @@ transformUnOpRank rankFun (name, sortList) =
                               (asWindowOrderExprList sClause sortList)
                               Nothing
 
-transformUnOp :: A.UnOp -> C.AlgNode -> Transform TileTree
+transformUnOp :: A.UnOp -> C.AlgNode -> TileM TileTree
 transformUnOp (A.Serialize (ref, key, ord, items)) c = do
     (ctor, select, children) <- transformTerminated' c $ projectF <> sortF
 
@@ -430,7 +422,7 @@ transformUnOp (A.Aggr (aggrs, partExprMapping)) c = do
 attachColFunUnOp :: ([Q.SelectColumn] -> Q.SelectColumn)
                  -> FeatureSet
                  -> C.AlgNode
-                 -> Transform TileTree
+                 -> TileM TileTree
 attachColFunUnOp colFun opFeatures c = do
 
     (ctor, select, children) <- transformTerminated' c opFeatures
@@ -457,7 +449,7 @@ pruneCol n cols = filter namePred cols
 transformBinSetOp :: Q.SetOperation
                   -> C.AlgNode
                   -> C.AlgNode
-                  -> Transform TileTree
+                  -> TileM TileTree
 transformBinSetOp setOp c0 c1 = do
 
     -- Use one tile to get the schema information.
@@ -497,7 +489,7 @@ transformBinSetOp setOp c0 c1 = do
 -- | Perform a cross join between two nodes.
 transformBinCrossJoin :: C.AlgNode
                       -> C.AlgNode
-                      -> Transform ( FeatureSet
+                      -> TileM ( FeatureSet
                                    , Q.SelectStmt
                                    , TileChildren
                                    )
@@ -526,7 +518,7 @@ transformBinCrossJoin c0 c1 = do
 transformBinOp :: A.BinOp
                -> C.AlgNode
                -> C.AlgNode
-               -> Transform TileTree
+               -> TileM TileTree
 transformBinOp (A.Cross ()) c0 c1 = do
     (f, s, c) <- transformBinCrossJoin c0 c1
     return $ TileNode f s c
@@ -603,7 +595,7 @@ transformExistsJoin :: [(A.Expr, A.Expr, A.JoinRel)]
                     -> C.AlgNode
                     -> C.AlgNode
                     -> (Q.ColumnExpr -> Q.ColumnExpr)
-                    -> Transform TileTree
+                    -> TileM TileTree
 transformExistsJoin conditions c0 c1 wrapFun = do
 
     when (null conditions) $impossible
@@ -681,7 +673,7 @@ transformExistsJoin conditions c0 c1 wrapFun = do
 -- 'FeatureSet' of the child, the 'Q.SelectStmt' and its children.
 transformTerminated :: C.AlgNode
                     -> FeatureSet
-                    -> Transform (FeatureSet, Q.SelectStmt, TileChildren)
+                    -> TileM (FeatureSet, Q.SelectStmt, TileChildren)
 transformTerminated n topFs = do
     tile <- transformNode n
 
@@ -711,7 +703,7 @@ transformTerminated n topFs = do
 -- the 'FeatureSet' and applies it to the constructor.
 transformTerminated' :: C.AlgNode
                      -> FeatureSet
-                     -> Transform ( Q.SelectStmt -> TileChildren -> TileTree
+                     -> TileM ( Q.SelectStmt -> TileChildren -> TileTree
                                   , Q.SelectStmt
                                   , TileChildren
                                   )
@@ -722,7 +714,7 @@ transformTerminated' n topFs = do
 -- | Embeds an external reference into a 'Q.SelectStmt'.
 embedExternalReference :: ExternalReference
                        -> [String]
-                       -> Transform (Q.SelectStmt, TileChildren)
+                       -> TileM (Q.SelectStmt, TileChildren)
 embedExternalReference extRef schema = do
 
         tableAlias <- freshAlias

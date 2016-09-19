@@ -13,31 +13,22 @@ module Database.Algebra.SQL.Tile.Flatten
     , FlatTile
     ) where
 
-import qualified Data.IntMap.Lazy as IntMap
-    ( empty
-    , insert
-    , lookup
-    )
-import qualified Data.MultiSet as MultiSet
-    ( MultiSet
-    , empty
-    , insert
-    , union
-    , singleton
-    )
-import qualified Data.DList as DL
-    ( toList
-    )
-import Data.Maybe (fromMaybe)
+import qualified Data.IntMap.Lazy                        as IntMap (empty,
+                                                                    insert,
+                                                                    lookup)
+import           Data.Maybe                              (fromMaybe)
+import qualified Data.MultiSet                           as MultiSet (MultiSet,
+                                                                      empty,
+                                                                      insert,
+                                                                      singleton,
+                                                                      union)
 
-import qualified Database.Algebra.SQL.Query as Q
-import Database.Algebra.SQL.Query.Substitution
-import Database.Algebra.SQL.Query.Util
-    ( emptySelectStmt
-    , mkPCol
-    )
-import Database.Algebra.SQL.Termination
-import Database.Algebra.SQL.Tile
+import qualified Database.Algebra.SQL.Query              as Q
+import           Database.Algebra.SQL.Query.Substitution
+import           Database.Algebra.SQL.Query.Util         (emptySelectStmt,
+                                                          mkPCol)
+import           Database.Algebra.SQL.Termination
+import           Database.Algebra.SQL.Tile
 
 
 -- TODO error used in lookup
@@ -51,7 +42,7 @@ import Database.Algebra.SQL.Tile
 type FlatTile a = (Q.SelectStmt, MultiSet.MultiSet a)
 
 -- | Flatten a transform result using SQL identifiers directly.
-flattenTransformResult :: ([TileTree], DependencyList)
+flattenTransformResult :: ([TileTree], [TileDep])
                        -> ([FlatTile String], [(String, FlatTile String)])
 flattenTransformResult =
     flattenTransformResultWith m s
@@ -67,11 +58,11 @@ flattenTransformResult =
 flattenTransformResultWith :: Ord a
                            => (ExternalReference -> a) -- ^ The materializer.
                            -> (a -> Q.FromExpr)        -- ^ The substituter.
-                           -> ([TileTree], DependencyList)
+                           -> ([TileTree], [TileDep])
                            -> ([FlatTile a], [(a, FlatTile a)])
 flattenTransformResultWith materializer substituter (tiles, deps) =
     ( map (flattenTileTreeWith materializer substituter) tiles
-    , map f $ DL.toList deps
+    , map f deps
     )
   where f (extRef, tile) =
             ( materializer extRef

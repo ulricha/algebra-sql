@@ -21,7 +21,7 @@ import           Text.PrettyPrint.ANSI.Leijen       (Doc, align, bold, char,
                                                      sep, squotes, text, vcat,
                                                      (<$>), (<+>), (</>), (<>))
 
-import           Database.Algebra.SQL.Compatibility
+import           Database.Algebra.SQL.Dialect
 import           Database.Algebra.SQL.Query
 import           Prelude                            hiding ((<$>))
 
@@ -44,12 +44,12 @@ op = red . char
 terminate :: Doc -> Doc
 terminate = (<> op ';')
 
-renderQuery :: CompatMode -> Query -> Doc
+renderQuery :: Dialect -> Query -> Doc
 renderQuery c query = terminate $ case query of
     QValueQuery q      -> renderValueQuery c q
     QDefinitionQuery q -> renderDefinitionQuery c q
 
-renderDefinitionQuery :: CompatMode -> DefinitionQuery -> Doc
+renderDefinitionQuery :: Dialect -> DefinitionQuery -> Doc
 renderDefinitionQuery compat (DQMatView query name)        =
     kw "CREATE MATERIALIZED VIEW"
     <+> text name
@@ -78,7 +78,7 @@ renderDefinitionQuery compat (DQTemporaryTable query name) =
     as            = kw "AS"
     indentedQuery = indent 4 $ renderValueQuery compat query
 
-renderValueQuery :: CompatMode -> ValueQuery -> Doc
+renderValueQuery :: Dialect -> ValueQuery -> Doc
 renderValueQuery compat (VQSelect stmt)    = renderSelectStmt compat stmt
 renderValueQuery compat (VQLiteral vals)   =
     kw "VALUES" <+> align (sep . punctuate comma $ map renderRow vals)
@@ -109,13 +109,13 @@ renderSetOperation SOExceptAll = kw "EXCEPT ALL"
 
 -- | Render a conjunction list, renders the neutral element, when given the
 -- empty list.
-renderAndList :: CompatMode -> [ColumnExpr] -> Doc
+renderAndList :: Dialect -> [ColumnExpr] -> Doc
 renderAndList compat l = case l of
     [] -> kw "TRUE"
     _  -> align $ hsep $ punctuate (linebreak <> kw "AND")
                          $ map (renderColumnExpr compat) l
 
-renderSelectStmt :: CompatMode -> SelectStmt -> Doc
+renderSelectStmt :: Dialect -> SelectStmt -> Doc
 renderSelectStmt compat stmt =
     kw "SELECT"
     <+> align ( let sC = enlist $ map (renderSelectColumn compat) $ selectClause stmt
@@ -152,22 +152,22 @@ renderSelectStmt compat stmt =
                               )
 
 
-renderOrderExpr :: CompatMode -> OrderExpr -> Doc
+renderOrderExpr :: Dialect -> OrderExpr -> Doc
 renderOrderExpr compat (OE ee dir) =
     renderExtendedExpr compat ee
     <+> renderSortDirection dir
 
-renderWindowOrderExpr :: CompatMode -> WindowOrderExpr -> Doc
+renderWindowOrderExpr :: Dialect -> WindowOrderExpr -> Doc
 renderWindowOrderExpr compat (WOE ae dir) =
     renderAggrExpr compat ae
     <+> renderSortDirection dir
 
 -- | Render a list of generic order expressions.
-renderGenericOrderByList :: (CompatMode -> o -> Doc) -> CompatMode -> [o] -> Doc
+renderGenericOrderByList :: (Dialect -> o -> Doc) -> Dialect -> [o] -> Doc
 renderGenericOrderByList renderGenericOrderExpr compat =
     enlistOnLine . map (renderGenericOrderExpr compat)
 
-renderWindowOrderByList :: CompatMode -> [WindowOrderExpr] -> Doc
+renderWindowOrderByList :: Dialect -> [WindowOrderExpr] -> Doc
 renderWindowOrderByList compat wos =
     kw "ORDER BY" <+> renderGenericOrderByList renderWindowOrderExpr compat wos
 
@@ -198,7 +198,7 @@ renderOptColDefs :: Maybe [String] -> Doc
 renderOptColDefs = maybe empty colDoc
   where colDoc = parens . enlistOnLine . map text
 
-renderFromPart :: CompatMode -> FromPart -> Doc
+renderFromPart :: Dialect -> FromPart -> Doc
 renderFromPart _ (FPAlias (FETableReference n) alias _) =
     -- Don't use positional mapping on table references, since they are mapped
     -- by their name.
@@ -212,16 +212,16 @@ renderFromPart compat (FPAlias expr alias optCols)      =
     <+> text alias
     <> renderOptColDefs optCols
 
-renderSubQuery :: CompatMode -> ValueQuery -> Doc
+renderSubQuery :: Dialect -> ValueQuery -> Doc
 renderSubQuery compat q = lparen <+> align (renderValueQuery compat q) <$> rparen
 
-renderFromExpr :: CompatMode -> FromExpr -> Doc
+renderFromExpr :: Dialect -> FromExpr -> Doc
 renderFromExpr compat (FESubQuery q)           = renderSubQuery compat q
 renderFromExpr _      (FEVariable v)           = ondullblue $ int v
 renderFromExpr _      (FETableReference n)     = text n
 renderFromExpr compat (FEExplicitJoin jop l r) = renderJoinOp compat jop l r
 
-renderJoinOp :: CompatMode -> JoinOperator -> FromPart -> FromPart -> Doc
+renderJoinOp :: Dialect -> JoinOperator -> FromPart -> FromPart -> Doc
 renderJoinOp MonetDB (LeftOuterJoin e) l r = parens $
     kw "SELECT" <$> kw "*" <$> kw "FROM" <$> parens
         (renderFromPart MonetDB l
@@ -239,7 +239,7 @@ renderOptPrefix :: Maybe String -> Doc
 renderOptPrefix = maybe empty $ (<> char '.') . text
 
 
-renderSelectColumn :: CompatMode -> SelectColumn -> Doc
+renderSelectColumn :: Dialect -> SelectColumn -> Doc
 renderSelectColumn compat (SCAlias e@(EEBase (VEColumn n1 _)) n2)
     | n1 == n2 = renderExtendedExpr compat e
     | n1 /= n2 = renderExtendedExpr compat e <+> kw "AS" <+> text n2
@@ -249,7 +249,7 @@ renderSelectColumn compat (SCExpr expr)
     = renderExtendedExpr compat expr
 
 
-renderExtendedExpr :: CompatMode -> ExtendedExpr -> Doc
+renderExtendedExpr :: Dialect -> ExtendedExpr -> Doc
 renderExtendedExpr compat (EEBase v)                  = renderExtendedExprBase compat v
 renderExtendedExpr compat (EEWinFun wfun partExprs order mFrameSpec) =
     renderWindowFunction compat wfun
@@ -272,7 +272,7 @@ renderExtendedExpr compat (EEWinFun wfun partExprs order mFrameSpec) =
 renderExtendedExpr compat (EEAggrExpr ae)             =
     renderAggrExpr compat ae
 
-renderAggrExpr :: CompatMode -> AggrExpr -> Doc
+renderAggrExpr :: Dialect -> AggrExpr -> Doc
 renderAggrExpr compat e = case e of
     AEBase ve              ->
         renderValueExprTemplate renderAggrExpr compat ve
@@ -281,8 +281,8 @@ renderAggrExpr compat e = case e of
         renderAggregateFunction compat aggr
 
 -- | Generic 'ValueExprTemplate' renderer.
-renderValueExprTemplate :: (CompatMode -> a -> Doc)
-                        -> CompatMode
+renderValueExprTemplate :: (Dialect -> a -> Doc)
+                        -> Dialect
                         -> ValueExprTemplate a
                         -> Doc
 renderValueExprTemplate renderRec compat ve = case ve of
@@ -320,15 +320,15 @@ renderValueExprTemplate renderRec compat ve = case ve of
 
 
 -- | Render a 'ExtendedExprBase' with the generic renderer.
-renderExtendedExprBase :: CompatMode -> ExtendedExprBase -> Doc
+renderExtendedExprBase :: Dialect -> ExtendedExprBase -> Doc
 renderExtendedExprBase = renderValueExprTemplate renderExtendedExpr
 
 
 -- | Render a 'ColumnExprBase' with the generic renderer.
-renderColumnExprBase :: CompatMode -> ColumnExprBase -> Doc
+renderColumnExprBase :: Dialect -> ColumnExprBase -> Doc
 renderColumnExprBase = renderValueExprTemplate renderColumnExpr
 
-renderAggregateFunction :: CompatMode -> AggregateFunction -> Doc
+renderAggregateFunction :: Dialect -> AggregateFunction -> Doc
 renderAggregateFunction c          (AFAvg e)           = renderFunCall "AVG" (renderColumnExpr c e)
 renderAggregateFunction c          (AFMax e)           = renderFunCall "MAX" (renderColumnExpr c e)
 renderAggregateFunction c          (AFMin e)           = renderFunCall "MIN" (renderColumnExpr c e)
@@ -346,7 +346,7 @@ renderAggregateFunction MonetDB    (AFAny e)           = renderFunCall "MAX" (re
 renderFunCall :: String -> Doc -> Doc
 renderFunCall funName funArg = kw funName <> parens funArg
 
-renderWindowFunction :: CompatMode -> WindowFunction -> Doc
+renderWindowFunction :: Dialect -> WindowFunction -> Doc
 renderWindowFunction _          WFRowNumber      = renderFunCall "ROW_NUMBER" empty
 renderWindowFunction _          WFDenseRank      = renderFunCall "DENSE_RANK" empty
 renderWindowFunction _          WFRank           = renderFunCall "RANK" empty
@@ -367,7 +367,7 @@ renderWindowFunction PostgreSQL (WFAny a)        = renderFunCall "bool_or"
 renderWindowFunction SQL99      (WFAny a)        = renderFunCall "SOME"
                                                                  (renderColumnExpr SQL99 a)
 
-renderColumnExpr :: CompatMode -> ColumnExpr -> Doc
+renderColumnExpr :: Dialect -> ColumnExpr -> Doc
 renderColumnExpr compat (CEBase e) = renderColumnExprBase compat e
 
 
@@ -394,7 +394,7 @@ renderBinaryFunction BFCoalesce     = kw "COALESCE"
 renderRegularUnary :: String -> Doc -> Doc
 renderRegularUnary f a = kw f <> parens a
 
-renderSubString :: CompatMode -> Integer -> Integer -> Doc -> Doc
+renderSubString :: Dialect -> Integer -> Integer -> Doc -> Doc
 renderSubString compat from to ra =
     case compat of
         SQL99      -> kw "substring" <> parens (ra
@@ -413,8 +413,8 @@ renderSubString compat from to ra =
 renderCast :: Doc -> Doc -> Doc
 renderCast expr ty = kw "CAST" <> parens (expr <+> kw "AS" <+> ty)
 
-renderUnaryFunction :: (CompatMode -> a -> Doc)
-                    -> CompatMode
+renderUnaryFunction :: (Dialect -> a -> Doc)
+                    -> Dialect
                     -> UnaryFunction
                     -> a
                     -> Doc
@@ -461,7 +461,7 @@ literal = bold
 
 -- | Escape a string literal.
 -- FIXME no idea if the PostgreSQL mode works for other systems.
-escape :: CompatMode -> T.Text -> T.Text
+escape :: Dialect -> T.Text -> T.Text
 escape _ t = escapePostgreSQL t
 
 -- | With PostgreSQL, single quotes can be escaped by doubling them.
@@ -473,7 +473,7 @@ escapePostgreSQL t = T.concatMap f t
     f '\'' = "''"
     f c    = T.singleton c
 
-renderValue :: CompatMode -> Value -> Doc
+renderValue :: Dialect -> Value -> Doc
 renderValue c v = case v of
     VInteger i         -> literal $ integer i
     VDecimal d         -> renderCast (literal rendered) sqlType

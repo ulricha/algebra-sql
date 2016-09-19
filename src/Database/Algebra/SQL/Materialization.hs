@@ -3,7 +3,7 @@ module Database.Algebra.SQL.Materialization
     ( MatFun
     ) where
 
-import Database.Algebra.SQL.Tile (TileTree, DependencyList)
+import Database.Algebra.SQL.Tile (TileTree, TileDep)
 import Database.Algebra.SQL.Query (Query)
 
 -- | The type of materialization function. The result consists of:
@@ -12,7 +12,7 @@ import Database.Algebra.SQL.Query (Query)
 --
 --      * The queries produced from the root nodes
 --
-type MatFun = (([TileTree], DependencyList) -> ([Query], [Query]))
+type MatFun = (([TileTree], [TileDep]) -> ([Query], [Query]))
 
 
 

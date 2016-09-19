@@ -14,7 +14,7 @@ import qualified Database.Algebra.Dag                                as D
 import qualified Database.Algebra.Dag.Common                         as C
 import qualified Database.Algebra.Table.Lang                         as A
 
-import           Database.Algebra.SQL.Compatibility
+import           Database.Algebra.SQL.Dialect
 import           Database.Algebra.SQL.File
 import           Database.Algebra.SQL.Materialization
 import qualified Database.Algebra.SQL.Materialization.Combined       as Combined
@@ -337,9 +337,9 @@ data Options = Options
             , optDebug      :: Bool
             , optHelp       :: Bool
             , optMatFun     :: MatFun
-            , optFast       :: Maybe (CompatMode -> T.TADag -> MatFun -> ShowS)
-            , optDebugFun   :: Maybe (CompatMode -> T.TADag -> MatFun -> String)
-            , optCompatMode :: CompatMode
+            , optFast       :: Maybe (Dialect -> T.TADag -> MatFun -> ShowS)
+            , optDebugFun   :: Maybe (Dialect -> T.TADag -> MatFun -> String)
+            , optDialect :: Dialect
             }
 defaultOptions :: Options
 defaultOptions = Options False
@@ -390,7 +390,7 @@ options = [ Option
           , Option
             "c"
             ["compat"]
-            ( ReqArg (\s opt -> opt { optCompatMode = parseCompatMode s })
+            ( ReqArg (\s opt -> opt { optDialect = parseDialect s })
                      "<mode>"
             )
             "Specify the compatibility mode (defaults to sql99):\n\
@@ -409,7 +409,7 @@ options = [ Option
                                     ++ s
                                     ++ "'"
 
-              parseCompatMode s = case s of
+              parseDialect s = case s of
                   "sql99"      -> SQL99
                   "postgresql" -> PostgreSQL
                   _            -> error $ "invalid compatibility mode '"
@@ -447,7 +447,7 @@ main = do
         (False, False)     ->  do
             let debug      = optDebug usedOptions
                 matFun     = optMatFun usedOptions
-                compatMode = optCompatMode usedOptions
+                compatMode = optDialect usedOptions
                 output d   = case optDebugFun usedOptions of
                     Just f ->
                         putStrLn $ f compatMode d matFun

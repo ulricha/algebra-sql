@@ -42,7 +42,7 @@ library
                       Database.Algebra.Table.Construct
 
                       Database.Algebra.SQL.Util
-                      Database.Algebra.SQL.Compatibility
+                      Database.Algebra.SQL.Dialect
                       Database.Algebra.SQL.Materialization
                       Database.Algebra.SQL.Materialization.CTE
                       Database.Algebra.SQL.Materialization.Combined
@@ -117,7 +117,7 @@ executable sqlgen
                       algebra-dag        >= 0.1
     other-extensions: TemplateHaskell
     other-modules:    Database.Algebra.Impossible
-                      Database.Algebra.SQL.Compatibility
+                      Database.Algebra.SQL.Dialect
                       Database.Algebra.SQL.File
                       Database.Algebra.SQL.Materialization
                       Database.Algebra.SQL.Materialization.CTE
