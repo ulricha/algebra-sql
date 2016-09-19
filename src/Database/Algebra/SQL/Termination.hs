@@ -158,7 +158,7 @@ terminatingFeaturesPg bottomF = F $ case bottomF of
 -- terminate a SQL fragment. Returns 'True' iff the feature sets collide.
 terminatesOver :: Dialect -> FeatureSet -> FeatureSet -> Bool
 terminatesOver dialect (F topFs) (F bottomFs) =
-    S.null $ conflictingFs `S.intersection` topFs
+    not $ S.null $ conflictingFs `S.intersection` topFs
   where
     (F conflictingFs) = foldr (\feature conflictSet -> conflictSet <> terminatingFeatures dialect feature)
                               mempty
