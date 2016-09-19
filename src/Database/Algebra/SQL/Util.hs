@@ -20,20 +20,20 @@ import Database.Algebra.SQL.Dialect
 
 -- TODO include materialization strategy depending on compat mode
 
-resultFromDAG :: T.TADag -> MatFun -> (([T.TileTree], [T.TileDep]), ([Query], [Query]))
-resultFromDAG dag matFun = (tiles, matFun tiles)
+resultFromDAG :: Dialect -> T.TADag -> MatFun -> (([T.TileTree], [T.TileDep]), ([Query], [Query]))
+resultFromDAG dialect dag matFun = (tiles, matFun tiles)
   where
-    tiles = T.tilePlan dag
+    tiles = T.tilePlan dialect dag
 
 -- | Produces pretty output, optionally with debug information.
 renderDebugOutput :: Dialect -> T.TADag -> MatFun -> Bool -> ShowS
-renderDebugOutput c dag matFun debug =
+renderDebugOutput dialect dag matFun debug =
     ( if debug
-      then dBegin . R.debugTransformResult c r . showChar '\n'
+      then dBegin . R.debugTransformResult dialect r . showChar '\n'
       else id
     )
     . begin
-    . foldr (.) id (intersperse mid $ R.renderPretty c $ tqs ++ rqs)
+    . foldr (.) id (intersperse mid $ R.renderPretty dialect $ tqs ++ rqs)
     . end
 
   where -- SQL compliant separators. (comments)
@@ -42,7 +42,7 @@ renderDebugOutput c dag matFun debug =
         end     = showString "\n----- graph output end     <--\n"
         mid     = showString "\n----- additional query\n"
         (r, (tqs, rqs))
-                = resultFromDAG dag matFun
+                = resultFromDAG dialect dag matFun
 
 putShowSLn :: ShowS -> IO ()
 putShowSLn s = putStrLn $ s ""
@@ -53,10 +53,10 @@ renderOutputWith :: (Dialect -> [Query] -> [ShowS])
                  -> T.TADag
                  -> MatFun
                  -> ShowS
-renderOutputWith renderer c dag matFun =
+renderOutputWith renderer dialect dag matFun =
     foldr (.) id $ intersperse (showChar '\n') renderedQs
-  where (_, (tqs, rqs)) = resultFromDAG dag matFun
-        renderedQs      = renderer c $ tqs ++ rqs
+  where (_, (tqs, rqs)) = resultFromDAG dialect dag matFun
+        renderedQs      = renderer dialect $ tqs ++ rqs
 
 renderOutputCompact :: Dialect -> T.TADag -> MatFun -> ShowS
 renderOutputCompact = renderOutputWith R.renderCompact
@@ -73,7 +73,7 @@ renderOutputDSH = flip renderOutputDSHWith C.materialize
 -- | Render output directly for DSH. The order from the root nodes in the
 -- directed acyclic graph is preserved.
 renderOutputDSHWith :: Dialect -> MatFun -> T.TADag -> (Maybe String, [String])
-renderOutputDSHWith c matFun dag =
+renderOutputDSHWith dialect matFun dag =
     ( if null preludeString
       then Nothing
       else Just preludeString
@@ -81,19 +81,19 @@ renderOutputDSHWith c matFun dag =
     )
   where
     preludeString   = foldr (.) id renderedTQs ""
-    (_, (tqs, rqs)) = resultFromDAG dag matFun
-    renderedRQs     = R.renderPlain c rqs
-    renderedTQs     = R.renderPlain c tqs
+    (_, (tqs, rqs)) = resultFromDAG dialect dag matFun
+    renderedRQs     = R.renderPlain dialect rqs
+    renderedTQs     = R.renderPlain dialect tqs
 
 -- | Produces output which allows further inspection with the psql command line
 -- utility (and possibly others too).
 renderAdvancedDebugOutput :: Dialect -> Bool -> Bool -> T.TADag -> MatFun -> String
-renderAdvancedDebugOutput c explain analyze dag matFun =
+renderAdvancedDebugOutput dialect explain analyze dag matFun =
     foldr ((.) . (prefixes .)) id (renderedTQs ++ renderedRQs) ""
   where
-    (_, (tqs, rqs)) = resultFromDAG dag matFun
-    renderedRQs     = R.renderPlain c rqs
-    renderedTQs     = R.renderPlain c tqs
+    (_, (tqs, rqs)) = resultFromDAG dialect dag matFun
+    renderedRQs     = R.renderPlain dialect rqs
+    renderedTQs     = R.renderPlain dialect tqs
     prefixes        = showString $ ep ++ ap
     ep              = if explain then "EXPLAIN " else ""
     ap              = if analyze then "ANALYZE " else ""

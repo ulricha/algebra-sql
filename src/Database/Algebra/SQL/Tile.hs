@@ -30,6 +30,7 @@ import qualified Database.Algebra.Dag.Common      as C
 import           Database.Algebra.Impossible
 import qualified Database.Algebra.Table.Lang      as A
 
+import           Database.Algebra.SQL.Dialect
 import qualified Database.Algebra.SQL.Query       as Q
 import           Database.Algebra.SQL.Query.Util
 import           Database.Algebra.SQL.Termination
@@ -55,6 +56,11 @@ data TileTree = -- | A tile: The first argument determines which features the
 
 -- | Table algebra DAGs
 type TADag = D.AlgebraDag A.TableAlgebra
+
+data TileEnv = TileEnv
+    { tDag     :: TADag
+    , tDialect :: Dialect
+    }
 
 -- | A dependency between two tiles
 type TileDep = (ExternalReference, TileTree)
@@ -110,7 +116,7 @@ sLookupBinding n = IntMap.lookup n . multiParentNodes
 --
 --     * A state for generating fresh names and maintain the mapping of nodes
 --
-type TileM a = ReaderT TADag (State TileState) a
+type TileM a = ReaderT TileEnv (State TileState) a
 
 -- | A table expression id generator using the state within the
 -- 'TileM' type.
@@ -165,19 +171,20 @@ getSchemaSelectStmt s = map Q.sName $ Q.selectClause s
 -- (nodes with more than one parent).
 -- A 'TADag' can have multiple root nodes, and therefore the function returns a
 -- list of root tiles and their dependencies.
-tilePlan :: TADag -> ([TileTree], [TileDep])
-tilePlan dag = (tiles, reverse $ depList sFinal)
+tilePlan :: Dialect -> TADag -> ([TileTree], [TileDep])
+tilePlan dialect dag = (tiles, reverse $ depList sFinal)
   where
     rootNodes       = D.rootNodes dag
     tileComp        = mapM tileNode rootNodes
-    (tiles, sFinal) = runState (runReaderT tileComp dag) sInitial
+    env             = TileEnv dag dialect
+    (tiles, sFinal) = runState (runReaderT tileComp env) sInitial
 
 -- | This function basically checks for already referenced nodes with more than
 -- one parent, returning a reference to already computed 'TileTree's.
 tileNode :: C.AlgNode -> TileM TileTree
 tileNode n = do
 
-    op <- asks $ D.operator n
+    op <- asks $ D.operator n . tDag
 
     -- allowBranch indicates whether multi reference nodes shall be split
     -- for this operator, resulting in multiple equal branches. (Treeify)
@@ -191,7 +198,7 @@ tileNode n = do
                     _             -> (True, tileBinOp bop c0 c1)
             (C.TerOp () _ _ _)  -> $impossible
 
-    multiRef <- asks $ isMultiReferenced n
+    multiRef <- asks $ isMultiReferenced n . tDag
 
     if allowBranch && multiRef
     then do
@@ -675,11 +682,12 @@ terminateOnCollision :: C.AlgNode
                      -> FeatureSet
                      -> TileM (FeatureSet, Q.SelectStmt, TileChildren)
 terminateOnCollision n topFs = do
-    tile <- tileNode n
+    terminatesOverDialect <- pure terminatesOver <*> asks tDialect
+    tile                  <- tileNode n
 
     case tile of
         TileNode bottomFs body children
-            | topFs `terminatesOver` bottomFs -> do
+            | topFs `terminatesOverDialect` bottomFs -> do
                 tableAlias <- freshAlias
 
                 let schema = getSchemaSelectStmt body
