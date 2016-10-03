@@ -1,14 +1,37 @@
 -- | This module exports useful functions for working with the 'Query' ADT.
 module Database.Algebra.SQL.Query.Util
-    ( emptySelectStmt
+    ( getSchemaSelectStmt
+    , getSchemaValueQuery
+    , emptySelectStmt
     , mkPCol
     , mkSubQuery
     , affectsSortOrderCE
     , affectsSortOrderAE
     , affectsSortOrderEE
+    , protectEmptySelectClause
     ) where
 
 import Database.Algebra.SQL.Query as Q
+
+-- FIXME projection list should use Data.List.NonEmpty
+protectEmptySelectClause ::  [Q.SelectColumn] -> [Q.SelectColumn]
+protectEmptySelectClause projs = case projs of
+    -- Add a dummy column for empty projections.
+    [] -> [Q.SCAlias (Q.EEBase $ Q.VEValue $ Q.VInteger 1) "dummy"]
+    _  -> projs
+
+-- | Get the column schema of a 'Q.SelectStmt'.
+-- FIXME Q.sName is not total
+getSchemaSelectStmt :: Q.SelectStmt -> [String]
+getSchemaSelectStmt s = map Q.sName $ Q.selectClause s
+
+getSchemaValueQuery :: Q.ValueQuery -> [String]
+getSchemaValueQuery vq = case vq of
+    Q.VQSelect select              -> getSchemaSelectStmt select
+    Q.VQWith _ body                -> getSchemaValueQuery body
+    -- Since both are assumed to be equal in their schema, arbitrarily take the
+    -- left one.
+    Q.VQBinarySetOperation lvq _ _ -> getSchemaValueQuery lvq
 
 -- | Helper value to construct select statements.
 emptySelectStmt :: Q.SelectStmt

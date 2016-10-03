@@ -14,6 +14,7 @@ import Database.Algebra.SQL.Materialization
 import Database.Algebra.SQL.Materialization.Util
 import qualified Database.Algebra.SQL.Materialization.Graph as G
 import Database.Algebra.SQL.Query
+import Database.Algebra.SQL.Query.Util
 import Database.Algebra.SQL.Tile.Flatten
 import Database.Algebra.SQL.Query.Substitution
 
@@ -29,7 +30,7 @@ legacyMaterialize transformResult =
            selects
     )
   where bindings            = map f deps
-        f (name, (body, _)) = (name, Nothing, VQSelect body)
+        f (name, (body, _)) = (name, Just $ getSchemaSelectStmt body, VQSelect body)
 
         selects :: [FlatTile String]
         deps    :: [(String, FlatTile String)]
@@ -72,7 +73,11 @@ materialize transformResult =
                                         $ IntSet.fromList $ G.reachable v graph
 
         -- TODO factor out
-        toBinding ref select l = ('t' : show ref, Nothing, VQSelect select) : l
+        toBinding ref select l =
+            ('t' : show ref
+            , Just $ getSchemaSelectStmt select
+            , VQSelect select
+            ) : l
 
     -- The return value indicates whether the parent should inline.
     visit :: G.Vertex -> Gather (Maybe (Int, SelectStmt))

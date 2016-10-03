@@ -163,10 +163,6 @@ getSchemaTileTree :: TileTree -> [String]
 getSchemaTileTree (ReferenceLeaf _ s) = s
 getSchemaTileTree (TileNode _ body _) = getSchemaSelectStmt body
 
--- | Get the column schema of a 'Q.SelectStmt'.
-getSchemaSelectStmt :: Q.SelectStmt -> [String]
-getSchemaSelectStmt s = map Q.sName $ Q.selectClause s
-
 -- | Transform a 'TADag', while swapping out repeatedly used sub expressions
 -- (nodes with more than one parent).
 -- A 'TADag' can have multiple root nodes, and therefore the function returns a
@@ -321,7 +317,7 @@ tileUnOp (A.Serialize (ref, key, ord, items)) c = do
                      ++ [ translateAlias (pc, e) | A.PayloadCol pc e <- items]
 
     return $ ctor
-             select { Q.selectClause = projs , Q.orderByClause = sortExprs }
+             select { Q.selectClause = protectEmptySelectClause projs , Q.orderByClause = sortExprs }
              children
 
 tileUnOp (A.RowNum (name, sortList, partExprs)) c =
@@ -370,7 +366,9 @@ tileUnOp (A.Project projList) c = do
 
     return $ ctor select
                   -- Replace the select clause with the projection list.
-                  { Q.selectClause = map translateAlias projList }
+                  { Q.selectClause =
+                        protectEmptySelectClause $ map translateAlias projList
+                  }
                   -- But use the old children.
                   children
 
@@ -565,8 +563,8 @@ tileBinOp (A.LeftOuterJoin conditions) c0 c1 = do
     fpAlias0 <- freshAlias
     fpAlias1 <- freshAlias
 
-    let schema0 = map Q.sName $ Q.selectClause select0
-    let schema1 = map Q.sName $ Q.selectClause select1
+    let schema0 = getSchemaSelectStmt select0
+    let schema1 = getSchemaSelectStmt select1
 
     let fp0 = Q.FPAlias q0 fpAlias0 Nothing
     let fp1 = Q.FPAlias q1 fpAlias1 Nothing

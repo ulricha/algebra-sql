@@ -44,6 +44,7 @@ import qualified Database.Algebra.SQL.Query as Q
     , ValueQuery(VQSelect, VQWith)
     )
 import Database.Algebra.SQL.Query.Substitution
+import Database.Algebra.SQL.Query.Util
 import Database.Algebra.SQL.Tile.Flatten
 import Database.Algebra.SQL.Materialization.Util
 
@@ -262,11 +263,9 @@ buildValueQuery graph reversedSpaMap mat v =
     then body
     else Q.VQWith bindings body
   where childVertices = fromMaybe [] $ IntMap.lookup v reversedSpaMap
-        childQueries  = map (buildValueQuery graph reversedSpaMap mat)
-                            childVertices
-        bindings      = zip3 (map mat childVertices)
-                             (repeat Nothing)
-                             childQueries
+        bindings      = toBinding <$> childVertices
+        toBinding cv  = let vq = buildValueQuery graph reversedSpaMap mat cv
+                        in (mat cv, Just $ getSchemaValueQuery vq, vq)
         body          = Q.VQSelect
                         $ replaceReferencesSelectStmt (Q.FETableReference . mat)
                                                       select
