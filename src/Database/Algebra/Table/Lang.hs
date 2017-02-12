@@ -334,7 +334,6 @@ data UnOp = RowNum (Attr, [SortSpec], [PartExpr])
           deriving (Ord, Eq, Show)
 
 data BinOp = Cross ()
-           | EqJoin (LeftAttr,RightAttr)
            | ThetaJoin [(Expr, Expr, JoinRel)]
            | LeftOuterJoin [(Expr, Expr, JoinRel)]
            | SemiJoin [(Expr, Expr, JoinRel)]

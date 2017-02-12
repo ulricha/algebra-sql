@@ -1,19 +1,22 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 -- | This module contains smart constructors for table algebra plans.
 module Database.Algebra.Table.Construct
     ( -- * Value and type constructors
       int, string, bool, double, dec, date
     , intT, stringT, boolT, decT, doubleT, dateT
       -- * Smart constructors for algebraic operators
-    , dbTable, litTable, litTable', eqJoin, thetaJoin
+    , dbTable, litTable, litTable', thetaJoin
     , semiJoin, antiJoin, rank, difference, rowrank
     , select, distinct, cross, union, proj, aggr, winFun
     , rownum, rownum', leftOuterJoin
       -- * Lifted smart constructors for table algebra operators
-    , thetaJoinM, semiJoinM, antiJoinM, eqJoinM, rankM, differenceM
+    , thetaJoinM, semiJoinM, antiJoinM, rankM, differenceM
     , rowrankM, selectM, distinctM, crossM, unionM, projM
     , aggrM, winFunM, rownumM, rownum'M, leftOuterJoinM
     ) where
 
+import           Control.Monad.State
 import           Data.Scientific
 import qualified Data.Text                   as T
 import qualified Data.Time.Calendar          as C
@@ -64,86 +67,81 @@ dateT   = ADate
 -- table. The second describes the columns in alphabetical order.
 -- The third argument describes the database keys (one table key can
 -- span over multiple columns).
-dbTable :: String -> [(Attr, ATy)] -> [Key] -> Build TableAlgebra AlgNode
+dbTable :: MonadState (BuildState TableAlgebra) m => String -> [(Attr, ATy)] -> [Key] -> m AlgNode
 dbTable n cs ks = insert $ NullaryOp $ TableRef (n, cs, ks)
 
 -- | Construct a table with one value
-litTable :: AVal -> String -> ATy -> Build TableAlgebra AlgNode
+litTable :: MonadState (BuildState TableAlgebra) m => AVal -> String -> ATy -> m AlgNode
 litTable v s t = insert $ NullaryOp $ LitTable ([[v]], [(s, t)])
 
 -- | Construct a literal table with multiple columns and rows
-litTable' :: [[AVal]] -> [(String, ATy)] -> Build TableAlgebra AlgNode
+litTable' :: MonadState (BuildState TableAlgebra) m => [[AVal]] -> [(String, ATy)] -> m AlgNode
 litTable' v s = insert $ NullaryOp $ LitTable (v, s)
 
--- | Join two plans where the columns n1 of table 1 and columns n2 of table
---  2 are equal.
-eqJoin :: LeftAttr -> RightAttr -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
-eqJoin n1 n2 c1 c2 = insert $ BinOp (EqJoin (n1, n2)) c1 c2
-
-thetaJoin :: [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
+thetaJoin :: MonadState (BuildState TableAlgebra) m => [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> m AlgNode
 thetaJoin cond c1 c2 = insert $ BinOp (ThetaJoin cond) c1 c2
 
-leftOuterJoin :: [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
+leftOuterJoin :: MonadState (BuildState TableAlgebra) m => [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> m AlgNode
 leftOuterJoin cond c1 c2 = insert $ BinOp (LeftOuterJoin cond) c1 c2
 
-semiJoin :: [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
+semiJoin :: MonadState (BuildState TableAlgebra) m => [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> m AlgNode
 semiJoin cond c1 c2 = insert $ BinOp (SemiJoin cond) c1 c2
 
-antiJoin :: [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> Build TableAlgebra AlgNode
+antiJoin :: MonadState (BuildState TableAlgebra) m => [(Expr, Expr, JoinRel)] -> AlgNode -> AlgNode -> m AlgNode
 antiJoin cond c1 c2 = insert $ BinOp (AntiJoin cond) c1 c2
 
 -- | Assign a number to each row in column 'ResAttr' incrementally
 -- sorted by `sort'. The numbering is not dense!
-rank :: ResAttr -> [SortSpec] -> AlgNode -> Build TableAlgebra AlgNode
+rank :: MonadState (BuildState TableAlgebra) m => ResAttr -> [SortSpec] -> AlgNode -> m AlgNode
 rank res sort c1 = insert $ UnOp (Rank (res, sort)) c1
 
 -- | Compute the difference between two plans.
-difference :: AlgNode -> AlgNode -> Build TableAlgebra AlgNode
+difference :: MonadState (BuildState TableAlgebra) m => AlgNode -> AlgNode -> m AlgNode
 difference q1 q2 = insert $ BinOp (Difference ()) q1 q2
 
 -- | Same as rank but provides a dense numbering.
-rowrank :: ResAttr -> [SortSpec] -> AlgNode -> Build TableAlgebra AlgNode
+rowrank :: MonadState (BuildState TableAlgebra) m => ResAttr -> [SortSpec] -> AlgNode -> m AlgNode
 rowrank res sort c1 = insert $ UnOp (RowRank (res, sort)) c1
 
 -- | Select rows where the column `SelAttr' contains True.
-select :: Expr -> AlgNode -> Build TableAlgebra AlgNode
+select :: MonadState (BuildState TableAlgebra) m => Expr -> AlgNode -> m AlgNode
 select sel c1 = insert $ UnOp (Select sel) c1
 
 -- | Remove duplicate rows
-distinct :: AlgNode -> Build TableAlgebra AlgNode
+distinct :: MonadState (BuildState TableAlgebra) m => AlgNode -> m AlgNode
 distinct c1 = insert $ UnOp (Distinct ()) c1
 
 -- | Make cross product from two plans
-cross :: AlgNode -> AlgNode -> Build TableAlgebra AlgNode
+cross :: MonadState (BuildState TableAlgebra) m => AlgNode -> AlgNode -> m AlgNode
 cross c1 c2 = insert $ BinOp (Cross ()) c1 c2
 
 -- | Union between two plans
-union :: AlgNode -> AlgNode -> Build TableAlgebra AlgNode
+union :: MonadState (BuildState TableAlgebra) m => AlgNode -> AlgNode -> m AlgNode
 union c1 c2 = insert $ BinOp (DisjUnion ()) c1 c2
 
 -- | Project/rename certain column out of a plan
-proj :: [Proj] -> AlgNode -> Build TableAlgebra AlgNode
+proj :: MonadState (BuildState TableAlgebra) m => [Proj] -> AlgNode -> m AlgNode
 proj ps c = insert $ UnOp (Project ps) c
 
 -- | Apply aggregate functions to a plan
-aggr :: [(AggrType, ResAttr)] -> [(Attr, Expr)] -> AlgNode -> Build TableAlgebra AlgNode
+aggr :: MonadState (BuildState TableAlgebra) m => [(AggrType, ResAttr)] -> [(Attr, Expr)] -> AlgNode -> m AlgNode
 aggr aggrs part c1 = insert $ UnOp (Aggr (aggrs, part)) c1
 
-winFun :: (ResAttr, WinFun)
+winFun :: MonadState (BuildState TableAlgebra) m => (ResAttr, WinFun)
        -> [PartExpr]
        -> [SortSpec]
        -> Maybe FrameBounds
        -> AlgNode
-       -> Build TableAlgebra AlgNode
+       -> m AlgNode
 winFun fun part sort frame c = insert $ UnOp (WinFun (fun, part, sort, frame)) c
 
 -- | Similar to rowrank but this will assign a unique number to every
 -- row (even if two rows are equal)
-rownum :: Attr -> [Attr] -> [PartExpr] -> AlgNode -> Build TableAlgebra AlgNode
+rownum :: MonadState (BuildState TableAlgebra) m => Attr -> [Attr] -> [PartExpr] -> AlgNode -> m AlgNode
 rownum res sort part c1 = insert $ UnOp (RowNum (res, map (\c -> (ColE c, Asc)) sort, part)) c1
 
 -- | Same as rownum but columns can be assigned an ordering direction
-rownum' :: Attr -> [SortSpec] -> [PartExpr] -> AlgNode -> Build TableAlgebra AlgNode
+rownum' :: MonadState (BuildState TableAlgebra) m => Attr -> [SortSpec] -> [PartExpr] -> AlgNode -> m AlgNode
 rownum' res sort part c1 = insert $ UnOp (RowNum (res, sort, part)) c1
 
 --------------------------------------------------------------------------------
@@ -172,11 +170,6 @@ semiJoinM cond = bind2 (semiJoin cond)
 -- | Perform an anti join on two plans
 antiJoinM :: [(Expr, Expr, JoinRel)] -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
 antiJoinM cond = bind2 (antiJoin cond)
-
--- | Join two plans where the columns n1 of table 1 and columns n2 of table
---  2 are equal.
-eqJoinM :: String -> String -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode -> Build TableAlgebra AlgNode
-eqJoinM n1 n2 = bind2 (eqJoin n1 n2)
 
 -- | Assign a number to each row in column 'ResAttr' incrementing
 -- sorted by `sort'. The numbering is not dense!

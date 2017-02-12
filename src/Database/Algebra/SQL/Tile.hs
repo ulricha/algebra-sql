@@ -528,18 +528,6 @@ tileBinOp (A.Cross ()) c0 c1 = do
     (f, s, c) <- tileBinCrossJoin c0 c1
     return $ TileNode f s c
 
-tileBinOp (A.EqJoin (lName, rName)) c0 c1 = do
-
-    (childrenFeatures, select, children) <- tileBinCrossJoin c0 c1
-
-    let sClause = Q.selectClause select
-        cond    = Q.CEBase $ Q.VEBinApp Q.BFEqual (inlineCE sClause lName)
-                                                  $ inlineCE sClause rName
-
-    -- 'tileBinCrossJoin' already has the 'filterF' feature.
-    return $ TileNode childrenFeatures (appendToWhere cond select) children
-
-
 tileBinOp (A.ThetaJoin conditions) c0 c1  = do
 
     when (null conditions) $impossible

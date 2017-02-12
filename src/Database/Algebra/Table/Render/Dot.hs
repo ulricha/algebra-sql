@@ -76,8 +76,6 @@ opDotLabel i (TableRefL (name, attrs, keys)) = labelToDoc i
 -- |  Binary operations
 opDotLabel i (CrossL _)                  = labelToDoc i
     "CROSS" P.empty
-opDotLabel i (EqJoinL (left,right))      = labelToDoc i
-    "EQJOIN" (P.text $ left ++ "," ++ right)
 opDotLabel i (DifferenceL _)             = labelToDoc i
     "DIFF" P.empty
 opDotLabel i (DisjUnionL _)              = labelToDoc i
@@ -234,8 +232,6 @@ opDotColor (CrossL     _)     = DCOrangeDCRed
 opDotColor (DifferenceL _)    = DCDarkDCOrange
 opDotColor (DisjUnionL _)     = DCOrange
 
-opDotColor (EqJoinL    _)     = DCGreen
-
 opDotColor (ThetaJoinL _)     = DCDodgerBlue
 opDotColor (LeftOuterJoinL _) = DCDeepSkyBlue
 opDotColor (SemiJoinL _)      = DCLightSkyBlue
@@ -320,7 +316,6 @@ data TALabel = LitTableL [Tuple] [TypedAttr]
              | CrossL ()
              | DifferenceL ()
              | DisjUnionL ()
-             | EqJoinL (LeftAttr,RightAttr)
              | ThetaJoinL [(Expr, Expr, JoinRel)]
              | SemiJoinL [(Expr, Expr, JoinRel)]
              | AntiJoinL [(Expr, Expr, JoinRel)]
@@ -337,7 +332,6 @@ labelOfBinOp :: BinOp -> TALabel
 labelOfBinOp (Cross info)           = CrossL info
 labelOfBinOp (Difference info)      = DifferenceL info
 labelOfBinOp (DisjUnion info)       = DisjUnionL info
-labelOfBinOp (EqJoin info)          = EqJoinL info
 labelOfBinOp (ThetaJoin info)       = ThetaJoinL info
 labelOfBinOp (SemiJoin info)        = SemiJoinL info
 labelOfBinOp (AntiJoin info)        = AntiJoinL info
