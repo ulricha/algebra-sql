@@ -35,12 +35,13 @@ library
                       Decimal            >= 0.4,
                       text               >= 1.2,
                       scientific         >= 0.3,
+                      set-monad          >= 0.1,
                       algebra-dag        >= 0.1
 
     exposed-modules:  Database.Algebra.Table.Render.Dot
                       Database.Algebra.Table.Lang
                       Database.Algebra.Table.Construct
-                      Database.Algebra.Table.Opt
+                      Database.Algebra.Table.Typing
 
                       Database.Algebra.SQL.Util
                       Database.Algebra.SQL.Dialect
