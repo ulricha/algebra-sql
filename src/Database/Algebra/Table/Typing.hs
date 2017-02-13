@@ -128,7 +128,7 @@ ternaryAppTy :: MonadError String m => TernaryFun -> ATy -> ATy -> ATy -> m ATy
 ternaryAppTy f ty1 ty2 ty3 = case f of
     Between ->
         if ty1 == ty2 && ty1 == ty3
-        then pure ty1
+        then pure ABool
         else funTyErr f [ty1, ty2, ty3]
     If      ->
         if ty1 == ABool && ty2 == ty3
