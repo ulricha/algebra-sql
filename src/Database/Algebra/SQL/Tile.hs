@@ -566,8 +566,6 @@ tileBinOp (A.LeftOuterJoin conditions) c0 c1 = do
                       emptySelectStmt
                           { Q.selectClause =
                               (columnsFromSchema joinAlias $ schema0 ++ schema1)
-                              ++
-                              (columnsFromSchema fpAlias1 schema1)
                           , Q.fromClause =
                               [ Q.FPAlias (Q.FEExplicitJoin joinOp fp0 fp1)
                                           joinAlias
