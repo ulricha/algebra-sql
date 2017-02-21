@@ -227,7 +227,7 @@ tyNullOp op =
 
 
 tyUnOp :: MonadError String m => S.Set TypedAttr -> UnOp -> m (S.Set TypedAttr)
-tyUnOp childCols op = flip catchError (tyErrShowOp op) $
+tyUnOp childCols op = flip catchError (tyErrShowOp op) $ validRowTy childCols >>
     case op of
         WinFun ((resCol, fun), pes, ses, _) -> do
             mapM_ (exprTy childCols) pes
@@ -237,14 +237,17 @@ tyUnOp childCols op = flip catchError (tyErrShowOp op) $
         RowNum (resCol, ses, pes) -> do
             mapM_ (exprTy childCols) pes
             checkSortSpec childCols ses
-            pure $ S.insert (resCol, AInt) childCols
+            addColDisj (resCol, AInt) childCols
         RowRank (resCol, ses)   -> do
             checkSortSpec childCols ses
-            pure $ S.insert (resCol, AInt) childCols
+            addColDisj (resCol, AInt) childCols
         Rank (resCol, ses)      -> do
             checkSortSpec childCols ses
-            pure $ S.insert (resCol, AInt) childCols
-        Project projs         ->
+            addColDisj (resCol, AInt) childCols
+        Project projs         -> do
+            if length (nub $ map fst projs) == length projs
+                then pure ()
+                else throwError $ printf "invalid projection: %s" (show projs)
             S.fromList <$> (forM projs $ \(a, e) -> do
                 ty <- exprTy childCols e
                 pure (a, ty))
@@ -261,7 +264,10 @@ tyUnOp childCols op = flip catchError (tyErrShowOp op) $
             gTys <- forM ges $ \(a, e) -> do
                 gTy <- exprTy childCols e
                 pure (a, gTy)
-            pure $ S.union (S.fromList aTys) (S.fromList gTys)
+            let aRowTy = S.fromList aTys
+                gRowTy = S.fromList gTys
+            rowTyDisjunct aRowTy gRowTy
+            pure $ S.union aRowTy gRowTy
         Serialize (ref, key, ord, items) ->
             let cols = (map (\(PayloadCol c e) -> (c,e)) items)
                        ++ (map (\(RefCol c e) -> (c,e)) ref)
@@ -269,9 +275,9 @@ tyUnOp childCols op = flip catchError (tyErrShowOp op) $
                        ++ (map (\(KeyCol c e) -> (c,e)) key)
             in S.fromList <$> mapM (\(c,e) -> (c,) <$> exprTy childCols e) cols
 
-
 tyBinOp :: MonadError String m => S.Set TypedAttr -> S.Set TypedAttr -> BinOp -> m (S.Set TypedAttr)
-tyBinOp leftCols rightCols op = flip catchError (tyErrShowOp op) $
+tyBinOp leftCols rightCols op =
+    flip catchError (tyErrShowOp op) $ validRowTy leftCols >> validRowTy rightCols >>
     case op of
         Cross _         -> rowTyDisjunct leftCols rightCols >> pure (S.union leftCols rightCols)
         ThetaJoin p     -> do
@@ -317,6 +323,18 @@ rowTyDisjunct s1 s2 =
     if S.null $ (fmap fst s1) `S.intersection` (fmap fst s2)
     then pure ()
     else throwError $ printf "row type not disjunct:\n%s\n%s" (show s1) (show s2)
+
+addColDisj :: MonadError String m => TypedAttr -> S.Set TypedAttr -> m (S.Set TypedAttr)
+addColDisj (c,ty) rowTy =
+    if c `notElem` fmap fst rowTy
+    then pure $ S.insert (c,ty) rowTy
+    else throwError $ printf "adding colliding col %s to %s" (show (c,ty)) (show rowTy)
+
+validRowTy :: MonadError String m => S.Set TypedAttr -> m ()
+validRowTy rowTy
+    | S.size (fmap fst rowTy) /= S.size rowTy = throwError $ printf "invalid row type (duplicates): %s" (show rowTy)
+    | S.null rowTy                            = throwError $ printf "empty row type: %s" (show rowTy)
+    | otherwise                               = pure ()
 
 --------------------------------------------------------------------------------
 
